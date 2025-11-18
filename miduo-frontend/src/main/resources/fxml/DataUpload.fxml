@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.DataUploadController"
+      prefWidth="1200" prefHeight="700" styleClass="application-background"
+      stylesheets="@../css/base-styles.css">
+   
+   <padding>
+      <Insets top="10" right="10" bottom="10" left="10"/>
+   </padding>
+   
+   <!-- 操作按钮栏 -->
+   <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: #f0f0f0;">
+      <Button text="码替换" onAction="#onCodeReplace" styleClass="primary-button" prefWidth="100" prefHeight="30"/>
+      <Button text="码删除" onAction="#onCodeDelete" styleClass="danger-button" prefWidth="100" prefHeight="30"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label fx:id="statusLabel" text="准备就绪" style="-fx-font-size: 11px; -fx-text-fill: #666;"/>
+   </HBox>
+   
+   <!-- 主内容区：左右分栏 -->
+   <HBox VBox.vgrow="ALWAYS" spacing="10">
+      
+      <!-- 左侧：生产订单列表 (50%宽度) -->
+      <VBox prefWidth="600" HBox.hgrow="ALWAYS" spacing="5">
+         <Label text="生产订单" styleClass="section-title"/>
+         
+         <!-- 搜索框 -->
+         <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 5px;">
+            <Label text="订单号:"/>
+            <TextField fx:id="orderSearchField" promptText="输入订单号" prefWidth="120"/>
+            <Label text="产品名称:"/>
+            <TextField fx:id="productSearchField" promptText="输入产品名称" prefWidth="120"/>
+            <Button text="搜索" onAction="#onSearchOrders" styleClass="primary-button" prefWidth="60"/>
+            <Button text="清空" onAction="#onClearOrderSearch" prefWidth="60"/>
+         </HBox>
+         
+         <Label fx:id="orderStatsLabel" text="共0条订单" style="-fx-font-size: 10px; -fx-text-fill: #999;"/>
+         
+         <!-- 生产订单表格 -->
+         <TableView fx:id="orderTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+            <columns>
+               <TableColumn fx:id="orderNoColumn" text="订单编号" prefWidth="130"/>
+               <TableColumn fx:id="productNameColumn" text="产品名称" prefWidth="160"/>
+               <TableColumn fx:id="productCountColumn" text="计划数量" prefWidth="85"/>
+               <TableColumn fx:id="completedCountColumn" text="完成数量" prefWidth="85"/>
+               <TableColumn fx:id="productTimeColumn" text="生产日期" prefWidth="110"/>
+               <TableColumn fx:id="productionStatusColumn" text="生产状态" prefWidth="85"/>
+               <TableColumn fx:id="uploadStatusColumn" text="上传状态" prefWidth="85"/>
+            </columns>
+            
+            <!-- 空状态提示 -->
+            <placeholder>
+               <VBox alignment="CENTER" spacing="10" styleClass="empty-state">
+                  <Label text="暂无生产订单数据" styleClass="caption-text"/>
+               </VBox>
+            </placeholder>
+         </TableView>
+         
+         <!-- 分页控件 - 订单 -->
+         <HBox spacing="10" alignment="CENTER" style="-fx-padding: 10px;">
+            <Label fx:id="orderTotalCountLabel" text="共 0 条"/>
+            <ComboBox fx:id="orderPageSizeComboBox" onAction="#onOrderPageSizeChange" prefWidth="80"/>
+            <Button text="首页" onAction="#onOrderFirstPage" prefWidth="60"/>
+            <Button text="上一页" onAction="#onOrderPreviousPage" prefWidth="60"/>
+            <TextField fx:id="orderCurrentPageField" prefWidth="50" alignment="CENTER"/>
+            <Label fx:id="orderPageInfoLabel" text="1 / 1"/>
+            <Button text="下一页" onAction="#onOrderNextPage" prefWidth="60"/>
+            <Button text="末页" onAction="#onOrderLastPage" prefWidth="60"/>
+         </HBox>
+      </VBox>
+      
+      <!-- 右侧：生产任务数据（50%宽度） -->
+      <VBox HBox.hgrow="ALWAYS" spacing="5">
+         <Label text="生产任务数据" styleClass="section-title"/>
+         
+         <!-- 码搜索框 -->
+         <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 5px;">
+            <Label text="搜索码:"/>
+            <TextField fx:id="codeSearchField" promptText="请输入码" prefWidth="250"/>
+            <Button text="搜索" onAction="#onSearchCode" styleClass="primary-button" prefWidth="60"/>
+            <Button text="清空" onAction="#onClearCodeSearch" prefWidth="60"/>
+         </HBox>
+         
+         <Label fx:id="taskStatsLabel" text="请选择左侧订单" style="-fx-font-size: 10px; -fx-text-fill: #999;"/>
+         
+         <!-- 生产任务表格 -->
+         <TableView fx:id="taskTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+            <columns>
+               <TableColumn fx:id="layer1Column" text="第一层" prefWidth="120"/>
+               <TableColumn fx:id="addTimeColumn" text="箱码采集时间" prefWidth="150"/>
+               <TableColumn fx:id="layer2Column" text="第二层" prefWidth="120"/>
+               <TableColumn fx:id="layer3Column" text="第三层" prefWidth="120"/>
+               <TableColumn fx:id="layer4Column" text="第四层" prefWidth="120"/>
+            </columns>
+            
+            <!-- 空状态提示 -->
+            <placeholder>
+               <VBox alignment="CENTER" spacing="10" styleClass="empty-state">
+                  <Label text="请在左侧选择订单查看生产任务数据" styleClass="caption-text"/>
+               </VBox>
+            </placeholder>
+         </TableView>
+         
+         <!-- 分页控件 - 任务 -->
+         <HBox spacing="10" alignment="CENTER" style="-fx-padding: 10px;">
+            <Label fx:id="taskTotalCountLabel" text="共 0 条"/>
+            <ComboBox fx:id="taskPageSizeComboBox" onAction="#onTaskPageSizeChange" prefWidth="80"/>
+            <Button text="首页" onAction="#onTaskFirstPage" prefWidth="60"/>
+            <Button text="上一页" onAction="#onTaskPreviousPage" prefWidth="60"/>
+            <TextField fx:id="taskCurrentPageField" prefWidth="50" alignment="CENTER"/>
+            <Label fx:id="taskPageInfoLabel" text="1 / 1"/>
+            <Button text="下一页" onAction="#onTaskNextPage" prefWidth="60"/>
+            <Button text="末页" onAction="#onTaskLastPage" prefWidth="60"/>
+         </HBox>
+      </VBox>
+      
+   </HBox>
+   
+   <!-- 底部状态栏 -->
+   <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: #f8f9fa; -fx-border-color: #e0e0e0; -fx-border-width: 1px 0 0 0;">
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label fx:id="currentTimeLabel" text="2024-12-01 10:00:00" style="-fx-font-size: 11px;"/>
+   </HBox>
+</VBox>

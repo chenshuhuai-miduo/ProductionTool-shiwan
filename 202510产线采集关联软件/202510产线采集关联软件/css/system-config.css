@@ -1,0 +1,1147 @@
+/* 系统参数配置页面样式 - 桌面应用风格 */
+
+/* 页面body样式 */
+body {
+    background: #e0e0e0;
+    overflow: auto;
+    min-height: 100vh;
+}
+
+/* 当屏幕足够大时居中显示 */
+@media (min-width: 1300px) and (min-height: 100vh) {
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+}
+
+/* 桌面应用容器固定尺寸 */
+.desktop-app {
+    width: 1280px !important;
+    height: 100vh !important;
+    position: relative;
+    background: #f0f0f0;
+    border: 1px solid #999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* 主工作区固定尺寸 */
+.main-workspace {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: #f0f0f0;
+    overflow: hidden;
+}
+
+/* 系统配置区域 */
+.system-config-area {
+    width: 900px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    overflow: hidden;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+}
+
+/* 选项卡导航 */
+.config-tabs {
+    display: flex;
+    height: 32px;
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+    border-bottom: 1px solid #999;
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #333;
+    border-right: 1px solid #ccc;
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 100%);
+    white-space: nowrap;
+    min-width: 120px;
+    justify-content: center;
+    gap: 4px;
+}
+
+.tab-item:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+}
+
+.tab-item.active {
+    background: white;
+    border-bottom: 1px solid white;
+    color: #1976d2;
+    font-weight: bold;
+}
+
+.tab-icon {
+    font-size: 12px;
+}
+
+.tab-text {
+    font-size: 10px;
+}
+
+/* 选项卡内容区域 */
+.tab-content-area {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.tab-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tab-content.active {
+    display: flex;
+}
+
+/* 配置工具栏 */
+.config-toolbar {
+    height: 40px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    flex-shrink: 0;
+}
+
+.config-toolbar .toolbar-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.config-toolbar .toolbar-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.query-label {
+    font-size: 11px;
+    color: #333;
+    font-weight: bold;
+}
+
+/* 配置内容区域 */
+.config-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    padding: 8px;
+}
+
+/* 采集模式管理样式 */
+.mode-list-section {
+    width: 400px;
+    border-right: 1px solid #999;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.mode-config-section {
+    width: 498px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.section-header {
+    height: 30px;
+    background: linear-gradient(to bottom, #e8e8e8 0%, #d8d8d8 50%, #c8c8c8 51%, #e0e0e0 100%);
+    border-bottom: 1px solid #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    flex-shrink: 0;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+}
+
+.mode-list-container,
+.mode-config-container {
+    flex: 1;
+    overflow: auto;
+}
+
+/* 紧凑布局优化 */
+.mode-config-container {
+    padding: 0;
+}
+
+.mode-config-container .config-form {
+    height: 100%;
+    overflow-y: auto;
+    padding: 6px 8px;
+}
+
+.config-form {
+    padding: 8px;
+}
+
+.form-group {
+    margin-bottom: 8px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 3px 5px;
+    border: 1px solid #999;
+    border-radius: 2px;
+    font-size: 11px;
+    background: white;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 2px rgba(74, 144, 226, 0.5);
+}
+
+.form-control:disabled {
+    background: #f0f0f0;
+    color: #666;
+}
+
+/* 复选框和单选框组 */
+.checkbox-group,
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.checkbox-item,
+.radio-item {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #333;
+    cursor: pointer;
+}
+
+.checkbox-item input,
+.radio-item input {
+    margin-right: 4px;
+    width: auto;
+}
+
+/* 表单行布局 */
+.form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* 层级配置 */
+.level-config-section {
+    margin-top: 12px;
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+}
+
+.level-config-section h4 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    color: #333;
+}
+
+.level-tabs {
+    display: flex;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #ccc;
+}
+
+.level-tab {
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 10px;
+    color: #666;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #f8f8f8;
+    margin-right: 2px;
+}
+
+.level-tab:hover {
+    background: #f0f0f0;
+}
+
+.level-tab.active {
+    background: white;
+    color: #333;
+    font-weight: bold;
+    border-bottom: 1px solid white;
+    margin-bottom: -1px;
+}
+
+.level-config-content {
+    background: white;
+    border: 1px solid #ccc;
+    padding: 12px;
+    min-height: 200px;
+}
+
+/* 设备连接配置样式 */
+.device-level-tabs {
+    display: flex;
+    height: 60px;
+    background: #f8f8f8;
+    border-bottom: 1px solid #ccc;
+    overflow-x: auto;
+}
+
+.device-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 10px;
+    color: #666;
+    border-right: 1px solid #ccc;
+    background: #f0f0f0;
+    min-width: 100px;
+    position: relative;
+}
+
+.device-tab:hover {
+    background: #e8e8e8;
+}
+
+.device-tab.active {
+    background: white;
+    color: #333;
+    font-weight: bold;
+    border-bottom: 2px solid #1976d2;
+}
+
+.device-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.device-text {
+    font-size: 9px;
+}
+
+.device-status-indicator {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.device-status-indicator.online {
+    background: #52c41a;
+}
+
+.device-status-indicator.offline {
+    background: #ff4d4f;
+}
+
+.device-status-indicator.warning {
+    background: #faad14;
+}
+
+.device-config-content {
+    flex: 1;
+    padding: 16px;
+    overflow: auto;
+}
+
+/* 通信参数配置样式 */
+.communication-sections,
+.io-sections,
+.print-sections,
+.alarm-sections,
+.advanced-sections {
+    padding: 16px;
+    overflow: auto;
+}
+
+.config-section {
+    margin-bottom: 24px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.config-section .section-header {
+    height: 28px;
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 100%);
+    border-bottom: 1px solid #ccc;
+    border-radius: 4px 4px 0 0;
+}
+
+.section-content {
+    padding: 16px;
+}
+
+/* 连接状态指示 */
+.connection-status {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #333;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.status-dot.online {
+    background: #52c41a;
+}
+
+.status-dot.offline {
+    background: #ff4d4f;
+}
+
+.status-dot.warning {
+    background: #faad14;
+}
+
+/* IO控制配置样式 */
+.io-device-list {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.io-device-item {
+    border-bottom: 1px solid #ddd;
+    background: white;
+}
+
+.io-device-item:last-child {
+    border-bottom: none;
+}
+
+.io-device-item:hover {
+    background-color: #f8f9fa;
+}
+
+.io-device-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr 2fr;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 11px;
+}
+
+.io-device-name-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.io-device-name {
+    font-weight: bold;
+    color: #333;
+    font-size: 12px;
+}
+
+.io-device-type,
+.io-device-connection,
+.io-device-address {
+    color: #555;
+    font-size: 10px;
+}
+
+.io-device-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+}
+
+.io-device-actions .action-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+    min-width: 36px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.reject-device-list {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.reject-device-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 11px;
+}
+
+.reject-device-item:last-child {
+    border-bottom: none;
+}
+
+.reject-device-info {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+.reject-device-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* 打印模块配置样式 */
+.printer-list {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.printer-item {
+    border-bottom: 1px solid #ddd;
+    background: white;
+}
+
+.printer-item:last-child {
+    border-bottom: none;
+}
+
+.printer-item:hover {
+    background-color: #f8f9fa;
+}
+
+.printer-row {
+    display: grid;
+    grid-template-columns: 2fr 3fr 2fr;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 11px;
+}
+
+.printer-name-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.printer-name {
+    font-weight: bold;
+    color: #333;
+    font-size: 12px;
+}
+
+.printer-path {
+    color: #555;
+    font-size: 10px;
+    word-break: break-all;
+}
+
+.printer-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+}
+
+.printer-actions .action-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+    min-width: 36px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 报警设置样式 */
+.alarm-tree {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.alarm-category {
+    margin-bottom: 8px;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.category-icon {
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+.alarm-items {
+    margin-left: 16px;
+    margin-top: 4px;
+}
+
+.alarm-item {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 10px;
+    margin-bottom: 2px;
+}
+
+.alarm-item input {
+    margin-right: 6px;
+}
+
+.alarm-level {
+    margin-left: auto;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.alarm-level.info {
+    background: #e6f7ff;
+    color: #1890ff;
+}
+
+.alarm-level.warning {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.alarm-level.error {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.alarm-level.critical {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+/* 设备状态区域 */
+.device-status-area {
+    width: 360px;
+    background: #f8f8f8;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-header {
+    height: 30px;
+    background: linear-gradient(to bottom, #e8e8e8 0%, #d8d8d8 50%, #c8c8c8 51%, #e0e0e0 100%);
+    border-bottom: 1px solid #999;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    flex-shrink: 0;
+}
+
+.status-header h3 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+}
+
+.status-content {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+}
+
+.device-status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.device-status-item {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 10px;
+}
+
+.device-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.device-status-name {
+    color: #333;
+}
+
+.device-status-badge {
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.device-status-badge.online {
+    background: #d4edda;
+    color: #155724;
+}
+
+.device-status-badge.offline {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.device-status-badge.warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.device-status-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: #666;
+}
+
+.status-detail-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 状态标签样式 */
+.status-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    margin: 1px;
+    border: 1px solid;
+}
+
+.status-tag.enabled {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+.status-tag.enabled::before {
+    content: "✅";
+    margin-right: 2px;
+}
+
+.status-tag.disabled {
+    background-color: #f5f5f5;
+    color: #666;
+    border-color: #ddd;
+}
+
+.status-tag.disabled::before {
+    content: "⏸️";
+    margin-right: 2px;
+}
+
+.status-tag.online {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+.status-tag.online::before {
+    content: "🟢";
+    margin-right: 2px;
+}
+
+.status-tag.offline {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border-color: #ffcdd2;
+}
+
+.status-tag.offline::before {
+    content: "🔴";
+    margin-right: 2px;
+}
+
+.status-tag.warning {
+    background-color: #fff3e0;
+    color: #f57c00;
+    border-color: #ffcc02;
+}
+
+.status-tag.warning::before {
+    content: "🟡";
+    margin-right: 2px;
+}
+
+/* 表格行选中状态 */
+.desktop-table tbody tr.selected {
+    background-color: #e3f2fd;
+    border: 1px solid #1976d2;
+}
+
+.desktop-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 按钮样式覆盖 */
+.btn {
+    padding: 4px 12px;
+    font-size: 11px;
+    height: 24px;
+    min-height: 24px;
+    min-width: auto;
+    border: 1px solid #999;
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 100%);
+    color: #333;
+    cursor: pointer;
+    border-radius: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-primary {
+    background: linear-gradient(to bottom, #4a90e2 0%, #357abd 100%);
+    color: white;
+    border-color: #2980b9;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(to bottom, #5ba0f2 0%, #4687cd 100%);
+}
+
+.btn-success {
+    background: linear-gradient(to bottom, #27ae60 0%, #229954 100%);
+    color: white;
+    border-color: #1e8449;
+}
+
+.btn-success:hover {
+    background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
+}
+
+.btn-warning {
+    background: linear-gradient(to bottom, #f39c12 0%, #e67e22 100%);
+    color: white;
+    border-color: #d35400;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(to bottom, #f1c40f 0%, #f39c12 100%);
+}
+
+.btn-danger {
+    background: linear-gradient(to bottom, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border-color: #a93226;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(to bottom, #ec7063 0%, #d5544f 100%);
+}
+
+/* 空数据状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state .empty-text {
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+
+/* 加载状态 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f0f0f0;
+    border-top: 3px solid #1976d2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .config-content {
+        flex-direction: column;
+    }
+    
+    .mode-list-section {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: 1px solid #999;
+    }
+    
+    .mode-config-section {
+        width: 100%;
+        height: 60%;
+    }
+    
+    .device-status-area {
+        width: 100%;
+        height: 200px;
+        border-left: none;
+        border-top: 1px solid #ccc;
+    }
+    
+    .config-tabs {
+        overflow-x: auto;
+    }
+    
+    .tab-item {
+        min-width: 100px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .config-toolbar {
+        flex-direction: column;
+        height: auto;
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .config-toolbar .toolbar-left,
+    .config-toolbar .toolbar-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .device-level-tabs {
+        height: auto;
+        flex-wrap: wrap;
+    }
+    
+    .device-tab {
+        min-width: 80px;
+        padding: 6px 8px;
+    }
+    
+    .tab-item {
+        min-width: 80px;
+        padding: 0 8px;
+    }
+    
+    .tab-text {
+        display: none;
+    }
+}
+
+/* 状态设置模块样式 */
+.status-config-section {
+    margin-top: 12px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.status-config-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
+
+/* 状态设置内联样式 */
+.status-inline {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0;
+}
+
+.status-inline .form-label {
+    margin: 0;
+    min-width: 40px;
+    font-weight: bold;
+}
+
+.status-inline .radio-group {
+    display: flex;
+    gap: 16px;
+    margin: 0;
+}
+
+/* 文本域紧凑样式 */
+textarea.form-control {
+    min-height: 50px;
+    resize: vertical;
+}
+
+/* 操作按钮区域紧凑样式 */
+.form-actions {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 8px;
+}
+
+.form-actions .btn {
+    padding: 4px 12px;
+    font-size: 11px;
+}
+
+/* 进一步紧凑优化 */
+.mode-config-section .section-header {
+    padding: 6px 8px;
+    border-bottom: 1px solid #ddd;
+    background: #f8f8f8;
+}
+
+.mode-config-section .section-header h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 层级配置内容区域紧凑化 */
+.level-config-content {
+    padding: 6px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    min-height: 120px;
+}
+
+/* 采集规格区域紧凑化 */
+.checkbox-group {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+/* 其他tab内容区域固定宽度 */
+.tab-content:not(#collection-modes) .config-content {
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+    flex-direction: column;
+}
+
+/* IO控制、打印模块、报警设置、高级设置等区域样式 */
+.config-section {
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.section-content {
+    padding: 12px;
+} 

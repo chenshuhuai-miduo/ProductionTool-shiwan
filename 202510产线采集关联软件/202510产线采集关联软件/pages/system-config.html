@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统参数配置 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/system-config.css">
+</head>
+<body>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">系统参数配置 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="navigateToIndex()">✕</button>
+            </div>
+        </div>
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <!-- 系统配置区域 -->
+            <div class="system-config-area">
+                <!-- 选项卡导航 -->
+                <div class="config-tabs">
+                    <div class="tab-item active" data-tab="io-control">
+                        <span class="tab-icon"></span>
+                        <span class="tab-text">IO控制配置</span>
+                    </div>
+                    <div class="tab-item" data-tab="print-module">
+                        <span class="tab-icon"></span>
+                        <span class="tab-text">打印模块配置</span>
+                    </div>
+                    <div class="tab-item" data-tab="alarm-settings">
+                        <span class="tab-icon">🚨</span>
+                        <span class="tab-text">报警设置</span>
+                    </div>
+                </div>
+
+                <!-- 选项卡内容区域 -->
+                <div class="tab-content-area">
+                    <!-- IO控制配置 -->
+                    <div class="tab-content active" id="io-control">
+                        <div class="config-toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="addIODevice()">添加IO设备</button>
+                                <button class="btn btn-warning" onclick="testAllIODevices()">测试所有设备</button>
+                                <button class="btn btn-success" onclick="applyIOConfig()">应用配置</button>
+                            </div>
+                        </div>
+
+                        <div class="config-content">
+                            <div class="io-sections">
+                                <!-- IO设备管理 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <h3>IO设备管理</h3>
+                                    </div>
+                                    <div class="section-content">
+                                        <div class="io-device-list" id="ioDeviceList">
+                                            <!-- IO设备列表将动态生成 -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 剔除装置设置 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <h3>剔除装置设置</h3>
+                                    </div>
+                                    <div class="section-content">
+                                        <div class="reject-device-list" id="rejectDeviceList">
+                                            <!-- 剔除装置列表将动态生成 -->
+                                        </div>
+                                        <button class="btn btn-primary" onclick="addRejectDevice()">添加剔除装置</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 打印模块配置 -->
+                    <div class="tab-content" id="print-module">
+                        <div class="config-toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="addPrinter()">添加打印机</button>
+                                <button class="btn btn-success" onclick="applyPrintConfig()">应用配置</button>
+                            </div>
+                        </div>
+
+                        <div class="config-content">
+                            <div class="print-sections">
+                                <!-- 打印机管理 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <h3>打印机管理</h3>
+                                    </div>
+                                    <div class="section-content">
+                                        <div class="printer-list" id="printerList">
+                                            <!-- 打印机列表将动态生成 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 报警设置 -->
+                    <div class="tab-content" id="alarm-settings">
+                        <div class="config-toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="testAlarm()">测试报警</button>
+                                <button class="btn btn-success" onclick="applyAlarmConfig()">应用配置</button>
+                                <button class="btn" onclick="resetAlarmConfig()">重置配置</button>
+                            </div>
+                        </div>
+
+                        <div class="config-content">
+                            <div class="alarm-sections">
+                                <!-- 报警配置 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <h3>报警配置</h3>
+                                    </div>
+                                    <div class="section-content">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">声音报警</label>
+                                                <div class="checkbox-group">
+                                                    <label class="checkbox-item">
+                                                        <input type="checkbox" id="alarmSound" checked> 启用声音报警
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">报警延时(秒)</label>
+                                                <input type="number" class="form-control" id="alarmDelay" value="5" min="0" max="300">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">报警间隔(秒)</label>
+                                                <input type="number" class="form-control" id="alarmInterval" value="60" min="10" max="3600">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- 设备状态区域 -->
+            <div class="device-status-area">
+                <div class="status-header">
+                    <h3>IO设备状态监控</h3>
+                </div>
+                <div class="status-content">
+                    <div class="device-status-list" id="deviceStatusList">
+                        <!-- 设备状态列表将动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">系统参数配置</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">数据库已连接</span>
+                <span class="status-separator">|</span>
+                <span class="status-item" id="configStatus">配置状态：未保存</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="desktop-dialog" id="confirmDialog" style="display: none;">
+        <div class="dialog-content" style="width: 400px;">
+            <div class="dialog-header">
+                <span class="dialog-title" id="confirmTitle">确认操作</span>
+                <button class="dialog-close" onclick="closeConfirmDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <p id="confirmMessage">确定要执行此操作吗？</p>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closeConfirmDialog()">取消</button>
+                <button class="btn btn-primary" id="confirmBtn" onclick="confirmAction()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IO设备编辑对话框 -->
+    <div class="desktop-dialog" id="ioDeviceEditDialog" style="display: none;">
+        <div class="dialog-content" style="width: 600px;">
+            <div class="dialog-header">
+                <span class="dialog-title" id="ioDeviceEditTitle">添加IO设备</span>
+                <button class="dialog-close" onclick="closeIODeviceEditDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="form-group">
+                    <label class="form-label">设备名称 <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="editIODeviceName" placeholder="请输入设备名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">设备类型</label>
+                    <select class="form-control" id="editIODeviceType">
+                        <option value="modbus">Modbus设备</option>
+                        <option value="plc">PLC设备</option>
+                        <option value="io_module">IO模块</option>
+                        <option value="custom">自定义设备</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">连接方式</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="editIOConnectionType" value="network" checked onchange="toggleEditIOConnectionConfig('network')"> 网口
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="editIOConnectionType" value="serial" onchange="toggleEditIOConnectionConfig('serial')"> 串口
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- 网口配置 -->
+                <div class="form-row" id="editIONetworkConfig">
+                    <div class="form-group">
+                        <label class="form-label">IP地址 <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" id="editIOIpAddress" placeholder="192.168.1.101">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">端口号 <span style="color: red;">*</span></label>
+                        <input type="number" class="form-control" id="editIOPort" placeholder="502" min="1" max="65535">
+                    </div>
+                </div>
+                
+                <!-- 串口配置 -->
+                <div class="form-row" id="editIOSerialConfig" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">串口号 <span style="color: red;">*</span></label>
+                        <select class="form-control" id="editIOSerialPort">
+                            <option value="">请选择串口</option>
+                            <option value="COM1">COM1</option>
+                            <option value="COM2">COM2</option>
+                            <option value="COM3">COM3</option>
+                            <option value="COM4">COM4</option>
+                            <option value="COM5">COM5</option>
+                            <option value="COM6">COM6</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">波特率</label>
+                        <select class="form-control" id="editIOBaudRate">
+                            <option value="9600">9600</option>
+                            <option value="19200">19200</option>
+                            <option value="38400">38400</option>
+                            <option value="115200">115200</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">超时时间(秒)</label>
+                    <input type="number" class="form-control" id="editIOTimeout" value="5" min="1" max="60">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">重试次数</label>
+                    <input type="number" class="form-control" id="editIORetryCount" value="3" min="0" max="10">
+                </div>
+                <div class="form-group status-inline">
+                    <label class="form-label">状态</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="editIODeviceStatus" value="enabled" id="editIODeviceEnabled" checked> 启用
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="editIODeviceStatus" value="disabled" id="editIODeviceDisabled"> 禁用
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">设备描述</label>
+                    <textarea class="form-control" id="editIODeviceDescription" rows="3" placeholder="请输入设备描述"></textarea>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closeIODeviceEditDialog()">取消</button>
+                <button class="btn btn-primary" onclick="saveIODeviceEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 打印机编辑对话框 -->
+    <div class="desktop-dialog" id="printerEditDialog" style="display: none;">
+        <div class="dialog-content" style="width: 600px;">
+            <div class="dialog-header">
+                <span class="dialog-title" id="printerEditTitle">添加打印机</span>
+                <button class="dialog-close" onclick="closePrinterEditDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="form-group">
+                    <label class="form-label">打印机名称 <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="editPrinterName" placeholder="请输入打印机名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">本地打印模块路径 <span style="color: red;">*</span></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="editPrinterPath" placeholder="请选择打印模块路径" readonly>
+                        <button class="btn btn-outline" onclick="selectPrinterPath()">浏览</button>
+                    </div>
+                    <small class="form-hint">选择本地打印模块的可执行文件路径</small>
+                </div>
+                <div class="form-group status-inline">
+                    <label class="form-label">状态</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="editPrinterStatus" value="enabled" id="editPrinterEnabled" checked> 启用
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="editPrinterStatus" value="disabled" id="editPrinterDisabled"> 禁用
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">描述</label>
+                    <textarea class="form-control" id="editPrinterDescription" rows="2" placeholder="请输入打印机描述"></textarea>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closePrinterEditDialog()">取消</button>
+                <button class="btn btn-primary" onclick="savePrinterEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="../js/common.js"></script>
+    <script>
+        // 检查导航函数是否可用
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('系统配置页面DOM加载完成');
+            console.log('navigateToIndex函数可用性:', typeof window.navigateToIndex);
+        });
+    </script>
+    <script src="../js/system-config.js"></script>
+</body>
+</html> 

@@ -1,0 +1,74 @@
+/* 输入控件样式 - Input Styles */
+
+/* 文本输入框 */
+.text-field {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-text-fill: -text-primary;
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 12px;
+    -fx-min-height: 36px;
+}
+
+.text-field:focused {
+    -fx-border-color: -primary-color;
+    -fx-effect: dropshadow(gaussian, rgba(74,144,226,0.3), 3, 0, 0, 0);
+}
+
+/* 下拉选择框 */
+.combo-box {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-min-height: 36px;
+}
+
+.combo-box:focused {
+    -fx-border-color: -primary-color;
+}
+
+.combo-box .list-cell {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+
+/* 多行文本框 */
+.text-area {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-text-fill: -text-primary;
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 12px;
+}
+
+.text-area:focused {
+    -fx-border-color: -primary-color;
+}
+
+.text-area .content {
+    -fx-background-color: white;
+}
+
+/* 日期选择器 */
+.date-picker {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+
+.date-picker .text-field {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+

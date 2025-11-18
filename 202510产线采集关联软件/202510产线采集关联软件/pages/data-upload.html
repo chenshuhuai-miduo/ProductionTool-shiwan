@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据上传管理 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/product-management.css">
+    <link rel="stylesheet" href="../css/data-upload.css">
+</head>
+<body>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">数据上传管理 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="navigateToIndex()">✕</button>
+            </div>
+        </div>
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <!-- 数据上传管理区域 -->
+            <div class="data-upload-area">
+                <!-- 工具栏 -->
+                <div class="upload-toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn btn-primary" onclick="uploadOrder()">一键上传</button>
+                        <button class="btn" onclick="showCodeReplaceModal()">码替换</button>
+                        <button class="btn btn-warning" onclick="showCodeDeleteModal()">码删除</button>
+                    </div>
+                    <div class="toolbar-right">
+                        <span class="query-label">查询码</span>
+                        <input type="text" class="search-input" id="codeSearch" placeholder="输入码值查询...">
+                        <button class="btn btn-primary" onclick="searchCode()">查询</button>
+                    </div>
+                </div>
+
+                <!-- 主内容区域 -->
+                <div class="main-content">
+                    <!-- 左侧：生产订单列表 -->
+                    <div class="order-list-section">
+                        <div class="section-header">
+                            <h3>生产订单列表</h3>
+                        </div>
+                        <div class="order-list-container">
+                            <table class="desktop-table" id="orderTable">
+                                <thead>
+                                    <tr>
+                                        <th width="120">生产订单</th>
+                                        <th width="100">产品名称</th>
+                                        <th width="80">计划数量</th>
+                                        <th width="80">完成数量</th>
+                                        <th width="100">生产日期</th>
+                                        <th width="80">生产状态</th>
+                                        <th width="80">上传状态</th>
+                                        <th width="80">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderTableBody">
+                                    <!-- 数据行将通过JavaScript动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：生产任务数据 -->
+                    <div class="task-data-section">
+                        <div class="section-header">
+                            <h3>生产任务数据</h3>
+                            <div class="data-info">
+                                <span id="selectedOrderInfo">请选择生产订单或输入查询码</span>
+                            </div>
+                        </div>
+                        <div class="task-data-container">
+                            <table class="desktop-table" id="taskDataTable">
+                                <thead>
+                                    <tr>
+                                        <th width="120">第一层</th>
+                                        <th width="140">采集时间</th>
+                                        <th width="120">第二层</th>
+                                        <th width="140">采集时间</th>
+                                        <th width="120">第三层</th>
+                                        <th width="140">采集时间</th>
+                                        <th width="120">第四层</th>
+                                        <th width="140">赋码时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="taskDataTableBody">
+                                    <!-- 数据行将通过JavaScript动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- 分页栏 -->
+                        <div class="pagination-bar">
+                            <div class="pagination-left">
+                                <span>共 <span id="totalDataCount">0</span> 条数据</span>
+                                <span style="margin-left: 20px;">每页显示</span>
+                                <select class="page-size-select" id="dataPageSizeSelect" onchange="handleDataPageSizeChange()">
+                                    <option value="20">20</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span>条</span>
+                            </div>
+                            <div class="pagination-controls" id="dataPaginationControls">
+                                <!-- 分页按钮将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">数据上传管理</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">数据库已连接</span>
+                <span class="status-separator">|</span>
+                <span class="status-item" id="uploadStatus">上传状态：就绪</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 码替换对话框 -->
+    <div class="desktop-dialog" id="codeReplaceModal" style="display: none;">
+        <div class="dialog-content" style="width: 500px;">
+            <div class="dialog-header">
+                <span class="dialog-title">码替换</span>
+                <button class="dialog-close" onclick="closeCodeReplaceModal()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="form-group">
+                    <label class="form-label">原码值 <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="oldCodeValue" placeholder="请输入或扫描原码值">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">新码值 <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="newCodeValue" placeholder="请输入或扫描新码值">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">替换原因</label>
+                    <textarea class="form-control" id="replaceReason" rows="3" placeholder="请输入替换原因"></textarea>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closeCodeReplaceModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmCodeReplace()">确认替换</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 码删除对话框 -->
+    <div class="desktop-dialog" id="codeDeleteModal" style="display: none;">
+        <div class="dialog-content" style="width: 500px;">
+            <div class="dialog-header">
+                <span class="dialog-title">码删除</span>
+                <button class="dialog-close" onclick="closeCodeDeleteModal()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="form-group">
+                    <label class="form-label">要删除的码值 <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="deleteCodeValue" placeholder="请输入或扫描要删除的码值">
+                </div>
+                <div class="code-info-section" id="codeInfoSection" style="display: none;">
+                    <h4>码关联信息</h4>
+                    <div class="code-relations" id="codeRelations">
+                        <!-- 码关联信息将动态显示 -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">删除原因</label>
+                    <textarea class="form-control" id="deleteReason" rows="3" placeholder="请输入删除原因"></textarea>
+                </div>
+                <div class="warning-message">
+                                                        <p style="color: #d32f2f; font-size: 12px;">删除操作不可恢复，请确认码值无误后再执行删除。</p>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closeCodeDeleteModal()">取消</button>
+                <button class="btn btn-danger" onclick="confirmCodeDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 上传进度对话框 -->
+    <div class="desktop-dialog" id="uploadProgressModal" style="display: none;">
+        <div class="dialog-content" style="width: 500px;">
+            <div class="dialog-header">
+                <span class="dialog-title">数据上传中</span>
+            </div>
+            <div class="dialog-body">
+                <div class="upload-info">
+                    <p>正在上传生产订单：<span id="uploadOrderNo"></span></p>
+                    <p>数据量：<span id="uploadDataCount"></span> 条</p>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressPercent">0%</span>
+                        <span id="progressStatus">准备中...</span>
+                    </div>
+                </div>
+                <div class="upload-log" id="uploadLog">
+                    <!-- 上传日志将动态显示 -->
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" id="cancelUploadBtn" onclick="cancelUpload()">取消上传</button>
+                <button class="btn btn-primary" id="closeUploadBtn" onclick="closeUploadProgress()" style="display: none;">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script>
+        // 检查导航函数是否可用
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('数据上传页面DOM加载完成');
+            console.log('navigateToIndex函数可用性:', typeof window.navigateToIndex);
+        });
+    </script>
+    <script src="../js/data-upload.js"></script>
+</body>
+</html> 

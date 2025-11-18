@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>查询码功能 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/code-query.css">
+</head>
+<body>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">查询码功能 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="navigateToIndex()">✕</button>
+            </div>
+        </div>
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <!-- 查询码区域 -->
+            <div class="code-query-area">
+                <!-- 操作按钮栏 -->
+                <div class="action-bar">
+                    <div class="search-group">
+                        <input type="text" 
+                               id="codeInput" 
+                               class="search-input" 
+                               placeholder="请输入码信息或使用扫码枪扫描..."
+                               maxlength="50">
+                        <button class="btn btn-primary" id="queryBtn" onclick="performQuery()">
+                            查询
+                        </button>
+                        <button class="btn" id="clearBtn" onclick="clearQuery()">
+                            清空
+                        </button>
+                        <button class="btn" id="scanBtn" onclick="startScan()">
+                            扫码
+                        </button>
+                    </div>
+                    <div class="query-status" id="queryStatus">
+                        <span class="status-text">请输入码进行查询</span>
+                    </div>
+                </div>
+
+                <!-- 主内容区 -->
+                <div class="main-content">
+                    <!-- 左侧：码关联栏 -->
+                    <div class="code-relation-panel">
+                        <div class="panel-container">
+                            <div class="panel-header">
+                                码关联信息
+                                <div class="relation-stats" id="relationStats">
+                                    <span class="stats-text">未查询</span>
+                                </div>
+                            </div>
+                            <div class="relation-content" id="relationContent">
+                                <div class="empty-state">
+                                    <div class="empty-icon"></div>
+                                    <p class="empty-text">请输入码进行查询</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：具体信息区 -->
+                    <div class="detail-info-panel">
+                        <!-- 具体信息卡片 -->
+                        <div class="info-section detail-info-section">
+                            <h4>具体信息</h4>
+                            <div class="info-content" id="detailInfo">
+                                <div class="empty-state">
+                                    <p class="empty-text">暂无具体信息</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">查询码功能</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">今日查询: <span id="todayCount">0</span>次</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">总查询: <span id="totalCount">0</span>次</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">成功率: <span id="successRate">0</span>%</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 错误提示弹框 -->
+    <div class="desktop-dialog" id="errorDialog" style="display: none;">
+        <div class="dialog-content">
+            <div class="dialog-header">
+                <span class="dialog-title">查询错误</span>
+                <button class="dialog-close" onclick="closeErrorDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="error-content">
+                    <div class="error-icon"></div>
+                    <div class="error-message" id="errorMessage">
+                        查询过程中发生错误
+                    </div>
+                    <div class="error-details" id="errorDetails">
+                        <!-- 错误详情 -->
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="retryQuery()">重试</button>
+                <button class="btn btn-primary" onclick="closeErrorDialog()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/code-query.js"></script>
+</body>
+</html> 

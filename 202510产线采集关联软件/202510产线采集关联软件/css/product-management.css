@@ -1,0 +1,546 @@
+/* 产品管理页面样式 - 桌面应用风格 */
+
+/* 主工作区调整 */
+.desktop-app .main-workspace {
+    top: 30px; /* 只保留标题栏的高度 */
+}
+
+/* 产品管理区域 */
+.product-management-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    overflow: hidden;
+    max-width: 1276px; /* 340 + 600 + 336 = 1276px，与主界面三栏总宽度保持一致 */
+    margin: 0 auto; /* 居中显示 */
+    padding: 0 8px; /* 添加左右内边距 */
+}
+
+.product-management-area.full-width {
+    width: 100%;
+    max-width: none; /* 保留原有的full-width功能 */
+    margin: 0;
+    padding: 0;
+}
+
+/* 产品详情面板 */
+.product-detail-panel {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100vh;
+    background: #f0f0f0;
+    border-left: 2px solid #999;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    z-index: 1001;
+    transition: right 0.3s ease;
+}
+
+.product-detail-panel.show {
+    right: 0;
+}
+
+.panel-header {
+    height: 30px;
+    background: linear-gradient(to bottom, #4a90e2 0%, #357abd 50%, #1e5f99 51%, #2989d8 100%);
+    color: white;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #999;
+}
+
+.panel-title {
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.panel-close {
+    width: 21px;
+    height: 21px;
+    border: 1px solid #999;
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #e8e8e8 100%);
+    color: #333;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-close:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.panel-tabs {
+    display: flex;
+    background: #e8e8e8;
+    border-bottom: 1px solid #ccc;
+}
+
+.panel-tabs .tab-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: none;
+    background: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 11px;
+    border-right: 1px solid #ccc;
+    border-bottom: 2px solid transparent;
+}
+
+.panel-tabs .tab-btn:last-child {
+    border-right: none;
+}
+
+.panel-tabs .tab-btn:hover {
+    background: #d8d8d8;
+}
+
+.panel-tabs .tab-btn.active {
+    background: #f0f0f0;
+    color: #333;
+    border-bottom-color: #4a90e2;
+}
+
+.panel-content {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    background: #f0f0f0;
+}
+
+.panel-footer {
+    padding: 8px;
+    background: #e8e8e8;
+    border-top: 1px solid #ccc;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.panel-footer .btn {
+    font-size: 11px;
+    padding: 4px 12px;
+    height: 24px;
+    min-height: 24px;
+}
+
+/* 表单样式 */
+.product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-control {
+    padding: 4px 6px;
+    border: 1px solid #999;
+    font-size: 11px;
+    background: white;
+    height: 20px;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 2px rgba(74, 144, 226, 0.5);
+}
+
+.form-control:disabled {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.form-error {
+    color: #d32f2f;
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* 包装配置区域 */
+.packaging-config {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.config-section {
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.config-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+}
+
+.package-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.package-input {
+    width: 60px;
+    padding: 2px 4px;
+    border: 1px solid #999;
+    font-size: 11px;
+    text-align: center;
+}
+
+.wizard-btn {
+    font-size: 10px;
+    padding: 2px 8px;
+    height: 20px;
+    min-height: 20px;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.wizard-btn:hover {
+    background: #357abd;
+}
+
+/* 层级预览 */
+.level-preview {
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 8px;
+}
+
+.level-tree {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.level-item {
+    margin: 2px 0;
+    padding-left: 16px;
+    position: relative;
+}
+
+.level-item.level-1::before {
+    content: "📦";
+    position: absolute;
+    left: 0;
+}
+
+.level-item.level-2::before {
+    content: "📋";
+    position: absolute;
+    left: 0;
+}
+
+.level-item.level-3::before {
+    content: "📄";
+    position: absolute;
+    left: 0;
+}
+
+.level-item.level-4::before {
+    content: "🏷️";
+    position: absolute;
+    left: 0;
+}
+
+/* 包装配置向导样式 */
+.wizard-step h4 {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
+
+.level-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.level-option {
+    display: block;
+    cursor: pointer;
+}
+
+.level-option input[type="radio"] {
+    display: none;
+}
+
+.level-card {
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    background: #f8f8f8;
+    transition: all 0.2s ease;
+}
+
+.level-option input[type="radio"]:checked + .level-card {
+    border-color: #4a90e2;
+    background: #e3f2fd;
+}
+
+.level-card:hover {
+    border-color: #4a90e2;
+    background: #f0f8ff;
+}
+
+.level-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.level-desc {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.level-example {
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+}
+
+.ratio-config {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ratio-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ratio-input-group label {
+    min-width: 80px;
+    font-size: 11px;
+    color: #333;
+}
+
+.ratio-input-group input {
+    width: 80px;
+    padding: 4px 6px;
+    border: 1px solid #999;
+    font-size: 11px;
+    text-align: center;
+}
+
+.ratio-preview {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.ratio-preview h5 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #333;
+}
+
+.preview-tree {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.preview-item {
+    margin: 2px 0;
+    padding: 2px 0;
+}
+
+.preview-item.highlight {
+    background: #fff3cd;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+/* 状态标签样式 */
+.status-tag.enabled {
+    background-color: #e8f5e8;
+    color: #388e3c;
+    border: 1px solid #c8e6c9;
+}
+
+.status-tag.disabled {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.status-tag.draft {
+    background-color: #fff3e0;
+    color: #f57c00;
+    border: 1px solid #ffcc02;
+}
+
+/* 包装比例标签样式 */
+.package-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    margin: 1px;
+}
+
+.package-tag.level-2 {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+}
+
+.package-tag.level-3 {
+    background-color: #e8f5e8;
+    color: #388e3c;
+    border: 1px solid #c8e6c9;
+}
+
+.package-tag.level-4 {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #ce93d8;
+}
+
+/* 操作按钮样式 - 与任务列表保持一致 */
+.action-buttons {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.action-btn {
+    width: 20px;
+    height: 16px;
+    border: 1px solid #999;
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 100%);
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #333;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+}
+
+.action-btn.edit {
+    color: #388e3c;
+}
+
+.action-btn.copy {
+    color: #1976d2;
+}
+
+.action-btn.delete {
+    color: #c2185b;
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 空数据状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state .empty-text {
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.empty-state .empty-action {
+    font-size: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .product-detail-panel {
+        width: 300px;
+        right: -300px;
+    }
+    
+    .panel-content {
+        padding: 8px;
+    }
+    
+    .form-control {
+        height: 24px;
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-detail-panel {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .desktop-table th:nth-child(n+5) {
+        display: none;
+    }
+    
+    .desktop-table td:nth-child(n+5) {
+        display: none;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 1px;
+    }
+} 

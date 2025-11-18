@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.miduo.cloud.frontend.controller.DeleteCodeDialogController"
+      spacing="20" 
+      style="-fx-background-color: white; -fx-padding: 24px;">
+
+    <!-- 标题 -->
+    <Label text="清除上一个箱码" styleClass="dialog-title">
+        <font>
+            <Font name="Microsoft YaHei Bold" size="18"/>
+        </font>
+    </Label>
+
+    <!-- 警告提示区 -->
+    <VBox spacing="16" style="-fx-padding: 16px; -fx-background-color: #fff7e6; -fx-background-radius: 8px; -fx-border-color: #ffa940; -fx-border-width: 1px; -fx-border-radius: 8px;">
+        <!-- 警告图标和主提示 -->
+        <HBox spacing="12" alignment="CENTER_LEFT">
+            <Label text="⚠" style="-fx-font-size: 24px; -fx-text-fill: #fa8c16;"/>
+            <Label text="确定要清除上一个采集的箱码吗？" 
+                   wrapText="true"
+                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #d46b08;">
+                <VBox.margin>
+                    <Insets right="12"/>
+                </VBox.margin>
+            </Label>
+        </HBox>
+        
+        <!-- 详细说明 -->
+        <Label text="此操作将删除最后一次采集的箱码记录，当前箱数自动减1。" 
+               wrapText="true"
+               style="-fx-font-size: 13px; -fx-text-fill: #ad6800; -fx-padding: 0 0 0 36px;"/>
+        
+        <!-- 使用场景说明 -->
+        <Label text="适用场景：误采集或需要撤销上一次采集操作时。" 
+               wrapText="true"
+               style="-fx-font-size: 13px; -fx-text-fill: #ad6800; -fx-padding: 0 0 0 36px;"/>
+    </VBox>
+
+    <!-- 当前垛信息 -->
+    <VBox spacing="12" style="-fx-padding: 16px; -fx-background-color: #f5f5f5; -fx-background-radius: 8px;">
+        <Label text="当前垛信息" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+        
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="订单编号：" style="-fx-font-size: 13px; -fx-text-fill: #666666;"/>
+            <Label fx:id="orderNoLabel" text="--" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+        </HBox>
+        
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="当前箱数：" style="-fx-font-size: 13px; -fx-text-fill: #666666;"/>
+            <Label fx:id="currentCountLabel" text="0" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1890ff;"/>
+            <Label text="箱" style="-fx-font-size: 13px; -fx-text-fill: #666666;"/>
+        </HBox>
+        
+        <Separator/>
+        
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="删除后箱数：" style="-fx-font-size: 13px; -fx-text-fill: #666666;"/>
+            <Label fx:id="afterCountLabel" text="0" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #ff4d4f;"/>
+            <Label text="箱" style="-fx-font-size: 13px; -fx-text-fill: #666666;"/>
+        </HBox>
+    </VBox>
+
+    <!-- 按钮区域 -->
+    <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 12px 0 0 0;">
+        <Button fx:id="cancelButton" 
+                text="取消" 
+                onAction="#onCancel"
+                style="-fx-min-width: 100px; -fx-min-height: 36px; -fx-font-size: 14px; -fx-background-color: #f0f0f0; -fx-text-fill: #333333; -fx-cursor: hand;"/>
+        
+        <Button fx:id="confirmButton" 
+                text="确认清除" 
+                onAction="#onConfirm"
+                style="-fx-min-width: 100px; -fx-min-height: 36px; -fx-font-size: 14px; -fx-background-color: #ff4d4f; -fx-text-fill: white; -fx-cursor: hand;"/>
+    </HBox>
+
+</VBox>
+

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" 
+      fx:controller="com.miduo.cloud.frontend.controller.AdjustBoxCountDialogController"
+      spacing="20" 
+      style="-fx-background-color: white; -fx-padding: 24px;">
+    
+    <!-- 标题 -->
+    <Label text="指定当前箱数" styleClass="dialog-title">
+        <font>
+            <Font name="Microsoft YaHei Bold" size="18"/>
+        </font>
+    </Label>
+    
+    <!-- 当前信息显示 -->
+    <VBox spacing="12" style="-fx-padding: 16px; -fx-background-color: #f5f5f5; -fx-background-radius: 8px;">
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="当前订单：" style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
+            <Label fx:id="currentOrderLabel" text="--" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+        </HBox>
+        
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="实际箱数：" style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
+            <Label fx:id="currentCountLabel" text="0" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1890ff;"/>
+            <Label text="箱" style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
+        </HBox>
+        
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="每垛箱数：" style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
+            <Label fx:id="totalCountLabel" text="0" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+            <Label text="箱" style="-fx-font-size: 14px; -fx-text-fill: #666666;"/>
+        </HBox>
+    </VBox>
+    
+    <!-- 输入框 -->
+    <VBox spacing="8">
+        <Label text="目标箱数：" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+        <TextField fx:id="targetCountField" 
+                   promptText="请输入目标箱数" 
+                   style="-fx-font-size: 14px; -fx-pref-height: 40px;">
+        </TextField>
+    </VBox>
+    
+    <!-- 提示信息 -->
+    <Label fx:id="hintLabel" 
+           text="请输入目标箱数" 
+           wrapText="true"
+           style="-fx-font-size: 13px; -fx-text-fill: #999999; -fx-padding: 8px; -fx-background-color: #fafafa; -fx-background-radius: 4px;"/>
+    
+    <!-- 按钮区域 -->
+    <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 12px 0 0 0;">
+        <Button fx:id="cancelButton" 
+                text="取消" 
+                onAction="#onCancel"
+                style="-fx-min-width: 100px; -fx-min-height: 36px; -fx-font-size: 14px; -fx-background-color: #f0f0f0; -fx-text-fill: #333333; -fx-cursor: hand;"/>
+        
+        <Button fx:id="confirmButton" 
+                text="确认调整" 
+                onAction="#onConfirm"
+                style="-fx-min-width: 100px; -fx-min-height: 36px; -fx-font-size: 14px; -fx-background-color: #1890ff; -fx-text-fill: white; -fx-cursor: hand;"/>
+    </HBox>
+    
+</VBox>
+

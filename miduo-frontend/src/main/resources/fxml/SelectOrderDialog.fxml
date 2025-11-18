@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.miduo.cloud.frontend.controller.SelectOrderDialogController"
+            prefWidth="1200" prefHeight="700"
+            styleClass="dialog-pane"
+            stylesheets="@/css/base-styles.css">
+    
+    <!-- 标题栏 -->
+    <top>
+        <VBox styleClass="dialog-header">
+            <Label text="选择生产订单" styleClass="dialog-title"/>
+            <Separator/>
+            
+            <!-- 搜索栏 -->
+            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="search-bar">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                
+                <Label text="生产订单："/>
+                <TextField fx:id="orderSearchField" promptText="请输入订单编号" prefWidth="150"/>
+                
+                <Label text="产品名称："/>
+                <TextField fx:id="productSearchField" promptText="请输入产品名称" prefWidth="150"/>
+                
+                <Label text="预计生产时间："/>
+                <DatePicker fx:id="productTimeStartPicker" promptText="开始日期" prefWidth="130"/>
+                <Label text="至"/>
+                <DatePicker fx:id="productTimeEndPicker" promptText="结束日期" prefWidth="130"/>
+                
+                <Button text="搜索" onAction="#onSearch" styleClass="primary-button"/>
+                <Button text="清空" onAction="#onClearSearch" styleClass="secondary-button"/>
+            </HBox>
+        </VBox>
+    </top>
+    
+    <!-- 任务列表 -->
+    <center>
+        <TableView fx:id="taskTableView" styleClass="data-table">
+            <columns>
+                <TableColumn fx:id="orderColumn" text="生产单号" minWidth="120" prefWidth="140"/>
+                <TableColumn fx:id="productCodeColumn" text="产品编号" minWidth="100" prefWidth="120"/>
+                <TableColumn fx:id="productNameColumn" text="产品名称" minWidth="140" prefWidth="160"/>
+                <TableColumn fx:id="productSpecColumn" text="产品规格" minWidth="120" prefWidth="140"/>
+                <TableColumn fx:id="plannedQuantityColumn" text="计划数量" minWidth="90" prefWidth="100"/>
+                <TableColumn fx:id="completedQuantityColumn" text="完成数量" minWidth="90" prefWidth="100"/>
+                <TableColumn fx:id="productionDateColumn" text="预计生产时间" minWidth="140" prefWidth="160"/>
+                <TableColumn fx:id="statusColumn" text="进度状态" minWidth="90" prefWidth="100"/>
+            </columns>
+            <placeholder>
+                <Label text="暂无数据，请点击搜索按钮查询"/>
+            </placeholder>
+        </TableView>
+    </center>
+    
+    <!-- 底部分页和按钮 -->
+    <bottom>
+        <VBox styleClass="dialog-footer">
+            <Separator/>
+            
+            <!-- 分页栏 -->
+            <HBox spacing="10" alignment="CENTER_LEFT" styleClass="pagination-bar">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                
+                <Label fx:id="totalCountLabel" text="总数: 0"/>
+                
+                <Region HBox.hgrow="ALWAYS"/>
+                
+                <Button text="首页" onAction="#onFirstPage" styleClass="pagination-button"/>
+                <Button text="上一页" onAction="#onPreviousPage" styleClass="pagination-button"/>
+                
+                <Label text="第"/>
+                <TextField fx:id="currentPageField" text="1" prefWidth="50" alignment="CENTER"/>
+                <Label fx:id="totalPagesLabel" text="/ 1 页"/>
+                
+                <Button text="下一页" onAction="#onNextPage" styleClass="pagination-button"/>
+                <Button text="末页" onAction="#onLastPage" styleClass="pagination-button"/>
+            </HBox>
+            
+            <!-- 操作按钮 -->
+            <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="button-bar">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Button text="取消" onAction="#onCancel" styleClass="secondary-button" prefWidth="100"/>
+                <Button text="确认选择" onAction="#onConfirm" styleClass="primary-button" prefWidth="100"/>
+            </HBox>
+        </VBox>
+    </bottom>
+    
+</BorderPane>
+

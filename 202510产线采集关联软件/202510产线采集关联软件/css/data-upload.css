@@ -1,0 +1,452 @@
+/* 数据上传管理页面样式 - 桌面应用风格 */
+
+/* 数据上传区域 */
+.data-upload-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    overflow: hidden;
+    max-width: 1276px; /* 340 + 600 + 336 = 1276px，与主界面三栏总宽度保持一致 */
+    margin: 0 auto; /* 居中显示 */
+    padding: 0 8px; /* 添加左右内边距 */
+}
+
+.data-upload-area.full-width {
+    width: 100%;
+    max-width: none; /* 保留原有的full-width功能 */
+    margin: 0;
+    padding: 0;
+}
+
+/* 上传工具栏 */
+.upload-toolbar {
+    height: 40px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    flex-shrink: 0;
+}
+
+.upload-toolbar .toolbar-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.upload-toolbar .toolbar-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.query-label {
+    font-size: 11px;
+    color: #333;
+    font-weight: bold;
+}
+
+/* 主内容区域 */
+.main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* 左侧生产订单列表 */
+.order-list-section {
+    width: 40%;
+    border-right: 1px solid #999;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.section-header {
+    height: 30px;
+    background: linear-gradient(to bottom, #e8e8e8 0%, #d8d8d8 50%, #c8c8c8 51%, #e0e0e0 100%);
+    border-bottom: 1px solid #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    flex-shrink: 0;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+}
+
+.order-list-container {
+    flex: 1;
+    overflow: auto;
+}
+
+/* 右侧生产任务数据 */
+.task-data-section {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.data-info {
+    font-size: 10px;
+    color: #666;
+}
+
+.task-data-container {
+    flex: 1;
+    overflow: auto;
+}
+
+/* 状态标签样式 */
+.status-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    margin: 1px;
+    border: 1px solid;
+}
+
+/* 生产状态标签 */
+.status-tag.production-completed {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+
+
+/* 上传状态标签 */
+.status-tag.upload-pending {
+    background-color: #fff3e0;
+    color: #f57c00;
+    border-color: #ffcc02;
+}
+
+
+
+.status-tag.upload-uploading {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-color: #bbdefb;
+}
+
+
+
+.status-tag.upload-completed {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+
+
+.status-tag.upload-failed {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border-color: #ffcdd2;
+}
+
+
+
+/* 小按钮样式 */
+.btn-sm {
+    padding: 2px 8px;
+    font-size: 10px;
+    line-height: 1.2;
+    border-radius: 2px;
+    min-width: auto;
+}
+
+/* 表格行选中状态 */
+.desktop-table tbody tr.selected {
+    background-color: #e3f2fd;
+    border: 1px solid #1976d2;
+}
+
+.desktop-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 订单链接样式 */
+.order-link {
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.order-link:hover {
+    text-decoration: underline;
+}
+
+/* 同步链接样式 */
+.sync-link {
+    color: #1976d2;
+    text-decoration: none;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.sync-link:hover {
+    text-decoration: underline;
+}
+
+/* 码值高亮显示 */
+.code-highlight {
+    background-color: #fff3cd;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-weight: bold;
+}
+
+/* 对话框特定样式 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #999;
+    border-radius: 2px;
+    font-size: 11px;
+    background: white;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 2px rgba(74, 144, 226, 0.5);
+}
+
+.form-control:disabled {
+    background: #f0f0f0;
+    color: #666;
+}
+
+/* 码关联信息显示 */
+.code-info-section {
+    margin: 15px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.code-info-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: #333;
+}
+
+.code-relations {
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.code-relation-item {
+    margin: 5px 0;
+    padding: 5px;
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 2px;
+}
+
+.warning-message {
+    margin-top: 15px;
+    padding: 8px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+}
+
+/* 上传进度样式 */
+.upload-info {
+    margin-bottom: 15px;
+}
+
+.upload-info p {
+    margin: 5px 0;
+    font-size: 11px;
+    color: #333;
+}
+
+.progress-container {
+    margin: 15px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #f0f0f0;
+    border: 1px solid #999;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, #4a90e2, #357abd);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 10px;
+    color: #666;
+}
+
+.upload-log {
+    max-height: 150px;
+    overflow-y: auto;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    padding: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.log-entry {
+    margin: 2px 0;
+    color: #333;
+}
+
+.log-entry.success {
+    color: #2e7d32;
+}
+
+.log-entry.error {
+    color: #d32f2f;
+}
+
+.log-entry.warning {
+    color: #f57c00;
+}
+
+.log-entry.info {
+    color: #1976d2;
+}
+
+/* 空数据状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state .empty-text {
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.empty-state .empty-action {
+    font-size: 12px;
+}
+
+/* 数据统计信息 */
+.data-stats {
+    display: flex;
+    gap: 20px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    font-size: 10px;
+    color: #666;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #333;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .order-list-section {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: 1px solid #999;
+    }
+    
+    .task-data-section {
+        width: 100%;
+        height: 60%;
+    }
+    
+    .upload-toolbar .toolbar-left,
+    .upload-toolbar .toolbar-right {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 768px) {
+    .upload-toolbar {
+        flex-direction: column;
+        height: auto;
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .upload-toolbar .toolbar-left,
+    .upload-toolbar .toolbar-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .desktop-table th:nth-child(n+5) {
+        display: none;
+    }
+    
+    .desktop-table td:nth-child(n+5) {
+        display: none;
+    }
+    
+    .order-list-section {
+        height: 50%;
+    }
+    
+    .task-data-section {
+        height: 50%;
+    }
+} 

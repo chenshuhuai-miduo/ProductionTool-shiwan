@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>码替换功能 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/code-query.css">
+</head>
+<body>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">码替换功能 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="navigateToIndex()">✕</button>
+            </div>
+        </div>
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <!-- 码替换区域 -->
+            <div class="code-query-area">
+                <!-- 主内容区 -->
+                <div class="main-content">
+                    <!-- 码替换操作区 -->
+                    <div class="detail-info-panel" style="width: 100%; max-width: 600px; margin: 50px auto;">
+                        <!-- 码替换表单 -->
+                        <div class="info-section detail-info-section">
+                            <div class="info-content" id="replaceForm">
+                                <div class="form-group">
+                                    <label class="form-label">原码 <span style="color: red;">*</span></label>
+                                    <input type="text" class="form-control" id="oldCodeValue" placeholder="请输入或扫描原码">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">新码 <span style="color: red;">*</span></label>
+                                    <input type="text" class="form-control" id="newCodeValue" placeholder="请输入或扫描新码">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">替换原因</label>
+                                    <textarea class="form-control" id="replaceReason" rows="3" placeholder="请输入替换原因（可选）"></textarea>
+                                </div>
+                                <div class="form-actions" style="margin-top: 30px; text-align: center; display: flex; justify-content: center; gap: 15px;">
+                                    <button class="btn btn-secondary" onclick="clearForm()" id="clearBtn" style="padding: 12px 40px; font-size: 16px;">
+                                        清空
+                                    </button>
+                                    <button class="btn btn-primary" onclick="confirmCodeReplace()" id="replaceBtn" style="padding: 12px 40px; font-size: 16px;">
+                                        确认替换
+                                    </button>
+                                </div>
+                                <div class="warning-message" style="margin-top: 20px;">
+                                    <p style="color: #d32f2f; font-size: 12px;">替换操作不可恢复，请确认码无误后再执行替换。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">码替换功能</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">今日替换: <span id="todayCount">0</span>次</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">总替换: <span id="totalCount">0</span>次</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">成功率: <span id="successRate">0</span>%</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认替换对话框 -->
+    <div class="desktop-dialog" id="confirmDialog" style="display: none;">
+        <div class="dialog-content">
+            <div class="dialog-header">
+                <span class="dialog-title">确认码替换</span>
+                <button class="dialog-close" onclick="closeConfirmDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="confirm-content">
+                    <div class="confirm-icon"></div>
+                    <div class="confirm-message">
+                        <h4>请确认替换信息：</h4>
+                        <p><strong>原码：</strong><span id="confirmOldCode"></span></p>
+                        <p><strong>新码：</strong><span id="confirmNewCode"></span></p>
+                        <p><strong>替换原因：</strong><span id="confirmReason"></span></p>
+                        <p style="color: #d32f2f; margin-top: 10px;">此操作不可恢复，请仔细核对后确认！</p>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">取消</button>
+                <button class="btn btn-danger" onclick="executeReplace()">确认替换</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误提示弹框 -->
+    <div class="desktop-dialog" id="errorDialog" style="display: none;">
+        <div class="dialog-content">
+            <div class="dialog-header">
+                <span class="dialog-title">替换错误</span>
+                <button class="dialog-close" onclick="closeErrorDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="error-content">
+                    <div class="error-icon"></div>
+                    <div class="error-message" id="errorMessage">
+                        替换过程中发生错误
+                    </div>
+                    <div class="error-details" id="errorDetails">
+                        <!-- 错误详情 -->
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="retryReplace()">重试</button>
+                <button class="btn btn-primary" onclick="closeErrorDialog()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/code-replace.js"></script>
+</body>
+</html> 

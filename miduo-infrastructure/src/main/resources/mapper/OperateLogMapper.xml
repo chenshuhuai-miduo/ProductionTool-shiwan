@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.miduo.cloud.infrastructure.mapper.OperateLogMapper">
+    
+    <!-- 插入操作日志 -->
+    <insert id="insert" parameterType="com.miduo.cloud.entity.po.OperateLog">
+        INSERT INTO OperateLog (
+            OperatorName,
+            OperatorIp,
+            ModuleName,
+            Type,
+            OperateType,
+            TargetId,
+            TargetName,
+            OperateContent,
+            BeforeData,
+            AfterData,
+            OperateResult,
+            FailReason,
+            OperateTime,
+            DeviceInfo,
+            Remark
+        ) VALUES (
+            #{operatorName},
+            #{operatorIp},
+            #{moduleName},
+            #{type},
+            #{operateType},
+            #{targetId},
+            #{targetName},
+            #{operateContent},
+            #{beforeData},
+            #{afterData},
+            #{operateResult},
+            #{failReason},
+            #{operateTime},
+            #{deviceInfo},
+            #{remark}
+        )
+    </insert>
+    
+</mapper>
+

@@ -1,0 +1,61 @@
+/* 主题色彩系统 - Theme Colors */
+
+.root {
+    /* 主色调 */
+    -primary-color: #4a90e2;
+    -primary-dark: #357abd;
+    -primary-light: #6ba6ff;
+    
+    /* 辅助色 */
+    -secondary-color: #f5f5f5;
+    -accent-color: #ff6b6b;
+    
+    /* 状态色 */
+    -success-color: #28a745;
+    -success-light: #e8f5e8;
+    -success-dark: #2e7d32;
+    
+    -warning-color: #ffc107;
+    -warning-light: #fff3e0;
+    -warning-dark: #f57c00;
+    
+    -error-color: #dc3545;
+    -error-light: #ffebee;
+    -error-dark: #d32f2f;
+    
+    -info-color: #17a2b8;
+    -info-light: #e3f2fd;
+    -info-dark: #1976d2;
+    
+    /* 中性色 */
+    -text-primary: #333333;
+    -text-secondary: #666666;
+    -text-muted: #999999;
+    -border-color: #e0e0e0;
+    -background-color: #ffffff;
+    -surface-color: #f8f9fa;
+    -hover-color: #f0f0f0;
+}
+
+/* 应用背景 */
+.application-background {
+    -fx-background-color: -background-color;
+}
+
+/* 面板背景 */
+.panel {
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-padding: 15px;
+}
+
+/* 卡片样式 */
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
+    -fx-padding: 15px;
+}
+

@@ -1,0 +1,63 @@
+/* 状态指示器 - Status Styles */
+
+/* 基础状态标签 */
+.status-label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: 10px;
+    -fx-font-weight: 500;
+    -fx-padding: 4px 8px;
+    -fx-background-radius: 12px;
+    -fx-alignment: center;
+}
+
+/* 成功状态 */
+.status-success {
+    -fx-background-color: -success-light;
+    -fx-text-fill: -success-dark;
+}
+
+/* 警告状态 */
+.status-warning {
+    -fx-background-color: -warning-light;
+    -fx-text-fill: -warning-dark;
+}
+
+/* 错误状态 */
+.status-error {
+    -fx-background-color: -error-light;
+    -fx-text-fill: -error-dark;
+}
+
+/* 信息状态 */
+.status-info {
+    -fx-background-color: -info-light;
+    -fx-text-fill: -info-dark;
+}
+
+/* 待处理状态 */
+.status-pending {
+    -fx-background-color: derive(-text-muted, 60%);
+    -fx-text-fill: -text-muted;
+}
+
+/* 任务状态标签 */
+.status-waiting {
+    -fx-background-color: #e3f2fd;
+    -fx-text-fill: #1976d2;
+}
+
+.status-producing {
+    -fx-background-color: #e8f5e8;
+    -fx-text-fill: #388e3c;
+}
+
+.status-completed {
+    -fx-background-color: #f3e5f5;
+    -fx-text-fill: #7b1fa2;
+}
+
+.status-exception {
+    -fx-background-color: #ffebee;
+    -fx-text-fill: #d32f2f;
+}
+

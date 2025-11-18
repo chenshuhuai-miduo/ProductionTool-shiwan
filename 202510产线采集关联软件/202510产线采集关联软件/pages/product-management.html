@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品管理 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/product-management.css">
+</head>
+<body>
+    <script src="../js/common.js"></script>
+    <script>
+        // 页面加载完成后检查导航函数是否可用
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('产品管理页面DOM加载完成');
+            console.log('navigateToIndex函数可用性:', typeof window.navigateToIndex);
+            if (typeof window.navigateToIndex !== 'function') {
+                console.error('navigateToIndex函数不可用！');
+            }
+        });
+    </script>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">产品管理 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="navigateToIndex()">✕</button>
+            </div>
+        </div>
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <!-- 产品管理区域 -->
+            <div class="product-management-area">
+                <!-- 操作按钮栏 -->
+                <div class="action-bar">
+                    <button class="btn btn-primary" onclick="showAddProductModal()">手动添加</button>
+                    <button class="btn" onclick="autoSyncProducts()">自动同步</button>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="filter-bar">
+                    <div class="filter-left">
+                        <input type="text" class="search-input" id="productSearch" placeholder="搜索产品编号、名称...">
+                        <button class="btn btn-primary" onclick="searchProducts()">搜索</button>
+                        <button class="btn" onclick="clearFilters()">清空</button>
+                    </div>
+                    <div class="filter-right">
+                        <span class="record-count">共 <span id="totalCount">0</span> 条</span>
+                    </div>
+                </div>
+
+                <!-- 产品表格 -->
+                <div class="table-container">
+                    <table class="desktop-table" id="productTable">
+                        <thead>
+                            <tr>
+                                <th width="120">产品编号</th>
+                                <th width="150">产品名称</th>
+                                <th width="120">产品规格</th>
+                                <th width="100">采集规格</th>
+                                <th width="120">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <!-- 数据行将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页栏 -->
+                <div class="pagination-bar">
+                    <div class="pagination-left">
+                        <span>每页显示</span>
+                        <select class="page-size-select" id="pageSizeSelect">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span>条</span>
+                    </div>
+                    <div class="pagination-right" id="paginationControls">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">产品管理</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">数据库已连接</span>
+                <span class="status-separator">|</span>
+                <span class="status-item" id="autoRefreshStatus">自动刷新：开启</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 确认删除对话框 -->
+    <div class="desktop-dialog" id="confirmDeleteModal" style="display: none;">
+        <div class="dialog-content" style="width: 400px;">
+            <div class="dialog-header">
+                <span class="dialog-title">确认删除</span>
+                <button class="dialog-close" onclick="closeConfirmDelete()">×</button>
+            </div>
+            <div class="dialog-body">
+                <p>确定要删除产品 "<span id="deleteProductName"></span>" 吗？</p>
+                <p style="color: #d32f2f; font-size: 12px; margin-top: 10px;">删除后无法恢复，请谨慎操作。</p>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closeConfirmDelete()">取消</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // 内嵌简化的产品管理功能，确保立即可用
+        console.log('产品管理页面开始加载...');
+
+        // 产品数据
+        let productData = [
+            {
+                id: 1,
+                productCode: 'PRD001',
+                productName: '矿泉水',
+                specification: '500ml',
+                packageRatio: '1:1:12:24', // 垛:箱:盒:瓶
+                status: '启用',
+                description: '天然矿泉水，清甜甘冽'
+            },
+            {
+                id: 2,
+                productCode: 'PRD002',
+                productName: '牛奶',
+                specification: '250ml',
+                packageRatio: '1:2:12:48', // 垛:箱:盒:瓶
+                status: '启用',
+                description: '纯牛奶，营养丰富'
+            },
+            {
+                id: 3,
+                productCode: 'PRD003',
+                productName: '酸奶',
+                specification: '180ml',
+                packageRatio: '1:4:6:24', // 垛:箱:盒:瓶
+                status: '启用',
+                description: '益生菌酸奶，助消化'
+            },
+            {
+                id: 4,
+                productCode: 'PRD004',
+                productName: '果汁',
+                specification: '300ml',
+                packageRatio: '1:1:10:20', // 垛:箱:盒:瓶
+                status: '禁用',
+                description: '100%纯果汁，无添加'
+            },
+            {
+                id: 5,
+                productCode: 'PRD005',
+                productName: '茶饮料',
+                specification: '500ml',
+                packageRatio: '1:3:12:36', // 垛:箱:盒:瓶
+                status: '草稿',
+                description: '绿茶饮料，清香怡人'
+            }
+        ];
+
+        // 更新采集规格预览
+        function updateRatioPreview() {
+            const palletCount = document.getElementById('palletCount')?.value || '';
+            const palletRatio = document.getElementById('palletRatio')?.value || '';
+            const boxRatio = document.getElementById('boxRatio')?.value || '';
+            const bottleRatio = document.getElementById('bottleRatio')?.value || '';
+            
+            const hiddenInput = document.getElementById('newPackageRatio');
+            if (!hiddenInput) return;
+            
+            let finalRatio = '';
+            
+            // 根据填写的层级生成采集规格 - 按垛:箱:盒:瓶的顺序
+            const ratios = [];
+            if (palletCount) ratios.push(palletCount);
+            if (palletRatio) ratios.push(palletRatio);
+            if (boxRatio) ratios.push(boxRatio);
+            if (bottleRatio) ratios.push(bottleRatio);
+            
+            if (ratios.length > 0) {
+                finalRatio = ratios.join(':');
+            }
+            
+            hiddenInput.value = finalRatio;
+        }
+
+        // 显示添加产品模态框
+        function showAddProductModal() {
+            console.log('显示添加产品模态框');
+            
+            // 创建弹框HTML
+            const modalHTML = `
+                <div id="addProductModal" style="
+                    position: fixed; 
+                    top: 0; 
+                    left: 0; 
+                    width: 100%; 
+                    height: 100%; 
+                    background: rgba(0,0,0,0.5); 
+                    z-index: 2000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <div style="
+                        background: white; 
+                        border-radius: 8px; 
+                        width: 500px; 
+                        max-width: 90%; 
+                        max-height: 90%;
+                        overflow: hidden;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    ">
+                        <div style="
+                            padding: 20px; 
+                            border-bottom: 1px solid #eee;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            background: #f8f9fa;
+                        ">
+                            <h3 style="margin: 0; color: #333;">添加产品</h3>
+                            <button onclick="closeAddProductModal()" style="
+                                background: none; 
+                                border: none; 
+                                font-size: 20px; 
+                                cursor: pointer; 
+                                color: #999;
+                                padding: 0;
+                                width: 30px;
+                                height: 30px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            ">&times;</button>
+                        </div>
+                        <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
+                            <form id="addProductForm">
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">产品编号 *</label>
+                                    <input type="text" id="newProductCode" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">产品名称 *</label>
+                                    <input type="text" id="newProductName" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">产品规格</label>
+                                    <input type="text" id="newSpecification" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                                </div>
+                                
+                                                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">采集规格</label>
+                                    
+                                    <!-- 采集规格配置区域 - 与主界面一致的格式 -->
+                                    <div style="border: 1px solid #ddd; border-radius: 4px; padding: 12px; background: #fafafa;">
+                                        <div style="margin-bottom: 8px; font-size: 12px; color: #666;">
+                                            各层级包装比例请按实际需要填写，<span style="color: #f57c00; font-weight: bold;">不涉及的包装层级请留空</span>
+                                        </div>
+                                        
+                                        <!-- 水平布局的采集规格输入 - 与主界面格式一致 -->
+                                        <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                                            <input type="number" id="palletCount" min="1" style="
+                                                width: 60px; 
+                                                padding: 6px 8px; 
+                                                border: 1px solid #ddd; 
+                                                border-radius: 4px; 
+                                                text-align: center; 
+                                                font-size: 13px;
+                                            " oninput="updateRatioPreview()">
+                                            <span style="font-size: 13px; color: #555; font-weight: bold;">垛</span>
+                                            
+                                            <input type="number" id="palletRatio" min="1" style="
+                                                width: 60px; 
+                                                padding: 6px 8px; 
+                                                border: 1px solid #ddd; 
+                                                border-radius: 4px; 
+                                                text-align: center; 
+                                                font-size: 13px;
+                                            " oninput="updateRatioPreview()">
+                                            <span style="font-size: 13px; color: #555; font-weight: bold;">箱</span>
+                                            
+                                            <input type="number" id="boxRatio" min="1" style="
+                                                width: 60px; 
+                                                padding: 6px 8px; 
+                                                border: 1px solid #ddd; 
+                                                border-radius: 4px; 
+                                                text-align: center; 
+                                                font-size: 13px;
+                                            " oninput="updateRatioPreview()">
+                                            <span style="font-size: 13px; color: #555; font-weight: bold;">盒</span>
+                                            
+                                            <input type="number" id="bottleRatio" min="1" style="
+                                                width: 60px; 
+                                                padding: 6px 8px; 
+                                                border: 1px solid #ddd; 
+                                                border-radius: 4px; 
+                                                text-align: center; 
+                                                font-size: 13px;
+                                            " oninput="updateRatioPreview()">
+                                            <span style="font-size: 13px; color: #555; font-weight: bold;">瓶</span>
+                                        </div>
+                                        
+
+                                    </div>
+                                    
+                                    <!-- 隐藏的最终采集规格字段 -->
+                                    <input type="hidden" id="newPackageRatio">
+                                </div>
+
+                            </form>
+                        </div>
+                        <div style="
+                            padding: 15px 20px; 
+                            border-top: 1px solid #eee;
+                            display: flex;
+                            justify-content: flex-end;
+                            gap: 10px;
+                            background: #f8f9fa;
+                        ">
+                            <button onclick="closeAddProductModal()" style="
+                                padding: 8px 16px; 
+                                border: 1px solid #ddd; 
+                                background: white; 
+                                color: #333; 
+                                cursor: pointer; 
+                                border-radius: 4px;
+                            ">取消</button>
+                            <button onclick="saveNewProduct()" style="
+                                padding: 8px 16px; 
+                                border: 1px solid #007bff; 
+                                background: #007bff; 
+                                color: white; 
+                                cursor: pointer; 
+                                border-radius: 4px;
+                            ">保存</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到页面
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        // 自动同步产品数据
+        function autoSyncProducts() {
+            console.log('自动同步产品数据');
+            
+            // 模拟从数据库同步数据
+            const syncingMessage = document.createElement('div');
+            syncingMessage.innerHTML = '正在同步产品数据...';
+            syncingMessage.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                z-index: 3000;
+            `;
+            document.body.appendChild(syncingMessage);
+            
+            // 模拟同步延迟
+            setTimeout(() => {
+                loadProductList();
+                document.body.removeChild(syncingMessage);
+                alert('产品数据同步完成！');
+            }, 1500);
+        }
+
+        // 清空筛选条件
+        function clearFilters() {
+            const searchInput = document.getElementById('productSearch');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            loadProductList();
+            console.log('筛选条件已清空');
+        }
+
+        // 搜索产品
+        function searchProducts() {
+            const searchInput = document.getElementById('productSearch');
+            const keyword = searchInput ? searchInput.value.trim() : '';
+            console.log('搜索产品:', keyword);
+            
+            if (keyword) {
+                const results = productData.filter(p => 
+                    p.productCode.toLowerCase().includes(keyword.toLowerCase()) ||
+                    p.productName.toLowerCase().includes(keyword.toLowerCase())
+                );
+                alert(`搜索到 ${results.length} 个匹配的产品`);
+            } else {
+                alert('请输入搜索关键词');
+            }
+        }
+
+        // 清空采集规格输入
+        function clearRatioInputs() {
+            const inputs = ['palletCount', 'palletRatio', 'boxRatio', 'bottleRatio'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = '';
+                }
+            });
+            updateRatioPreview();
+        }
+
+        // 关闭添加产品弹框
+        function closeAddProductModal() {
+            const modal = document.getElementById('addProductModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 保存新产品
+        function saveNewProduct() {
+            const code = document.getElementById('newProductCode').value.trim();
+            const name = document.getElementById('newProductName').value.trim();
+            
+            if (!code || !name) {
+                alert('请填写产品编号和产品名称！');
+                return;
+            }
+            
+            // 检查编号是否重复
+            if (productData.find(p => p.productCode === code)) {
+                alert('产品编号已存在，请使用其他编号！');
+                return;
+            }
+            
+            // 获取采集规格
+            const packageRatio = document.getElementById('newPackageRatio').value.trim();
+            
+            // 验证采集规格
+            const palletCount = document.getElementById('palletCount')?.value;
+            const palletRatio = document.getElementById('palletRatio')?.value;
+            const boxRatio = document.getElementById('boxRatio')?.value;
+            const bottleRatio = document.getElementById('bottleRatio')?.value;
+            
+            if (!palletRatio && !boxRatio && !bottleRatio) {
+                alert('请至少填写一种采集规格！');
+                return;
+            }
+            
+            // 创建新产品
+            const newProduct = {
+                id: productData.length + 1,
+                productCode: code,
+                productName: name,
+                specification: document.getElementById('newSpecification').value.trim(),
+                packageRatio: packageRatio,
+                status: '启用' // 默认状态为启用
+            };
+            
+            // 添加到数据中
+            productData.push(newProduct);
+            
+            // 刷新列表
+            loadProductList();
+            
+            // 关闭弹框
+            closeAddProductModal();
+            
+            alert('产品添加成功！');
+        }
+
+
+
+        // 创建采集规格显示
+        function createPackageRatioTag(ratio) {
+            if (!ratio) return '-';
+            
+            // 解析采集规格并添加单位
+            const parts = ratio.split(':');
+            const units = ['垛', '箱', '盒', '瓶'];
+            
+            let displayParts = [];
+            for (let i = 0; i < parts.length && i < units.length; i++) {
+                if (parts[i] && parts[i].trim() !== '') {
+                    displayParts.push(`${parts[i]}${units[i]}`);
+                }
+            }
+            
+            const displayText = displayParts.join(' ');
+            return `<span style="font-size: 12px; color: #333; font-weight: bold;">${displayText}</span>`;
+        }
+
+        // 加载产品列表
+        function loadProductList() {
+            console.log('加载产品列表...');
+            
+            const tbody = document.getElementById('productTableBody');
+            const totalCount = document.getElementById('totalCount');
+            
+            if (!tbody) {
+                console.error('未找到表格body元素');
+                return;
+            }
+            
+            // 更新总数
+            if (totalCount) {
+                totalCount.textContent = productData.length;
+            }
+            
+            // 清空表格
+            tbody.innerHTML = '';
+            
+            // 渲染产品数据
+            productData.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><a href="#" style="color: #1890ff; text-decoration: none;">${product.productCode}</a></td>
+                    <td>${product.productName}</td>
+                    <td>${product.specification || '-'}</td>
+                    <td>${createPackageRatioTag(product.packageRatio)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn edit" title="编辑产品" onclick="editProduct(${product.id})">✏️</button>
+                            <button class="action-btn delete" title="删除产品" onclick="deleteProduct(${product.id})">🗑️</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            console.log('产品列表加载完成，共', productData.length, '个产品');
+        }
+
+        // 更新时间显示
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN');
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成，开始初始化...');
+            
+            try {
+                // 加载产品列表
+                loadProductList();
+                
+                // 更新时间
+                updateTime();
+                setInterval(updateTime, 1000);
+                
+                console.log('页面初始化完成');
+            } catch (error) {
+                console.error('初始化失败:', error);
+            }
+        });
+
+        // 编辑产品
+        function editProduct(productId) {
+            console.log('编辑产品:', productId);
+            const product = productData.find(p => p.id === productId);
+            if (product) {
+                alert(`编辑产品: ${product.productName} (${product.productCode})\n功能开发中...`);
+            }
+        }
+
+        // 删除产品
+        function deleteProduct(productId) {
+            console.log('删除产品:', productId);
+            const product = productData.find(p => p.id === productId);
+            if (product) {
+                if (confirm(`确定要删除产品 "${product.productName}" 吗？\n删除后无法恢复！`)) {
+                    // 从数据中移除
+                    const index = productData.findIndex(p => p.id === productId);
+                    if (index > -1) {
+                        productData.splice(index, 1);
+                        loadProductList();
+                        alert('产品删除成功！');
+                    }
+                }
+            }
+        }
+
+        // 导出全局函数
+        window.showAddProductModal = showAddProductModal;
+        window.closeAddProductModal = closeAddProductModal;
+        window.saveNewProduct = saveNewProduct;
+        window.autoSyncProducts = autoSyncProducts;
+        window.clearFilters = clearFilters;
+        window.searchProducts = searchProducts;
+        window.editProduct = editProduct;
+        window.deleteProduct = deleteProduct;
+        window.loadProductList = loadProductList;
+        window.updateRatioPreview = updateRatioPreview;
+        window.clearRatioInputs = clearRatioInputs;
+
+        console.log('产品管理脚本加载完成');
+    </script>
+</body>
+</html> 

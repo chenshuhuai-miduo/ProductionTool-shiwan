@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.OperateLogController"
+      prefWidth="1200" prefHeight="700" styleClass="application-background"
+      stylesheets="@../css/base-styles.css">
+   
+   <padding>
+      <Insets top="10" right="10" bottom="10" left="10"/>
+   </padding>
+   
+   <!-- 顶部标题和筛选栏 -->
+   <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: #f0f0f0;">
+      <Label text="操作日志" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <!-- 日期筛选 -->
+      <Label text="开始日期:" style="-fx-font-size: 12px;"/>
+      <DatePicker fx:id="startDatePicker" promptText="选择开始日期" style="-fx-pref-width: 150px;"/>
+      
+      <Label text="结束日期:" style="-fx-font-size: 12px;"/>
+      <DatePicker fx:id="endDatePicker" promptText="选择结束日期" style="-fx-pref-width: 150px;"/>
+      
+      <Button fx:id="searchButton" text="查询" onAction="#onSearch" 
+              style="-fx-background-color: #4a90e2; -fx-text-fill: white; -fx-cursor: hand;"/>
+      <Button fx:id="resetButton" text="重置" onAction="#onReset" 
+              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-cursor: hand;"/>
+   </HBox>
+   
+   <!-- 主内容区 -->
+   <VBox VBox.vgrow="ALWAYS" spacing="5" style="-fx-padding: 10px;">
+      <Label fx:id="statsLabel" text="共0条记录" style="-fx-font-size: 10px; -fx-text-fill: #999;"/>
+      
+      <!-- 操作日志表格 -->
+      <TableView fx:id="logTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+         <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="80"/>
+            <TableColumn fx:id="operatorNameColumn" text="操作人" prefWidth="100"/>
+            <TableColumn fx:id="moduleNameColumn" text="操作模块" prefWidth="120"/>
+            <TableColumn fx:id="operateTypeColumn" text="操作类型" prefWidth="100"/>
+            <TableColumn fx:id="operateContentColumn" text="操作内容" prefWidth="250"/>
+            <TableColumn fx:id="operateResultColumn" text="操作结果" prefWidth="100"/>
+            <TableColumn fx:id="operateTimeColumn" text="操作时间" prefWidth="180"/>
+            <TableColumn fx:id="remarkColumn" text="备注" prefWidth="150"/>
+         </columns>
+         
+         <!-- 空状态提示 -->
+         <placeholder>
+            <VBox alignment="CENTER" spacing="10" styleClass="empty-state">
+               <Label text="暂无操作日志数据" styleClass="caption-text"/>
+            </VBox>
+         </placeholder>
+      </TableView>
+   </VBox>
+   
+   <!-- 底部分页栏 -->
+   <HBox spacing="15" alignment="CENTER" style="-fx-padding: 10px; -fx-background-color: #f8f9fa; -fx-border-color: #e0e0e0; -fx-border-width: 1px 0 0 0;">
+      <Button fx:id="firstPageButton" text="首页" onAction="#onFirstPage" 
+              style="-fx-cursor: hand;"/>
+      <Button fx:id="prevPageButton" text="上一页" onAction="#onPrevPage" 
+              style="-fx-cursor: hand;"/>
+      
+      <Label text="第"/>
+      <Label fx:id="currentPageLabel" text="1" style="-fx-font-weight: bold;"/>
+      <Label text="/"/>
+      <Label fx:id="totalPageLabel" text="1"/>
+      <Label text="页"/>
+      
+      <Button fx:id="nextPageButton" text="下一页" onAction="#onNextPage" 
+              style="-fx-cursor: hand;"/>
+      <Button fx:id="lastPageButton" text="末页" onAction="#onLastPage" 
+              style="-fx-cursor: hand;"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label text="每页"/>
+      <ComboBox fx:id="pageSizeComboBox" prefWidth="80" style="-fx-cursor: hand;"/>
+      <Label text="条"/>
+      
+      <Label text="共"/>
+      <Label fx:id="totalRecordsLabel" text="0" style="-fx-font-weight: bold;"/>
+      <Label text="条记录"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label fx:id="currentTimeLabel" text="2024-12-01 10:00:00" style="-fx-font-size: 11px;"/>
+   </HBox>
+</VBox>
+

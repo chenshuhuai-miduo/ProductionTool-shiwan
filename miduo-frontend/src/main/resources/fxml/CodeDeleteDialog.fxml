@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.CodeDeleteDialogController"
+      spacing="20" prefWidth="480" prefHeight="320"
+      style="-fx-background-color: white; -fx-padding: 24px;">
+   
+   <!-- 标题 -->
+   <Label text="删除码" styleClass="dialog-title">
+      <font>
+         <Font name="Microsoft YaHei Bold" size="18"/>
+      </font>
+   </Label>
+   
+   <!-- 警告提示区 -->
+   <VBox spacing="16" style="-fx-padding: 16px; -fx-background-color: #fff7e6; -fx-background-radius: 8px; -fx-border-color: #ffa940; -fx-border-width: 1px; -fx-border-radius: 8px;">
+      <!-- 警告图标和主提示 -->
+      <HBox spacing="12" alignment="TOP_LEFT">
+         <Label text="⚠" style="-fx-font-size: 20px; -fx-text-fill: #fa8c16;"/>
+         <VBox spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="警告：删除后将更新相关垛的箱数统计，此操作不可恢复！" 
+                   wrapText="true"
+                   maxWidth="Infinity"
+                   style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #d46b08;"/>
+            
+            <!-- 详细说明 -->
+            <Label text="请输入要删除的箱码，系统将自动更新相关垛的箱数统计。" 
+                   wrapText="true"
+                   maxWidth="Infinity"
+                   style="-fx-font-size: 12px; -fx-text-fill: #ad6800;"/>
+         </VBox>
+      </HBox>
+   </VBox>
+   
+   <!-- 输入区域 -->
+   <VBox spacing="12" style="-fx-padding: 16px; -fx-background-color: #f5f5f5; -fx-background-radius: 8px;">
+      <Label text="箱码：" style="-fx-font-size: 14px; -fx-text-fill: #333333; -fx-font-weight: bold;"/>
+      <TextField fx:id="boxCodeField" 
+                 promptText="请输入要删除的箱码" 
+                 style="-fx-font-size: 14px; -fx-pref-height: 40px;"/>
+   </VBox>
+   
+   <!-- 按钮区域 -->
+   <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 12px 0 0 0;">
+      <Button fx:id="cancelButton" 
+              text="取消" 
+              onAction="#onCancel"
+              style="-fx-min-width: 100px; -fx-min-height: 36px; -fx-font-size: 14px; -fx-background-color: #f0f0f0; -fx-text-fill: #333333; -fx-cursor: hand;"/>
+      
+      <Button fx:id="confirmButton" 
+              text="确认删除" 
+              onAction="#onConfirm"
+              style="-fx-min-width: 100px; -fx-min-height: 36px; -fx-font-size: 14px; -fx-background-color: #ff4d4f; -fx-text-fill: white; -fx-cursor: hand;"/>
+   </HBox>
+   
+</VBox>
+

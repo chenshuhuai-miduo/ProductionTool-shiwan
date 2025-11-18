@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务执行控制 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/task-control.css">
+</head>
+<body>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">任务执行控制 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="confirmExit()">✕</button>
+            </div>
+        </div>
+
+        <!-- 菜单栏 -->
+        <div class="menu-bar">
+            <div class="menu-item">
+                <span>文件(F)</span>
+                <div class="dropdown-menu">
+                    <div class="menu-option" onclick="switchUser()">切换用户</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="exitApplication()">退出软件</div>
+                </div>
+            </div>
+            <div class="menu-item">
+                <span>配置</span>
+                <div class="dropdown-menu">
+                    <div class="menu-option" onclick="navigateToSystemConfig()">系统参数</div>
+                </div>
+            </div>
+            <div class="menu-item">
+                <span>数据</span>
+                <div class="dropdown-menu">
+                    <div class="menu-option" onclick="navigateToProductManagement()">产品管理</div>
+                    <div class="menu-option" onclick="navigateToTaskList()">任务管理</div>
+                    <div class="menu-option" onclick="showOperationLog()">操作日志</div>
+                </div>
+            </div>
+            <div class="menu-item">
+                <span>帮助(H)</span>
+                <div class="dropdown-menu">
+                    <div class="menu-option" onclick="showHelp()">操作帮助</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="showAbout()">关于系统</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <!-- 产品管理 -->
+            <div class="toolbar-group">
+                <button class="toolbar-btn" title="产品管理" onclick="navigateToProductManagement()">
+                    <div class="btn-icon">📦</div>
+                </button>
+                <div class="group-label">产品管理</div>
+            </div>
+            <div class="toolbar-separator"></div>
+            
+            <!-- 任务管理 -->
+            <div class="toolbar-group">
+                <button class="toolbar-btn" title="任务管理" onclick="navigateToTaskList()">
+                    <div class="btn-icon">📋</div>
+                </button>
+                <div class="group-label">任务管理</div>
+            </div>
+            <div class="toolbar-separator"></div>
+            
+            <!-- 数据上传 -->
+            <div class="toolbar-group">
+                <button class="toolbar-btn" title="数据上传" onclick="navigateToDataUpload()">
+                    <div class="btn-icon">☁️</div>
+                </button>
+                <div class="group-label">数据上传</div>
+            </div>
+            <div class="toolbar-separator"></div>
+            
+            <!-- 查询码 -->
+            <div class="toolbar-group">
+                <button class="toolbar-btn" title="查询码" onclick="navigateToCodeQuery()">
+                    <div class="btn-icon">🔍</div>
+                </button>
+                <div class="group-label">查询码</div>
+            </div>
+            <div class="toolbar-separator"></div>
+            
+            <!-- 码替换 -->
+            <div class="toolbar-group">
+                <button class="toolbar-btn" title="码替换" onclick="navigateToCodeReplace()">
+                    <div class="btn-icon">🔄</div>
+                </button>
+                <div class="group-label">码替换</div>
+            </div>
+            <div class="toolbar-separator"></div>
+            
+            <!-- 清屏 -->
+            <div class="toolbar-group">
+                <button class="toolbar-btn" title="清屏" onclick="clearScreen()">
+                    <div class="btn-icon">🧹</div>
+                </button>
+                <div class="group-label">清屏</div>
+            </div>
+        </div>
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <div class="control-container">
+                <!-- 三栏布局容器 -->
+                <div class="three-column-layout">
+                    <!-- 左侧面板 -->
+                    <div class="left-panel">
+                        <!-- 当前生产信息 -->
+                        <div class="production-info-panel">
+                            <div class="panel-header">
+                                <h3>当前生产信息</h3>
+                            </div>
+                            <div class="production-form">
+                                <!-- 第一行：生产单号 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group editable">
+                                        <label class="form-label">生产单号：</label>
+                                        <div class="order-select-container">
+                                            <input type="text" class="form-input" id="productionOrderInput" value="T20241201001" readonly>
+                                            <button class="order-select-btn" onclick="showOrderSelectDialog();">选择</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 第二行：产品编号 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group">
+                                        <label class="form-label">产品编号：</label>
+                                        <span class="form-value" id="productCode">P001</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- 第三行：产品名称 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group">
+                                        <label class="form-label">产品名称：</label>
+                                        <span class="form-value" id="productName">维生素C片</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- 第四行：产品规格 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group">
+                                        <label class="form-label">产品规格：</label>
+                                        <span class="form-value" id="productSpec">100片/盒</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- 第五行：采集规格 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group editable">
+                                        <label class="form-label">采集规格：</label>
+                                        <div class="package-ratio-container">
+                                            <input type="number" class="ratio-input" id="palletCount" value="1" min="1">
+                                            <span class="ratio-label">垛</span>
+                                            <input type="number" class="ratio-input" id="palletRatio" value="12" min="1">
+                                            <span class="ratio-label">箱</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 第六行：计划数量 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group">
+                                        <label class="form-label">计划数量：</label>
+                                        <span class="form-value" id="plannedQty">5,000</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- 第七行：生产批次 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group editable">
+                                        <label class="form-label">生产批次：</label>
+                                        <input type="text" class="form-input" id="productionBatch" value="B20241201001">
+                                    </div>
+                                </div>
+                                
+                                <!-- 第八行：类型选择 -->
+                                <div class="form-row form-row-single">
+                                    <div class="form-group editable">
+                                        <label class="form-label">类型：</label>
+                                        <select class="form-input" id="codeTypeSelect">
+                                            <option value="withCode" selected>有箱码</option>
+                                            <option value="withoutCode">无箱码</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <!-- 实时上传数据区 -->
+                        <div class="upload-status-panel">
+                            <div class="panel-header">
+                                <h3>实时上传数据区</h3>
+                            </div>
+                            <div class="upload-status-content">
+                                <div class="upload-item">
+                                    <div class="upload-info">
+                                        <span class="upload-code">P20241201001</span>
+                                        <span class="upload-count">1200箱</span>
+                                    </div>
+                                    <span class="status-value uploading">上传中</span>
+                                </div>
+                                <div class="upload-item">
+                                    <div class="upload-info">
+                                        <span class="upload-code">P20241201002</span>
+                                        <span class="upload-count">1200箱</span>
+                                    </div>
+                                    <span class="status-value success">上传成功</span>
+                                </div>
+                                <div class="upload-item">
+                                    <div class="upload-info">
+                                        <span class="upload-code">P20241201003</span>
+                                        <span class="upload-count">1200箱</span>
+                                    </div>
+                                    <span class="status-value pending">待上传</span>
+                                </div>
+                                <div class="upload-item">
+                                    <div class="upload-info">
+                                        <span class="upload-code">P20241201004</span>
+                                        <span class="upload-count">1200箱</span>
+                                    </div>
+                                    <span class="status-value failed">上传失败</span>
+                                </div>
+                                <div class="upload-item">
+                                    <div class="upload-info">
+                                        <span class="upload-code">P20241201005</span>
+                                        <span class="upload-count">1200箱</span>
+                                    </div>
+                                    <span class="status-value success">上传成功</span>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <!-- 中间栏 -->
+                    <div class="middle-panel">
+                        <!-- 数据采集模块 -->
+                        <div class="data-collection-section">
+                            <div class="panel-header">
+                                <h3>接收数据区</h3>
+                            </div>
+                            
+                            <div class="collection-log-container">
+                                <div class="collection-log-list" id="collectionLogList">
+                                    <!-- 示例数据 -->
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:23.456</span>
+                                        <span class="log-content">读取#箱码#成功&&&20241201001001</span>
+                                        <span class="log-status success">合格</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:24.789</span>
+                                        <span class="log-content">读取#箱码#成功&&&20241201001002</span>
+                                        <span class="log-status success">合格</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:25.123</span>
+                                        <span class="log-content">读取#箱码#失败</span>
+                                        <span class="log-status empty">无码</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:26.567</span>
+                                        <span class="log-content">读取#箱码#成功&&&20241201001001</span>
+                                        <span class="log-status duplicate">重码</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:27.890</span>
+                                        <span class="log-content">读取#箱码#成功&&&20241201001003</span>
+                                        <span class="log-status success">合格</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:28.234</span>
+                                        <span class="log-content">满垛了，关联垛码&&&P20241201001</span>
+                                        <span class="log-status success">成功</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:29.456</span>
+                                        <span class="log-content">读取#箱码#成功&&&20241201999999</span>
+                                        <span class="log-status invalid">错码</span>
+                                    </div>
+                                    <div class="log-entry">
+                                        <span class="log-time">2024-12-01 09:15:30.789</span>
+                                        <span class="log-content">满垛了，关联垛码&&&失败</span>
+                                        <span class="log-status failed">失败</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 日志模块 -->
+                        <div class="log-section">
+                            <div class="panel-header">
+                                <h3>日志</h3>
+                            </div>
+                            <div class="log-container">
+                                <div class="log-list" id="operationLogList">
+                                    <div class="log-item">
+                                        <span class="log-time">09:27:32</span>
+                                        <span class="log-content">系统初始化完成 - 成功</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 报警模块 -->
+                        <div class="alarm-section">
+                            <div class="panel-header">
+                                <h3>报警</h3>
+                                <div class="alarm-status" id="alarmStatus">
+                                    <div class="alarm-status-indicator normal" id="alarmStatusIndicator">
+                                        <span class="alarm-status-icon" id="alarmStatusIcon">✓</span>
+                                        <span class="alarm-status-text" id="alarmStatusText">正常</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alarm-container">
+                                <div class="alarm-list" id="alarmList">
+                                    <!-- 报警信息将通过JavaScript动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧栏 -->
+                    <div class="right-panel">
+                        <!-- 单位实时统计 -->
+                        <div class="unit-realtime-panel">
+                            <div class="panel-header">
+                                <h3>单位实时统计</h3>
+                            </div>
+                            <div class="unit-stats">
+                                <div class="unit-stats-row">
+                                    <div class="unit-item-left">
+                                        <div class="unit-label">当前箱数：</div>
+                                        <div class="unit-value-red" id="currentBoxes">6</div>
+                                    </div>
+                                    <div class="unit-item-right">
+                                        <div class="unit-label">每垛箱数：</div>
+                                        <div class="unit-value-blue" id="boxesPerPallet">12</div>
+                                    </div>
+                                </div>
+                                <div class="unit-item">
+                                    <div class="unit-label">已生产垛数：</div>
+                                    <div class="unit-value" id="currentPallets">0</div>
+                                </div>
+                                <div class="unit-item">
+                                    <div class="unit-label">完成度：</div>
+                                    <div class="unit-value" id="completionRate">0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任务控制 -->
+                        <div class="control-panel">
+                            <div class="panel-header">
+                                <h3>任务控制</h3>
+                            </div>
+                            <div class="control-buttons">
+                                <!-- 主要控制 -->
+                                <button class="control-btn toggle-btn" id="toggleBtn" onclick="toggleTask()">
+                                    <span class="btn-text" id="toggleText">启用</span>
+                                </button>
+                                
+                                <button class="control-btn complete-order-btn" id="completeOrderBtn" onclick="completeOrder()" disabled>
+                                    <span class="btn-text">订单结单</span>
+                                </button>
+                                
+                                <!-- 数据操作 -->
+                                <button class="control-btn aux-btn" onclick="addCode()">
+                                    <span class="btn-text">添加码</span>
+                                </button>
+                                
+                                <button class="control-btn aux-btn" onclick="clearCode()">
+                                    <span class="btn-text">清除码</span>
+                                </button>
+                                
+                                <!-- 垛操作 -->
+                                <button class="control-btn aux-btn" onclick="setCurrentBoxCount()">
+                                    <span class="btn-text">指定当前箱数</span>
+                                </button>
+                                
+                                <button class="control-btn aux-btn" onclick="forceFillPallet()">
+                                    <span class="btn-text">强制满垛</span>
+                                </button>
+                                
+                                <button class="control-btn aux-btn" onclick="deleteNoCode()">
+                                    <span class="btn-text">删除本垛无码</span>
+                                </button>
+                                
+                                <!-- 辅助控制 -->
+                                <button class="control-btn auxiliary-btn" onclick="removeCodeReading()">
+                                    <span class="btn-text">读码剔除</span>
+                                </button>
+                                
+                                <button class="control-btn auxiliary-btn" onclick="closeAlarm()">
+                                    <span class="btn-text">关闭报警</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">任务执行控制</span>
+                <span class="status-separator">|</span>
+                <span class="status-item" id="connectionStatus">设备已连接</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">工作状态：<span id="workingStatus" class="status-indicator">待机中</span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">剔除功能：<span id="removeStatus" class="status-indicator">已关闭</span></span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="desktop-dialog" id="confirmDialog" style="display: none;">
+        <div class="dialog-content confirm-dialog">
+            <div class="dialog-header">
+                <span class="dialog-title" id="confirmTitle">确认操作</span>
+                <button class="dialog-close" onclick="closeConfirmDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="confirm-content">
+                    <div class="confirm-icon" id="confirmIcon">❓</div>
+                    <div class="confirm-text">
+                        <p id="confirmMessage">您确定要执行此操作吗？</p>
+                        <div class="confirm-details" id="confirmDetails"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">取消</button>
+                <button class="btn btn-primary" id="confirmBtn" onclick="executeConfirmedAction()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 紧急停止确认对话框 -->
+    <div class="desktop-dialog" id="emergencyDialog" style="display: none;">
+        <div class="dialog-content emergency-dialog">
+            <div class="dialog-header">
+                <span class="dialog-title">紧急停止确认</span>
+                <button class="dialog-close" onclick="closeEmergencyDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="emergency-confirm-content">
+                    <div class="emergency-warning">
+                        <div class="warning-icon"></div>
+                        <div class="warning-text">
+                            <h3>紧急停止操作</h3>
+                            <p>此操作将立即停止所有设备运行！</p>
+                            <p>请确认是否需要执行紧急停止？</p>
+                        </div>
+                    </div>
+                    <div class="emergency-countdown">
+                        <div class="countdown-text">长按确认按钮 <span id="countdownTimer">3</span> 秒</div>
+                        <div class="countdown-bar">
+                            <div class="countdown-progress" id="countdownProgress"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeEmergencyDialog()">取消</button>
+                <button class="btn btn-danger emergency-confirm-btn" id="emergencyConfirmBtn" 
+                        onmousedown="startEmergencyCountdown()" 
+                        onmouseup="stopEmergencyCountdown()" 
+                        onmouseleave="stopEmergencyCountdown()">
+                    长按确认紧急停止
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设备状态对话框 -->
+    <div class="desktop-dialog" id="deviceStatusDialog" style="display: none;">
+        <div class="dialog-content device-dialog">
+            <div class="dialog-header">
+                <span class="dialog-title">设备状态详情</span>
+                <button class="dialog-close" onclick="closeDeviceStatusDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="device-status-content" id="deviceStatusContent">
+                    <!-- 设备状态详情将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="refreshDeviceStatus()">刷新状态</button>
+                <button class="btn btn-primary" onclick="closeDeviceStatusDialog()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作日志对话框 -->
+    <div class="desktop-dialog" id="operationLogDialog" style="display: none;">
+        <div class="dialog-content log-dialog">
+            <div class="dialog-header">
+                <span class="dialog-title">操作日志</span>
+                <button class="dialog-close" onclick="closeOperationLogDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="log-content">
+                    <div class="log-filter">
+                        <label>日期范围：</label>
+                        <input type="date" id="logStartDate" class="log-date-input">
+                        <span>至</span>
+                        <input type="date" id="logEndDate" class="log-date-input">
+                        <button class="btn btn-small" onclick="filterOperationLog()">筛选</button>
+                    </div>
+                    <div class="log-table-container">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>操作员</th>
+                                    <th>操作类型</th>
+                                    <th>操作结果</th>
+                                    <th>备注</th>
+                                </tr>
+                            </thead>
+                            <tbody id="operationLogTableBody">
+                                <!-- 操作日志数据将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="exportOperationLog()">导出日志</button>
+                <button class="btn btn-primary" onclick="closeOperationLogDialog()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助对话框 -->
+    <div class="desktop-dialog" id="helpDialog" style="display: none;">
+        <div class="dialog-content help-dialog">
+            <div class="dialog-header">
+                <span class="dialog-title">操作帮助</span>
+                <button class="dialog-close" onclick="closeHelpDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="help-content">
+                    <h3>任务控制操作说明</h3>
+                    <div class="help-section">
+                        <h4>生产订单选择</h4>
+                        <ul>
+                            <li><strong>选择按钮：</strong>点击当前生产信息区域的"选择"按钮打开订单选择对话框</li>
+                            <li><strong>筛选功能：</strong>支持按生产单号和预计完工时间范围筛选订单</li>
+                            <li><strong>订单状态：</strong>仅显示"计划"和"生产中"状态的订单</li>
+                            <li><strong>选择确认：</strong>选择订单后点击"确认选择"按钮更新生产信息</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>状态指示器</h4>
+                        <ul>
+                            <li><span class="status-demo pending">⏸️ 待开始</span> - 任务尚未启动</li>
+                            <li><span class="status-demo running">▶️ 运行中</span> - 任务正在执行</li>
+                            <li><span class="status-demo paused">⏸️ 已暂停</span> - 任务已暂停</li>
+                            <li><span class="status-demo completed">✅ 已完成</span> - 任务执行完成</li>
+                            <li><span class="status-demo stopped">⏹️ 已停止</span> - 任务已停止</li>
+                            <li><span class="status-demo error">⚠️ 异常</span> - 任务执行异常</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>操作按钮说明</h4>
+                        <ul>
+                            <li><strong>启动：</strong>开始执行任务，仅在待开始或已停止状态可用</li>
+                            <li><strong>暂停：</strong>暂停任务执行，仅在运行中状态可用</li>
+                            <li><strong>继续：</strong>继续执行暂停的任务，仅在已暂停状态可用</li>
+                            <li><strong>停止：</strong>停止任务执行，仅在运行中或已暂停状态可用</li>
+                            <li><strong>紧急停止：</strong>立即停止所有设备，任何状态都可用</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>安全提示</h4>
+                        <ul>
+                            <li>重要操作需要确认，请仔细阅读确认信息</li>
+                            <li>紧急停止需要长按3秒确认，防止误操作</li>
+                            <li>设备离线时无法执行控制操作</li>
+                            <li>所有操作都会记录到操作日志中</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-primary" onclick="closeHelpDialog()">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务管理弹框 -->
+    <div class="desktop-dialog" id="taskManagementModal" style="display: none;">
+        <div class="dialog-content" style="width: 400px;">
+            <div class="dialog-header">
+                <span class="dialog-title">任务管理</span>
+                <button class="dialog-close" onclick="closeTaskManagementModal()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="task-management-menu">
+                    <div class="menu-item-large" onclick="navigateToTaskCreate()">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务创建</div>
+                            <div class="menu-desc">创建新的生产任务</div>
+                        </div>
+                    </div>
+                    <div class="menu-item-large" onclick="navigateToTaskListFromModal()">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务列表</div>
+                            <div class="menu-desc">查看和管理任务列表</div>
+                        </div>
+                    </div>
+                    <div class="menu-item-large" onclick="navigateToTaskSelect()">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务选择</div>
+                            <div class="menu-desc">选择要执行的任务</div>
+                        </div>
+                    </div>
+                    <div class="menu-item-large active">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务控制</div>
+                            <div class="menu-desc">控制任务执行过程</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 选择生产订单对话框 -->
+    <div class="desktop-dialog" id="orderSelectDialog" style="display: none;">
+        <div class="dialog-content order-select-dialog">
+            <div class="dialog-header">
+                <span class="dialog-title">选择生产订单</span>
+                <button class="dialog-close" onclick="closeOrderSelectDialog()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="order-select-content">
+                    <!-- 筛选条件 -->
+                    <div class="order-filter">
+                        <div class="filter-group">
+                            <label>生产单号：</label>
+                            <input type="text" class="filter-input filter-input-short" id="orderNumberFilter" placeholder="输入生产单号">
+                        </div>
+                        <div class="filter-group">
+                            <label>预计完工时间：</label>
+                            <input type="date" class="filter-input" id="completionStartDate" placeholder="开始日期">
+                            <span class="date-separator">至</span>
+                            <input type="date" class="filter-input" id="completionEndDate" placeholder="结束日期">
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-primary btn-small" onclick="searchOrders()">搜索</button>
+                            <button class="btn btn-small" onclick="refreshOrderList()">刷新</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 订单列表 -->
+                    <div class="order-list-container">
+                        <table class="order-table">
+                            <thead>
+                                <tr>
+                                    <th width="40">选择</th>
+                                    <th width="120">生产单号</th>
+                                    <th width="100">产品编号</th>
+                                    <th width="130">产品名称</th>
+                                    <th width="100">产品规格</th>
+                                    <th width="80">计划数量</th>
+                                    <th width="80">已生产</th>
+                                    <th width="80">状态</th>
+                                    <th width="120">预计完工时间</th>
+                                    <th width="120">创建时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderTableBody">
+                                <!-- 订单数据将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 分页控制 -->
+                    <div class="order-pagination">
+                        <div class="pagination-info">
+                            共 <span id="totalOrders">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="btn btn-small" id="prevPageBtn" onclick="changePage(-1)" disabled>上一页</button>
+                            <button class="btn btn-small" id="nextPageBtn" onclick="changePage(1)" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeOrderSelectDialog()">取消</button>
+                <button class="btn btn-primary" id="confirmSelectBtn" onclick="confirmOrderSelection()" disabled>确认选择</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/desktop-app.js"></script>
+    <script src="../js/task-control.js"></script>
+    <script>
+        // 任务管理弹框功能
+        function showTaskManagementModal() {
+            console.log('Showing task management modal');
+            const modal = document.getElementById('taskManagementModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeTaskManagementModal() {
+            const modal = document.getElementById('taskManagementModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // 任务管理导航功能
+        function navigateToTaskCreate() {
+            closeTaskManagementModal();
+            // 任务创建功能暂未实现，显示提示
+            Message.info('任务创建功能正在开发中');
+        }
+
+        function navigateToTaskListFromModal() {
+            closeTaskManagementModal();
+            navigateToTaskList();
+        }
+
+        function navigateToTaskSelect() {
+            closeTaskManagementModal();
+            // 任务选择功能暂未实现，显示提示
+            Message.info('任务选择功能正在开发中');
+        }
+
+        // 点击弹框外部关闭弹框
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('taskManagementModal');
+            if (event.target === modal) {
+                closeTaskManagementModal();
+            }
+            
+            const orderDialog = document.getElementById('orderSelectDialog');
+            if (event.target === orderDialog) {
+                closeOrderSelectDialog();
+            }
+        });
+
+        // 导航函数现在使用common.js中的通用导航功能
+
+        // 清屏功能
+        function clearScreen() {
+            console.log('执行清屏操作');
+            // 清空数据接收区的日志
+            const collectionLogList = document.getElementById('collectionLogList');
+            if (collectionLogList) {
+                collectionLogList.innerHTML = '';
+            }
+            
+            // 清空操作日志
+            const operationLogList = document.getElementById('operationLogList');
+            if (operationLogList) {
+                operationLogList.innerHTML = '<div class="log-item"><span class="log-time">' + 
+                    new Date().toLocaleTimeString() + '</span><span class="log-content">屏幕已清空</span></div>';
+            }
+            
+            // 清空报警列表
+            const alarmList = document.getElementById('alarmList');
+            if (alarmList) {
+                alarmList.innerHTML = '';
+            }
+            
+            Message.success('屏幕已清空');
+        }
+
+        // 采集规格箱数与右侧栏每垛箱数同步功能
+        function initBoxCountSync() {
+            const palletRatioInput = document.getElementById('palletRatio');
+            const boxesPerPalletDisplay = document.getElementById('boxesPerPallet');
+            
+            if (palletRatioInput && boxesPerPalletDisplay) {
+                // 初始化时确保两个值一致
+                boxesPerPalletDisplay.textContent = palletRatioInput.value;
+                
+                // 监听左侧栏箱数输入变化
+                palletRatioInput.addEventListener('input', function() {
+                    const newValue = this.value;
+                    // 更新右侧栏每垛箱数显示
+                    boxesPerPalletDisplay.textContent = newValue;
+                });
+                
+                // 监听失去焦点事件，确保数据同步
+                palletRatioInput.addEventListener('blur', function() {
+                    const newValue = this.value;
+                    boxesPerPalletDisplay.textContent = newValue;
+                });
+            }
+        }
+
+        // 报警状态管理功能
+        function updateAlarmStatus(isAlarming) {
+            const alarmStatusIndicator = document.getElementById('alarmStatusIndicator');
+            const alarmStatusIcon = document.getElementById('alarmStatusIcon');
+            const alarmStatusText = document.getElementById('alarmStatusText');
+            
+            if (alarmStatusIndicator && alarmStatusIcon && alarmStatusText) {
+                if (isAlarming) {
+                    alarmStatusIndicator.className = 'alarm-status-indicator alarming';
+                    alarmStatusIcon.textContent = '⚠';
+                    alarmStatusText.textContent = '报警';
+                } else {
+                    alarmStatusIndicator.className = 'alarm-status-indicator normal';
+                    alarmStatusIcon.textContent = '✓';
+                    alarmStatusText.textContent = '正常';
+                }
+            }
+        }
+
+        // 检查报警列表并更新状态
+        function checkAlarmStatus() {
+            const alarmList = document.getElementById('alarmList');
+            const hasAlarms = alarmList && alarmList.children.length > 0;
+            updateAlarmStatus(hasAlarms);
+        }
+
+        // 模拟添加报警信息的函数（示例用）
+        function addAlarmExample() {
+            const alarmList = document.getElementById('alarmList');
+            if (alarmList) {
+                const alarmItem = document.createElement('div');
+                alarmItem.className = 'alarm-item';
+                alarmItem.innerHTML = `
+                    <span class="alarm-time">${new Date().toLocaleTimeString()}</span>
+                    <span class="alarm-content">设备异常报警</span>
+                `;
+                alarmList.appendChild(alarmItem);
+                checkAlarmStatus();
+            }
+        }
+
+        // 清除所有报警信息的函数
+        function clearAllAlarms() {
+            const alarmList = document.getElementById('alarmList');
+            if (alarmList) {
+                alarmList.innerHTML = '';
+                checkAlarmStatus();
+            }
+        }
+
+        // 重写关闭报警函数，添加状态更新
+        function closeAlarm() {
+            clearAllAlarms();
+            console.log('报警已关闭');
+        }
+
+        // 测试报警状态切换功能
+        function toggleAlarmTest() {
+            const alarmStatusIndicator = document.getElementById('alarmStatusIndicator');
+            const isCurrentlyAlarming = alarmStatusIndicator && alarmStatusIndicator.classList.contains('alarming');
+            
+            if (isCurrentlyAlarming) {
+                // 当前是报警状态，切换到正常状态
+                clearAllAlarms();
+            } else {
+                // 当前是正常状态，切换到报警状态
+                addAlarmExample();
+            }
+        }
+
+        // 选择生产订单功能
+        let orderData = []; // 存储订单数据
+        let filteredOrderData = []; // 存储筛选后的订单数据
+        let selectedOrderId = null; // 当前选中的订单ID
+        let currentPageNum = 1;
+        const orderPageSize = 10;
+
+        // 显示选择订单对话框
+        window.showOrderSelectDialog = function() {
+            console.log('showOrderSelectDialog called');
+            const dialog = document.getElementById('orderSelectDialog');
+            console.log('dialog element:', dialog);
+            if (dialog) {
+                dialog.style.display = 'flex';
+                loadOrderData();
+            } else {
+                console.error('orderSelectDialog element not found');
+            }
+        }
+
+        // 关闭选择订单对话框
+        window.closeOrderSelectDialog = function() {
+            const dialog = document.getElementById('orderSelectDialog');
+            if (dialog) {
+                dialog.style.display = 'none';
+                selectedOrderId = null;
+                updateConfirmButton();
+            }
+        }
+
+        // 加载订单数据（模拟从任务管理获取）
+        function loadOrderData() {
+            // 模拟订单数据，实际应从任务管理模块获取
+            orderData = [
+                {
+                    id: 'T20241201001',
+                    orderNumber: 'T20241201001',
+                    productCode: 'P001',
+                    productName: '维生素C片',
+                    specification: '100片/盒',
+                    plannedQty: 5000,
+                    producedQty: 0,
+                    status: 'planned',
+                    statusText: '计划',
+                    createTime: '2024-12-01 08:00:00',
+                    expectedCompletionTime: '2024-12-03 18:00:00',
+                    productionBatch: 'B20241201001'
+                },
+                {
+                    id: 'T20241201002',
+                    orderNumber: 'T20241201002',
+                    productCode: 'P002',
+                    productName: '钙片',
+                    specification: '60片/盒',
+                    plannedQty: 3000,
+                    producedQty: 1200,
+                    status: 'producing',
+                    statusText: '生产中',
+                    createTime: '2024-12-01 09:00:00',
+                    expectedCompletionTime: '2024-12-02 16:00:00',
+                    productionBatch: 'B20241201002'
+                },
+                {
+                    id: 'T20241201003',
+                    orderNumber: 'T20241201003',
+                    productCode: 'P003',
+                    productName: '复合维生素',
+                    specification: '30片/盒',
+                    plannedQty: 2000,
+                    producedQty: 0,
+                    status: 'planned',
+                    statusText: '计划',
+                    createTime: '2024-12-01 10:00:00',
+                    expectedCompletionTime: '2024-12-04 12:00:00',
+                    productionBatch: 'B20241201003'
+                },
+                {
+                    id: 'T20241201004',
+                    orderNumber: 'T20241201004',
+                    productCode: 'P001',
+                    productName: '维生素C片',
+                    specification: '100片/盒',
+                    plannedQty: 8000,
+                    producedQty: 3500,
+                    status: 'producing',
+                    statusText: '生产中',
+                    createTime: '2024-12-01 11:00:00',
+                    expectedCompletionTime: '2024-12-05 20:00:00',
+                    productionBatch: 'B20241201004'
+                },
+                {
+                    id: 'T20241201005',
+                    orderNumber: 'T20241201005',
+                    productCode: 'P004',
+                    productName: '叶酸片',
+                    specification: '90片/盒',
+                    plannedQty: 4500,
+                    producedQty: 0,
+                    status: 'planned',
+                    statusText: '计划',
+                    createTime: '2024-12-01 12:00:00',
+                    expectedCompletionTime: '2024-12-06 14:00:00',
+                    productionBatch: 'B20241201005'
+                },
+                {
+                    id: 'T20241201006',
+                    orderNumber: 'T20241201006',
+                    productCode: 'P002',
+                    productName: '钙片',
+                    specification: '60片/盒',
+                    plannedQty: 6000,
+                    producedQty: 2800,
+                    status: 'producing',
+                    statusText: '生产中',
+                    createTime: '2024-12-01 13:00:00',
+                    expectedCompletionTime: '2024-12-07 10:00:00',
+                    productionBatch: 'B20241201006'
+                }
+            ];
+            
+            searchOrders();
+        }
+
+        // 搜索订单
+        window.searchOrders = function() {
+            const orderNumberFilter = document.getElementById('orderNumberFilter').value.trim().toLowerCase();
+            const completionStartDate = document.getElementById('completionStartDate').value;
+            const completionEndDate = document.getElementById('completionEndDate').value;
+            
+            filteredOrderData = orderData.filter(order => {
+                // 只显示计划和生产中的订单
+                if (order.status !== 'planned' && order.status !== 'producing') {
+                    return false;
+                }
+                
+                // 生产单号筛选
+                if (orderNumberFilter && !order.orderNumber.toLowerCase().includes(orderNumberFilter)) {
+                    return false;
+                }
+                
+                // 预计完工时间范围筛选
+                if (completionStartDate || completionEndDate) {
+                    const orderCompletionDate = order.expectedCompletionTime.split(' ')[0]; // 获取日期部分
+                    
+                    // 开始日期筛选
+                    if (completionStartDate && orderCompletionDate < completionStartDate) {
+                        return false;
+                    }
+                    
+                    // 结束日期筛选
+                    if (completionEndDate && orderCompletionDate > completionEndDate) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            currentPageNum = 1;
+            renderOrderTable();
+            updatePagination();
+        }
+
+        // 渲染订单表格
+        function renderOrderTable() {
+            const tbody = document.getElementById('orderTableBody');
+            if (!tbody) return;
+            
+            const startIndex = (currentPageNum - 1) * orderPageSize;
+            const endIndex = startIndex + orderPageSize;
+            const pageData = filteredOrderData.slice(startIndex, endIndex);
+            
+            tbody.innerHTML = '';
+            
+            pageData.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <input type="radio" name="orderSelect" value="${order.id}" 
+                               onchange="selectOrder('${order.id}')" 
+                               ${selectedOrderId === order.id ? 'checked' : ''}>
+                    </td>
+                    <td>${order.orderNumber}</td>
+                    <td>${order.productCode}</td>
+                    <td>${order.productName}</td>
+                    <td>${order.specification}</td>
+                    <td>${order.plannedQty.toLocaleString()}</td>
+                    <td>${order.producedQty.toLocaleString()}</td>
+                    <td>
+                        <span class="status-badge status-${order.status}">${order.statusText}</span>
+                    </td>
+                    <td>${order.expectedCompletionTime}</td>
+                    <td>${order.createTime}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 选择订单
+        window.selectOrder = function(orderId) {
+            selectedOrderId = orderId;
+            updateConfirmButton();
+        }
+
+        // 更新确认按钮状态
+        function updateConfirmButton() {
+            const confirmBtn = document.getElementById('confirmSelectBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = !selectedOrderId;
+            }
+        }
+
+        // 确认选择订单
+        window.confirmOrderSelection = function() {
+            if (!selectedOrderId) return;
+            
+            const selectedOrder = orderData.find(order => order.id === selectedOrderId);
+            if (selectedOrder) {
+                // 更新主界面的生产信息
+                updateProductionInfo(selectedOrder);
+                closeOrderSelectDialog();
+                Message.success(`已选择生产订单：${selectedOrder.orderNumber}`);
+            }
+        }
+
+        // 更新生产信息
+        function updateProductionInfo(order) {
+            // 更新生产单号
+            const productionOrderInput = document.getElementById('productionOrderInput');
+            if (productionOrderInput) {
+                productionOrderInput.value = order.orderNumber;
+            }
+            
+            // 更新产品信息
+            const productCode = document.getElementById('productCode');
+            const productName = document.getElementById('productName');
+            const productSpec = document.getElementById('productSpec');
+            const plannedQty = document.getElementById('plannedQty');
+            const productionBatch = document.getElementById('productionBatch');
+            
+            if (productCode) productCode.textContent = order.productCode;
+            if (productName) productName.textContent = order.productName;
+            if (productSpec) productSpec.textContent = order.specification;
+            if (plannedQty) plannedQty.textContent = order.plannedQty.toLocaleString();
+            if (productionBatch) productionBatch.value = order.productionBatch;
+        }
+
+        // 刷新订单列表
+        window.refreshOrderList = function() {
+            // 清空筛选条件
+            document.getElementById('orderNumberFilter').value = '';
+            document.getElementById('completionStartDate').value = '';
+            document.getElementById('completionEndDate').value = '';
+            
+            loadOrderData();
+            Message.success('订单列表已刷新');
+        }
+
+        // 分页功能
+        window.changePage = function(direction) {
+            const totalPages = Math.ceil(filteredOrderData.length / orderPageSize);
+            const newPage = currentPageNum + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPageNum = newPage;
+                renderOrderTable();
+                updatePagination();
+            }
+        }
+
+        // 更新分页信息
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredOrderData.length / orderPageSize);
+            
+            document.getElementById('totalOrders').textContent = filteredOrderData.length;
+            document.getElementById('currentPage').textContent = currentPageNum;
+            document.getElementById('totalPages').textContent = totalPages;
+            
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            
+            if (prevBtn) prevBtn.disabled = currentPageNum <= 1;
+            if (nextBtn) nextBtn.disabled = currentPageNum >= totalPages;
+        };
+
+        // 页面加载完成后初始化功能
+        document.addEventListener('DOMContentLoaded', function() {
+            initBoxCountSync();
+            checkAlarmStatus(); // 初始化报警状态
+            
+            // 测试对话框元素是否存在
+            const dialog = document.getElementById('orderSelectDialog');
+            console.log('页面加载完成，对话框元素:', dialog);
+        });
+    </script>
+</body>
+</html> 

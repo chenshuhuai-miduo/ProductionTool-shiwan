@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务管理列表 - 产线采集关联软件</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/desktop-style.css">
+    <link rel="stylesheet" href="../css/task-list.css">
+</head>
+<body>
+    <div class="desktop-app">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <div class="app-icon"></div>
+                <span class="app-title">任务管理列表 - 产线采集关联软件 [SQL ScanDuo]</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-btn minimize-btn">—</button>
+                <button class="title-btn maximize-btn">□</button>
+                <button class="title-btn close-btn" onclick="navigateToIndex()">✕</button>
+            </div>
+        </div>
+
+
+
+        <!-- 主工作区 -->
+        <div class="main-workspace">
+            <!-- 任务列表区域 -->
+            <div class="task-list-area">
+                <!-- 操作按钮栏 -->
+                <div class="action-bar">
+                    <button class="btn btn-primary" onclick="showAddTaskModal()">手动添加</button>
+                    <button class="btn" onclick="syncTasks()">自动同步</button>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="filter-bar">
+                    <div class="filter-left">
+                        <input type="text" class="search-input" id="productionOrderSearch" placeholder="搜索生产单号...">
+                        <input type="text" class="search-input" id="batchNumberSearch" placeholder="搜索生产批次...">
+                        <input type="text" class="search-input" id="productNameSearch" placeholder="搜索产品名称...">
+                        <button class="btn btn-primary" onclick="searchTasks()">搜索</button>
+                        <button class="btn" onclick="clearFilters()">清空</button>
+                    </div>
+                    <div class="filter-right">
+                        <span class="record-count">共 <span id="totalCount">0</span> 条</span>
+                    </div>
+                </div>
+
+                <!-- 任务表格 -->
+                <div class="table-container">
+                    <table class="desktop-table" id="taskTable">
+                        <thead>
+                            <tr>
+                                <th width="120">生产单号</th>
+                                <th width="100">产品编号</th>
+                                <th width="120">产品名称</th>
+                                <th width="100">产品规格</th>
+                                <th width="80">计划数量</th>
+                                <th width="80">完成数量</th>
+                                <th width="80">采集规格</th>
+                                <th width="100">生产批次</th>
+                                <th width="100">生产日期</th>
+                                <th width="120">预计完工时间</th>
+                                <th width="100">下单日期</th>
+                                <th width="80">进度状态</th>
+                                <th width="120">备注</th>
+                                <th width="120">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody">
+                            <!-- 数据行将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页栏 -->
+                <div class="pagination-bar">
+                    <div class="pagination-left">
+                        <span>每页显示</span>
+                        <select class="page-size-select" id="pageSizeSelect">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span>条</span>
+                    </div>
+                    <div class="pagination-right" id="paginationControls">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="status-item">任务管理列表</span>
+                <span class="status-separator">|</span>
+                <span class="status-item">数据库已连接</span>
+                <span class="status-separator">|</span>
+                <span class="status-item" id="autoRefreshStatus">自动刷新：开启</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">当前时间：<span id="currentTime"></span></span>
+                <span class="status-separator">|</span>
+                <span class="status-item">版本：v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务详情模态框 -->
+    <div class="desktop-dialog" id="taskDetailModal" style="display: none;">
+        <div class="dialog-content" style="width: 900px; height: 600px;">
+            <div class="dialog-header">
+                <span class="dialog-title" id="taskDetailTitle">任务详情</span>
+                <button class="dialog-close" id="closeTaskDetailBtn">×</button>
+            </div>
+            <div class="dialog-body" style="padding: 0;">
+                <div class="detail-tabs">
+                    <button class="tab-btn active" data-tab="basic">基本信息</button>
+                    <button class="tab-btn" data-tab="progress">生产进度</button>
+                    <button class="tab-btn" data-tab="details">生产明细</button>
+                    <button class="tab-btn" data-tab="exceptions">异常记录</button>
+                    <button class="tab-btn" data-tab="logs">操作日志</button>
+                </div>
+                <div class="tab-content" id="taskDetailContent">
+                    <!-- 标签页内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务管理弹框 -->
+    <div class="desktop-dialog" id="taskManagementModal" style="display: none;">
+        <div class="dialog-content" style="width: 400px;">
+            <div class="dialog-header">
+                <span class="dialog-title">任务管理</span>
+                <button class="dialog-close" onclick="closeTaskManagementModal()">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="task-management-menu">
+                    <div class="menu-item-large" onclick="Message.info('任务创建功能正在开发中')">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务创建</div>
+                            <div class="menu-desc">创建新的生产任务</div>
+                        </div>
+                    </div>
+                    <div class="menu-item-large active">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务列表</div>
+                            <div class="menu-desc">查看和管理任务列表</div>
+                        </div>
+                    </div>
+                    <div class="menu-item-large" onclick="Message.info('任务选择功能正在开发中')">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务选择</div>
+                            <div class="menu-desc">选择要执行的任务</div>
+                        </div>
+                    </div>
+                    <div class="menu-item-large" onclick="navigateToIndex()">
+                        <div class="menu-icon"></div>
+                        <div class="menu-content">
+                            <div class="menu-title">任务控制</div>
+                            <div class="menu-desc">控制任务执行过程</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加任务弹框 -->
+    <div class="desktop-dialog" id="addTaskModal" style="display: none;">
+        <div class="dialog-content" style="width: 700px;">
+            <div class="dialog-header">
+                <span class="dialog-title">手动添加</span>
+                <button class="dialog-close" onclick="closeAddTaskModal()">×</button>
+            </div>
+            <div class="dialog-body">
+                <form id="addTaskForm" class="desktop-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">生产单号 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="productionOrder" required placeholder="请输入生产单号">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">选择产品 <span class="required">*</span></label>
+                            <select class="form-control" name="productId" required onchange="onProductSelect(this.value)">
+                                <option value="">请选择产品</option>
+                                <option value="P001">维生素C片 - 100mg/片</option>
+                                <option value="P002">感冒灵颗粒 - 10g/袋</option>
+                                <option value="P003">阿莫西林胶囊 - 250mg/粒</option>
+                                <option value="P004">板蓝根颗粒 - 15g/袋</option>
+                                <option value="P005">复合维生素片 - 多维/片</option>
+                                <option value="P006">布洛芬缓释胶囊 - 300mg/粒</option>
+                                <option value="P007">头孢克肟颗粒 - 50mg/袋</option>
+                                <option value="P008">蒙脱石散 - 3g/袋</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">产品编号</label>
+                            <input type="text" class="form-control" name="productCode" readonly placeholder="选择产品后自动填充">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">产品名称</label>
+                            <input type="text" class="form-control" name="productName" readonly placeholder="选择产品后自动填充">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">产品规格</label>
+                            <input type="text" class="form-control" name="productSpec" readonly placeholder="选择产品后自动填充">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">采集规格</label>
+                            <input type="text" class="form-control" name="packagingRatio" readonly placeholder="选择产品后自动填充">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">计划数量 <span class="required">*</span></label>
+                            <input type="number" class="form-control" name="plannedQuantity" required placeholder="请输入计划数量">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">预计完工时间</label>
+                            <input type="datetime-local" class="form-control" name="expectedCompletionTime" placeholder="请选择预计完工时间">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">生产批次</label>
+                            <input type="text" class="form-control" name="batchNumber" placeholder="请输入生产批次">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">生产日期</label>
+                            <input type="date" class="form-control" name="productionDate">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label">备注</label>
+                            <textarea class="form-control" name="remarks" rows="3" placeholder="请输入备注信息"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="closeAddTaskModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTask()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 高级筛选模态框 -->
+    <div class="desktop-dialog" id="advancedFilterModal" style="display: none;">
+        <div class="dialog-content" style="width: 600px;">
+            <div class="dialog-header">
+                <span class="dialog-title">高级筛选</span>
+                <button class="dialog-close" id="closeAdvancedFilterBtn">×</button>
+            </div>
+            <div class="dialog-body">
+                <form id="advancedFilterForm" class="desktop-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">生产单号</label>
+                            <input type="text" class="form-control" name="productionOrder" placeholder="支持模糊匹配">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">产品名称</label>
+                            <input type="text" class="form-control" name="productName" placeholder="支持模糊匹配">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">进度状态</label>
+                            <select class="form-control" name="status" multiple>
+                                <option value="计划">计划</option>
+                                <option value="生产中">生产中</option>
+                                <option value="生产完成">生产完成</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">生产批次</label>
+                            <input type="text" class="form-control" name="batchNumber" placeholder="生产批次">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">生产日期范围</label>
+                            <input type="date" class="form-control" name="productionDateStart">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">至</label>
+                            <input type="date" class="form-control" name="productionDateEnd">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn" onclick="resetAdvancedFilter()">重置</button>
+                <button class="btn" onclick="closeAdvancedFilter()">取消</button>
+                <button class="btn btn-primary" onclick="applyAdvancedFilter()">应用筛选</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/desktop-app.js"></script>
+    <script src="../js/task-list-clean.js"></script>
+</body>
+</html> 

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.SystemConfigController"
+      prefWidth="1280" prefHeight="768" styleClass="application-background"
+      stylesheets="@../css/base-styles.css">
+   
+   <padding>
+      <Insets top="10" right="10" bottom="10" left="10"/>
+   </padding>
+   
+   <!-- 主工作区：左右分栏 -->
+   <HBox VBox.vgrow="ALWAYS" spacing="10">
+      
+      <!-- 左侧：系统配置区域 (900px宽度) -->
+      <VBox prefWidth="900" HBox.hgrow="NEVER" spacing="5">
+         
+         <!-- 选项卡 -->
+         <TabPane fx:id="configTabPane" VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE">
+            
+            <!-- IO控制配置选项卡 -->
+            <Tab text="⚡ IO设备管理">
+               <VBox spacing="10" style="-fx-padding: 10px;">
+                  <!-- 工具栏 -->
+                  <HBox spacing="10" styleClass="tool-bar">
+                     <Button text="添加IO设备" styleClass="primary-button" onAction="#onAddIODevice"/>
+                     <Button text="测试所有设备" styleClass="secondary-button" onAction="#onTestAllIODevices"/>
+                     <Button text="保存配置" styleClass="secondary-button" onAction="#onSaveIOConfig"/>
+                  </HBox>
+                  
+                  <!-- IO设备列表 -->
+                  <TableView fx:id="ioDeviceTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+                     <columns>
+                        <TableColumn fx:id="ioDeviceNameColumn" text="设备名称" prefWidth="150"/>
+                        <TableColumn fx:id="ioDeviceCategoryColumn" text="设备类别" prefWidth="120"/>
+                        <TableColumn fx:id="ioConnectionTypeColumn" text="连接方式" prefWidth="100"/>
+                        <TableColumn fx:id="ioDeviceAddressColumn" text="设备地址" prefWidth="200"/>
+                        <TableColumn fx:id="ioDeviceStatusColumn" text="状态" prefWidth="80"/>
+                        <TableColumn fx:id="ioDeviceActionColumn" text="操作" prefWidth="150"/>
+                     </columns>
+                     <placeholder>
+                        <Label text="暂无IO设备配置" styleClass="caption-text"/>
+                     </placeholder>
+                  </TableView>
+               </VBox>
+            </Tab>
+            
+            <!-- 打印模块配置选项卡 -->
+            <Tab text="打印机管理">
+               <VBox spacing="10" style="-fx-padding: 10px;">
+                  <!-- 工具栏 -->
+                  <HBox spacing="10" styleClass="tool-bar">
+                     <Button text="添加打印机" styleClass="primary-button" onAction="#onAddPrinter"/>
+                     <Button text="应用配置" styleClass="secondary-button" onAction="#onApplyPrinterConfig"/>
+                  </HBox>
+                  
+                  <!-- 打印机列表 -->
+                  <TableView fx:id="printerTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+                     <columns>
+                        <TableColumn fx:id="printerNameColumn" text="打印机名称" prefWidth="200"/>
+                        <TableColumn fx:id="printerPathColumn" text="打印模块路径" prefWidth="350"/>
+                        <TableColumn fx:id="printerStatusColumn" text="状态" prefWidth="100"/>
+                        <TableColumn fx:id="printerActionColumn" text="操作" prefWidth="150"/>
+                     </columns>
+                     <placeholder>
+                        <Label text="暂无打印机配置" styleClass="caption-text"/>
+                     </placeholder>
+                  </TableView>
+               </VBox>
+            </Tab>
+            
+            <!-- 报警设置选项卡 -->
+            <Tab text="报警设置">
+               <VBox spacing="15" style="-fx-padding: 20px;">
+                  <!-- 声音报警配置 -->
+                  <VBox spacing="10">
+                     <Label text="声音报警配置" styleClass="section-title"/>
+                     
+                     <HBox spacing="10" alignment="CENTER_LEFT">
+                        <CheckBox fx:id="soundAlarmEnabledCheckBox" text="启用声音报警"/>
+                     </HBox>
+                     
+                     <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="报警延时（秒）:" prefWidth="120"/>
+                        <TextField fx:id="alarmDelayField" promptText="0-300" prefWidth="100" styleClass="text-field"/>
+                        <Label text="秒" styleClass="caption-text"/>
+                     </HBox>
+                     
+                     <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="报警间隔（秒）:" prefWidth="120"/>
+                        <TextField fx:id="alarmIntervalField" promptText="10-3600" prefWidth="100" styleClass="text-field"/>
+                        <Label text="秒" styleClass="caption-text"/>
+                     </HBox>
+                  </VBox>
+                  
+                  <!-- 操作按钮 -->
+                  <HBox spacing="10">
+                     <Button text="测试报警" styleClass="secondary-button" onAction="#onTestAlarm"/>
+                     <Button text="应用配置" styleClass="primary-button" onAction="#onApplyAlarmConfig"/>
+                     <Button text="重置配置" styleClass="secondary-button" onAction="#onResetAlarmConfig"/>
+                  </HBox>
+               </VBox>
+            </Tab>
+            
+         </TabPane>
+      </VBox>
+      
+      <!-- 右侧：设备状态监控区域 -->
+      <VBox prefWidth="360" HBox.hgrow="ALWAYS" spacing="5">
+         <Label text="设备状态监控" styleClass="section-title"/>
+         
+         <!-- 设备状态列表 -->
+         <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true" style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1px;">
+            <VBox fx:id="deviceStatusContainer" spacing="10" style="-fx-padding: 10px;">
+               <Label text="暂无设备状态" style="-fx-font-size: 11px; -fx-text-fill: #999;"/>
+            </VBox>
+         </ScrollPane>
+      </VBox>
+      
+   </HBox>
+   
+   <!-- 底部状态栏 -->
+   <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: #f8f9fa; -fx-border-color: #e0e0e0; -fx-border-width: 1px 0 0 0;">
+      <Label fx:id="configStatusLabel" text="配置状态: 就绪" style="-fx-font-size: 11px;"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label fx:id="currentTimeLabel" text="2024-12-01 10:00:00" style="-fx-font-size: 11px;"/>
+   </HBox>
+</VBox>
+

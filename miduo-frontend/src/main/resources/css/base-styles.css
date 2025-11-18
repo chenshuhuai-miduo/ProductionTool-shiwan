@@ -1,0 +1,139 @@
+/* 基础样式 - Base Styles */
+
+/* 导入其他样式文件 */
+@import "theme-colors.css";
+@import "typography.css";
+@import "button-styles.css";
+@import "input-styles.css";
+@import "table-styles.css";
+@import "status-styles.css";
+
+/* 全局样式 */
+.root {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
+    -fx-background-color: #f5f5f5;
+}
+
+/* 菜单栏样式 */
+.menu-bar {
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 1px 0;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+
+.menu-bar .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+
+/* 工具栏样式 */
+.tool-bar {
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 8px;
+    -fx-spacing: 8px;
+}
+
+/* 状态栏样式 */
+.status-bar {
+    -fx-background-color: -surface-color;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 5px 15px;
+    -fx-spacing: 15px;
+}
+
+.status-bar .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-small;
+    -fx-text-fill: -text-secondary;
+}
+
+/* 对话框样式 */
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-font-family: -primary-font;
+}
+
+.dialog-pane .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+
+.dialog-pane .button {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+}
+
+/* 分页控件样式 */
+.pagination {
+    -fx-font-family: -primary-font;
+}
+
+.pagination .pagination-control {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-small;
+}
+
+/* 滚动条样式 */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: derive(-border-color, -20%);
+    -fx-background-radius: 4px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: derive(-border-color, -40%);
+}
+
+/* 分隔符样式 */
+.separator {
+    -fx-background-color: -border-color;
+}
+
+/* 空状态提示 */
+.empty-state {
+    -fx-alignment: center;
+    -fx-padding: 50px;
+}
+
+.empty-state .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-text-fill: -text-muted;
+}
+
+/* 数据接收列表样式 */
+.data-receive-list {
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.data-receive-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 5px 10px;
+    -fx-border-width: 0;
+}
+
+.data-receive-list .list-cell:odd {
+    -fx-background-color: derive(-surface-color, 50%);
+}
+
+.data-receive-list .list-cell:selected {
+    -fx-background-color: derive(-primary-color, 80%);
+}
+
+.data-receive-list .list-cell:hover {
+    -fx-background-color: -hover-color;
+}
+

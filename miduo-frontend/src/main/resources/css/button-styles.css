@@ -1,0 +1,115 @@
+/* 按钮样式 - Button Styles */
+
+/* 主要按钮 */
+.primary-button {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: white;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-font-weight: 500;
+    -fx-padding: 8px 16px;
+    -fx-min-height: 36px;
+    -fx-min-width: 80px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
+}
+
+.primary-button:hover {
+    -fx-background-color: -primary-dark;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 3, 0, 0, 2);
+}
+
+.primary-button:pressed {
+    -fx-background-color: derive(-primary-color, -20%);
+}
+
+/* 次要按钮 */
+.secondary-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -primary-color;
+    -fx-border-color: -primary-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-padding: 8px 16px;
+    -fx-min-height: 36px;
+    -fx-min-width: 80px;
+    -fx-cursor: hand;
+}
+
+.secondary-button:hover {
+    -fx-background-color: derive(-primary-color, 90%);
+}
+
+.secondary-button:pressed {
+    -fx-background-color: derive(-primary-color, 80%);
+}
+
+/* 危险按钮 */
+.danger-button {
+    -fx-background-color: -error-color;
+    -fx-text-fill: white;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-padding: 8px 16px;
+    -fx-min-height: 36px;
+    -fx-min-width: 80px;
+    -fx-border-width: 0;
+    -fx-background-radius: 4px;
+    -fx-cursor: hand;
+}
+
+.danger-button:hover {
+    -fx-background-color: derive(-error-color, -10%);
+}
+
+/* 成功按钮 */
+.success-button {
+    -fx-background-color: -success-color;
+    -fx-text-fill: white;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-padding: 8px 16px;
+    -fx-min-height: 36px;
+    -fx-min-width: 80px;
+    -fx-border-width: 0;
+    -fx-background-radius: 4px;
+    -fx-cursor: hand;
+}
+
+.success-button:hover {
+    -fx-background-color: derive(-success-color, -10%);
+}
+
+/* 工具栏按钮 */
+.toolbar-button {
+    -fx-background-color: white;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-padding: 8px 16px;
+    -fx-min-height: 70px;
+    -fx-min-width: 80px;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+
+.toolbar-button:hover {
+    -fx-background-color: -hover-color;
+}
+
+/* Button默认样式 */
+.button {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-cursor: hand;
+}
+

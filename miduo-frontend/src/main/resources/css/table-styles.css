@@ -1,0 +1,83 @@
+/* 表格样式 - Table Styles */
+
+/* 表格视图 */
+.table-view {
+    -fx-background-color: white;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-family: -primary-font;
+}
+
+/* 表格列标题 */
+.table-view .column-header {
+    -fx-background-color: -surface-color;
+    -fx-text-fill: -text-primary;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-font-weight: 500;
+    -fx-padding: 8px 12px;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.table-view .column-header .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-font-weight: 500;
+    -fx-text-fill: -text-primary;
+}
+
+/* 表格行 */
+.table-view .table-row-cell {
+    -fx-background-color: white;
+    -fx-text-fill: -text-primary;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-cell-size: 35px;
+    -fx-padding: 0;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: derive(-surface-color, 50%);
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: derive(-primary-color, 80%);
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: -hover-color;
+}
+
+/* 表格单元格 */
+.table-view .table-cell {
+    -fx-padding: 10px 12px;
+    -fx-border-color: -border-color;
+    -fx-border-width: 0 1px 0 0;
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-alignment: CENTER_LEFT;
+    -fx-text-overrun: ellipsis;
+}
+
+.table-view .table-cell .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-text-alignment: left;
+    -fx-text-overrun: ellipsis;
+}
+
+/* 表格单元格文本溢出处理 */
+.table-view .table-cell .text {
+    -fx-text-overrun: ellipsis;
+}
+
+/* 空表格提示 */
+.table-view .placeholder .label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: -font-size-normal;
+    -fx-text-fill: -text-muted;
+}
+

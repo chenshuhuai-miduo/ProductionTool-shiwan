@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.TaskManagementController"
+      prefWidth="1200" prefHeight="700" styleClass="application-background"
+      stylesheets="@../css/base-styles.css">
+   
+   <padding>
+      <Insets top="10" right="10" bottom="10" left="10"/>
+   </padding>
+   
+   <!-- 操作按钮栏 -->
+   <HBox spacing="10" styleClass="tool-bar">
+      <Button text="添加任务" styleClass="primary-button" onAction="#onAddTask"/>
+      <Button text="自动同步" styleClass="secondary-button" onAction="#onSyncTasks"/>
+   </HBox>
+   
+   <!-- 筛选栏 -->
+   <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1px 0;">
+      <Label text="状态筛选:"/>
+      <ComboBox fx:id="statusFilterComboBox" prefWidth="150"/>
+      
+      <Label text="生产订单:"/>
+      <TextField fx:id="orderSearchField" promptText="搜索生产订单..." prefWidth="150"/>
+      
+      <Label text="产品名称:"/>
+      <TextField fx:id="productSearchField" promptText="搜索产品名称..." prefWidth="150"/>
+      
+      <Label text="预计生产时间:"/>
+      <DatePicker fx:id="productTimeStartPicker" prefWidth="130" promptText="开始日期"/>
+      <Label text="至"/>
+      <DatePicker fx:id="productTimeEndPicker" prefWidth="130" promptText="结束日期"/>
+      
+      <Button text="搜索" styleClass="primary-button" onAction="#onSearch"/>
+      <Button text="清空" styleClass="secondary-button" onAction="#onClearSearch"/>
+   </HBox>
+   
+   <!-- 任务列表表格 -->
+   <TableView fx:id="taskTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+      <columns>
+         <TableColumn fx:id="orderColumn" text="生产单号" minWidth="100" prefWidth="120"/>
+         <TableColumn fx:id="productCodeColumn" text="产品编号" minWidth="100" prefWidth="120"/>
+         <TableColumn fx:id="productNameColumn" text="产品名称" minWidth="120" prefWidth="150"/>
+         <TableColumn fx:id="productSpecColumn" text="产品规格" minWidth="100" prefWidth="120"/>
+         <TableColumn fx:id="plannedQuantityColumn" text="计划数量" minWidth="90" prefWidth="100"/>
+         <TableColumn fx:id="completedQuantityColumn" text="完成数量" minWidth="90" prefWidth="100"/>
+         <TableColumn fx:id="batchColumn" text="生产批次" minWidth="100" prefWidth="120"/>
+         <TableColumn fx:id="expectedCompletionColumn" text="预计生产时间" minWidth="140" prefWidth="160"/>
+         <TableColumn fx:id="orderDateColumn" text="下单日期" minWidth="120" prefWidth="140"/>
+         <TableColumn fx:id="statusColumn" text="进度状态" minWidth="90" prefWidth="100"/>
+      </columns>
+      
+      <!-- 空状态提示 -->
+      <placeholder>
+         <VBox alignment="CENTER" spacing="10" styleClass="empty-state">
+            <Label text="暂无任务数据" styleClass="caption-text"/>
+            <Label text="请点击 [添加任务] 按钮创建新任务" styleClass="caption-text"/>
+         </VBox>
+      </placeholder>
+   </TableView>
+   
+   <!-- 分页栏 -->
+   <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1px 0 0 0;">
+      <Label fx:id="totalCountLabel" text="共 0 条记录" styleClass="caption-text"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label text="每页显示:" styleClass="caption-text"/>
+      <ComboBox fx:id="pageSizeComboBox" prefWidth="80" onAction="#onPageSizeChange"/>
+      
+      <Button text="首页" styleClass="secondary-button" onAction="#onFirstPage"/>
+      <Button text="上一页" styleClass="secondary-button" onAction="#onPreviousPage"/>
+      
+      <Label text="第" styleClass="caption-text"/>
+      <TextField fx:id="currentPageField" prefWidth="50" alignment="CENTER"/>
+      <Label text="页" styleClass="caption-text"/>
+      
+      <Button text="下一页" styleClass="secondary-button" onAction="#onNextPage"/>
+      <Button text="最后页" styleClass="secondary-button" onAction="#onLastPage"/>
+      
+      <Label fx:id="pageInfoLabel" text="1/1" styleClass="caption-text"/>
+   </HBox>
+</VBox>
+

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.miduo.cloud.frontend.controller.AddTaskDialogController"
+            prefWidth="600" prefHeight="500"
+            styleClass="dialog-pane"
+            stylesheets="@/css/base-styles.css">
+    
+    <!-- 标题栏 -->
+    <top>
+        <VBox styleClass="dialog-header">
+            <Label text="添加任务" styleClass="dialog-title"/>
+            <Separator/>
+        </VBox>
+    </top>
+    
+    <!-- 表单内容 -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="form-scroll-pane">
+            <VBox spacing="15" styleClass="form-container">
+                <padding>
+                    <Insets top="20" right="30" bottom="20" left="30"/>
+                </padding>
+                
+                <!-- 生产订单（用户输入） -->
+                <VBox spacing="5">
+                    <Label text="生产订单：*" styleClass="form-label"/>
+                    <TextField fx:id="orderNoField" promptText="请输入生产订单号" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 类型选择 -->
+                <VBox spacing="5">
+                    <Label text="类型：*" styleClass="form-label"/>
+                    <ComboBox fx:id="typeComboBox" maxWidth="Infinity" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 产品编号（手动输入） -->
+                <VBox spacing="5">
+                    <Label text="产品编号：*" styleClass="form-label"/>
+                    <TextField fx:id="productNoField" promptText="请输入产品编号" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 产品名称（手动输入） -->
+                <VBox spacing="5">
+                    <Label text="产品名称：*" styleClass="form-label"/>
+                    <TextField fx:id="productNameField" promptText="请输入产品名称" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 产品规格（手动输入） -->
+                <VBox spacing="5">
+                    <Label text="产品规格：*" styleClass="form-label"/>
+                    <TextField fx:id="productSpecField" promptText="请输入产品规格（如：500ml/瓶）" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 采集规格（手动输入） -->
+                <VBox spacing="5">
+                    <Label text="采集规格（每垛箱数）：*" styleClass="form-label"/>
+                    <TextField fx:id="collectionSpecField" promptText="请输入每垛箱数（如：50）" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 计划数量（必填） -->
+                <VBox spacing="5">
+                    <Label text="计划数量：*" styleClass="form-label"/>
+                    <TextField fx:id="plannedQuantityField" promptText="请输入计划数量" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 生产批次（可选） -->
+                <VBox spacing="5">
+                    <Label text="生产批次：" styleClass="form-label"/>
+                    <TextField fx:id="batchNoField" promptText="请输入生产批次" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 生产日期 -->
+                <VBox spacing="5">
+                    <Label text="生产日期：*" styleClass="form-label"/>
+                    <DatePicker fx:id="productionDatePicker" maxWidth="Infinity" styleClass="form-field"/>
+                </VBox>
+                
+                <!-- 预计完工时间 -->
+                <VBox spacing="5">
+                    <Label text="预计完工时间：" styleClass="form-label"/>
+                    <DatePicker fx:id="completionDatePicker" maxWidth="Infinity" styleClass="form-field"/>
+                </VBox>
+                
+            </VBox>
+        </ScrollPane>
+    </center>
+    
+    <!-- 底部按钮 -->
+    <bottom>
+        <VBox styleClass="dialog-footer">
+            <Separator/>
+            <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="button-bar">
+                <padding>
+                    <Insets top="15" right="30" bottom="15" left="30"/>
+                </padding>
+                <Button text="取消" onAction="#onCancel" styleClass="secondary-button" prefWidth="100"/>
+                <Button text="确认添加" onAction="#onConfirm" styleClass="primary-button" prefWidth="100"/>
+            </HBox>
+        </VBox>
+    </bottom>
+    
+</BorderPane>
+

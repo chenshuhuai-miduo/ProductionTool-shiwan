@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <parent>
+        <groupId>com.miduo.cloud</groupId>
+        <artifactId>miduo-basebackend</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    
+    <artifactId>miduo-bootstrap</artifactId>
+    <packaging>jar</packaging>
+    
+    <name>miduo-bootstrap</name>
+    <description>启动模块 - Spring Boot主启动类</description>
+    
+    <dependencies>
+        <!-- 依赖 controller 模块（会传递依赖所有其他模块） -->
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-controller</artifactId>
+        </dependency>
+        
+        <!-- 依赖 infrastructure 模块（数据库访问） -->
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-infrastructure</artifactId>
+        </dependency>
+        
+        <!-- 依赖 frontend 模块（前端应用） -->
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-frontend</artifactId>
+        </dependency>
+        
+        <!-- Spring Boot Starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        
+        <!-- Spring Boot Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <finalName>miduo-launcher</finalName>
+        <plugins>
+            <!-- Spring Boot Maven Plugin：打包可执行JAR（包含所有依赖） -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>repackage-launcher</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <!-- 统一启动器作为主类 -->
+                            <mainClass>com.miduo.cloud.MiduoApplicationLauncher</mainClass>
+                            <classifier>launcher</classifier>
+                            <!-- 包含所有依赖（fat jar） -->
+                            <layout>JAR</layout>
+                            <attach>true</attach>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>repackage-backend</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <!-- 后端单独启动类 -->
+                            <mainClass>com.miduo.cloud.MiduoBackendApplication</mainClass>
+                            <classifier>backend</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Maven Assembly Plugin：创建可分发的压缩包 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.miduo.cloud.MiduoApplicationLauncher</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            
+            <!-- Maven JAR Plugin：设置MANIFEST.MF -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.miduo.cloud.MiduoApplicationLauncher</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                        </manifest>
+                        <manifestEntries>
+                            <Built-By>Miduo Team</Built-By>
+                            <Implementation-Title>Miduo Application Launcher</Implementation-Title>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
+</project>
+

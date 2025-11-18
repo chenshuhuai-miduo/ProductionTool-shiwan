@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+            fx:controller="com.miduo.cloud.frontend.controller.MainController"
+            styleClass="application-background"
+            stylesheets="@../css/base-styles.css">
+   
+   <!-- 顶部菜单栏 -->
+   <top>
+      <VBox>
+         <MenuBar>
+            <Menu text="文件">
+               <MenuItem text="退出软件" onAction="#onExit"/>
+            </Menu>
+            <Menu text="配置">
+               <MenuItem text="系统参数" onAction="#onSystemConfig"/>
+            </Menu>
+            <Menu text="数据">
+               <!-- <MenuItem text="产品管理" onAction="#onProductManagement"/> -->
+               <MenuItem text="任务管理" onAction="#onTaskManagement"/>
+               <MenuItem text="操作日志" onAction="#onOperationLog"/>
+            </Menu>
+            <Menu text="帮助">
+               <MenuItem text="操作帮助" onAction="#onHelp"/>
+               <MenuItem text="关于系统" onAction="#onAbout"/>
+            </Menu>
+         </MenuBar>
+         
+         <!-- 工具栏 -->
+         <ToolBar styleClass="tool-bar">
+            <!-- <Button text="产品管理" styleClass="toolbar-button" onAction="#onProductManagement"/> -->
+            <Button styleClass="toolbar-button" onAction="#onTaskManagement">
+               <graphic>
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="📋" style="-fx-font-size: 24px;"/>
+                     <Label text="任务管理" style="-fx-font-size: 12px;"/>
+                  </VBox>
+               </graphic>
+            </Button>
+            <Button styleClass="toolbar-button" onAction="#onDataUpload">
+               <graphic>
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="📤" style="-fx-font-size: 24px;"/>
+                     <Label text="数据上传" style="-fx-font-size: 12px;"/>
+                  </VBox>
+               </graphic>
+            </Button>
+            <Button styleClass="toolbar-button" onAction="#onCodeQuery">
+               <graphic>
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="🔍" style="-fx-font-size: 24px;"/>
+                     <Label text="查询码" style="-fx-font-size: 12px;"/>
+                  </VBox>
+               </graphic>
+            </Button>
+            <Button styleClass="toolbar-button" onAction="#onCodeReplace">
+               <graphic>
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="🔄" style="-fx-font-size: 24px;"/>
+                     <Label text="码替换" style="-fx-font-size: 12px;"/>
+                  </VBox>
+               </graphic>
+            </Button>
+            <Button styleClass="toolbar-button" onAction="#onClearScreen">
+               <graphic>
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="🧹" style="-fx-font-size: 24px;"/>
+                     <Label text="清屏" style="-fx-font-size: 12px;"/>
+                  </VBox>
+               </graphic>
+            </Button>
+         </ToolBar>
+      </VBox>
+   </top>
+   
+   <!-- 主内容区 -->
+   <center>
+      <HBox spacing="10" VBox.vgrow="ALWAYS">
+         <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+         </padding>
+         
+         <!-- 左侧面板 -->
+         <VBox prefWidth="340" styleClass="panel" spacing="10">
+            <Label text="当前生产信息" styleClass="heading-3"/>
+            
+            <GridPane hgap="10" vgap="10">
+               <columnConstraints>
+                  <ColumnConstraints minWidth="80" prefWidth="80"/>
+                  <ColumnConstraints hgrow="ALWAYS"/>
+               </columnConstraints>
+               
+               <Label text="生产单号:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+               <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                  <TextField fx:id="productionOrderField" promptText="请选择生产订单" editable="false" HBox.hgrow="ALWAYS"/>
+                  <Button text="选择" styleClass="secondary-button" onAction="#onSelectOrder"/>
+               </HBox>
+               
+               <Label text="产品编号:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+               <Label fx:id="productCodeLabel" text="--" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-font-size: 14px;"/>
+               
+               <Label text="产品名称:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+               <Label fx:id="productNameLabel" text="--" GridPane.columnIndex="1" GridPane.rowIndex="2" style="-fx-font-size: 14px;"/>
+               
+               <Label text="产品规格:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+               <Label fx:id="productSpecLabel" text="--" GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-font-size: 14px;"/>
+               
+               <Label text="采集规格:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+               <HBox spacing="8" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                  <Label text="1" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+                  <Label text="垛" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+                  <TextField fx:id="collectionSpecField" prefWidth="80" 
+                             style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-alignment: center;"/>
+                  <Label text="箱" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+               </HBox>
+               
+               <Label text="计划数量:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+               <Label fx:id="plannedQuantityLabel" text="--" GridPane.columnIndex="1" GridPane.rowIndex="5" style="-fx-font-size: 14px;"/>
+               
+               <Label text="生产批次:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+               <TextField fx:id="productionBatchField" promptText="生产批次" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+               
+               <Label text="类型:" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
+               <ComboBox fx:id="typeComboBox" GridPane.columnIndex="1" GridPane.rowIndex="7" maxWidth="Infinity"/>
+            </GridPane>
+            
+            <Separator/>
+            
+            <Label text="实时上传数据区" styleClass="heading-3"/>
+            <VBox fx:id="uploadDataArea" styleClass="panel" spacing="5" prefHeight="200">
+               <Label text="暂无上传数据" styleClass="caption-text" style="-fx-text-fill: #999999;"/>
+            </VBox>
+         </VBox>
+         
+         <!-- 中间面板 -->
+         <VBox HBox.hgrow="ALWAYS" styleClass="panel" spacing="10">
+            <Label text="数据接收区" styleClass="heading-3"/>
+            <ListView fx:id="dataReceiveList" VBox.vgrow="ALWAYS" styleClass="data-receive-list"/>
+            
+            <Separator/>
+            
+            <Label text="操作日志" styleClass="heading-3"/>
+            <TextArea fx:id="operationLogArea" editable="false" wrapText="true" prefHeight="150" promptText="操作日志将显示在这里..."/>
+            
+            <Separator/>
+            
+            <Label text="报警信息" styleClass="heading-3"/>
+            <TextArea fx:id="alarmInfoArea" editable="false" wrapText="true" prefHeight="100" promptText="报警信息将显示在这里..."/>
+         </VBox>
+         
+         <!-- 右侧面板 -->
+         <VBox prefWidth="336" styleClass="panel" spacing="10">
+            <Label text="单位实时统计" styleClass="heading-3"/>
+            
+            <GridPane hgap="10" vgap="10">
+               <columnConstraints>
+                  <ColumnConstraints percentWidth="50"/>
+                  <ColumnConstraints percentWidth="50"/>
+               </columnConstraints>
+               
+               <VBox alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="card">
+                  <Label text="当前箱数" styleClass="caption-text" style="-fx-font-size: 16px;"/>
+                  <Label fx:id="currentBoxCountLabel" text="0" style="-fx-font-size: 72px; -fx-text-fill: #dc3545; -fx-font-weight: bold;"/>
+               </VBox>
+               
+               <VBox alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="card" VBox.vgrow="ALWAYS">
+                  <Label text="每垛箱数" styleClass="caption-text" style="-fx-font-size: 16px;"/>
+                  <HBox alignment="CENTER">
+                     <Region HBox.hgrow="ALWAYS"/>
+                     <Label fx:id="boxesPerPalletLabel" text="0" alignment="CENTER" style="-fx-font-size: 72px; -fx-text-fill: #4a90e2; -fx-font-weight: bold; -fx-wrap-text: false; -fx-text-overrun: ellipsis; -fx-min-width: 150px; -fx-pref-width: 150px; -fx-max-width: 150px;"/>
+                     <Region HBox.hgrow="ALWAYS"/>
+                  </HBox>
+               </VBox>
+               
+               <VBox alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" styleClass="card">
+                  <Label text="已生产垛数" styleClass="caption-text"/>
+                  <Label fx:id="producedPalletCountLabel" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+               </VBox>
+               
+               <VBox alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" styleClass="card">
+                  <Label text="完成度" styleClass="caption-text"/>
+                  <Label fx:id="completionRateLabel" text="0%" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+               </VBox>
+            </GridPane>
+            
+            <Separator/>
+            
+            <Label text="任务控制" styleClass="heading-3"/>
+            
+            <GridPane hgap="8" vgap="8">
+               <columnConstraints>
+                  <ColumnConstraints percentWidth="50"/>
+                  <ColumnConstraints percentWidth="50"/>
+               </columnConstraints>
+               
+               <Button text="启用任务" fx:id="enableTaskButton" styleClass="primary-button" onAction="#onEnableTask" maxWidth="Infinity" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+               <Button text="订单结单" fx:id="completeOrderButton" styleClass="primary-button" onAction="#onCompleteOrder" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+               
+               <Button text="读码剔除" fx:id="codeRejectionButton" styleClass="secondary-button" onAction="#onCodeRejection" maxWidth="Infinity" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+               <Button text="添加码" fx:id="addCodeButton" styleClass="secondary-button" onAction="#onAddCode" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+               
+               <Button text="清除码" fx:id="clearCodeButton" styleClass="secondary-button" onAction="#onClearCode" maxWidth="Infinity" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+               <Button text="指定当前箱数" fx:id="specifyBoxCountButton" styleClass="secondary-button" onAction="#onSpecifyBoxCount" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+               
+               <Button text="强制满垛" fx:id="forcePalletButton" styleClass="success-button" onAction="#onForcePallet" maxWidth="Infinity" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+               <Button text="删除本垛无码" fx:id="deleteEmptyCodesButton" styleClass="danger-button" onAction="#onDeleteEmptyCodes" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+               
+               <Button text="关闭报警" fx:id="closeAlarmButton" styleClass="danger-button" onAction="#onCloseAlarm" maxWidth="Infinity" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+            </GridPane>
+         </VBox>
+      </HBox>
+   </center>
+   
+   <!-- 状态栏 -->
+   <bottom>
+      <HBox styleClass="status-bar" spacing="15">
+         <Label text="当前功能：任务执行控制"/>
+         <Label fx:id="deviceStatusLabel" text="设备状态：未连接"/>
+         <Label fx:id="workStatusLabel" text="工作状态：待机中"/>
+         <Region HBox.hgrow="ALWAYS"/>
+         <Label fx:id="currentTimeLabel" text="2024-12-01 10:30:25"/>
+         <Label text="v1.0.0"/>
+      </HBox>
+   </bottom>
+</BorderPane>
+

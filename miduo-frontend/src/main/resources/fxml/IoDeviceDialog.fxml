@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.miduo.cloud.frontend.controller.IoDeviceDialogController"
+      spacing="15" prefWidth="600" prefHeight="550"
+      style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
+
+    <!-- 标题 -->
+    <Label fx:id="titleLabel" text="添加IO设备" 
+           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
+
+    <Separator/>
+
+    <!-- 表单区域 -->
+    <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent;">
+        <VBox spacing="15">
+            <GridPane hgap="15" vgap="15">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="120" prefWidth="120"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <!-- 第1行：设备名称 -->
+                <Label text="设备名称：*" GridPane.rowIndex="0" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <TextField fx:id="deviceNameField" GridPane.rowIndex="0" GridPane.columnIndex="1"
+                           promptText="请输入设备名称"
+                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+
+                <!-- 第2行：设备类别 -->
+                <Label text="设备类别：" GridPane.rowIndex="1" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <ComboBox fx:id="deviceCategoryComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                          promptText="请选择设备类别" maxWidth="Infinity"
+                          style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+
+                <!-- 第3行：连接方式 -->
+                <Label text="连接方式：" GridPane.rowIndex="2" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <HBox spacing="30" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                    <RadioButton fx:id="networkRadio" text="网口" 
+                                 style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
+                    <RadioButton fx:id="serialRadio" text="串口" 
+                                 style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
+                </HBox>
+
+                <!-- 第4行：协议类型（仅网口） -->
+                <Label fx:id="protocolLabel" text="协议类型：*" GridPane.rowIndex="3" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <HBox spacing="30" GridPane.rowIndex="3" GridPane.columnIndex="1" fx:id="protocolBox">
+                    <RadioButton fx:id="tcpRadio" text="TCP" 
+                                 style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
+                    <RadioButton fx:id="udpRadio" text="UDP" 
+                                 style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
+                </HBox>
+
+                <!-- 第5行：IP地址 -->
+                <Label fx:id="ipLabel" text="IP地址：*" GridPane.rowIndex="4" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <TextField fx:id="ipField" GridPane.rowIndex="4" GridPane.columnIndex="1"
+                           promptText="例如：192.168.1.101"
+                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+
+                <!-- 第6行：端口号 -->
+                <Label fx:id="portLabel" text="端口号：*" GridPane.rowIndex="5" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <TextField fx:id="portField" GridPane.rowIndex="5" GridPane.columnIndex="1"
+                           promptText="例如：502"
+                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+
+                <!-- 第7行：超时时间 -->
+                <Label text="超时时间(秒)：" GridPane.rowIndex="6" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <TextField fx:id="timeoutField" GridPane.rowIndex="6" GridPane.columnIndex="1"
+                           promptText="默认5秒"
+                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+
+                <!-- 第8行：重试次数 -->
+                <Label text="重试次数：" GridPane.rowIndex="7" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <TextField fx:id="retryField" GridPane.rowIndex="7" GridPane.columnIndex="1"
+                           promptText="默认3次"
+                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+
+                <!-- 第9行：状态 -->
+                <Label text="状态：" GridPane.rowIndex="8" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <HBox spacing="30" GridPane.rowIndex="8" GridPane.columnIndex="1">
+                    <RadioButton fx:id="enableRadio" text="启用" selected="true"
+                                 style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
+                    <RadioButton fx:id="disableRadio" text="禁用" 
+                                 style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
+                </HBox>
+
+                <!-- 第10行：设备描述 -->
+                <Label text="设备描述：" GridPane.rowIndex="9" GridPane.columnIndex="0"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"
+                       GridPane.valignment="TOP">
+                    <padding>
+                        <Insets top="8"/>
+                    </padding>
+                </Label>
+                <TextArea fx:id="descriptionArea" GridPane.rowIndex="9" GridPane.columnIndex="1"
+                          promptText="请输入设备描述信息"
+                          prefRowCount="3" wrapText="true"
+                          style="-fx-font-size: 14px;"/>
+            </GridPane>
+        </VBox>
+    </ScrollPane>
+
+    <!-- 按钮区域 -->
+    <HBox spacing="15" alignment="CENTER_RIGHT">
+        <padding>
+            <Insets top="10"/>
+        </padding>
+        <Button text="取消" onAction="#onCancel"
+                style="-fx-font-size: 14px; -fx-pref-width: 100; -fx-pref-height: 35; 
+                       -fx-background-color: #9E9E9E; -fx-text-fill: white; -fx-cursor: hand;"/>
+        <Button text="保存" onAction="#onSave"
+                style="-fx-font-size: 14px; -fx-pref-width: 100; -fx-pref-height: 35; 
+                       -fx-background-color: #4CAF50; -fx-text-fill: white; -fx-cursor: hand;"/>
+    </HBox>
+
+</VBox>
+

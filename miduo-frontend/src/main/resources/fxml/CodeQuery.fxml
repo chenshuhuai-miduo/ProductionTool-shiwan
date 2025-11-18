@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.CodeQueryController"
+      prefWidth="1200" prefHeight="700" styleClass="application-background"
+      stylesheets="@../css/base-styles.css">
+   
+   <padding>
+      <Insets top="10" right="10" bottom="10" left="10"/>
+   </padding>
+   
+   <!-- 操作按钮栏 -->
+   <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: #f0f0f0;">
+      <TextField fx:id="codeInputField" promptText="请输入码信息或使用扫码枪扫描..." prefWidth="300" styleClass="text-field"/>
+      <Button text="查询" styleClass="primary-button" onAction="#onQuery"/>
+      
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label fx:id="queryStatusLabel" text="请输入码进行查询" style="-fx-font-size: 11px; -fx-text-fill: #666;"/>
+   </HBox>
+   
+   <!-- 主内容区：左右分栏 -->
+   <HBox VBox.vgrow="ALWAYS" spacing="10">
+      
+      <!-- 左侧：码关联信息面板 (50%宽度) -->
+      <VBox prefWidth="600" HBox.hgrow="ALWAYS" spacing="5">
+         <Label text="码关联信息" styleClass="section-title"/>
+         <Label fx:id="associationStatsLabel" text="未查询" style="-fx-font-size: 10px; -fx-text-fill: #999;"/>
+         
+         <!-- 码关联表格 -->
+         <TableView fx:id="codeAssociationTableView" VBox.vgrow="ALWAYS" styleClass="table-view">
+            <columns>
+               <TableColumn fx:id="layer1Column" text="第一层(箱码)" prefWidth="108"/>
+               <TableColumn fx:id="addTimeColumn" text="采集时间" prefWidth="108"/>
+               <TableColumn fx:id="layer2Column" text="第二层(中标)" prefWidth="108"/>
+               <TableColumn fx:id="layer3Column" text="第三层(托盘码)" prefWidth="108"/>
+               <TableColumn fx:id="layer4Column" text="第四层" prefWidth="108"/>
+            </columns>
+            
+            <!-- 空状态提示 -->
+            <placeholder>
+               <VBox alignment="CENTER" spacing="10" styleClass="empty-state">
+                  <Label text="请输入码进行查询" styleClass="caption-text"/>
+               </VBox>
+            </placeholder>
+         </TableView>
+      </VBox>
+      
+      <!-- 右侧：具体信息区（50%宽度） -->
+      <VBox HBox.hgrow="ALWAYS" spacing="5">
+         <Label text="具体信息" styleClass="section-title"/>
+         
+         <!-- 具体信息显示区 -->
+         <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true" style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1px;">
+            <VBox fx:id="detailInfoContainer" spacing="10" style="-fx-padding: 20px;">
+               <Label text="请点击左侧记录查看详细信息" style="-fx-font-size: 12px; -fx-text-fill: #999;"/>
+            </VBox>
+         </ScrollPane>
+      </VBox>
+      
+   </HBox>
+   
+   <!-- 底部状态栏 -->
+   <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 10px; -fx-background-color: #f8f9fa; -fx-border-color: #e0e0e0; -fx-border-width: 1px 0 0 0;">
+      <Region HBox.hgrow="ALWAYS"/>
+      
+      <Label fx:id="currentTimeLabel" text="2024-12-01 10:00:00" style="-fx-font-size: 11px;"/>
+   </HBox>
+</VBox>
+
