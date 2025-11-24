@@ -9,7 +9,6 @@ import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationMap
 import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.ProductionOrderDetailMapper;
 import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.ProductionOrderMapper;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO;
-import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.ProductionOrderDetailPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.ProductionOrderPO;
 import com.miduo.cloud.application.log.OperateLogApplicationService;
@@ -17,6 +16,7 @@ import com.miduo.cloud.entity.po.OperateLog;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -44,10 +44,13 @@ public class CodeApplicationService {
     private ProductionOrderMapper productionOrderMapper;
     
     @Autowired
-    private com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationUploadMapper codeRelationUploadMapper;
+    private com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationMapper codeRelationUploadMapper;
     
     @Autowired
     private OperateLogApplicationService operateLogApplicationService;
+    
+    @Autowired
+    private CodeBloomFilterManager bloomFilterManager;
     
     /**
      * 标签编号缓存：key=订单号_产品编号, value=当前标签编号
@@ -174,8 +177,90 @@ public class CodeApplicationService {
                 System.out.println("[TagNo恢复] 成功恢复正在采集的订单：订单=" + latestOrderNo + ", 产品=" + latestProductNo + ", TagNo=" + latestTagNo + ", 已采集=" + count + ", 每垛箱数=" + qty);
             }
             
+            // 初始化全局箱码 Bloom Filter：加载整个数据库所有未删除的箱码
+            initGlobalBoxCodeBloomFilter();
+            
         } catch (Exception e) {
             System.err.println("[TagNo恢复] 恢复失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 初始化全局箱码 Bloom Filter（异步执行）
+     * 从数据库加载整个数据库所有未删除的箱码，添加到全局 Bloom Filter
+     * 注意：只加载箱码（SmallSerialNumber），不加载托盘码
+     * 
+     * 优化说明：
+     * 1. 使用 @Async 异步执行，不阻塞系统启动
+     * 2. 使用专用线程池 bloomFilterInitExecutor
+     * 3. 分批加载数据，避免一次性加载大量数据导致内存溢出
+     */
+    @Async("bloomFilterInitExecutor")
+    public void initGlobalBoxCodeBloomFilter() {
+        try {
+            long startTime = System.currentTimeMillis();
+            System.out.println("[BloomFilter初始化] 开始异步加载全局箱码到 Bloom Filter");
+            
+            // 重建 Bloom Filter（清空旧数据）
+            bloomFilterManager.rebuildFilter();
+            
+            // 分批加载数据，每批 10,000 条
+            int batchSize = 10000;
+            int pageNum = 1;
+            int totalCount = 0;
+            
+            while (true) {
+                // 分页查询数据
+                Page<CodeRelationPO> page = new Page<>(pageNum, batchSize);
+                Page<CodeRelationPO> resultPage = codeRelationMapper.selectPage(
+                    page,
+                    new LambdaQueryWrapper<CodeRelationPO>()
+                        .eq(CodeRelationPO::getIsDel, 0)
+                        .select(CodeRelationPO::getSmallSerialNumber)
+                );
+                
+                List<CodeRelationPO> records = resultPage.getRecords();
+                if (records == null || records.isEmpty()) {
+                    break; // 没有更多数据，退出循环
+                }
+                
+                // 批量添加箱码到全局 Bloom Filter
+                List<String> boxCodeList = new ArrayList<>();
+                for (CodeRelationPO code : records) {
+                    if (StringUtils.hasText(code.getSmallSerialNumber())) {
+                        boxCodeList.add(code.getSmallSerialNumber());
+                    }
+                }
+                
+                if (!boxCodeList.isEmpty()) {
+                    bloomFilterManager.putAllBoxCodes(boxCodeList);
+                    totalCount += boxCodeList.size();
+                    System.out.println("[BloomFilter初始化] 已加载第 " + pageNum + " 批，本批 " + boxCodeList.size() + " 个码，累计 " + totalCount + " 个码");
+                }
+                
+                // 如果已经是最后一页，退出循环
+                if (pageNum >= resultPage.getPages()) {
+                    break;
+                }
+                
+                pageNum++;
+                
+                // 每批之间休眠 100ms，避免占用过多数据库资源
+                Thread.sleep(100);
+            }
+            
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
+            if (totalCount > 0) {
+                System.out.println("[BloomFilter初始化] 异步初始化完成！成功加载 " + totalCount + " 个码到 Bloom Filter，耗时 " + duration + " ms");
+            } else {
+                System.out.println("[BloomFilter初始化] 数据库中没有箱码数据");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("[BloomFilter初始化] 异步初始化失败：" + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -348,10 +433,10 @@ public class CodeApplicationService {
             System.out.println("[根据箱码删除] 开始删除箱码: " + boxCode);
             
             // 1. 查询CodeRelationUpload表中该箱码的记录
-            List<CodeRelationUploadPO> records = codeRelationUploadMapper.selectList(
-                new LambdaQueryWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getSmallSerialNumber, boxCode)
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
+            List<CodeRelationPO> records = codeRelationUploadMapper.selectList(
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getSmallSerialNumber, boxCode)
+                    .eq(CodeRelationPO::getIsDel, 0)
             );
             
             if (records.isEmpty()) {
@@ -398,7 +483,7 @@ public class CodeApplicationService {
                 return ApiResult.error("发现多条记录，数据异常");
             }
             
-            CodeRelationUploadPO record = records.get(0);
+            CodeRelationPO record = records.get(0);
             String orderNo = record.getOrderNo();
             String productNo = record.getProductNo();
             String tagNo = record.getTagNo();
@@ -416,9 +501,9 @@ public class CodeApplicationService {
             
             // 2. 逻辑删除该记录
             int deleteCount = codeRelationUploadMapper.update(null,
-                new LambdaUpdateWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getId, record.getId())
-                    .set(CodeRelationUploadPO::getIsDel, 1)
+                new LambdaUpdateWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getId, record.getId())
+                    .set(CodeRelationPO::getIsDel, 1)
             );
             
             if (deleteCount == 0) {
@@ -448,23 +533,23 @@ public class CodeApplicationService {
             
             // 3. 查询该TagNo下剩余的未删除记录数量
             Long remainingCount = codeRelationUploadMapper.selectCount(
-                new LambdaQueryWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                    .eq(CodeRelationUploadPO::getProductNo, productNo)
-                    .eq(CodeRelationUploadPO::getTagNo, tagNo)
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getOrderNo, orderNo)
+                    .eq(CodeRelationPO::getProductNo, productNo)
+                    .eq(CodeRelationPO::getTagNo, tagNo)
+                    .eq(CodeRelationPO::getIsDel, 0)
             );
             
             System.out.println("[根据箱码删除] TagNo=" + tagNo + " 剩余记录数=" + remainingCount);
             
             // 4. 更新该TagNo下所有记录的Qty字段（减1）
             int updateQtyCount = codeRelationUploadMapper.update(null,
-                new LambdaUpdateWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                    .eq(CodeRelationUploadPO::getProductNo, productNo)
-                    .eq(CodeRelationUploadPO::getTagNo, tagNo)
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
-                    .set(CodeRelationUploadPO::getQty, remainingCount.intValue())
+                new LambdaUpdateWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getOrderNo, orderNo)
+                    .eq(CodeRelationPO::getProductNo, productNo)
+                    .eq(CodeRelationPO::getTagNo, tagNo)
+                    .eq(CodeRelationPO::getIsDel, 0)
+                    .set(CodeRelationPO::getQty, remainingCount.intValue())
             );
             
             System.out.println("[根据箱码删除] 更新Qty字段: 影响记录数=" + updateQtyCount + ", 新Qty=" + remainingCount);
@@ -800,22 +885,31 @@ public class CodeApplicationService {
                 return ApiResult.success("读码剔除校验完成", CodeRejectResult.reject("NO_CODE", "无码，剔除"));
             }
             
-            // 2. 重码校验（查询整个数据库是否已存在此码，包括SmallSerialNumber和BigSerialNumber）
-            Long smallCodeCount = codeRelationMapper.selectCount(
+            // 2. 重码校验（使用全局 Bloom Filter 快速过滤）
+            // 注意：只校验箱码（SmallSerialNumber），校验整个数据库未删除的箱码
+            
+            // 先用 Bloom Filter 快速判断箱码是否可能存在
+            boolean mightExist = bloomFilterManager.mightContainBoxCode(code);
+            
+            if (mightExist) {
+                // Bloom Filter 显示可能存在，再查数据库确认（只查箱码）
+                System.out.println("[读码剔除校验-BloomFilter] 码可能重复，查询数据库确认：" + code);
+                
+                Long smallCodeCount = codeRelationMapper.selectCount(
                     new LambdaQueryWrapper<CodeRelationPO>()
                         .eq(CodeRelationPO::getSmallSerialNumber, code)
                         .eq(CodeRelationPO::getIsDel, 0)
                 );
                 
-            Long bigCodeCount = codeRelationMapper.selectCount(
-                new LambdaQueryWrapper<CodeRelationPO>()
-                    .eq(CodeRelationPO::getBigSerialNumber, code)
-                    .eq(CodeRelationPO::getIsDel, 0)
-            );
-            
-            if (smallCodeCount > 0 || bigCodeCount > 0) {
-                System.out.println("[读码剔除校验] 重码 - 剔除 (SmallCode=" + smallCodeCount + ", BigCode=" + bigCodeCount + ")");
+                if (smallCodeCount > 0) {
+                    System.out.println("[读码剔除校验] 重码 - 剔除 (SmallCode=" + smallCodeCount + ", BigCode=" + 0 + ")");
                     return ApiResult.success("读码剔除校验完成", CodeRejectResult.reject("DUPLICATE", "重复码，剔除"));
+                } else {
+                    System.out.println("[读码剔除校验-BloomFilter] Bloom Filter误判，码不重复");
+                }
+            } else {
+                // Bloom Filter 显示一定不存在，直接跳过数据库查询
+                System.out.println("[读码剔除校验-BloomFilter] 码不存在，跳过数据库查询");
             }
             
             // 3. 合格，放行
@@ -855,22 +949,30 @@ public class CodeApplicationService {
                 actualBoxCode = generateUniqueBoxCode(orderNo);
                 System.out.println("[箱码采集] 无码情况，系统生成箱码：" + actualBoxCode);
             } else {
-                // 有码情况：检查重复（查询整个数据库，包括SmallSerialNumber和BigSerialNumber）
-                Long smallCodeCount = codeRelationMapper.selectCount(
-                    new LambdaQueryWrapper<CodeRelationPO>()
-                        .eq(CodeRelationPO::getSmallSerialNumber, boxCode)
-                        .eq(CodeRelationPO::getIsDel, 0)
-                );
+                // 有码情况：使用 Bloom Filter 优化重码检查（只校验箱码）
+                // 1. 先用 Bloom Filter 快速判断箱码是否可能存在
+                boolean mightExist = bloomFilterManager.mightContainBoxCode(boxCode);
                 
-                Long bigCodeCount = codeRelationMapper.selectCount(
-                    new LambdaQueryWrapper<CodeRelationPO>()
-                        .eq(CodeRelationPO::getBigSerialNumber, boxCode)
-                        .eq(CodeRelationPO::getIsDel, 0)
-                );
-                
-                if (smallCodeCount > 0 || bigCodeCount > 0) {
-                    System.out.println("[箱码采集] 重复码：" + boxCode + " (SmallCode=" + smallCodeCount + ", BigCode=" + bigCodeCount + ")");
-                    return ApiResult.success("采集处理完成", CodeCollectResult.duplicate(boxCode));
+                if (mightExist) {
+                    // 2. Bloom Filter 显示可能存在，再查数据库确认
+                    System.out.println("[箱码采集-BloomFilter] 码可能重复，查询数据库确认：" + boxCode);
+                    
+                    // 只查询箱码（SmallSerialNumber），查询整个数据库未删除的记录
+                    Long smallCodeCount = codeRelationMapper.selectCount(
+                        new LambdaQueryWrapper<CodeRelationPO>()
+                            .eq(CodeRelationPO::getSmallSerialNumber, boxCode)
+                            .eq(CodeRelationPO::getIsDel, 0)
+                    );
+                    
+                    if (smallCodeCount > 0) {
+                        System.out.println("[箱码采集] 重复码：" + boxCode + " (SmallCode=" + smallCodeCount + ", BigCode=" + 0 + ")");
+                        return ApiResult.success("采集处理完成", CodeCollectResult.duplicate(boxCode));
+                    } else {
+                        System.out.println("[箱码采集-BloomFilter] Bloom Filter误判，码不重复");
+                    }
+                } else {
+                    // 3. Bloom Filter 显示一定不存在，直接跳过数据库查询
+                    System.out.println("[箱码采集-BloomFilter] 码不存在，跳过数据库查询");
                 }
             }
             
@@ -907,6 +1009,9 @@ public class CodeApplicationService {
             entity.setMsg("");
             
             codeRelationMapper.insert(entity);
+            
+            // 将箱码添加到全局 Bloom Filter
+            bloomFilterManager.putBoxCode(actualBoxCode);
             
             // 更新计数
             currentCount++;
@@ -1205,9 +1310,6 @@ public class CodeApplicationService {
             
             Integer totalCount = (orderDetail.getRatio() != null) ? orderDetail.getRatio() : 0;
             
-            // 获取Type字段（1=有箱码，2=无箱码）
-            Integer type = orderDetail.getType();
-            
             if (tagNo == null) {
                 return ApiResult.success("查询成功", 
                     CurrentPalletInfoVO.create(orderNo, null, 0, totalCount));
@@ -1216,48 +1318,41 @@ public class CodeApplicationService {
             // 从内存缓存获取当前箱数
             Integer currentCount = palletCountMap.getOrDefault(tagNo, 0);
             
-            // 如果是无箱码模式（Type=2），需要同时查询CodeRelationUpload表中的数据
-            // 按OrderNo、ProductNo和TagNo统计，因为一个订单可能包含多个产品
-            if (type != null && type == 2) {
-                try {
-                    Long uploadCount = codeRelationUploadMapper.selectCount(
-                        new LambdaQueryWrapper<com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO>()
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getOrderNo, orderNo)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getProductNo, productNo)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getTagNo, tagNo)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getType, 2)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getIsDel, 0)
-                    );
-                    
-                    // 将CodeRelationUpload表中的数据累加到当前箱数
+            // 获取Type字段（1=有箱码，2=无箱码）
+            Integer type = orderDetail.getType();
+            
+            // 查询CodeRelationUpload表中该订单、产品和TagNo的箱数
+            // 无论有箱码还是无箱码模式，都使用统一的查询逻辑
+            try {
+                LambdaQueryWrapper<com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO> queryWrapper = 
+                    new LambdaQueryWrapper<com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO>()
+                        .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO::getOrderNo, orderNo)
+                        .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO::getProductNo, productNo)
+                        .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO::getTagNo, tagNo)
+                        .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO::getIsDel, 0);
+                
+                // 无箱码模式需要额外过滤Type=2
+                if (type != null && type == 2) {
+                    queryWrapper.eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO::getType, 2);
+                }
+                
+                Long uploadCount = codeRelationUploadMapper.selectCount(queryWrapper);
+                
+                // 如果是无箱码模式，累加到内存箱数；如果是有箱码模式，直接使用数据库查询结果
+                if (type != null && type == 2) {
                     currentCount += uploadCount.intValue();
                     System.out.println("[获取当前垛信息-无箱码] 订单=" + orderNo + ", 产品=" + productNo + ", TagNo=" + tagNo + 
                                      ", 内存箱数=" + palletCountMap.getOrDefault(tagNo, 0) + 
                                      ", CodeRelationUpload表箱数=" + uploadCount + 
                                      ", 总箱数=" + currentCount);
-                } catch (Exception e) {
-                    System.err.println("[获取当前垛信息-无箱码] 查询CodeRelationUpload表失败: " + e.getMessage());
-                }
-            } else {
-                // 有箱码模式（Type=1），也需要按ProductNo统计
-                // 查询CodeRelationUpload表中该订单和产品的当前TagNo的箱数
-                try {
-                    Long uploadCount = codeRelationUploadMapper.selectCount(
-                        new LambdaQueryWrapper<com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO>()
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getOrderNo, orderNo)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getProductNo, productNo)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getTagNo, tagNo)
-                            .eq(com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO::getIsDel, 0)
-                    );
-                    
-                    // 使用数据库查询的结果作为当前箱数（按ProductNo统计）
+                } else {
                     currentCount = uploadCount.intValue();
                     System.out.println("[获取当前垛信息-有箱码] 订单=" + orderNo + ", 产品=" + productNo + ", TagNo=" + tagNo + 
                                      ", 当前箱数=" + currentCount);
-                } catch (Exception e) {
-                    System.err.println("[获取当前垛信息-有箱码] 查询CodeRelationUpload表失败: " + e.getMessage());
-                    // 查询失败时，使用内存缓存的值
                 }
+            } catch (Exception e) {
+                System.err.println("[获取当前垛信息] 查询CodeRelationUpload表失败: " + e.getMessage());
+                // 查询失败时，使用内存缓存的值
             }
             
             return ApiResult.success("查询成功", 
@@ -1884,7 +1979,8 @@ public class CodeApplicationService {
                 return ApiResult.error("订单编号不能为空");
             }
             
-            // 查询该订单下BigSerialNumber有值的所有记录的TagNo（去重）
+            // 直接查询所有TagNo，使用HashSet去重后计数
+            // 只查询TagNo字段，减少数据传输量
             List<CodeRelationPO> records = codeRelationMapper.selectList(
                 new LambdaQueryWrapper<CodeRelationPO>()
                     .select(CodeRelationPO::getTagNo)
@@ -1892,10 +1988,17 @@ public class CodeApplicationService {
                     .eq(CodeRelationPO::getIsDel, 0)
                     .isNotNull(CodeRelationPO::getBigSerialNumber)
                     .ne(CodeRelationPO::getBigSerialNumber, "")
-                    .groupBy(CodeRelationPO::getTagNo)
             );
             
-            int palletCount = records.size();
+            // 使用HashSet去重统计不同TagNo的数量
+            java.util.Set<String> uniqueTagNos = new java.util.HashSet<>();
+            for (CodeRelationPO record : records) {
+                if (record.getTagNo() != null) {
+                    uniqueTagNos.add(record.getTagNo());
+                }
+            }
+            
+            int palletCount = uniqueTagNos.size();
             
             System.out.println("[已生产垛数] 订单=" + orderNo + ", 垛数=" + palletCount);
             
@@ -1957,8 +2060,8 @@ public class CodeApplicationService {
                 return ApiResult.error("产品编号不能为空");
             }
             
-            // 按OrderNo和ProductNo统计
-            // 查询该订单和产品下BigSerialNumber有值的所有记录的TagNo（去重）
+            // 直接查询不同TagNo的数量，使用HashSet去重后计数
+            // 只查询TagNo字段，减少数据传输量
             List<CodeRelationPO> records = codeRelationMapper.selectList(
                 new LambdaQueryWrapper<CodeRelationPO>()
                     .select(CodeRelationPO::getTagNo)
@@ -1967,10 +2070,17 @@ public class CodeApplicationService {
                     .eq(CodeRelationPO::getIsDel, 0)
                     .isNotNull(CodeRelationPO::getBigSerialNumber)
                     .ne(CodeRelationPO::getBigSerialNumber, "")
-                    .groupBy(CodeRelationPO::getTagNo)
             );
             
-            int palletCount = records.size();
+            // 使用HashSet去重统计不同TagNo的数量
+            java.util.Set<String> uniqueTagNos = new java.util.HashSet<>();
+            for (CodeRelationPO record : records) {
+                if (record.getTagNo() != null) {
+                    uniqueTagNos.add(record.getTagNo());
+                }
+            }
+            
+            int palletCount = uniqueTagNos.size();
             
             System.out.println("[已生产垛数] 订单=" + orderNo + ", 产品=" + productNo + ", 垛数=" + palletCount);
             

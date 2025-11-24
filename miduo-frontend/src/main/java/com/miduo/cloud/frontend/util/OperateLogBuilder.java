@@ -188,8 +188,23 @@ public class OperateLogBuilder {
     
     /**
      * 异步保存日志（不阻塞主线程）
+     * 优化：使用批量管理器，避免创建大量线程
      */
     public void saveAsync() {
+        // 添加到批量管理器队列
+        boolean added = OperateLogBatchManager.getInstance().addLog(this.operateLog);
+        if (!added) {
+            // 队列已满，降级为直接异步保存
+            new Thread(this::save).start();
+        }
+    }
+    
+    /**
+     * 异步保存日志（旧版本，创建新线程）
+     * @deprecated 已优化为批量保存方式，建议使用 saveAsync()
+     */
+    @Deprecated
+    public void saveAsyncLegacy() {
         new Thread(this::save).start();
     }
 }

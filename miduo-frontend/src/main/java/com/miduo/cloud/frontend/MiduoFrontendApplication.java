@@ -1,5 +1,7 @@
 package com.miduo.cloud.frontend;
 
+import com.miduo.cloud.frontend.util.OperateLogBatchManager;
+import com.miduo.cloud.frontend.util.StageIconUtil;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -18,6 +20,9 @@ public class MiduoFrontendApplication extends Application {
         System.out.println("米多星球产线采集系统正在启动...");
         System.out.println("========================================");
         
+        // 启动操作日志批量管理器
+        OperateLogBatchManager.getInstance().start();
+        
         try {
             // 加载主界面FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainWindow.fxml"));
@@ -27,10 +32,13 @@ public class MiduoFrontendApplication extends Application {
             Scene scene = new Scene(root, 1400, 900);
             
             // 设置舞台属性
-            primaryStage.setTitle("米多星球产线采集系统 v2.0.0");
+            primaryStage.setTitle("赋码关联系统");
             primaryStage.setScene(scene);
             primaryStage.setResizable(true); // 允许调整窗口大小
             primaryStage.setMaximized(false); // 启动时不最大化（可根据需要改为true）
+            
+            // 设置窗口图标
+            StageIconUtil.setStageIcon(primaryStage);
             
             // 窗口关闭事件处理 - 改为最小化
             primaryStage.setOnCloseRequest(event -> {
@@ -80,6 +88,10 @@ public class MiduoFrontendApplication extends Application {
         System.out.println("========================================");
         System.out.println("米多星球产线采集系统正在关闭...");
         System.out.println("========================================");
+        
+        // 停止操作日志批量管理器（会先保存所有待保存的日志）
+        OperateLogBatchManager.getInstance().stop();
+        
         super.stop();
         System.out.println("✓ 应用程序已安全退出");
         System.out.println("========================================");

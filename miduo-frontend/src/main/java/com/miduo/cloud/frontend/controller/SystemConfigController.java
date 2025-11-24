@@ -259,6 +259,7 @@ public class SystemConfigController {
             dialogStage.setTitle("添加IO设备");
             dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             dialogStage.setScene(new javafx.scene.Scene(root));
+            com.miduo.cloud.frontend.util.StageIconUtil.setStageIcon(dialogStage);
             dialogStage.showAndWait();
 
             // 检查是否确认保存
@@ -430,6 +431,7 @@ public class SystemConfigController {
             dialogStage.setTitle("编辑IO设备");
             dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             dialogStage.setScene(new javafx.scene.Scene(root));
+            com.miduo.cloud.frontend.util.StageIconUtil.setStageIcon(dialogStage);
             dialogStage.showAndWait();
 
             // 检查是否确认保存

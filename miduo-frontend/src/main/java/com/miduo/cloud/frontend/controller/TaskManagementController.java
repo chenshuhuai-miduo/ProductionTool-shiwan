@@ -7,6 +7,7 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import com.miduo.cloud.frontend.util.StageIconUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -358,6 +359,7 @@ public class TaskManagementController {
             dialogStage.setTitle("添加任务");
             dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             dialogStage.setScene(new javafx.scene.Scene(root));
+            StageIconUtil.setStageIcon(dialogStage);
             dialogStage.showAndWait();
             
             // 检查是否确认添加
@@ -439,6 +441,7 @@ public class TaskManagementController {
             dialogStage.setTitle("修改任务");
             dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             dialogStage.setScene(new javafx.scene.Scene(root));
+            StageIconUtil.setStageIcon(dialogStage);
             dialogStage.showAndWait();
             
             // 检查是否确认修改

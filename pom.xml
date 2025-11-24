@@ -34,6 +34,7 @@
         <jackson.version>2.13.0</jackson.version>
         <httpclient.version>4.5.13</httpclient.version>
         <jSerialComm.version>2.10.4</jSerialComm.version>
+        <guava.version>31.1-jre</guava.version>
     </properties>
     
     <!-- 子模块定义 -->
@@ -140,6 +141,13 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>${httpclient.version}</version>
+            </dependency>
+            
+            <!-- Guava (Bloom Filter) -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
             </dependency>
             
             <!-- Lombok -->

@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.upload.RealTimeUploadVO;
 import com.miduo.cloud.entity.dto.upload.UploadRequestDTO;
-import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationUploadMapper;
+import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationMapper;
 import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.ProductionOrderDetailMapper;
-import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO;
+import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.ProductionOrderDetailPO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class WmsUploadApplicationService {
     private ProductionOrderDetailMapper productionOrderDetailMapper;
     
     @Autowired
-    private CodeRelationUploadMapper codeRelationUploadMapper;
+    private CodeRelationMapper codeRelationMapper;
     
     /**
      * 上传数据到WMS
@@ -76,12 +76,12 @@ public class WmsUploadApplicationService {
             }
             
             // 统计该订单下BigSerialNumber有值的记录数
-            Long boxCount = codeRelationUploadMapper.selectCount(
-                new LambdaQueryWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getOrderNo, order.getOrderNo())
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
-                    .isNotNull(CodeRelationUploadPO::getBigSerialNumber)
-                    .ne(CodeRelationUploadPO::getBigSerialNumber, "")
+            Long boxCount = codeRelationMapper.selectCount(
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getOrderNo, order.getOrderNo())
+                    .eq(CodeRelationPO::getIsDel, 0)
+                    .isNotNull(CodeRelationPO::getBigSerialNumber)
+                    .ne(CodeRelationPO::getBigSerialNumber, "")
             );
             
             RealTimeUploadVO vo = new RealTimeUploadVO();
@@ -112,12 +112,12 @@ public class WmsUploadApplicationService {
             }
             
             // 统计该订单下BigSerialNumber有值的记录数
-            Long boxCount = codeRelationUploadMapper.selectCount(
-                new LambdaQueryWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
-                    .isNotNull(CodeRelationUploadPO::getBigSerialNumber)
-                    .ne(CodeRelationUploadPO::getBigSerialNumber, "")
+            Long boxCount = codeRelationMapper.selectCount(
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getOrderNo, orderNo)
+                    .eq(CodeRelationPO::getIsDel, 0)
+                    .isNotNull(CodeRelationPO::getBigSerialNumber)
+                    .ne(CodeRelationPO::getBigSerialNumber, "")
             );
             
             RealTimeUploadVO vo = new RealTimeUploadVO();

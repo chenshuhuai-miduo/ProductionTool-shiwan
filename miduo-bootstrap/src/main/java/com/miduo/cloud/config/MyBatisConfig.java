@@ -73,7 +73,8 @@ public class MyBatisConfig {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 使用 SQL Server 2005 分页插件（兼容旧版 SQL Server，使用 ROW_NUMBER() 方式）
         PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.SQL_SERVER2005);
-        paginationInterceptor.setMaxLimit(500L); // 最大单页限制数量，默认 500 条
+        // 设置最大单页限制数量，默认 500 条，为了支持 Bloom Filter 初始化大批量加载，提升到 100000 条
+        paginationInterceptor.setMaxLimit(100000L);
         interceptor.addInnerInterceptor(paginationInterceptor);
         sessionFactory.setPlugins(interceptor);
         

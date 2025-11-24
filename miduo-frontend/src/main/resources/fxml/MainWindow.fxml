@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
 <?import java.lang.String?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
@@ -18,7 +19,7 @@
                <MenuItem text="退出软件" onAction="#onExit"/>
             </Menu>
             <Menu text="配置">
-               <MenuItem text="系统参数" onAction="#onSystemConfig"/>
+               <MenuItem text="系统设置" onAction="#onSystemConfig"/>
             </Menu>
             <Menu text="数据">
                <!-- <MenuItem text="产品管理" onAction="#onProductManagement"/> -->
@@ -34,42 +35,42 @@
          <!-- 工具栏 -->
          <ToolBar styleClass="tool-bar">
             <!-- <Button text="产品管理" styleClass="toolbar-button" onAction="#onProductManagement"/> -->
-            <Button styleClass="toolbar-button" onAction="#onTaskManagement">
+            <Button fx:id="taskManagementButton" styleClass="toolbar-button" onAction="#onTaskManagement">
                <graphic>
-                  <VBox alignment="CENTER" spacing="3">
-                     <Label text="📋" style="-fx-font-size: 24px;"/>
+                  <VBox fx:id="taskManagementIconBox" alignment="CENTER" spacing="3">
+                     <ImageView fx:id="taskManagementIcon" fitWidth="24" fitHeight="24" preserveRatio="true"/>
                      <Label text="任务管理" style="-fx-font-size: 12px;"/>
                   </VBox>
                </graphic>
             </Button>
-            <Button styleClass="toolbar-button" onAction="#onDataUpload">
+            <Button fx:id="dataUploadButton" styleClass="toolbar-button" onAction="#onDataUpload">
                <graphic>
-                  <VBox alignment="CENTER" spacing="3">
-                     <Label text="📤" style="-fx-font-size: 24px;"/>
+                  <VBox fx:id="dataUploadIconBox" alignment="CENTER" spacing="3">
+                     <ImageView fx:id="dataUploadIcon" fitWidth="24" fitHeight="24" preserveRatio="true"/>
                      <Label text="数据上传" style="-fx-font-size: 12px;"/>
                   </VBox>
                </graphic>
             </Button>
-            <Button styleClass="toolbar-button" onAction="#onCodeQuery">
+            <Button fx:id="codeQueryButton" styleClass="toolbar-button" onAction="#onCodeQuery">
                <graphic>
-                  <VBox alignment="CENTER" spacing="3">
-                     <Label text="🔍" style="-fx-font-size: 24px;"/>
+                  <VBox fx:id="codeQueryIconBox" alignment="CENTER" spacing="3">
+                     <ImageView fx:id="codeQueryIcon" fitWidth="24" fitHeight="24" preserveRatio="true"/>
                      <Label text="查询码" style="-fx-font-size: 12px;"/>
                   </VBox>
                </graphic>
             </Button>
-            <Button styleClass="toolbar-button" onAction="#onCodeReplace">
+            <Button fx:id="codeReplaceButton" styleClass="toolbar-button" onAction="#onCodeReplace">
                <graphic>
-                  <VBox alignment="CENTER" spacing="3">
-                     <Label text="🔄" style="-fx-font-size: 24px;"/>
+                  <VBox fx:id="codeReplaceIconBox" alignment="CENTER" spacing="3">
+                     <ImageView fx:id="codeReplaceIcon" fitWidth="24" fitHeight="24" preserveRatio="true"/>
                      <Label text="码替换" style="-fx-font-size: 12px;"/>
                   </VBox>
                </graphic>
             </Button>
-            <Button styleClass="toolbar-button" onAction="#onClearScreen">
+            <Button fx:id="clearScreenButton" styleClass="toolbar-button" onAction="#onClearScreen">
                <graphic>
-                  <VBox alignment="CENTER" spacing="3">
-                     <Label text="🧹" style="-fx-font-size: 24px;"/>
+                  <VBox fx:id="clearScreenIconBox" alignment="CENTER" spacing="3">
+                     <ImageView fx:id="clearScreenIcon" fitWidth="24" fitHeight="24" preserveRatio="true"/>
                      <Label text="清屏" style="-fx-font-size: 12px;"/>
                   </VBox>
                </graphic>

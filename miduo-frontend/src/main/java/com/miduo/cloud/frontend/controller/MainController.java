@@ -8,6 +8,7 @@ import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.SpringContextUtil;
+import com.miduo.cloud.frontend.util.StageIconUtil;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.entity.dto.code.*;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -17,8 +18,13 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.Group;
 import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.SVGPath;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -62,6 +68,13 @@ public class MainController {
     @FXML private Button forcePalletButton;
     @FXML private Button deleteEmptyCodesButton;
     @FXML private Button closeAlarmButton;
+    
+    // 工具栏按钮图标容器
+    @FXML private VBox taskManagementIconBox;
+    @FXML private VBox dataUploadIconBox;
+    @FXML private VBox codeQueryIconBox;
+    @FXML private VBox codeReplaceIconBox;
+    @FXML private VBox clearScreenIconBox;
     
     // 状态栏
     @FXML private Label currentTimeLabel;
@@ -202,6 +215,142 @@ public class MainController {
         
         // 初始化时加载并启动所有启用的设备连接
         loadAndStartDeviceConnections();
+        
+        // 加载工具栏图标
+        loadToolbarIcons();
+    }
+    
+    /**
+     * 加载工具栏图标
+     */
+    private void loadToolbarIcons() {
+        // 延迟加载，确保FXML完全加载后再设置图标
+        Platform.runLater(() -> {
+            try {
+                System.out.println("[图标加载] 开始加载工具栏图标...");
+                // 加载SVG图标（使用SVGPath节点）
+                loadSvgIconToVBox(taskManagementIconBox, "/icons/任务管理.svg");
+                loadSvgIconToVBox(dataUploadIconBox, "/icons/数据上传.svg");
+                loadSvgIconToVBox(codeQueryIconBox, "/icons/查询码.svg");
+                loadSvgIconToVBox(codeReplaceIconBox, "/icons/码替换.svg");
+                loadSvgIconToVBox(clearScreenIconBox, "/icons/清屏.svg");
+                System.out.println("[图标加载] 工具栏图标加载完成");
+            } catch (Exception e) {
+                System.err.println("加载工具栏图标失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    /**
+     * 加载SVG图标到VBox（使用SVGPath节点）
+     */
+    private void loadSvgIconToVBox(VBox iconBox, String svgPath) {
+        try {
+            if (iconBox == null) {
+                System.err.println("[图标加载] VBox为null: " + svgPath);
+                return;
+            }
+            
+            System.out.println("[图标加载] 加载图标: " + svgPath);
+            
+            // 读取SVG文件内容
+            String svgContent;
+            try (java.io.InputStream svgStream = getClass().getResourceAsStream(svgPath)) {
+                if (svgStream == null) {
+                    System.err.println("[图标加载] 无法找到SVG文件: " + svgPath);
+                    return;
+                }
+                
+                // 解析SVG文件，提取path数据
+                try (java.util.Scanner scanner = new java.util.Scanner(svgStream, "UTF-8")) {
+                    svgContent = scanner.useDelimiter("\\A").next();
+                }
+            }
+            
+            // 使用正则表达式提取path的d属性和transform属性
+            java.util.regex.Pattern pathPattern = java.util.regex.Pattern.compile(
+                "<path[^>]*d=\"([^\"]+)\"[^>]*(?:transform=\"([^\"]+)\")?[^>]*>", 
+                java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL
+            );
+            java.util.regex.Matcher matcher = pathPattern.matcher(svgContent);
+            
+            if (matcher.find()) {
+                String pathData = matcher.group(1);
+                String transform = matcher.group(2); // 可能为null
+                
+                System.out.println("[图标加载] 提取path数据成功: " + svgPath + ", transform=" + transform);
+                
+                // 创建SVGPath节点
+                SVGPath svgPathNode = new SVGPath();
+                svgPathNode.setContent(pathData);
+                svgPathNode.setFill(Color.web("#323232"));
+                svgPathNode.setStrokeWidth(0);
+                
+                // 如果有transform属性，解析并应用
+                Group iconGroup = new Group(svgPathNode);
+                if (transform != null && transform.trim().startsWith("translate")) {
+                    // 解析translate(x, y)
+                    java.util.regex.Pattern translatePattern = java.util.regex.Pattern.compile(
+                        "translate\\(([-\\d.]+)\\s+([-\\d.]+)\\)"
+                    );
+                    java.util.regex.Matcher translateMatcher = translatePattern.matcher(transform);
+                    if (translateMatcher.find()) {
+                        double translateX = Double.parseDouble(translateMatcher.group(1));
+                        double translateY = Double.parseDouble(translateMatcher.group(2));
+                        // SVG的transform是相对于原始坐标的，需要应用相同的transform
+                        iconGroup.setTranslateX(translateX);
+                        iconGroup.setTranslateY(translateY);
+                        System.out.println("[图标加载] 应用transform: translate(" + translateX + ", " + translateY + ")");
+                    }
+                }
+                
+                // 使用StackPane包装以控制大小（24x24像素），并添加裁剪
+                StackPane iconPane = new StackPane();
+                iconPane.setMaxWidth(24);
+                iconPane.setMaxHeight(24);
+                iconPane.setMinWidth(24);
+                iconPane.setMinHeight(24);
+                // 添加矩形裁剪，确保图标在24x24范围内
+                Rectangle clip = new Rectangle(0, 0, 24, 24);
+                iconPane.setClip(clip);
+                iconPane.getChildren().add(iconGroup);
+                
+                // 替换VBox中的第一个子节点（ImageView）为SVGPath StackPane
+                if (iconBox.getChildren().size() > 0) {
+                    // 找到ImageView并替换
+                    boolean replaced = false;
+                    for (int i = 0; i < iconBox.getChildren().size(); i++) {
+                        javafx.scene.Node node = iconBox.getChildren().get(i);
+                        if (node instanceof javafx.scene.image.ImageView) {
+                            iconBox.getChildren().set(i, iconPane);
+                            replaced = true;
+                            System.out.println("[图标加载] 成功替换ImageView: " + svgPath);
+                            break;
+                        }
+                    }
+                    if (!replaced) {
+                        System.err.println("[图标加载] 未找到ImageView节点，VBox子节点数: " + iconBox.getChildren().size() + ", " + svgPath);
+                        // 如果没找到ImageView，直接添加到VBox的第一个位置
+                        if (iconBox.getChildren().size() > 0) {
+                            iconBox.getChildren().set(0, iconPane);
+                            System.out.println("[图标加载] 直接替换第一个节点: " + svgPath);
+                        } else {
+                            iconBox.getChildren().add(0, iconPane);
+                            System.out.println("[图标加载] 添加到VBox: " + svgPath);
+                        }
+                    }
+                } else {
+                    System.err.println("[图标加载] VBox为空，直接添加图标: " + svgPath);
+                    iconBox.getChildren().add(iconPane);
+                }
+            } else {
+                System.err.println("[图标加载] 无法从SVG文件中提取path数据: " + svgPath);
+            }
+        } catch (Exception e) {
+            System.err.println("[图标加载] 加载SVG图标失败: " + svgPath + ", " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
@@ -1014,8 +1163,10 @@ public class MainController {
                         // 清除触发托盘码
                         triggerBoxCode = null; // 清除触发箱码
                         
-                        // 更新统计显示（从数据库查询已生产垛数，不更新当前箱数）
-                        updateStatisticsDisplay(false);
+                        // 前端实时统计：已生产垛数+1，当前箱数重置为0
+                        producedPalletCount++;
+                        currentBoxCount = 0;
+                        updateStatisticsDisplay();
                         
                         // 将托盘码添加到实时上传数据区（箱数为每垛箱数）
                         addPalletToUploadArea(associateResult.getPalletCode(), associateResult.getUpdatedCount());
@@ -1122,8 +1273,10 @@ public class MainController {
                             appendTextToTop(operationLogArea,getCurrentTime() + "   - 托盘码: " + collectResult.getPalletCode() + "\n");
                             appendTextToTop(operationLogArea,getCurrentTime() + "   - 虚拟垛标: " + collectResult.getVirtualPalletCode() + "\n");
                             
-                            // 更新统计显示（从数据库查询已生产垛数，不更新当前箱数）
-                            updateStatisticsDisplay(false);
+                            // 前端实时统计：已生产垛数+1，当前箱数重置为0
+                            producedPalletCount++;
+                            currentBoxCount = 0;
+                            updateStatisticsDisplay();
                             
                             // 将托盘码添加到实时上传数据区（箱数为生成的记录数）
                             addPalletToUploadArea(collectResult.getPalletCode(), collectResult.getGeneratedCount());
@@ -1357,7 +1510,7 @@ public class MainController {
     }
     
     /**
-     * 更新统计显示
+     * 更新统计显示（前端实时计数，不查数据库）
      * @param updateCurrentBoxCount 是否更新当前箱数（托盘码关联和箱码关联时传false，避免覆盖正在采集的垛的箱数）
      */
     private void updateStatisticsDisplay(boolean updateCurrentBoxCount) {
@@ -1365,69 +1518,89 @@ public class MainController {
             currentBoxCountLabel.setText(String.valueOf(currentBoxCount));
         }
         boxesPerPalletLabel.setText(String.valueOf(boxesPerPallet));
+        producedPalletCountLabel.setText(String.valueOf(producedPalletCount));
         
-        // 从后端API获取已生产垛数和完成度（按ProductNo统计，因为一个订单可能包含多个产品）
-        if (currentTask != null) {
+        // 计算完成度：从后端实时获取实际采集箱数（支持强制满垛场景）
+        if (currentTask != null && currentTask.getProductCount() != null && currentTask.getProductCount() > 0) {
             String orderNo = currentTask.getOrderNo();
             String productNo = currentTask.getProductNo();
+            
             if (orderNo != null && !orderNo.isEmpty() && productNo != null && !productNo.isEmpty()) {
                 new Thread(() -> {
                     try {
-                        // 1. 获取已生产垛数（按OrderNo和ProductNo统计）
-                        String palletCountUrl = "/api/code/produced-pallet-count-by-product?orderNo=" + 
+                        // 调用后端接口获取实际采集箱数
+                        String collectedCountUrl = "/api/code/collected-count-by-product?orderNo=" + 
                                 java.net.URLEncoder.encode(orderNo, "UTF-8") + 
                                 "&productNo=" + java.net.URLEncoder.encode(productNo, "UTF-8");
-                        String palletCountJson = HttpUtil.doGet(palletCountUrl);
-                        ApiResult<Integer> palletCountResult = HttpUtil.parseJson(palletCountJson, 
+                        String collectedCountJson = HttpUtil.doGet(collectedCountUrl);
+                        ApiResult<Integer> collectedCountResult = HttpUtil.parseJson(collectedCountJson, 
                             new TypeReference<ApiResult<Integer>>() {});
                         
-                        if (palletCountResult.getCode() == 200 && palletCountResult.getData() != null) {
-                            int dbProducedPalletCount = palletCountResult.getData();
-                            Platform.runLater(() -> {
-                                producedPalletCount = dbProducedPalletCount;
-                                producedPalletCountLabel.setText(String.valueOf(dbProducedPalletCount));
-                            });
-                        }
-                        
-                        // 2. 获取已采集箱数并计算完成度（按OrderNo和ProductNo统计）
-                        if (currentTask.getProductCount() != null && currentTask.getProductCount() > 0) {
-                            String collectedCountUrl = "/api/code/collected-count-by-product?orderNo=" + 
-                                    java.net.URLEncoder.encode(orderNo, "UTF-8") + 
-                                    "&productNo=" + java.net.URLEncoder.encode(productNo, "UTF-8");
-                            String collectedCountJson = HttpUtil.doGet(collectedCountUrl);
-                            ApiResult<Integer> collectedCountResult = HttpUtil.parseJson(collectedCountJson, 
-                                new TypeReference<ApiResult<Integer>>() {});
-                            
-                            if (collectedCountResult.getCode() == 200 && collectedCountResult.getData() != null) {
-                                int collectedCount = collectedCountResult.getData();
-                            double completionRate = (double) collectedCount / currentTask.getProductCount() * 100;
+                        if (collectedCountResult.getCode() == 200 && collectedCountResult.getData() != null) {
+                            final int actualCollectedCount = collectedCountResult.getData();
+                            final int totalCount = currentTask.getProductCount();
                             
                             Platform.runLater(() -> {
+                                // 使用实际采集箱数计算完成度（不再使用 垛数*每垛箱数，支持强制满垛）
+                                double completionRate = (double) actualCollectedCount / totalCount * 100;
                                 completionRateLabel.setText(String.format("%.1f%%", completionRate));
-                                });
-                            }
-                        } else {
-                            Platform.runLater(() -> {
-                                completionRateLabel.setText("0%");
                             });
                         }
                     } catch (Exception e) {
-                        System.err.println("获取统计数据失败：" + e.getMessage());
-                        // 失败时显示默认值
+                        System.err.println("[完成度统计] 获取实际采集箱数失败：" + e.getMessage());
+                        e.printStackTrace();
+                        // 失败时显示0%
                         Platform.runLater(() -> {
-                            producedPalletCountLabel.setText(String.valueOf(producedPalletCount));
                             completionRateLabel.setText("0%");
                         });
                     }
                 }).start();
             } else {
-                producedPalletCountLabel.setText("0");
                 completionRateLabel.setText("0%");
             }
         } else {
-            producedPalletCountLabel.setText("0");
             completionRateLabel.setText("0%");
         }
+    }
+    
+    /**
+     * 从数据库加载初始统计数据（仅在选择订单时调用一次）
+     */
+    private void loadInitialStatisticsFromDatabase() {
+        if (currentTask == null) {
+            return;
+        }
+        
+        String orderNo = currentTask.getOrderNo();
+        String productNo = currentTask.getProductNo();
+        
+        if (orderNo == null || orderNo.isEmpty() || productNo == null || productNo.isEmpty()) {
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                // 1. 获取已生产垛数（按OrderNo和ProductNo统计）
+                String palletCountUrl = "/api/code/produced-pallet-count-by-product?orderNo=" + 
+                        java.net.URLEncoder.encode(orderNo, "UTF-8") + 
+                        "&productNo=" + java.net.URLEncoder.encode(productNo, "UTF-8");
+                String palletCountJson = HttpUtil.doGet(palletCountUrl);
+                ApiResult<Integer> palletCountResult = HttpUtil.parseJson(palletCountJson, 
+                    new TypeReference<ApiResult<Integer>>() {});
+                
+                if (palletCountResult.getCode() == 200 && palletCountResult.getData() != null) {
+                    final int dbProducedPalletCount = palletCountResult.getData();
+                    Platform.runLater(() -> {
+                        producedPalletCount = dbProducedPalletCount;
+                        System.out.println("[初始统计] 从数据库加载已生产垛数: " + dbProducedPalletCount);
+                        updateStatisticsDisplay();
+                    });
+                }
+            } catch (Exception e) {
+                System.err.println("[初始统计] 获取统计数据失败：" + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
     }
     
     /**
@@ -1603,6 +1776,7 @@ public class MainController {
             stage.setTitle("任务管理");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 1200, 700));
+            StageIconUtil.setStageIcon(stage);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -1618,6 +1792,7 @@ public class MainController {
             stage.setTitle("产品管理");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 1200, 700));
+            StageIconUtil.setStageIcon(stage);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -1633,6 +1808,7 @@ public class MainController {
             stage.setTitle("数据上传");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 1276, 700));
+            StageIconUtil.setStageIcon(stage);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -1648,6 +1824,7 @@ public class MainController {
             stage.setTitle("操作日志");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 1276, 700));
+            StageIconUtil.setStageIcon(stage);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -1664,6 +1841,7 @@ public class MainController {
             stage.setTitle("查询码");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 1200, 700));
+            StageIconUtil.setStageIcon(stage);
             
             // 监听窗口关闭事件，确保清除控制器引用
             stage.setOnCloseRequest(event -> {
@@ -1690,6 +1868,7 @@ public class MainController {
             stage.setTitle("码替换");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 600, 500));
+            StageIconUtil.setStageIcon(stage);
             
             // 监听窗口关闭事件，确保清除控制器引用
             stage.setOnCloseRequest(event -> {
@@ -1715,6 +1894,7 @@ public class MainController {
             stage.setTitle("系统配置");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root, 1280, 768));
+            StageIconUtil.setStageIcon(stage);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -1837,6 +2017,7 @@ public class MainController {
             dialogStage.setTitle("选择生产订单");
             dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             dialogStage.setScene(new javafx.scene.Scene(root));
+            StageIconUtil.setStageIcon(dialogStage);
             dialogStage.showAndWait();
             
             // 检查是否确认选择
@@ -1910,9 +2091,10 @@ public class MainController {
             // 更新工作状态显示
             updateWorkStatus(task.getOrderStatus());
             
-            // 重置统计数据并从数据库查询当前箱数
+            // 重置统计数据并从数据库加载初始值
             resetStatistics();
             loadCurrentBoxCountFromDatabase(task.getOrderNo());
+            loadInitialStatisticsFromDatabase();
         });
     }
     
@@ -2352,6 +2534,7 @@ public class MainController {
                         dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
                         dialogStage.setScene(new javafx.scene.Scene(root));
                         dialogStage.setResizable(false);
+                        StageIconUtil.setStageIcon(dialogStage);
                         dialogStage.showAndWait();
 
                         // 3. 如果用户确认，则调用后端接口
@@ -2404,13 +2587,10 @@ public class MainController {
                         appendTextToTop(operationLogArea,getCurrentTime() + " ✓ 上一个箱码已清除\n");
                         showAlert(Alert.AlertType.INFORMATION, "成功", "上一个箱码已清除！");
                         
-                        // 更新统计数据：当前箱数-1
-                        String currentCountText = currentBoxCountLabel.getText();
-                        try {
-                            int currentCount = Integer.parseInt(currentCountText);
-                            currentBoxCountLabel.setText(String.valueOf(currentCount - 1));
-                        } catch (NumberFormatException e) {
-                            // 忽略解析错误
+                        // 前端实时统计：当前箱数-1
+                        if (currentBoxCount > 0) {
+                            currentBoxCount--;
+                            updateStatisticsDisplay();
                         }
                         
                         // 记录操作日志
@@ -2494,6 +2674,7 @@ public class MainController {
                         dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
                         dialogStage.setScene(new javafx.scene.Scene(root));
                         dialogStage.setResizable(false);
+                        StageIconUtil.setStageIcon(dialogStage);
                         dialogStage.showAndWait();
                         
                         // 3. 如果用户确认，则调用后端接口
@@ -2546,8 +2727,9 @@ public class MainController {
                             Integer afterCount = adjustResult.getAfterCount();
                             List<String> generatedCodes = adjustResult.getGeneratedCodes();
                             
-                            // 更新当前箱数
-                            currentBoxCountLabel.setText(String.valueOf(afterCount));
+                            // 前端实时统计：更新当前箱数
+                            currentBoxCount = afterCount;
+                            updateStatisticsDisplay();
                             
                             // 根据操作类型显示不同日志
                             if ("DELETE".equals(operationType)) {
@@ -2683,6 +2865,7 @@ public class MainController {
                         dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
                         dialogStage.setScene(new javafx.scene.Scene(root));
                         dialogStage.setResizable(false);
+                        StageIconUtil.setStageIcon(dialogStage);
                         dialogStage.showAndWait();
                         
                         // 3. 如果用户确认，则调用后端接口

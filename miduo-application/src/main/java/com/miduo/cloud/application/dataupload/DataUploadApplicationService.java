@@ -7,10 +7,10 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.entity.dto.dataupload.DataUploadOrderVO;
 import com.miduo.cloud.entity.dto.dataupload.DataUploadTaskVO;
-import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationUploadMapper;
+import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationMapper;
 import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.ProductionOrderDetailMapper;
 import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.ProductionOrderMapper;
-import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO;
+import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.ProductionOrderDetailPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.ProductionOrderPO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class DataUploadApplicationService {
     private ProductionOrderMapper productionOrderMapper;
     
     @Autowired
-    private CodeRelationUploadMapper codeRelationUploadMapper;
+    private CodeRelationMapper codeRelationMapper;
     
     /**
      * 查询所有生产订单
@@ -88,11 +88,11 @@ public class DataUploadApplicationService {
                 return ApiResult.error("订单编号不能为空");
             }
             
-            List<CodeRelationUploadPO> taskList = codeRelationUploadMapper.selectList(
-                new LambdaQueryWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
-                    .orderByDesc(CodeRelationUploadPO::getAddTime)
+            List<CodeRelationPO> taskList = codeRelationMapper.selectList(
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getOrderNo, orderNo)
+                    .eq(CodeRelationPO::getIsDel, 0)
+                    .orderByDesc(CodeRelationPO::getAddTime)
             );
             
             List<DataUploadTaskVO> voList = taskList.stream().map(po -> {
@@ -176,25 +176,25 @@ public class DataUploadApplicationService {
             }
             
             // 构建查询条件
-            LambdaQueryWrapper<CodeRelationUploadPO> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                       .eq(CodeRelationUploadPO::getIsDel, 0);
+            LambdaQueryWrapper<CodeRelationPO> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(CodeRelationPO::getOrderNo, orderNo)
+                       .eq(CodeRelationPO::getIsDel, 0);
             
             // 添加ProductNO筛选条件（用于区分同一订单下的不同产品）
             if (productNo != null && !productNo.trim().isEmpty()) {
-                queryWrapper.eq(CodeRelationUploadPO::getProductNo, productNo.trim());
+                queryWrapper.eq(CodeRelationPO::getProductNo, productNo.trim());
             }
             
             // 添加VirtualSerialNumber筛选条件（用于搜索码后只显示相同VirtualSerialNumber的数据）
             if (virtualSerialNumber != null && !virtualSerialNumber.trim().isEmpty()) {
-                queryWrapper.eq(CodeRelationUploadPO::getVirtualSerialNumber, virtualSerialNumber.trim());
+                queryWrapper.eq(CodeRelationPO::getVirtualSerialNumber, virtualSerialNumber.trim());
             }
             
-            queryWrapper.orderByDesc(CodeRelationUploadPO::getAddTime);
+            queryWrapper.orderByDesc(CodeRelationPO::getAddTime);
             
             // 分页查询
-            Page<CodeRelationUploadPO> page = new Page<>(pageNum, pageSize);
-            Page<CodeRelationUploadPO> resultPage = codeRelationUploadMapper.selectPage(page, queryWrapper);
+            Page<CodeRelationPO> page = new Page<>(pageNum, pageSize);
+            Page<CodeRelationPO> resultPage = codeRelationMapper.selectPage(page, queryWrapper);
             
             // 转换为VO
             List<DataUploadTaskVO> voList = resultPage.getRecords().stream().map(po -> {

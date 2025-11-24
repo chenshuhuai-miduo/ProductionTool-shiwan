@@ -860,6 +860,7 @@ public class DataUploadController {
             dialogStage.initModality(Modality.APPLICATION_MODAL); // 设置为模态窗口
             dialogStage.setScene(new Scene(root));
             dialogStage.setResizable(false);
+            com.miduo.cloud.frontend.util.StageIconUtil.setStageIcon(dialogStage);
             
             // 将Stage传递给控制器
             controller.setDialogStage(dialogStage);
@@ -892,6 +893,7 @@ public class DataUploadController {
             dialogStage.initModality(Modality.APPLICATION_MODAL); // 设置为模态窗口
             dialogStage.setScene(new Scene(root));
             dialogStage.setResizable(false);
+            com.miduo.cloud.frontend.util.StageIconUtil.setStageIcon(dialogStage);
             
             // 显示弹窗并等待用户操作
             dialogStage.showAndWait();

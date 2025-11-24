@@ -12,9 +12,9 @@ import com.miduo.cloud.entity.dto.task.TaskAddRequest;
 import com.miduo.cloud.entity.dto.task.TaskQueryRequest;
 import com.miduo.cloud.entity.dto.task.TaskUpdateRequest;
 import com.miduo.cloud.entity.dto.task.TaskVO;
-import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationUploadMapper;
+import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.CodeRelationMapper;
 import com.miduo.cloud.infrastructure.persistence.mybatis.mapper.ProductionOrderDetailMapper;
-import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationUploadPO;
+import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeRelationPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.ProductionOrderDetailPO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class TaskApplicationService {
     private TaskRepository taskRepository;
     
     @Autowired
-    private CodeRelationUploadMapper codeRelationUploadMapper;
+    private CodeRelationMapper codeRelationMapper;
     
     @Autowired
     private ProductionOrderDetailMapper productionOrderDetailMapper;
@@ -346,11 +346,11 @@ public class TaskApplicationService {
                     String productNo = taskDetail.getProductNo();
                     
                     // 查询CodeRelationUpload表中是否有该OrderNo和ProductNo的未删除数据
-                    Long count = codeRelationUploadMapper.selectCount(
-                        new LambdaQueryWrapper<CodeRelationUploadPO>()
-                            .eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                            .eq(CodeRelationUploadPO::getProductNo, productNo)
-                            .eq(CodeRelationUploadPO::getIsDel, 0)
+                    Long count = codeRelationMapper.selectCount(
+                        new LambdaQueryWrapper<CodeRelationPO>()
+                            .eq(CodeRelationPO::getOrderNo, orderNo)
+                            .eq(CodeRelationPO::getProductNo, productNo)
+                            .eq(CodeRelationPO::getIsDel, 0)
                     );
                     
                     // 如果有未删除的数据，将OrderStatus设为1（生产中）而不是0（停用）
@@ -402,17 +402,17 @@ public class TaskApplicationService {
             // 2. 查询CodeRelationUpload表中当前生产订单和产品的最新插入的一条数据（未被删除）
             // 使用MyBatis-Plus的分页查询，兼容所有SQL Server版本
             // 重要：必须按OrderNo和ProductNo一起过滤，因为一个订单可能包含多个产品
-            Page<CodeRelationUploadPO> page = new Page<>(1, 1);
+            Page<CodeRelationPO> page = new Page<>(1, 1);
             
-            Page<CodeRelationUploadPO> resultPage = codeRelationUploadMapper.selectPage(page,
-                new LambdaQueryWrapper<CodeRelationUploadPO>()
-                    .eq(CodeRelationUploadPO::getOrderNo, orderNo)
-                    .eq(CodeRelationUploadPO::getProductNo, productNo)  // 添加产品编号过滤
-                    .eq(CodeRelationUploadPO::getIsDel, 0)
-                    .orderByDesc(CodeRelationUploadPO::getAddTime)  // 按添加时间降序，取最新的一条
+            Page<CodeRelationPO> resultPage = codeRelationMapper.selectPage(page,
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getOrderNo, orderNo)
+                    .eq(CodeRelationPO::getProductNo, productNo)  // 添加产品编号过滤
+                    .eq(CodeRelationPO::getIsDel, 0)
+                    .orderByDesc(CodeRelationPO::getAddTime)  // 按添加时间降序，取最新的一条
             );
             
-            List<CodeRelationUploadPO> lastRecords = resultPage.getRecords();
+            List<CodeRelationPO> lastRecords = resultPage.getRecords();
             
             System.out.println("[启用任务校验-详细] 订单=" + orderNo + 
                              ", 产品=" + productNo +
@@ -425,7 +425,7 @@ public class TaskApplicationService {
                 return ApiResult.success(true);
             }
             
-            CodeRelationUploadPO lastRecord = lastRecords.get(0);
+            CodeRelationPO lastRecord = lastRecords.get(0);
             Integer lastType = lastRecord.getType(); // 上次的Type
             String bigSerialNumber = lastRecord.getBigSerialNumber();
             
