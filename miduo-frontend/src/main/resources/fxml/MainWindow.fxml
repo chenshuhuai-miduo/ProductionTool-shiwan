@@ -87,7 +87,7 @@
          </padding>
          
          <!-- 左侧面板 -->
-         <VBox prefWidth="340" styleClass="panel" spacing="10">
+         <VBox prefWidth="340" VBox.vgrow="ALWAYS" styleClass="panel" spacing="10">
             <Label text="当前生产信息" styleClass="heading-3"/>
             
             <GridPane hgap="10" vgap="10">
@@ -115,8 +115,8 @@
                <HBox spacing="8" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="4">
                   <Label text="1" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
                   <Label text="垛" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
-                  <TextField fx:id="collectionSpecField" prefWidth="80" 
-                             style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-alignment: center;"/>
+                  <TextField fx:id="collectionSpecField" prefWidth="80" minWidth="80" maxWidth="80" prefHeight="60" minHeight="60" maxHeight="60"
+                             style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-alignment: center; -fx-min-height: 60px; -fx-pref-height: 60px; -fx-max-height: 60px; -fx-padding: 10px 8px;"/>
                   <Label text="箱" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
                </HBox>
                
@@ -133,15 +133,13 @@
             <Separator/>
             
             <Label text="实时上传数据区" styleClass="heading-3"/>
-            <VBox fx:id="uploadDataArea" styleClass="panel" spacing="5" prefHeight="200">
-               <Label text="暂无上传数据" styleClass="caption-text" style="-fx-text-fill: #999999;"/>
-            </VBox>
+            <ListView fx:id="uploadDataList" VBox.vgrow="ALWAYS" styleClass="data-receive-list"/>
          </VBox>
          
          <!-- 中间面板 -->
-         <VBox HBox.hgrow="ALWAYS" styleClass="panel" spacing="10">
+         <VBox HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" styleClass="panel" spacing="10">
             <Label text="数据接收区" styleClass="heading-3"/>
-            <ListView fx:id="dataReceiveList" VBox.vgrow="ALWAYS" styleClass="data-receive-list"/>
+            <ListView fx:id="dataReceiveList" prefHeight="400" maxHeight="400" styleClass="data-receive-list"/>
             
             <Separator/>
             

@@ -189,5 +189,16 @@ public class CodeController {
             @RequestParam("productNo") String productNo) {
         return codeApplicationService.getProducedPalletCountByProduct(orderNo, productNo);
     }
+    
+    /**
+     * 获取产品已生产垛数（优化版）
+     * 使用COUNT(DISTINCT TagNo)在数据库层面直接计数，性能更优
+     */
+    @GetMapping("/produced-pallet-count-by-product-optimized")
+    public ApiResult<Integer> getProducedPalletCountByProductOptimized(
+            @RequestParam("orderNo") String orderNo,
+            @RequestParam("productNo") String productNo) {
+        return codeApplicationService.getProducedPalletCountByProductOptimized(orderNo, productNo);
+    }
 }
 

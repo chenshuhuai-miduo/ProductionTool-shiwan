@@ -121,6 +121,12 @@ public class TaskDtoMapper {
     
     /**
      * 获取订单状态文字
+     * 状态值说明：
+     * 0: 待生产
+     * 1: 生产中（已启用）
+     * 2: 已完成
+     * 3: 生产中（未启用但有采集数据，显示为"生产中"但需要点击启用任务）
+     * 5: 提前结单
      */
     private static String getOrderStatusText(Integer status) {
         if (status == null) {
@@ -130,6 +136,7 @@ public class TaskDtoMapper {
             case 0: return "待生产";
             case 1: return "生产中";
             case 2: return "已完成";
+            case 3: return "生产中"; // 未启用但有采集数据，显示为"生产中"但需要点击启用任务
             case 5: return "提前结单";
             default: return "未知状态";
         }

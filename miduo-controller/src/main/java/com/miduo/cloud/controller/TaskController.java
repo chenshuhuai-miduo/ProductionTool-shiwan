@@ -99,12 +99,28 @@ public class TaskController {
      * 接口八：分页获取可选择的任务（在数据库层面直接过滤状态）
      * 专门用于主界面的"选择生产订单"对话框
      * 支持对生产订单、生产批次、产品名称的模糊查询
-     * 只查询状态为"待生产"(0)和"生产中"(1)的任务，在数据库层面直接过滤，不查询已完成状态
+     * 只查询状态为"待生产"(0)、"生产中"(1)和"未启用但有采集数据"(3)的任务，在数据库层面直接过滤，不查询已完成状态
      * 性能优于 /page/selectable 接口
      */
     @PostMapping("/page/selectable/v2")
     public ApiResult<PageOutput<TaskVO>> querySelectableTaskPageV2(@RequestBody TaskQueryRequest request) {
         return taskApplicationService.querySelectableTaskPageV2(request);
+    }
+    
+    /**
+     * 接口九：查询生产订单完成度
+     * 根据OrderNo和ProductNo查询ProductionOrderDetail表，计算OrderCount/ProductCount
+     * 用于主界面单位实时统计的完成度显示
+     * 
+     * @param orderNo 订单编号
+     * @param productNo 产品编号
+     * @return 完成度（百分比，0-100）
+     */
+    @GetMapping("/completion-rate")
+    public ApiResult<Double> getCompletionRate(
+            @RequestParam("orderNo") String orderNo,
+            @RequestParam("productNo") String productNo) {
+        return taskApplicationService.getCompletionRate(orderNo, productNo);
     }
 }
 

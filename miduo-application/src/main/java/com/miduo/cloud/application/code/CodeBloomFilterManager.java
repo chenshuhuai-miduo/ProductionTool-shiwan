@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 箱码重复检查 Bloom Filter 管理器
@@ -34,6 +35,11 @@ public class CodeBloomFilterManager {
     private volatile BloomFilter<String> globalBoxCodeFilter;
     
     /**
+     * 已删除的箱码集合（用于标记已删除的码，因为布隆过滤器不支持删除操作）
+     */
+    private final ConcurrentHashMap<String, Boolean> deletedBoxCodes = new ConcurrentHashMap<>();
+    
+    /**
      * Bloom Filter 配置参数
      */
     private static final int EXPECTED_INSERTIONS = 500000; // 预期插入码数量：50万
@@ -60,6 +66,10 @@ public class CodeBloomFilterManager {
      */
     public boolean mightContainBoxCode(String boxCode) {
         if (boxCode == null || boxCode.isEmpty()) {
+            return false;
+        }
+        // 如果码已被标记为删除，直接返回false
+        if (deletedBoxCodes.containsKey(boxCode)) {
             return false;
         }
         return globalBoxCodeFilter.mightContain(boxCode);
@@ -95,6 +105,20 @@ public class CodeBloomFilterManager {
     }
     
     /**
+     * 从布隆过滤器中删除箱码（标记为已删除）
+     * 注意：布隆过滤器本身不支持删除操作，这里使用一个Set来跟踪已删除的码
+     * 
+     * @param boxCode 要删除的箱码
+     */
+    public void removeBoxCode(String boxCode) {
+        if (boxCode == null || boxCode.isEmpty()) {
+            return;
+        }
+        deletedBoxCodes.put(boxCode, true);
+        log.debug("[BloomFilter] 删除箱码: {}", boxCode);
+    }
+    
+    /**
      * 重建全局箱码 Bloom Filter
      * 清空当前数据，重新创建（通常在初始化时从数据库加载数据）
      */
@@ -105,6 +129,8 @@ public class CodeBloomFilterManager {
             EXPECTED_INSERTIONS,
             FALSE_POSITIVE_PROBABILITY
         );
+        // 重建时清空已删除码的集合
+        deletedBoxCodes.clear();
     }
 }
 

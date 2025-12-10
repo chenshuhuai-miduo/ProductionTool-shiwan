@@ -189,12 +189,12 @@ public class CodeApplicationService {
     /**
      * 初始化全局箱码 Bloom Filter（异步执行）
      * 从数据库加载整个数据库所有未删除的箱码，添加到全局 Bloom Filter
-     * 注意：只加载箱码（SmallSerialNumber），不加载托盘码
+     * 注意：只加载箱码（SmallSerialNumber），且只加载BigSerialNumber字段有值的数据
      * 
      * 优化说明：
      * 1. 使用 @Async 异步执行，不阻塞系统启动
      * 2. 使用专用线程池 bloomFilterInitExecutor
-     * 3. 分批加载数据，避免一次性加载大量数据导致内存溢出
+     * 3. 分批加载数据，每批100,000条，避免一次性加载大量数据导致内存溢出
      */
     @Async("bloomFilterInitExecutor")
     public void initGlobalBoxCodeBloomFilter() {
@@ -205,18 +205,20 @@ public class CodeApplicationService {
             // 重建 Bloom Filter（清空旧数据）
             bloomFilterManager.rebuildFilter();
             
-            // 分批加载数据，每批 10,000 条
-            int batchSize = 10000;
+            // 分批加载数据，每批 100,000 条
+            int batchSize = 100000;
             int pageNum = 1;
             int totalCount = 0;
             
             while (true) {
-                // 分页查询数据
+                // 分页查询数据（只加载BigSerialNumber字段有值的数据）
                 Page<CodeRelationPO> page = new Page<>(pageNum, batchSize);
                 Page<CodeRelationPO> resultPage = codeRelationMapper.selectPage(
                     page,
                     new LambdaQueryWrapper<CodeRelationPO>()
                         .eq(CodeRelationPO::getIsDel, 0)
+                        .isNotNull(CodeRelationPO::getBigSerialNumber)
+                        .ne(CodeRelationPO::getBigSerialNumber, "")
                         .select(CodeRelationPO::getSmallSerialNumber)
                 );
                 
@@ -394,6 +396,11 @@ public class CodeApplicationService {
             
             codeRelationMapper.update(null, updateWrapper);
             palletCountMap.put(tagNo, currentCount - 1);
+            
+            // 从布隆过滤器中删除该箱码
+            if (StringUtils.hasText(lastRecord.getSmallSerialNumber())) {
+                bloomFilterManager.removeBoxCode(lastRecord.getSmallSerialNumber());
+            }
             
             return ApiResult.success("删除上一个箱码成功", true);
         } catch (Exception e) {
@@ -595,6 +602,11 @@ public class CodeApplicationService {
             }
             
             System.out.println("[根据箱码删除] 删除成功: 箱码=" + boxCode);
+            
+            // 从布隆过滤器中删除该箱码
+            if (StringUtils.hasText(boxCode)) {
+                bloomFilterManager.removeBoxCode(boxCode);
+            }
             
             // 记录操作日志（成功）
             try {
@@ -2047,6 +2059,8 @@ public class CodeApplicationService {
      * 查询CodeRelationUpload表中指定订单和产品的BigSerialNumber有值的记录中不同TagNo的数量
      * 用于主界面单位实时统计，因为一个订单可能包含多个产品
      * 
+     * 注意：此方法保留用于兼容性，新代码请使用 getProducedPalletCountByProductOptimized
+     * 
      * @param orderNo 订单编号
      * @param productNo 产品编号
      * @return 已生产垛数
@@ -2083,6 +2097,38 @@ public class CodeApplicationService {
             int palletCount = uniqueTagNos.size();
             
             System.out.println("[已生产垛数] 订单=" + orderNo + ", 产品=" + productNo + ", 垛数=" + palletCount);
+            
+            return ApiResult.success("查询成功", palletCount);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResult.error("查询失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取产品已生产垛数（优化版，按OrderNo和ProductNo统计）
+     * 使用COUNT(DISTINCT TagNo)在数据库层面直接计数，性能更优
+     * 用于主界面单位实时统计，因为一个订单可能包含多个产品
+     * 
+     * @param orderNo 订单编号
+     * @param productNo 产品编号
+     * @return 已生产垛数
+     */
+    public ApiResult<Integer> getProducedPalletCountByProductOptimized(String orderNo, String productNo) {
+        try {
+            if (!StringUtils.hasText(orderNo)) {
+                return ApiResult.error("订单编号不能为空");
+            }
+            if (!StringUtils.hasText(productNo)) {
+                return ApiResult.error("产品编号不能为空");
+            }
+            
+            // 使用COUNT(DISTINCT TagNo)在数据库层面直接计数，避免查询大量数据后在内存中去重
+            Long count = codeRelationMapper.countDistinctTagNoByOrderAndProduct(orderNo, productNo);
+            
+            int palletCount = count != null ? count.intValue() : 0;
+            
+            System.out.println("[已生产垛数-优化] 订单=" + orderNo + ", 产品=" + productNo + ", 垛数=" + palletCount);
             
             return ApiResult.success("查询成功", palletCount);
         } catch (Exception e) {

@@ -47,7 +47,7 @@ public class MainController {
     @FXML private Label plannedQuantityLabel;
     @FXML private TextField productionBatchField;
     @FXML private ComboBox<String> typeComboBox;
-    @FXML private VBox uploadDataArea;
+    @FXML private ListView<VBox> uploadDataList;
     
     // 中间面板 - 数据接收和日志
     @FXML private ListView<javafx.scene.text.TextFlow> dataReceiveList;
@@ -182,11 +182,20 @@ public class MainController {
         
         // 初始化实时上传数据区（延迟执行，确保FXML完全加载）
         Platform.runLater(() -> {
-            if (uploadDataArea != null) {
-                uploadDataArea.getChildren().clear();
-                Label emptyLabel = new Label("暂无上传数据");
-                emptyLabel.setStyle("-fx-text-fill: #999999; -fx-font-size: 12px; -fx-padding: 10px;");
-                uploadDataArea.getChildren().add(emptyLabel);
+            if (uploadDataList != null) {
+                uploadDataList.setItems(FXCollections.observableArrayList());
+                // 设置单元格工厂，直接显示VBox内容
+                uploadDataList.setCellFactory(listView -> new javafx.scene.control.ListCell<VBox>() {
+                    @Override
+                    protected void updateItem(VBox item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setGraphic(null);
+                        } else {
+                            setGraphic(item);
+                        }
+                    }
+                });
             }
         });
         
@@ -362,7 +371,7 @@ public class MainController {
         javafx.scene.text.TextFlow textFlow = new javafx.scene.text.TextFlow();
         
         // 分割文本：时间+设备+码 和 状态
-        String[] parts = text.split(" (合格|重码|错码|无码|系统生成)");
+        String[] parts = text.split(" (合格|重码|错码|无码|系统生成|成功|失败|不合格)");
         
         if (parts.length > 0) {
             // 第一部分：时间+设备+码（黑色）
@@ -379,9 +388,21 @@ public class MainController {
                 javafx.scene.text.Text statusText = new javafx.scene.text.Text(" 系统生成");
                 statusText.setStyle("-fx-fill: #28a745; -fx-font-weight: bold;"); // 绿色
                 textFlow.getChildren().add(statusText);
+            } else if (text.contains("成功")) {
+                javafx.scene.text.Text statusText = new javafx.scene.text.Text(" 成功");
+                statusText.setStyle("-fx-fill: #28a745; -fx-font-weight: bold;"); // 绿色（与合格一致）
+                textFlow.getChildren().add(statusText);
             } else if (text.contains("重码")) {
                 javafx.scene.text.Text statusText = new javafx.scene.text.Text(" 重码");
                 statusText.setStyle("-fx-fill: #dc3545; -fx-font-weight: bold;"); // 红色
+                textFlow.getChildren().add(statusText);
+            } else if (text.contains("失败")) {
+                javafx.scene.text.Text statusText = new javafx.scene.text.Text(" 失败");
+                statusText.setStyle("-fx-fill: #dc3545; -fx-font-weight: bold;"); // 红色（与重码一致）
+                textFlow.getChildren().add(statusText);
+            } else if (text.contains("不合格")) {
+                javafx.scene.text.Text statusText = new javafx.scene.text.Text(" 不合格");
+                statusText.setStyle("-fx-fill: #dc3545; -fx-font-weight: bold;"); // 红色（与重码一致）
                 textFlow.getChildren().add(statusText);
             } else if (text.contains("错码")) {
                 javafx.scene.text.Text statusText = new javafx.scene.text.Text(" 错码");
@@ -401,6 +422,14 @@ public class MainController {
         
         // 将最新数据添加到列表顶部（索引0）
         dataReceiveList.getItems().add(0, textFlow);
+        
+        // 限制数据接收区最多显示1000条数据，超过则删除最旧的数据（列表末尾）
+        final int MAX_DATA_COUNT = 1000;
+        if (dataReceiveList.getItems().size() > MAX_DATA_COUNT) {
+            // 删除列表末尾最旧的数据
+            dataReceiveList.getItems().remove(MAX_DATA_COUNT, dataReceiveList.getItems().size());
+        }
+        
         // 滚动到顶部显示最新数据
         dataReceiveList.scrollTo(0);
     }
@@ -521,8 +550,8 @@ public class MainController {
      */
     private void handleDeviceDataWithOrder(int categoryCode, String data) {
         Platform.runLater(() -> {
-            // 箱码采集设备的数据不在此处显示，延迟到获取状态后显示
-            if (categoryCode != 2) {
+            // 箱码采集设备和码校验设备的数据不在此处显示，延迟到获取状态后显示
+            if (categoryCode != 2 && categoryCode != 1) {
                 // 其他设备：添加时间戳和设备标识到数据接收区（使用ListView）
                 String deviceName = getCategoryName(categoryCode);
                 String timestampedData = getCurrentTime() + " [" + deviceName + "] " + data;
@@ -645,6 +674,11 @@ public class MainController {
     
     /**
      * 获取任务状态文本
+     * 状态值说明：
+     * 0: 待生产
+     * 1: 生产中（已启用）
+     * 2: 已完成
+     * 3: 生产中（未启用但有采集数据，显示为"生产中"但需要点击启用任务）
      */
     private String getStatusText(Integer status) {
         if (status == null) return "未知";
@@ -652,6 +686,7 @@ public class MainController {
             case 0: return "待生产";
             case 1: return "生产中";
             case 2: return "已完成";
+            case 3: return "生产中"; // 未启用但有采集数据，显示为"生产中"但需要点击启用任务
             default: return "未知(" + status + ")";
         }
     }
@@ -684,9 +719,7 @@ public class MainController {
      */
     private void handleFirstDeviceDataNormalMode(String code) {
         try {
-            Platform.runLater(() -> {
-                appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(1) + "-普通模式] 码校验: " + code + "\n");
-            });
+            // 码校验信息不再在操作日志区显示，只在数据接收区显示
             
             // 调用校验接口
             CodeValidateRequest request = new CodeValidateRequest(1, code);
@@ -698,16 +731,15 @@ public class MainController {
             if (result.getCode() == 200) {
                 String validateResult = result.getData(); // 01 or 02
                 
+                // 在数据接收区显示校验结果
                 Platform.runLater(() -> {
-                    appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(1) + "-普通模式] 校验结果: " + validateResult + "\n");
+                    String statusText = "01".equals(validateResult) ? "合格" : "不合格";
+                    String displayText = getCurrentTime() + " [" + getCategoryName(1) + "] " + code + " " + statusText;
+                    addColoredTextToDataReceive(displayText, null);
                 });
                 
                 // 向码校验设备（类别代码1）发送校验结果
                 DeviceConnectionManager.getInstance().sendToDeviceByCategory(1, validateResult);
-                
-                Platform.runLater(() -> {
-                    appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(1) + "-普通模式] 已发送响应: " + validateResult + "\n");
-                });
             }
             
         } catch (Exception e) {
@@ -725,16 +757,6 @@ public class MainController {
         try {
             // 检查是否为"null"字符串（无码）
             boolean isNullString = "null".equals(code);
-            
-            Platform.runLater(() -> {
-                appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(1) + "-读码剔除] 开始校验: " + (isNullString ? "null(无码)" : code) + "\n");
-                
-                // 如果是null（字符串），在数据接收区显示"未读到码none"
-                if (isNullString) {
-                    String displayText = getCurrentTime() + " [" + getCategoryName(1) + "] 未读到码none 无码";
-                    addColoredTextToDataReceive(displayText, "NO_CODE");
-                }
-            });
             
             // 获取当前订单号
             String orderNo = productionOrderField.getText();
@@ -754,10 +776,31 @@ public class MainController {
                 String message = rejectResult.getMessage();
                 
                 Platform.runLater(() -> {
+                    // 在数据接收区显示校验结果（与箱码采集格式一致）
+                    String statusText = "";
+                    String displayCode = isNullString ? "未读到码none" : code;
+                    
                     if ("01".equals(validateResult)) {
                         // 合格，放行
-                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(1) + "-读码剔除] ✓ " + message + "\n");
-                        
+                        statusText = "合格";
+                    } else {
+                        // 剔除，根据rejectReason确定状态
+                        if ("NO_CODE".equals(rejectReason)) {
+                            statusText = "无码";
+                            displayCode = "未读到码none";
+                        } else if ("DUPLICATE".equals(rejectReason)) {
+                            statusText = "重码";
+                        } else if ("INVALID_FORMAT".equals(rejectReason) || "ALL_LETTERS".equals(rejectReason)) {
+                            statusText = "错码";
+                        } else {
+                            statusText = "不合格";
+                        }
+                    }
+                    
+                    String displayText = getCurrentTime() + " [" + getCategoryName(1) + "] " + displayCode + " " + statusText;
+                    addColoredTextToDataReceive(displayText, null);
+                    
+                    if ("01".equals(validateResult)) {
                         // 记录放行日志到OperateLog表
                         OperateLogBuilder.create()
                             .module(ModuleNameEnum.CODE_VALIDATE)
@@ -768,8 +811,6 @@ public class MainController {
                             .saveAsync();
                     } else {
                         // 剔除，触发短报警（只有成功发送报警信号02时才显示报警信息）
-                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(1) + "-读码剔除] ✗ " + message + " 原因: " + rejectReason + "\n");
-                        
                         // 触发短报警（错码、无码、重码），只有成功发送报警信号（02）时才显示报警信息
                         triggerShortAlarm(getCategoryName(1) + "-" + message);
                         
@@ -805,28 +846,29 @@ public class MainController {
                     }
                 }
                 
-                final String finalRejectCommand = rejectCommand;
-                final boolean finalRejectSent = rejectSent;
-                final boolean finalAlarmSent = alarmSent;
-                final boolean finalAlarmEnabled = isAlarmEnabled;
-                Platform.runLater(() -> {
-                    if (finalRejectSent) {
-                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(6) + "] 已发送指令: " + finalRejectCommand + 
-                            ("02".equals(finalRejectCommand) ? " (剔除)" : " (放行)") + "\n");
-                    } else {
-                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(6) + "] 发送失败或未连接\n");
-                    }
-                    
-                    if ("02".equals(finalRejectCommand)) {
-                        if (!finalAlarmEnabled) {
-                            appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 已关闭，不发送信号\n");
-                        } else if (finalAlarmSent) {
-                            appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 已发送报警信号: " + finalRejectCommand + "\n");
-                        } else {
-                            appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 发送失败或未连接\n");
-                        }
-                    }
-                });
+                // 码校验相关的剔除设备和报警器信息不再在操作日志区显示
+                // final String finalRejectCommand = rejectCommand;
+                // final boolean finalRejectSent = rejectSent;
+                // final boolean finalAlarmSent = alarmSent;
+                // final boolean finalAlarmEnabled = isAlarmEnabled;
+                // Platform.runLater(() -> {
+                //     if (finalRejectSent) {
+                //         appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(6) + "] 已发送指令: " + finalRejectCommand + 
+                //             ("02".equals(finalRejectCommand) ? " (剔除)" : " (放行)") + "\n");
+                //     } else {
+                //         appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(6) + "] 发送失败或未连接\n");
+                //     }
+                //     
+                //     if ("02".equals(finalRejectCommand)) {
+                //         if (!finalAlarmEnabled) {
+                //             appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 已关闭，不发送信号\n");
+                //         } else if (finalAlarmSent) {
+                //             appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 已发送报警信号: " + finalRejectCommand + "\n");
+                //         } else {
+                //             appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 发送失败或未连接\n");
+                //         }
+                //     }
+                // });
             }
             
         } catch (Exception e) {
@@ -979,9 +1021,6 @@ public class MainController {
             boolean isNullString = "null".equals(triggerPalletCode);
             
             Platform.runLater(() -> {
-                appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(3) + "] 接收触发托盘码: " + 
-                    (isNullString ? "null(未读到托盘码)" : triggerPalletCode) + "\n");
-                
                 // 如果是null（字符串），在数据接收区显示"未读到码none"
                 if (isNullString) {
                     String displayText = getCurrentTime() + " [" + getCategoryName(3) + "] 未读到码none 无码";
@@ -1003,30 +1042,22 @@ public class MainController {
                 // 有箱码模式：保存触发托盘码，等待箱码关联设备的箱码
                 this.triggerBoxCode = triggerPalletCode;
                 
-                Platform.runLater(() -> {
-                    appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(3) + "-有箱码] 触发托盘码已保存，等待箱码...\n");
-                    
-                    // 记录托盘码接收日志
-                    OperateLogBuilder.create()
-                        .module(ModuleNameEnum.CODE_ASSOCIATE_PALLET)
-                        .operateType(OperateTypeEnum.COLLECT)
-                        .target(triggerPalletCode, productionOrderField.getText())
-                        .content("接收触发托盘码(有箱码模式): " + triggerPalletCode)
-                        .saveAsync();
-                });
+                // 记录托盘码接收日志（不在操作日志区显示）
+                OperateLogBuilder.create()
+                    .module(ModuleNameEnum.CODE_ASSOCIATE_PALLET)
+                    .operateType(OperateTypeEnum.COLLECT)
+                    .target(triggerPalletCode, productionOrderField.getText())
+                    .content("接收触发托盘码(有箱码模式): " + triggerPalletCode)
+                    .saveAsync();
             } else {
                 // 无箱码模式：直接生成虚拟箱码并完成码关系更新，无需等待箱码关联设备
-                Platform.runLater(() -> {
-                    appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(3) + "-无箱码] 接收托盘码，直接生成虚拟箱码并关联...\n");
-                    
-                    // 记录托盘码接收日志
-                    OperateLogBuilder.create()
-                        .module(ModuleNameEnum.CODE_ASSOCIATE_PALLET)
-                        .operateType(OperateTypeEnum.COLLECT)
-                        .target(triggerPalletCode, productionOrderField.getText())
-                        .content("接收触发托盘码(无箱码模式): " + triggerPalletCode)
-                        .saveAsync();
-                });
+                // 记录托盘码接收日志（不在操作日志区显示）
+                OperateLogBuilder.create()
+                    .module(ModuleNameEnum.CODE_ASSOCIATE_PALLET)
+                    .operateType(OperateTypeEnum.COLLECT)
+                    .target(triggerPalletCode, productionOrderField.getText())
+                    .content("接收触发托盘码(无箱码模式): " + triggerPalletCode)
+                    .saveAsync();
                 
                 // 直接调用无箱码处理逻辑
                 handleNoBoxModeAssociation(triggerPalletCode);
@@ -1034,9 +1065,7 @@ public class MainController {
             
         } catch (Exception e) {
             e.printStackTrace();
-            Platform.runLater(() -> {
-                appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(3) + "] 处理失败: " + e.getMessage() + "\n");
-            });
+            // 不在操作日志区显示处理失败信息
         }
     }
     
@@ -1061,13 +1090,6 @@ public class MainController {
             if (type == 1) {
                 // 有箱码模式：需要托盘码关联设备的触发托盘码
                 Platform.runLater(() -> {
-                    String logMsg = getCurrentTime() + " [" + getCategoryName(4) + "] 接收箱码: " + finalExtractedBoxCode;
-                    // 如果提取的箱码与原始数据不同，记录原始数据
-                    if (!finalExtractedBoxCode.equals(finalOriginalBoxCode)) {
-                        logMsg += " (原始: " + finalOriginalBoxCode + ")";
-                    }
-                    appendTextToTop(operationLogArea, logMsg + "\n");
-                    
                     // 如果是null（字符串），在数据接收区显示"未读到码none"
                     if (isNullString) {
                         String displayText = getCurrentTime() + " [" + getCategoryName(4) + "] 未读到码none 无码";
@@ -1115,10 +1137,6 @@ public class MainController {
                 return;
             }
             
-            Platform.runLater(() -> {
-                appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(4) + "-有箱码] 使用触发托盘码: " + triggerBoxCode + "\n");
-            });
-            
             // 获取每垛箱数（Qty）
             if (boxesPerPallet <= 0) {
                 Platform.runLater(() -> {
@@ -1153,12 +1171,9 @@ public class MainController {
                         String displayText = getCurrentTime() + " [" + getCategoryName(4) + "-有箱码] 箱码=" + boxCode + " 托盘码=" + finalPalletCode + " 成功";
                         addColoredTextToDataReceive(displayText, null);
                         
-                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(4) + "-有箱码] 码关联成功\n");
-                        appendTextToTop(operationLogArea,getCurrentTime() + "   - 触发箱码: " + boxCode + "\n");
-                        appendTextToTop(operationLogArea,getCurrentTime() + "   - TagNo: " + associateResult.getTagNo() + "\n");
-                        appendTextToTop(operationLogArea,getCurrentTime() + "   - 托盘码: " + associateResult.getPalletCode() + "\n");
-                        appendTextToTop(operationLogArea,getCurrentTime() + "   - 虚拟垛标: " + associateResult.getVirtualPalletCode() + "\n");
-                        appendTextToTop(operationLogArea,getCurrentTime() + "   - 更新数量: " + associateResult.getUpdatedCount() + " 条\n");
+                        // 在操作日志区显示成功信息（单行格式）
+                        String palletCode = associateResult.getPalletCode() != null ? associateResult.getPalletCode() : finalPalletCode;
+                        appendTextToTop(operationLogArea,getCurrentTime() + " [箱码关联-有箱码]箱码=" + boxCode + " 托盘码=" + palletCode + " 成功\n");
                         
                         // 清除触发托盘码
                         triggerBoxCode = null; // 清除触发箱码
@@ -1241,10 +1256,6 @@ public class MainController {
     private void handleNoBoxModeAssociation(String palletCode) {
         new Thread(() -> {
             try {
-                Platform.runLater(() -> {
-                    appendTextToTop(operationLogArea,getCurrentTime() + " [托盘码关联-无箱码] 开始更新之前采集的无码数据...\n");
-                });
-                
                 // 构建无箱码托盘码关联请求
                 NoBoxCollectRequest request = new NoBoxCollectRequest();
                 request.setPalletCode(palletCode);
@@ -1268,10 +1279,9 @@ public class MainController {
                             String displayText = getCurrentTime() + " [托盘码关联-无箱码] 托盘码: " + palletCode + " 成功";
                             addColoredTextToDataReceive(displayText, null);
                             
-                            appendTextToTop(operationLogArea,getCurrentTime() + " [托盘码关联-无箱码] " + collectResult.getMessage() + "\n");
-                            appendTextToTop(operationLogArea,getCurrentTime() + "   - 更新记录数量: " + collectResult.getGeneratedCount() + "\n");
-                            appendTextToTop(operationLogArea,getCurrentTime() + "   - 托盘码: " + collectResult.getPalletCode() + "\n");
-                            appendTextToTop(operationLogArea,getCurrentTime() + "   - 虚拟垛标: " + collectResult.getVirtualPalletCode() + "\n");
+                            // 在操作日志区显示成功信息（单行格式）
+                            String resultPalletCode = collectResult.getPalletCode() != null ? collectResult.getPalletCode() : palletCode;
+                            appendTextToTop(operationLogArea,getCurrentTime() + " [托盘码关联-无箱码]托盘码:" + resultPalletCode + " 成功\n");
                             
                             // 前端实时统计：已生产垛数+1，当前箱数重置为0
                             producedPalletCount++;
@@ -1369,12 +1379,66 @@ public class MainController {
      */
     private void appendTextToTop(TextArea textArea, String text) {
         if (textArea != null && text != null) {
-            // 如果已有内容，在顶部插入新文本
-            if (textArea.getLength() > 0) {
-                textArea.insertText(0, text);
-            } else {
-                // 如果为空，直接追加
-                textArea.appendText(text);
+            // 限制操作日志区最多显示500条，超过则删除最旧的数据（从末尾删除）
+            final int MAX_LOG_LINES = 500;
+            
+            try {
+                // 先获取当前文本内容
+                String currentText = textArea.getText();
+                
+                // 在顶部插入新文本
+                String newText = text + currentText;
+                
+                // 计算新文本的行数
+                int newLineCount = newText.isEmpty() ? 0 : 1;
+                for (int i = 0; i < newText.length(); i++) {
+                    if (newText.charAt(i) == '\n') {
+                        newLineCount++;
+                    }
+                }
+                
+                // 如果超过限制，找到第MAX_LOG_LINES个换行符的位置并截断
+                if (newLineCount > MAX_LOG_LINES) {
+                    int newlineCount = 0;
+                    int cutPosition = newText.length();
+                    for (int i = 0; i < newText.length(); i++) {
+                        if (newText.charAt(i) == '\n') {
+                            newlineCount++;
+                            if (newlineCount == MAX_LOG_LINES) {
+                                cutPosition = i + 1; // 保留第MAX_LOG_LINES行的换行符
+                                break;
+                            }
+                        }
+                    }
+                    newText = newText.substring(0, Math.min(cutPosition, newText.length()));
+                }
+                
+                // 一次性设置文本，避免多次操作导致的竞态条件
+                textArea.setText(newText);
+                
+            } catch (IndexOutOfBoundsException e) {
+                // 处理索引越界异常（可能是多线程竞态导致）
+                System.err.println("[操作日志] 索引越界异常，使用降级方案: " + e.getMessage());
+                try {
+                    // 降级方案：直接清空并添加新文本
+                    textArea.clear();
+                    textArea.appendText(text);
+                } catch (Exception ex) {
+                    System.err.println("[操作日志] 降级方案也失败: " + ex.getMessage());
+                }
+            } catch (Exception e) {
+                // 如果出现其他异常，使用简单的追加方式作为降级方案
+                System.err.println("[操作日志] 添加文本异常: " + e.getMessage());
+                try {
+                    if (textArea.getLength() == 0) {
+                        textArea.appendText(text);
+                    } else {
+                        textArea.insertText(0, text);
+                    }
+                } catch (Exception ex) {
+                    // 如果所有方式都失败，只记录错误
+                    System.err.println("[操作日志] 无法添加文本: " + ex.getMessage());
+                }
             }
         }
     }
@@ -1520,34 +1584,37 @@ public class MainController {
         boxesPerPalletLabel.setText(String.valueOf(boxesPerPallet));
         producedPalletCountLabel.setText(String.valueOf(producedPalletCount));
         
-        // 计算完成度：从后端实时获取实际采集箱数（支持强制满垛场景）
-        if (currentTask != null && currentTask.getProductCount() != null && currentTask.getProductCount() > 0) {
+        // 计算完成度：从后端查询ProductionOrderDetail表的OrderCount/ProductCount
+        if (currentTask != null) {
             String orderNo = currentTask.getOrderNo();
             String productNo = currentTask.getProductNo();
             
             if (orderNo != null && !orderNo.isEmpty() && productNo != null && !productNo.isEmpty()) {
                 new Thread(() -> {
                     try {
-                        // 调用后端接口获取实际采集箱数
-                        String collectedCountUrl = "/api/code/collected-count-by-product?orderNo=" + 
+                        // 调用后端接口获取完成度（查询ProductionOrderDetail表的OrderCount/ProductCount）
+                        String completionRateUrl = "/api/task/completion-rate?orderNo=" + 
                                 java.net.URLEncoder.encode(orderNo, "UTF-8") + 
                                 "&productNo=" + java.net.URLEncoder.encode(productNo, "UTF-8");
-                        String collectedCountJson = HttpUtil.doGet(collectedCountUrl);
-                        ApiResult<Integer> collectedCountResult = HttpUtil.parseJson(collectedCountJson, 
-                            new TypeReference<ApiResult<Integer>>() {});
+                        String completionRateJson = HttpUtil.doGet(completionRateUrl);
+                        ApiResult<Double> completionRateResult = HttpUtil.parseJson(completionRateJson, 
+                            new TypeReference<ApiResult<Double>>() {});
                         
-                        if (collectedCountResult.getCode() == 200 && collectedCountResult.getData() != null) {
-                            final int actualCollectedCount = collectedCountResult.getData();
-                            final int totalCount = currentTask.getProductCount();
+                        if (completionRateResult.getCode() == 200 && completionRateResult.getData() != null) {
+                            final double completionRate = completionRateResult.getData();
                             
                             Platform.runLater(() -> {
-                                // 使用实际采集箱数计算完成度（不再使用 垛数*每垛箱数，支持强制满垛）
-                                double completionRate = (double) actualCollectedCount / totalCount * 100;
+                                // 使用ProductionOrderDetail表的OrderCount/ProductCount计算完成度
                                 completionRateLabel.setText(String.format("%.1f%%", completionRate));
+                            });
+                        } else {
+                            // 查询失败时显示0%
+                            Platform.runLater(() -> {
+                                completionRateLabel.setText("0%");
                             });
                         }
                     } catch (Exception e) {
-                        System.err.println("[完成度统计] 获取实际采集箱数失败：" + e.getMessage());
+                        System.err.println("[完成度统计] 获取完成度失败：" + e.getMessage());
                         e.printStackTrace();
                         // 失败时显示0%
                         Platform.runLater(() -> {
@@ -1565,23 +1632,33 @@ public class MainController {
     
     /**
      * 从数据库加载初始统计数据（仅在选择订单时调用一次）
+     * 按OrderNo和ProductNo统计已生产垛数
      */
     private void loadInitialStatisticsFromDatabase() {
         if (currentTask == null) {
+            System.out.println("[初始统计] 当前任务为空，跳过查询");
             return;
         }
         
         String orderNo = currentTask.getOrderNo();
         String productNo = currentTask.getProductNo();
         
-        if (orderNo == null || orderNo.isEmpty() || productNo == null || productNo.isEmpty()) {
+        if (orderNo == null || orderNo.isEmpty()) {
+            System.out.println("[初始统计] 订单号为空，跳过查询");
             return;
         }
         
+        if (productNo == null || productNo.isEmpty()) {
+            System.out.println("[初始统计] 产品编号为空，跳过查询");
+            return;
+        }
+        
+        System.out.println("[初始统计] 开始查询已生产垛数 - 订单号: " + orderNo + ", 产品编号: " + productNo);
+        
         new Thread(() -> {
             try {
-                // 1. 获取已生产垛数（按OrderNo和ProductNo统计）
-                String palletCountUrl = "/api/code/produced-pallet-count-by-product?orderNo=" + 
+                // 获取已生产垛数（按OrderNo和ProductNo统计，使用优化接口）
+                String palletCountUrl = "/api/code/produced-pallet-count-by-product-optimized?orderNo=" + 
                         java.net.URLEncoder.encode(orderNo, "UTF-8") + 
                         "&productNo=" + java.net.URLEncoder.encode(productNo, "UTF-8");
                 String palletCountJson = HttpUtil.doGet(palletCountUrl);
@@ -1592,12 +1669,18 @@ public class MainController {
                     final int dbProducedPalletCount = palletCountResult.getData();
                     Platform.runLater(() -> {
                         producedPalletCount = dbProducedPalletCount;
-                        System.out.println("[初始统计] 从数据库加载已生产垛数: " + dbProducedPalletCount);
+                        System.out.println("[初始统计] 从数据库加载已生产垛数成功 - 订单号: " + orderNo + 
+                                ", 产品编号: " + productNo + ", 已生产垛数: " + dbProducedPalletCount);
                         updateStatisticsDisplay();
                     });
+                } else {
+                    System.err.println("[初始统计] 查询已生产垛数失败 - 订单号: " + orderNo + 
+                            ", 产品编号: " + productNo + ", 错误: " + 
+                            (palletCountResult != null ? palletCountResult.getMessage() : "未知错误"));
                 }
             } catch (Exception e) {
-                System.err.println("[初始统计] 获取统计数据失败：" + e.getMessage());
+                System.err.println("[初始统计] 获取已生产垛数异常 - 订单号: " + orderNo + 
+                        ", 产品编号: " + productNo + ", 异常: " + e.getMessage());
                 e.printStackTrace();
             }
         }).start();
@@ -2113,7 +2196,8 @@ public class MainController {
         Integer newStatus;
         String actionText;
         
-        if (currentStatus == null || currentStatus == 0) {
+        // 状态0（待生产）和状态3（未启用但有采集数据）都可以启用任务
+        if (currentStatus == null || currentStatus == 0 || currentStatus == 3) {
             // 启用任务前检查采集规格是否已填写
             int boxesPerPalletValue = readBoxesPerPallet();
             if (boxesPerPalletValue <= 0) {
@@ -2896,8 +2980,6 @@ public class MainController {
     private void forcePalletExecute(String orderNo, Integer boxesPerPallet) {
         new Thread(() -> {
             try {
-                appendTextToTop(operationLogArea,getCurrentTime() + " 开始执行强制满垛（每垛箱数=" + boxesPerPallet + "）\n");
-                
                 // 构建请求，传入前端采集规格中的每垛箱数
                 ForcePalletRequest request = new ForcePalletRequest(orderNo, boxesPerPallet);
                 request.setProductNo(productCodeLabel.getText()); // 设置产品编号
@@ -2915,9 +2997,10 @@ public class MainController {
                             // 成功：重置当前箱数为0（因为垛已标记为满垛状态，等待关联）
                             currentBoxCountLabel.setText("0");
                             
-                            // 显示日志
-                            appendTextToTop(operationLogArea,getCurrentTime() + " ✓ " + forceResult.getMessage() + "\n");
-                            appendTextToTop(operationLogArea,getCurrentTime() + " ℹ 已标记为允许箱数不匹配，请通过设备扫码进行托盘码关联\n");
+                            // 在操作日志区只显示一条简洁消息
+                            Integer originalCount = forceResult.getOriginalCount() != null ? forceResult.getOriginalCount() : 0;
+                            Integer targetBoxesPerPallet = forceResult.getBoxesPerPallet() != null ? forceResult.getBoxesPerPallet() : boxesPerPallet;
+                            appendTextToTop(operationLogArea,getCurrentTime() + " 强制满垛成功！当前采集了 " + originalCount + " 箱（应采集 " + targetBoxesPerPallet + " 箱）。\n");
                             
                             showAlert(Alert.AlertType.INFORMATION, "强制满垛成功", forceResult.getMessage());
                             
@@ -2926,20 +3009,14 @@ public class MainController {
                                 if (isAlarmEnabled) {
                                     boolean alarmSent = DeviceConnectionManager.getInstance().sendToDeviceByCategory(5, "02");
                                     if (alarmSent) {
-                                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 已发送报警信号: 02 (强制满垛)\n");
                                         // 在报警信息区域显示
                                         appendTextToTopAlarm(alarmInfoArea,getCurrentTime() + " 强制了满垛，但对应垛码待采集（短鸣提示）\n");
                                         // 更新报警状态为报警中
                                         isAlarming = true;
-                                    } else {
-                                        appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 发送失败或未连接 (强制满垛)\n");
                                     }
-                                } else {
-                                    appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 已关闭，不发送信号 (强制满垛)\n");
                                 }
                             } catch (Exception e) {
                                 System.err.println("[报警器] 强制满垛报警发送异常: " + e.getMessage());
-                                appendTextToTop(operationLogArea,getCurrentTime() + " [" + getCategoryName(5) + "] 报警发送异常: " + e.getMessage() + "\n");
                             }
                             
                             // 记录操作日志
@@ -3180,10 +3257,11 @@ public class MainController {
      *    只有在任务已启动（status == 1 生产中）时才可用，否则置灰
      */
     private void updateButtonStates() {
-        // 检查任务是否已启动（状态为1表示生产中）
+        // 检查任务是否已启动（状态为1表示生产中，已启用）
         boolean isTaskRunning = (currentTask != null && currentTask.getOrderStatus() != null && currentTask.getOrderStatus() == 1);
-        // 检查任务是否已停止（状态为0表示已停止）
-        boolean isTaskStopped = (currentTask != null && currentTask.getOrderStatus() != null && currentTask.getOrderStatus() == 0);
+        // 检查任务是否已停止（状态为0或3表示已停止，状态3表示未启用但有采集数据）
+        boolean isTaskStopped = (currentTask != null && currentTask.getOrderStatus() != null && 
+                                 (currentTask.getOrderStatus() == 0 || currentTask.getOrderStatus() == 3));
         
         // 启用/停用任务按钮：始终可用（不设置disable）
         // enableTaskButton - 不需要设置，始终可用
@@ -3211,7 +3289,8 @@ public class MainController {
             return;
         }
         Integer status = currentTask.getOrderStatus();
-        if (status == null || status == 0) {
+        // 状态0（待生产）和状态3（未启用但有采集数据）都显示"启用任务"
+        if (status == null || status == 0 || status == 3) {
             enableTaskButton.setText("启用任务");
         } else if (status == 1) {
             enableTaskButton.setText("停用任务");
@@ -3222,11 +3301,12 @@ public class MainController {
     
     /**
      * 更新工作状态显示
-     * @param status 任务状态 (0=待机，1=启用中，2=已完成)
+     * @param status 任务状态 (0=待机，1=启用中，2=已完成，3=待机但有采集数据)
      */
     private void updateWorkStatus(Integer status) {
         if (workStatusLabel != null) {
-            if (status == null || status == 0) {
+            // 状态0（待生产）和状态3（未启用但有采集数据）都显示为待机
+            if (status == null || status == 0 || status == 3) {
                 workStatusLabel.setText("工作状态：待机中");
             } else if (status == 1) {
                 workStatusLabel.setText("工作状态：启用中");
@@ -3240,15 +3320,18 @@ public class MainController {
      * 清空实时上传数据区
      */
     private void clearUploadDataArea() {
-        if (uploadDataArea == null) {
+        if (uploadDataList == null) {
             return;
         }
         Platform.runLater(() -> {
-            uploadDataArea.getChildren().clear();
+            uploadDataList.getItems().clear();
             displayedPallets.clear();
+            // 显示空状态提示
+            VBox emptyBox = new VBox();
             Label emptyLabel = new Label("暂无上传数据");
             emptyLabel.setStyle("-fx-text-fill: #999999; -fx-font-size: 12px; -fx-padding: 10px;");
-            uploadDataArea.getChildren().add(emptyLabel);
+            emptyBox.getChildren().add(emptyLabel);
+            uploadDataList.getItems().add(emptyBox);
         });
     }
     
@@ -3274,6 +3357,24 @@ public class MainController {
             newMap.putAll(displayedPallets);
             displayedPallets = newMap;
             
+            // 限制最多保留100条数据，超过则删除最旧的数据（列表末尾）
+            final int MAX_UPLOAD_DATA_COUNT = 100;
+            if (displayedPallets.size() > MAX_UPLOAD_DATA_COUNT) {
+                // 获取所有键，删除最旧的（从末尾开始删除）
+                java.util.List<String> keysToRemove = new java.util.ArrayList<>();
+                int index = 0;
+                for (String key : displayedPallets.keySet()) {
+                    if (index >= MAX_UPLOAD_DATA_COUNT) {
+                        keysToRemove.add(key);
+                    }
+                    index++;
+                }
+                // 删除多余的键
+                for (String key : keysToRemove) {
+                    displayedPallets.remove(key);
+                }
+            }
+            
             // 刷新显示
             refreshUploadAreaDisplay();
         });
@@ -3283,12 +3384,19 @@ public class MainController {
      * 刷新实时上传区显示
      */
     private void refreshUploadAreaDisplay() {
-        uploadDataArea.getChildren().clear();
+        if (uploadDataList == null) {
+            return;
+        }
+        
+        uploadDataList.getItems().clear();
         
         if (displayedPallets.isEmpty()) {
+            // 显示空状态提示
+            VBox emptyBox = new VBox();
             Label emptyLabel = new Label("暂无上传数据");
             emptyLabel.setStyle("-fx-text-fill: #999999; -fx-font-size: 12px; -fx-padding: 10px;");
-            uploadDataArea.getChildren().add(emptyLabel);
+            emptyBox.getChildren().add(emptyLabel);
+            uploadDataList.getItems().add(emptyBox);
         } else {
             // 按添加顺序显示所有托盘码（最新的在最上面）
             for (PalletUploadVO palletVO : displayedPallets.values()) {
@@ -3297,8 +3405,11 @@ public class MainController {
                     String.valueOf(palletVO.getBoxCount()), 
                     palletVO.getUploadStatus()
                 );
-                uploadDataArea.getChildren().add(itemBox);
+                uploadDataList.getItems().add(itemBox);
             }
+            
+            // 滚动到顶部显示最新数据
+            uploadDataList.scrollTo(0);
         }
     }
     

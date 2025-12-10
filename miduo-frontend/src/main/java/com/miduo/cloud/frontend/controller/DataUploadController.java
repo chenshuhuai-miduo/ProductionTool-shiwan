@@ -185,12 +185,13 @@ public class DataUploadController {
                     setText(null);
                     setTooltip(null);
                 } else {
-                    // 0:待生产, 1:生产中, 2:已完成
+                    // 0:待生产, 1:生产中, 2:已完成, 3:生产中（未启用但有采集数据）
                     String text;
                     switch (item) {
                         case 0: text = "待生产"; break;
                         case 1: text = "生产中"; break;
                         case 2: text = "已完成"; break;
+                        case 3: text = "生产中"; break; // 未启用但有采集数据，显示为"生产中"但需要点击启用任务
                         default: text = "未知";
                     }
                     setText(text);

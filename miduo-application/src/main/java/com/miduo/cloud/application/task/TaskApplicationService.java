@@ -1,7 +1,6 @@
 package com.miduo.cloud.application.task;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.miduo.cloud.application.task.mapper.TaskDtoMapper;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.common.dto.PageInput;
@@ -272,7 +271,7 @@ public class TaskApplicationService {
     /**
      * 分页查询可选择的任务（在数据库层面直接过滤状态）
      * 专门用于主界面的"选择生产订单"对话框
-     * 只查询状态为"待生产"(0)和"生产中"(1)的任务，在数据库层面直接过滤，不查询已完成状态
+     * 只查询状态为"待生产"(0)、"生产中"(1)和"未启用但有采集数据"(3)的任务，在数据库层面直接过滤，不查询已完成状态
      * 
      * @param request 查询请求（包含分页参数和查询条件）
      * @return 分页结果
@@ -284,8 +283,8 @@ public class TaskApplicationService {
             pageInput.setCurrent(Long.valueOf(request.getPageNum()));
             pageInput.setSize(Long.valueOf(request.getPageSize()));
             
-            // 2. 构建状态列表：只查询待生产(0)和生产中(1)状态的订单
-            List<Integer> orderStatuses = java.util.Arrays.asList(0, 1);
+            // 2. 构建状态列表：查询待生产(0)、生产中(1)和未启用但有采集数据(3)状态的订单
+            List<Integer> orderStatuses = java.util.Arrays.asList(0, 1, 3);
             
             // 3. 调用新的Repository方法，在数据库层面直接过滤状态
             PageOutput<Task> taskPage = taskRepository.findByPageWithStatuses(
@@ -337,6 +336,12 @@ public class TaskApplicationService {
             }
             
             // 如果是停用任务（status=0），需要检查CodeRelationUpload表中是否有未删除数据
+            // 状态值说明：
+            // 0: 待生产
+            // 1: 生产中（已启用）
+            // 2: 已完成
+            // 3: 未启用但有采集数据（显示为"生产中"但需要点击启用任务）
+            // 5: 提前结单
             Integer actualStatus = status;
             if (status != null && status == 0) {
                 // 查询任务详情，获取OrderNo和ProductNo
@@ -353,11 +358,12 @@ public class TaskApplicationService {
                             .eq(CodeRelationPO::getIsDel, 0)
                     );
                     
-                    // 如果有未删除的数据，将OrderStatus设为1（生产中）而不是0（停用）
+                    // 如果有未删除的数据，将OrderStatus设为3（未启用但有采集数据）而不是0（停用）
+                    // 状态3显示为"生产中"，但实际未启用，需要点击启用任务才能继续生产
                     if (count != null && count > 0) {
                         System.out.println("[停用任务判断] 订单=" + orderNo + ", 产品=" + productNo + 
-                                         ", CodeRelationUpload表中有" + count + "条未删除数据，将OrderStatus设为1");
-                        actualStatus = 1;
+                                         ", CodeRelationUpload表中有" + count + "条未删除数据，将OrderStatus设为3（未启用但有采集数据）");
+                        actualStatus = 3;
                     } else {
                         System.out.println("[停用任务判断] 订单=" + orderNo + ", 产品=" + productNo + 
                                          ", CodeRelationUpload表中无未删除数据，正常停用（OrderStatus=0）");
@@ -400,19 +406,10 @@ public class TaskApplicationService {
             }
             
             // 2. 查询CodeRelationUpload表中当前生产订单和产品的最新插入的一条数据（未被删除）
-            // 使用MyBatis-Plus的分页查询，兼容所有SQL Server版本
+            // 使用自定义SQL查询（TOP 1），确保只查询一条数据，性能最优
             // 重要：必须按OrderNo和ProductNo一起过滤，因为一个订单可能包含多个产品
-            Page<CodeRelationPO> page = new Page<>(1, 1);
-            
-            Page<CodeRelationPO> resultPage = codeRelationMapper.selectPage(page,
-                new LambdaQueryWrapper<CodeRelationPO>()
-                    .eq(CodeRelationPO::getOrderNo, orderNo)
-                    .eq(CodeRelationPO::getProductNo, productNo)  // 添加产品编号过滤
-                    .eq(CodeRelationPO::getIsDel, 0)
-                    .orderByDesc(CodeRelationPO::getAddTime)  // 按添加时间降序，取最新的一条
-            );
-            
-            List<CodeRelationPO> lastRecords = resultPage.getRecords();
+            CodeRelationPO lastRecord = codeRelationMapper.selectLatestByOrderAndProduct(orderNo, productNo);
+            List<CodeRelationPO> lastRecords = lastRecord != null ? java.util.Collections.singletonList(lastRecord) : java.util.Collections.emptyList();
             
             System.out.println("[启用任务校验-详细] 订单=" + orderNo + 
                              ", 产品=" + productNo +
@@ -420,12 +417,11 @@ public class TaskApplicationService {
                              ", 当前Type=" + currentType);
             
             // 如果没有历史数据，允许启用（首次启用）
-            if (lastRecords == null || lastRecords.isEmpty()) {
+            if (lastRecord == null) {
                 System.out.println("[启用任务校验] 订单=" + orderNo + ", 产品=" + productNo + ", 无历史数据，允许启用");
                 return ApiResult.success(true);
             }
             
-            CodeRelationPO lastRecord = lastRecords.get(0);
             Integer lastType = lastRecord.getType(); // 上次的Type
             String bigSerialNumber = lastRecord.getBigSerialNumber();
             
@@ -497,6 +493,65 @@ public class TaskApplicationService {
             
         } catch (Exception e) {
             return ApiResult.error("查询任务失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 查询生产订单完成度
+     * 根据OrderNo和ProductNo查询ProductionOrderDetail表，计算OrderCount/ProductCount
+     * 用于主界面单位实时统计的完成度显示
+     * 
+     * @param orderNo 订单编号
+     * @param productNo 产品编号
+     * @return 完成度（百分比，0-100）
+     */
+    public ApiResult<Double> getCompletionRate(String orderNo, String productNo) {
+        try {
+            if (orderNo == null || orderNo.trim().isEmpty()) {
+                return ApiResult.error("订单编号不能为空");
+            }
+            if (productNo == null || productNo.trim().isEmpty()) {
+                return ApiResult.error("产品编号不能为空");
+            }
+            
+            // 查询ProductionOrderDetail表中对应的OrderNo和ProductNo的记录
+            List<ProductionOrderDetailPO> orderDetails = productionOrderDetailMapper.selectList(
+                new LambdaQueryWrapper<ProductionOrderDetailPO>()
+                    .eq(ProductionOrderDetailPO::getOrderNo, orderNo)
+                    .eq(ProductionOrderDetailPO::getProductNo, productNo)
+                    .eq(ProductionOrderDetailPO::getIsDel, 0)
+            );
+            
+            if (orderDetails == null || orderDetails.isEmpty()) {
+                return ApiResult.error("未找到对应的生产订单明细");
+            }
+            
+            // 取第一条记录（正常情况下应该只有一条）
+            ProductionOrderDetailPO orderDetail = orderDetails.get(0);
+            
+            Integer orderCount = orderDetail.getOrderCount(); // 已生产数量
+            Integer productCount = orderDetail.getProductCount(); // 计划订单数量
+            
+            if (orderCount == null) {
+                orderCount = 0;
+            }
+            if (productCount == null || productCount == 0) {
+                return ApiResult.error("计划订单数量为0，无法计算完成度");
+            }
+            
+            // 计算完成度：OrderCount/ProductCount * 100
+            double completionRate = (double) orderCount / productCount * 100;
+            
+            System.out.println("[完成度查询] 订单=" + orderNo + ", 产品=" + productNo + 
+                             ", OrderCount=" + orderCount + ", ProductCount=" + productCount + 
+                             ", 完成度=" + String.format("%.1f%%", completionRate));
+            
+            return ApiResult.success("查询成功", completionRate);
+            
+        } catch (Exception e) {
+            System.err.println("[完成度查询] 失败：订单=" + orderNo + ", 产品=" + productNo + ", 错误=" + e.getMessage());
+            e.printStackTrace();
+            return ApiResult.error("查询完成度失败: " + e.getMessage());
         }
     }
 }

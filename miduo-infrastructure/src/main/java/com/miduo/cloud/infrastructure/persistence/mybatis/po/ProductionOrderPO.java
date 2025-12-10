@@ -58,7 +58,12 @@ public class ProductionOrderPO {
     private LocalDateTime dmakeDate;
     
     /**
-     * 订单状态 (0: 待入库, 1: 入库中, 2: 入库完成, 5: 提前结单)
+     * 订单状态
+     * 0: 待生产
+     * 1: 生产中（已启用）
+     * 2: 已完成
+     * 3: 未启用但有采集数据（显示为"生产中"但需要点击启用任务）
+     * 5: 提前结单
      */
     @TableField("OrderStatus")
     private Integer orderStatus;
