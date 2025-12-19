@@ -177,8 +177,7 @@ public class CodeApplicationService {
                 System.out.println("[TagNo恢复] 成功恢复正在采集的订单：订单=" + latestOrderNo + ", 产品=" + latestProductNo + ", TagNo=" + latestTagNo + ", 已采集=" + count + ", 每垛箱数=" + qty);
             }
             
-            // 初始化全局箱码 Bloom Filter：加载整个数据库所有未删除的箱码
-            initGlobalBoxCodeBloomFilter();
+            // 注意：布隆过滤器初始化已改为延迟加载（应用就绪后执行），不再在启动时同步初始化
             
         } catch (Exception e) {
             System.err.println("[TagNo恢复] 恢复失败：" + e.getMessage());
@@ -194,7 +193,8 @@ public class CodeApplicationService {
      * 优化说明：
      * 1. 使用 @Async 异步执行，不阻塞系统启动
      * 2. 使用专用线程池 bloomFilterInitExecutor
-     * 3. 分批加载数据，每批100,000条，避免一次性加载大量数据导致内存溢出
+     * 3. 分批加载数据，每批200,000条，避免一次性加载大量数据导致内存溢出
+     * 4. 每批之间休眠50ms，加快加载速度
      */
     @Async("bloomFilterInitExecutor")
     public void initGlobalBoxCodeBloomFilter() {
@@ -205,10 +205,20 @@ public class CodeApplicationService {
             // 重建 Bloom Filter（清空旧数据）
             bloomFilterManager.rebuildFilter();
             
-            // 分批加载数据，每批 100,000 条
-            int batchSize = 100000;
+            // 先查询总记录数，用于验证是否全部加载
+            Long totalRecords = codeRelationMapper.selectCount(
+                new LambdaQueryWrapper<CodeRelationPO>()
+                    .eq(CodeRelationPO::getIsDel, 0)
+                    .isNotNull(CodeRelationPO::getBigSerialNumber)
+                    .ne(CodeRelationPO::getBigSerialNumber, "")
+            );
+            System.out.println("[BloomFilter初始化] 数据库符合条件的总记录数: " + totalRecords);
+            
+            // 分批加载数据，每批 200,000 条
+            int batchSize = 200000;
             int pageNum = 1;
             int totalCount = 0;
+            int emptySmallSerialNumberCount = 0; // 统计SmallSerialNumber为空的记录数
             
             while (true) {
                 // 分页查询数据（只加载BigSerialNumber字段有值的数据）
@@ -224,6 +234,7 @@ public class CodeApplicationService {
                 
                 List<CodeRelationPO> records = resultPage.getRecords();
                 if (records == null || records.isEmpty()) {
+                    System.out.println("[BloomFilter初始化] 第 " + pageNum + " 批查询结果为空，退出循环");
                     break; // 没有更多数据，退出循环
                 }
                 
@@ -232,31 +243,50 @@ public class CodeApplicationService {
                 for (CodeRelationPO code : records) {
                     if (StringUtils.hasText(code.getSmallSerialNumber())) {
                         boxCodeList.add(code.getSmallSerialNumber());
+                    } else {
+                        emptySmallSerialNumberCount++;
                     }
                 }
                 
                 if (!boxCodeList.isEmpty()) {
                     bloomFilterManager.putAllBoxCodes(boxCodeList);
                     totalCount += boxCodeList.size();
-                    System.out.println("[BloomFilter初始化] 已加载第 " + pageNum + " 批，本批 " + boxCodeList.size() + " 个码，累计 " + totalCount + " 个码");
+                    System.out.println("[BloomFilter初始化] 已加载第 " + pageNum + " 批，本批查询 " + records.size() + " 条记录，有效码 " + boxCodeList.size() + " 个，累计 " + totalCount + " 个码");
+                } else if (records.size() > 0) {
+                    System.out.println("[BloomFilter初始化] 第 " + pageNum + " 批查询到 " + records.size() + " 条记录，但所有记录的SmallSerialNumber都为空");
                 }
                 
-                // 如果已经是最后一页，退出循环
+                // 检查是否还有更多数据
+                // 如果当前批次返回的数据量小于批次大小，说明已经是最后一页
+                if (records.size() < batchSize) {
+                    System.out.println("[BloomFilter初始化] 当前批次数据量(" + records.size() + ")小于批次大小(" + batchSize + ")，已到达最后一页");
+                    break;
+                }
+                
+                // 如果已经是最后一页，退出循环（双重检查，确保不会遗漏数据）
                 if (pageNum >= resultPage.getPages()) {
+                    System.out.println("[BloomFilter初始化] 已到达最后一页（第 " + pageNum + " 页，共 " + resultPage.getPages() + " 页）");
                     break;
                 }
                 
                 pageNum++;
                 
-                // 每批之间休眠 100ms，避免占用过多数据库资源
-                Thread.sleep(100);
+                // 每批之间休眠 50ms，加快加载速度
+                Thread.sleep(50);
             }
             
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
             
             if (totalCount > 0) {
-                System.out.println("[BloomFilter初始化] 异步初始化完成！成功加载 " + totalCount + " 个码到 Bloom Filter，耗时 " + duration + " ms");
+                System.out.println("[BloomFilter初始化] 异步初始化完成！");
+                System.out.println("  - 数据库符合条件的总记录数: " + totalRecords);
+                System.out.println("  - 成功加载的码数量: " + totalCount);
+                System.out.println("  - SmallSerialNumber为空的记录数: " + emptySmallSerialNumberCount);
+                System.out.println("  - 耗时: " + duration + " ms (" + (duration / 1000.0) + " 秒)");
+                if (totalRecords != null && totalCount + emptySmallSerialNumberCount < totalRecords) {
+                    System.out.println("  - ⚠️ 警告：可能存在数据未完全加载（总记录数: " + totalRecords + ", 已处理: " + (totalCount + emptySmallSerialNumberCount) + "）");
+                }
             } else {
                 System.out.println("[BloomFilter初始化] 数据库中没有箱码数据");
             }

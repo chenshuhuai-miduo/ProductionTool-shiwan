@@ -738,8 +738,8 @@ public class MainController {
                     addColoredTextToDataReceive(displayText, null);
                 });
                 
-                // 向码校验设备（类别代码1）发送校验结果
-                DeviceConnectionManager.getInstance().sendToDeviceByCategory(1, validateResult);
+                // 向剔除设备（类别代码6）发送校验结果（01=放行，02=剔除）
+                DeviceConnectionManager.getInstance().sendToDeviceByCategory(6, validateResult);
             }
             
         } catch (Exception e) {

@@ -18,11 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * 性能优化：
  * - Bloom Filter 误判率：0.01%（万分之一）
- * - 内存占用：约5MB（预估50万个箱码）
+ * - 内存占用：约4.5MB（预估200万个箱码）
  * - 查询时间：O(1)，纳秒级
  * 
  * @author miduo
- * @date 2024-11-24
+ * @date 2025-11-24
  */
 @Slf4j
 @Component
@@ -42,7 +42,7 @@ public class CodeBloomFilterManager {
     /**
      * Bloom Filter 配置参数
      */
-    private static final int EXPECTED_INSERTIONS = 500000; // 预期插入码数量：50万
+    private static final int EXPECTED_INSERTIONS = 2000000; // 预期插入码数量：200万
     private static final double FALSE_POSITIVE_PROBABILITY = 0.0001; // 误判率：0.01%
     
     /**

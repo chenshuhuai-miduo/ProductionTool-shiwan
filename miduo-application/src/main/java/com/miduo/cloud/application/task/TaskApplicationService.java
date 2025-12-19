@@ -351,18 +351,14 @@ public class TaskApplicationService {
                     String productNo = taskDetail.getProductNo();
                     
                     // 查询CodeRelationUpload表中是否有该OrderNo和ProductNo的未删除数据
-                    Long count = codeRelationMapper.selectCount(
-                        new LambdaQueryWrapper<CodeRelationPO>()
-                            .eq(CodeRelationPO::getOrderNo, orderNo)
-                            .eq(CodeRelationPO::getProductNo, productNo)
-                            .eq(CodeRelationPO::getIsDel, 0)
-                    );
+                    // 使用selectLatestByOrderAndProduct方法，只查询一条记录判断是否存在，性能优于COUNT
+                    CodeRelationPO lastRecord = codeRelationMapper.selectLatestByOrderAndProduct(orderNo, productNo);
                     
                     // 如果有未删除的数据，将OrderStatus设为3（未启用但有采集数据）而不是0（停用）
                     // 状态3显示为"生产中"，但实际未启用，需要点击启用任务才能继续生产
-                    if (count != null && count > 0) {
+                    if (lastRecord != null) {
                         System.out.println("[停用任务判断] 订单=" + orderNo + ", 产品=" + productNo + 
-                                         ", CodeRelationUpload表中有" + count + "条未删除数据，将OrderStatus设为3（未启用但有采集数据）");
+                                         ", CodeRelationUpload表中有未删除数据，将OrderStatus设为3（未启用但有采集数据）");
                         actualStatus = 3;
                     } else {
                         System.out.println("[停用任务判断] 订单=" + orderNo + ", 产品=" + productNo + 

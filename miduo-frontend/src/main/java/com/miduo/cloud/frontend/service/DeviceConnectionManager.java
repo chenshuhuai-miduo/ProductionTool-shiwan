@@ -25,8 +25,11 @@ public class DeviceConnectionManager {
     // 存储设备配置信息（用于按名称查找设备）
     private Map<String, IoDeviceDTO> deviceConfigs = new HashMap<>();
     
-    // 存储设备类别映射（设备ID -> 设备类别代码1-6）
+    // 存储设备类别映射（设备ID -> 设备类别代码1-7）
     private Map<String, Integer> deviceCategoryMap = new HashMap<>();
+    
+    // 存储类别代码到设备ID的反向映射（类别代码 -> 设备ID），用于快速查找
+    private Map<Integer, String> categoryToDeviceMap = new HashMap<>();
     
     // 已连接的设备列表（按连接顺序）
     private List<String> connectedDeviceIds = new ArrayList<>();
@@ -123,6 +126,8 @@ public class DeviceConnectionManager {
         // 获取设备类别代码（从设备类别文本转换为数字代码）
         int categoryCode = convertCategoryTextToCode(device.getDeviceCategory());
         deviceCategoryMap.put(deviceId, categoryCode);
+        // 同时维护反向映射，用于快速查找
+        categoryToDeviceMap.put(categoryCode, deviceId);
         
         String categoryName = device.getDeviceCategory() != null ? device.getDeviceCategory() : "未知";
         System.out.println("[连接管理器] 设备已连接: " + device.getDeviceName() + 
@@ -224,6 +229,11 @@ public class DeviceConnectionManager {
             }
             connectionServices.remove(deviceId);
             connectedDeviceIds.remove(deviceId);
+            // 清理反向映射
+            Integer categoryCode = deviceCategoryMap.get(deviceId);
+            if (categoryCode != null) {
+                categoryToDeviceMap.remove(categoryCode);
+            }
             deviceCategoryMap.remove(deviceId);
             System.out.println("[连接管理器] 连接已停止: " + deviceId);
             
@@ -254,6 +264,7 @@ public class DeviceConnectionManager {
         connectionServices.clear();
         connectedDeviceIds.clear();
         deviceCategoryMap.clear();
+        categoryToDeviceMap.clear();
         
         System.out.println("[连接管理器] 所有连接已停止");
     }
@@ -515,14 +526,12 @@ public class DeviceConnectionManager {
      * @return 设备配置，未找到返回null
      */
     public IoDeviceDTO getDeviceByCategory(int categoryCode) {
-        // 遍历设备映射，找到匹配类别代码的设备
-        for (Map.Entry<String, Integer> entry : deviceCategoryMap.entrySet()) {
-            if (entry.getValue() == categoryCode) {
-                String deviceId = entry.getKey();
-                return deviceConfigs.get(deviceId);
-            }
+        // 直接通过反向映射查找设备ID，O(1)时间复杂度
+        String deviceId = categoryToDeviceMap.get(categoryCode);
+        if (deviceId == null) {
+            return null;
         }
-        return null;
+        return deviceConfigs.get(deviceId);
     }
     
     /**
@@ -574,19 +583,8 @@ public class DeviceConnectionManager {
     public boolean sendToDeviceByCategory(int categoryCode, String data) {
         System.out.println("[连接管理器] 尝试向类别代码 " + categoryCode + " 的设备发送数据: " + data);
         
-        // 打印当前设备类别映射
-        System.out.println("[连接管理器] 当前设备类别映射: " + deviceCategoryMap);
-        
-        // 查找该类别的设备ID
-        String targetDeviceId = null;
-        for (Map.Entry<String, Integer> entry : deviceCategoryMap.entrySet()) {
-            System.out.println("[连接管理器] 检查设备: ID=" + entry.getKey() + ", 类别=" + entry.getValue());
-            if (entry.getValue() == categoryCode) {
-                targetDeviceId = entry.getKey();
-                System.out.println("[连接管理器] 找到匹配设备: " + targetDeviceId);
-                break;
-            }
-        }
+        // 直接通过反向映射查找设备ID，O(1)时间复杂度
+        String targetDeviceId = categoryToDeviceMap.get(categoryCode);
         
         if (targetDeviceId == null) {
             System.err.println("[连接管理器] 未找到类别代码为 " + categoryCode + " 的设备");
