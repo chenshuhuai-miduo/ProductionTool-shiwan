@@ -221,6 +221,12 @@ public class CodeApplicationService {
             int emptySmallSerialNumberCount = 0; // 统计SmallSerialNumber为空的记录数
             
             while (true) {
+                // 检查中断标志，如果被中断则退出循环
+                if (Thread.currentThread().isInterrupted()) {
+                    System.out.println("[BloomFilter初始化] 检测到中断信号，停止初始化");
+                    break;
+                }
+                
                 // 分页查询数据（只加载BigSerialNumber字段有值的数据）
                 Page<CodeRelationPO> page = new Page<>(pageNum, batchSize);
                 Page<CodeRelationPO> resultPage = codeRelationMapper.selectPage(
@@ -272,7 +278,20 @@ public class CodeApplicationService {
                 pageNum++;
                 
                 // 每批之间休眠 50ms，加快加载速度
-                Thread.sleep(50);
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    // 捕获中断异常，设置中断标志并退出循环
+                    Thread.currentThread().interrupt();
+                    System.out.println("[BloomFilter初始化] 初始化被中断，停止加载");
+                    break;
+                }
+                
+                // 再次检查中断标志（双重检查）
+                if (Thread.currentThread().isInterrupted()) {
+                    System.out.println("[BloomFilter初始化] 检测到中断信号，停止初始化");
+                    break;
+                }
             }
             
             long endTime = System.currentTimeMillis();

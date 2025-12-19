@@ -42,11 +42,8 @@ public class AsyncConfig {
         // 拒绝策略：由调用线程执行
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         
-        // 等待所有任务完成后再关闭线程池
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        
-        // 等待时间：60秒
-        executor.setAwaitTerminationSeconds(60);
+        // 不等待任务完成，允许快速关闭（因为初始化任务可以中断）
+        executor.setWaitForTasksToCompleteOnShutdown(false);
         
         executor.initialize();
         return executor;

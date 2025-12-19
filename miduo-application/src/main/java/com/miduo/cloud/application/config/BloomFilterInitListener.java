@@ -37,7 +37,7 @@ public class BloomFilterInitListener {
         log.info("[BloomFilter] 应用已就绪，延迟3秒后开始初始化布隆过滤器...");
         
         // 延迟3秒，确保前端可以立即启动
-        new Thread(() -> {
+        Thread delayThread = new Thread(() -> {
             try {
                 Thread.sleep(3000);
                 log.info("[BloomFilter] 开始异步初始化布隆过滤器...");
@@ -48,7 +48,9 @@ public class BloomFilterInitListener {
             } catch (Exception e) {
                 log.error("[BloomFilter] 延迟初始化失败", e);
             }
-        }, "BloomFilter-Delayed-Init").start();
+        }, "BloomFilter-Delayed-Init");
+        delayThread.setDaemon(true); // 设置为守护线程，不阻止JVM退出
+        delayThread.start();
     }
 }
 
