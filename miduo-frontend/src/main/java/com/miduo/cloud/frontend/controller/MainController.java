@@ -28,9 +28,13 @@ import javafx.scene.shape.SVGPath;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 主界面控制器
@@ -2236,10 +2240,45 @@ public class MainController {
                 // 获取当前选择的采集类型（1=有箱码，2=无箱码）
                 Integer currentType = typeComboBox.getSelectionModel().getSelectedIndex() == 0 ? 1 : 2;
                 
-                // 启用任务时需要传递type参数用于校验
+                // 启用任务时需要传递type参数和设备连接状态
                 String url = "/api/task/updateStatus/" + taskId + "/" + newStatus;
                 if (newStatus == 1) {
                     url += "?type=" + currentType;
+                    
+                    // 获取所有设备的连接状态
+                    Map<String, Boolean> deviceConnections = new HashMap<>();
+                    try {
+                        String deviceResponseJson = HttpUtil.doGet("/api/device/list");
+                        ApiResult<List<IoDeviceDTO>> deviceResult = HttpUtil.parseJson(
+                            deviceResponseJson, 
+                            new TypeReference<ApiResult<List<IoDeviceDTO>>>() {}
+                        );
+                        
+                        if (deviceResult.getCode() == 200 && deviceResult.getData() != null) {
+                            for (IoDeviceDTO device : deviceResult.getData()) {
+                                boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
+                                deviceConnections.put(device.getId(), isConnected);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[启用任务] 获取设备连接状态失败: " + e.getMessage());
+                        e.printStackTrace();
+                        // 获取设备连接状态失败时，继续执行（不阻止任务启用）
+                    }
+                    
+                    // 将设备连接状态Map转换为JSON字符串，并作为查询参数传递
+                    if (!deviceConnections.isEmpty()) {
+                        try {
+                            String deviceConnectionsJson = HttpUtil.getObjectMapper().writeValueAsString(deviceConnections);
+                            // URL编码JSON字符串
+                            String encodedJson = URLEncoder.encode(deviceConnectionsJson, StandardCharsets.UTF_8.toString());
+                            url += "&deviceConnectionsJson=" + encodedJson;
+                        } catch (Exception e) {
+                            System.err.println("[启用任务] 转换设备连接状态为JSON失败: " + e.getMessage());
+                            e.printStackTrace();
+                            // JSON转换失败时，继续执行（不阻止任务启用）
+                        }
+                    }
                 }
                 
                 String responseJson = HttpUtil.doPut(url, null);
@@ -2261,7 +2300,14 @@ public class MainController {
                         }
                         
                         appendTextToTop(operationLogArea,getCurrentTime() + " " + actionText + "任务成功\n");
-                        showAlert(Alert.AlertType.INFORMATION, "成功", result.getMessage());
+                        // 根据任务状态显示相应的成功提示
+                        if (newStatus == 1 || newStatus == 3) {
+                            showAlert(Alert.AlertType.INFORMATION, "成功", "启用成功");
+                        } else if (newStatus == 0) {
+                            showAlert(Alert.AlertType.INFORMATION, "成功", "停用成功");
+                        } else {
+                            showAlert(Alert.AlertType.INFORMATION, "成功", result.getMessage());
+                        }
                         
                         // 记录操作日志
                         OperateLogBuilder.create()
@@ -2273,7 +2319,13 @@ public class MainController {
                             .saveAsync();
                     } else {
                         appendTextToTop(operationLogArea,getCurrentTime() + " " + actionText + "任务失败：" + result.getMessage() + "\n");
-                        showAlert(Alert.AlertType.ERROR, "错误", result.getMessage());
+                        
+                        // 如果是启用任务失败且错误信息包含设备连接相关提示，显示警告弹窗
+                        if (newStatus == 1 && result.getMessage() != null && result.getMessage().contains("设备未连接")) {
+                            showAlert(Alert.AlertType.WARNING, "启用失败", result.getMessage());
+                        } else {
+                            showAlert(Alert.AlertType.ERROR, "错误", result.getMessage());
+                        }
                         
                         // 记录失败日志
                         OperateLogBuilder.create()

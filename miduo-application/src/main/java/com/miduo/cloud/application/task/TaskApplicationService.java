@@ -1,12 +1,16 @@
 package com.miduo.cloud.application.task;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.miduo.cloud.application.device.DeviceApplicationService;
 import com.miduo.cloud.application.task.mapper.TaskDtoMapper;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.common.dto.PageInput;
 import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.domain.task.model.Task;
 import com.miduo.cloud.domain.task.repository.TaskRepository;
+import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.entity.dto.task.TaskAddRequest;
 import com.miduo.cloud.entity.dto.task.TaskQueryRequest;
 import com.miduo.cloud.entity.dto.task.TaskUpdateRequest;
@@ -19,7 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +43,12 @@ public class TaskApplicationService {
     
     @Autowired
     private ProductionOrderDetailMapper productionOrderDetailMapper;
+    
+    @Autowired
+    private DeviceApplicationService deviceApplicationService;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
     
     /**
      * 添加任务用例
@@ -322,16 +334,23 @@ public class TaskApplicationService {
      * @param id 任务ID
      * @param status 新状态
      * @param type 采集类型（可选）：1-有箱码，2-无箱码（启用任务时需要传递）
+     * @param deviceConnectionsJson 设备连接状态JSON字符串（可选，启用任务时需要传递），格式：{"设备ID1":true,"设备ID2":false}
      * @return 操作结果
      */
     @Transactional(rollbackFor = Exception.class)
-    public ApiResult<Boolean> updateTaskStatus(Integer id, Integer status, Integer type) {
+    public ApiResult<Boolean> updateTaskStatus(Integer id, Integer status, Integer type, String deviceConnectionsJson) {
         try {
             // 如果是启用任务（status=1），需要校验采集模式切换
             if (status != null && status == 1) {
                 ApiResult<Boolean> validationResult = validateModeSwitch(id, type);
                 if (validationResult.getCode() != 200) {
                     return validationResult;
+                }
+                
+                // 检查所有启用设备的连接状态
+                ApiResult<Boolean> deviceCheckResult = checkDeviceConnections(deviceConnectionsJson);
+                if (deviceCheckResult.getCode() != 200) {
+                    return deviceCheckResult;
                 }
             }
             
@@ -374,6 +393,70 @@ public class TaskApplicationService {
             
         } catch (Exception e) {
             return ApiResult.error("状态更新失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 检查所有启用设备的连接状态
+     * @param deviceConnectionsJson 设备连接状态JSON字符串，格式：{"设备ID1":true,"设备ID2":false}
+     * @return 操作结果，如果有未连接的设备则返回错误
+     */
+    private ApiResult<Boolean> checkDeviceConnections(String deviceConnectionsJson) {
+        try {
+            // 如果未传递设备连接状态信息，跳过检查（兼容旧版本）
+            if (deviceConnectionsJson == null || deviceConnectionsJson.trim().isEmpty()) {
+                System.out.println("[设备连接检查] 未传递设备连接状态信息，跳过检查");
+                return ApiResult.success(true);
+            }
+            
+            // 解析JSON字符串为Map
+            Map<String, Boolean> deviceConnections;
+            try {
+                deviceConnections = objectMapper.readValue(
+                    deviceConnectionsJson, 
+                    new TypeReference<Map<String, Boolean>>() {}
+                );
+            } catch (Exception e) {
+                System.err.println("[设备连接检查] 解析设备连接状态JSON失败: " + e.getMessage());
+                // JSON解析失败时，跳过检查（兼容性考虑）
+                return ApiResult.success(true);
+            }
+            
+            // 获取所有设备
+            List<IoDeviceDTO> allDevices = deviceApplicationService.getAllDevices();
+            
+            // 筛选出已启用的设备
+            List<IoDeviceDTO> enabledDevices = allDevices.stream()
+                .filter(device -> device.getEnabled() != null && device.getEnabled())
+                .collect(Collectors.toList());
+            
+            // 检查每个启用设备的连接状态
+            List<String> disconnectedDeviceNames = new ArrayList<>();
+            for (IoDeviceDTO device : enabledDevices) {
+                String deviceId = device.getId();
+                Boolean isConnected = deviceConnections.get(deviceId);
+                
+                // 如果设备连接状态为null或false，则认为未连接
+                if (isConnected == null || !isConnected) {
+                    disconnectedDeviceNames.add(device.getDeviceName());
+                }
+            }
+            
+            // 如果有未连接的设备，返回错误
+            if (!disconnectedDeviceNames.isEmpty()) {
+                String errorMessage = "启用任务失败：以下设备未连接：" + String.join("、", disconnectedDeviceNames);
+                System.out.println("[设备连接检查] " + errorMessage);
+                return ApiResult.error(errorMessage);
+            }
+            
+            System.out.println("[设备连接检查] 所有启用设备均已连接");
+            return ApiResult.success(true);
+            
+        } catch (Exception e) {
+            System.err.println("[设备连接检查] 检查设备连接状态异常: " + e.getMessage());
+            e.printStackTrace();
+            // 检查异常时，为了不影响正常启用，返回成功（可根据需求调整）
+            return ApiResult.success(true);
         }
     }
     
