@@ -52,13 +52,15 @@ public class TaskController {
      * @param id 任务ID
      * @param status 状态：0-待生产，1-生产中，2-已完成，5-提前结单
      * @param type 采集类型（可选）：1-有箱码，2-无箱码（启用任务时需要传递）
+     * @param deviceConnectionsJson 设备连接状态JSON字符串（可选，启用任务时需要传递），格式：{"设备ID1":true,"设备ID2":false}
      */
     @PutMapping("/updateStatus/{id}/{status}")
     public ApiResult<Boolean> updateTaskStatus(
             @PathVariable("id") Integer id, 
             @PathVariable("status") Integer status,
-            @RequestParam(value = "type", required = false) Integer type) {
-        return taskApplicationService.updateTaskStatus(id, status, type);
+            @RequestParam(value = "type", required = false) Integer type,
+            @RequestParam(value = "deviceConnectionsJson", required = false) String deviceConnectionsJson) {
+        return taskApplicationService.updateTaskStatus(id, status, type, deviceConnectionsJson);
     }
     
     /**
