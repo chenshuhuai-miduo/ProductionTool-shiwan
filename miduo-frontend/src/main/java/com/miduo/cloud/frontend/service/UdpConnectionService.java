@@ -34,17 +34,31 @@ public class UdpConnectionService {
     }
     
     /**
-     * 连接到UDP服务器（开始监听指定端口）
+     * 连接到UDP服务器（开始监听指定端口，使用默认超时5秒）
      */
     public void connect(String host, int port) throws IOException {
+        connect(host, port, 5000); // 默认5秒超时
+    }
+    
+    /**
+     * 连接到UDP服务器（开始监听指定端口，带超时配置）
+     * @param host 主机地址（UDP中未使用，保留以保持接口一致性）
+     * @param port 监听端口
+     * @param timeoutMs 接收超时时间（毫秒）
+     */
+    public void connect(String host, int port, int timeoutMs) throws IOException {
         if (isConnected()) {
             throw new IOException("已经在监听UDP消息");
         }
         
         this.port = port;
         
-        System.out.println("[UDP] 正在创建UDP Socket，端口: " + port);
+        System.out.println("[UDP] 正在创建UDP Socket，端口: " + port + " (超时: " + timeoutMs + "ms)");
         socket = new DatagramSocket(port);
+        
+        // 设置接收超时
+        socket.setSoTimeout(timeoutMs);
+        
         System.out.println("[UDP] Socket创建成功");
         
         running = true;
@@ -77,6 +91,11 @@ public class UdpConnectionService {
                 if (messageHandler != null) {
                     messageHandler.accept(message);
                 }
+            }
+        } catch (java.net.SocketTimeoutException e) {
+            // 超时是正常的，继续循环等待
+            if (running) {
+                System.out.println("[UDP] 接收超时，继续等待...");
             }
         } catch (IOException e) {
             if (running && errorHandler != null) {

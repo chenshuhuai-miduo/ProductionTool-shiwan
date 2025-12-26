@@ -2321,7 +2321,8 @@ public class MainController {
                         appendTextToTop(operationLogArea,getCurrentTime() + " " + actionText + "任务失败：" + result.getMessage() + "\n");
                         
                         // 如果是启用任务失败且错误信息包含设备连接相关提示，显示警告弹窗
-                        if (newStatus == 1 && result.getMessage() != null && result.getMessage().contains("设备未连接")) {
+                        if (newStatus == 1 && result.getMessage() != null && 
+                            (result.getMessage().contains("设备未连接") || result.getMessage().contains("启用任务失败"))) {
                             showAlert(Alert.AlertType.WARNING, "启用失败", result.getMessage());
                         } else {
                             showAlert(Alert.AlertType.ERROR, "错误", result.getMessage());
