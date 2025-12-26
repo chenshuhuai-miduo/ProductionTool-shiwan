@@ -526,7 +526,7 @@ public class SystemConfigController {
     /**
      * 处理设备状态变化
      * 当设备被禁用时，立刻断开连接
-     * 当设备被启用时，尝试建立连接
+     * 当设备被启用时，尝试建立连接（异步）
      */
     private void handleDeviceStatusChange(IoDeviceDTO device) {
         try {
@@ -558,11 +558,21 @@ public class SystemConfigController {
                     });
                 }
             } else {
-                // 设备被启用，尝试连接
+                // 设备被启用，尝试连接（异步执行，避免阻塞UI线程）
                 boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
                 if (!isConnected) {
                     System.out.println("[设备管理] 设备已启用，尝试建立连接: " + device.getDeviceName());
-                    tryStartDeviceConnection(device);
+                    
+                    // 先更新UI状态为"连接中..."
+                    Platform.runLater(() -> {
+                        updateDeviceStatusInTable(device.getId(), "连接中...");
+                        configStatusLabel.setText("配置状态: 正在连接设备 " + device.getDeviceName() + "...");
+                    });
+                    
+                    // 在新线程中异步连接，避免阻塞UI
+                    new Thread(() -> {
+                        tryStartDeviceConnection(device);
+                    }, "Device-Connect-" + device.getDeviceName()).start();
                 } else {
                     System.out.println("[设备管理] 设备已启用: " + device.getDeviceName() + " (已连接)");
                     Platform.runLater(() -> {
@@ -733,11 +743,11 @@ public class SystemConfigController {
                                 if (device.getEnabled()) {
                                     // 先停止旧连接
                                     DeviceConnectionManager.getInstance().stopConnection(device.getId());
-                                    Thread.sleep(500); // 等待资源释放
+                                    Thread.sleep(300); // 等待资源释放（缩短等待时间）
                                     
-                                    // 启动新连接
+                                    // 启动新连接（现在有超时配置，会快速失败）
                                     DeviceConnectionManager.getInstance().startConnection(device);
-                                    Thread.sleep(1000); // 等待连接建立
+                                    Thread.sleep(500); // 等待连接建立（缩短等待时间，因为有超时配置）
                                     
                                     // 再次检查连接状态
                                     boolean reconnected = DeviceConnectionManager.getInstance().isConnected(device.getId());

@@ -35,21 +35,33 @@ public class SerialConnectionService {
     }
     
     /**
-     * 打开串口
+     * 打开串口（使用默认超时5秒）
      */
     public void connect(String portName, int baudRate) throws Exception {
+        connect(portName, baudRate, 5000); // 默认5秒超时
+    }
+    
+    /**
+     * 打开串口（带超时配置）
+     * @param portName 串口名称
+     * @param baudRate 波特率
+     * @param timeoutMs 读取超时时间（毫秒）
+     */
+    public void connect(String portName, int baudRate, int timeoutMs) throws Exception {
         if (isConnected()) {
             throw new Exception("串口已经打开");
         }
         
-        System.out.println("[串口] 正在打开串口: " + portName + ", 波特率: " + baudRate);
+        System.out.println("[串口] 正在打开串口: " + portName + ", 波特率: " + baudRate + " (超时: " + timeoutMs + "ms)");
         
         serialPort = SerialPort.getCommPort(portName);
         serialPort.setBaudRate(baudRate);
         serialPort.setNumDataBits(8);
         serialPort.setNumStopBits(1);
         serialPort.setParity(SerialPort.NO_PARITY);
-        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+        
+        // 设置超时：TIMEOUT_READ_SEMI_BLOCKING模式，读超时时间
+        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, timeoutMs, 0);
         
         if (!serialPort.openPort()) {
             throw new Exception("无法打开串口: " + portName);
