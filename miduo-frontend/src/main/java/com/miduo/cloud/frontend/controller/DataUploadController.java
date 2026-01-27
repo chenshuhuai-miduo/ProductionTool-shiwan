@@ -848,6 +848,12 @@ public class DataUploadController {
     @FXML
     private void onCodeReplace() {
         try {
+            // 获取当前窗口作为 owner
+            Stage ownerStage = null;
+            if (statusLabel != null && statusLabel.getScene() != null) {
+                ownerStage = (Stage) statusLabel.getScene().getWindow();
+            }
+            
             // 加载码替换弹窗FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/CodeReplaceDialog.fxml"));
             Parent root = loader.load();
@@ -858,7 +864,15 @@ public class DataUploadController {
             // 创建新的Stage作为弹窗
             Stage dialogStage = new Stage();
             dialogStage.setTitle("码替换");
-            dialogStage.initModality(Modality.APPLICATION_MODAL); // 设置为模态窗口
+            
+            // 如果有 owner，使用 WINDOW_MODAL，否则使用 APPLICATION_MODAL
+            if (ownerStage != null) {
+                dialogStage.initModality(Modality.WINDOW_MODAL);
+                dialogStage.initOwner(ownerStage);
+            } else {
+                dialogStage.initModality(Modality.APPLICATION_MODAL);
+            }
+            
             dialogStage.setScene(new Scene(root));
             dialogStage.setResizable(false);
             com.miduo.cloud.frontend.util.StageIconUtil.setStageIcon(dialogStage);

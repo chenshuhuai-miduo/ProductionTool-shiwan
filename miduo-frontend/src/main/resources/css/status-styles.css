@@ -61,3 +61,129 @@
     -fx-text-fill: #d32f2f;
 }
 
+/* 许可证状态样式 */
+.license-status-label {
+    -fx-font-family: -primary-font;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-padding: 2px 8px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+}
+
+.license-status-normal {
+    -fx-background-color: #e8f5e8;
+    -fx-text-fill: #2e7d32;
+    -fx-border-color: #4caf50;
+}
+
+.license-status-warning {
+    -fx-background-color: #fff3e0;
+    -fx-text-fill: #ef6c00;
+    -fx-border-color: #ff9800;
+}
+
+.license-status-error {
+    -fx-background-color: #ffebee;
+    -fx-text-fill: #c62828;
+    -fx-border-color: #f44336;
+}
+
+/* ========== 状态栏许可证状态样式 ========== */
+
+/* 许可证状态容器 */
+.license-status-box {
+    -fx-padding: 2px 8px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+    -fx-background-color: #e8f5e8;
+    -fx-border-color: #4caf50;
+}
+
+/* 许可证状态圆点 - 基础样式 */
+.license-status-dot {
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+    -fx-background-radius: 4px;
+    -fx-background-color: #4caf50;
+}
+
+/* 许可证状态文本 */
+.license-status-text {
+    -fx-font-family: -primary-font;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #2e7d32;
+}
+
+/* 正常状态 (>30天) - 绿色 */
+.license-status-box.license-normal {
+    -fx-background-color: #e8f5e8;
+    -fx-border-color: #4caf50;
+}
+.license-status-box.license-normal .license-status-dot {
+    -fx-background-color: #4caf50;
+}
+.license-status-box.license-normal .license-status-text {
+    -fx-text-fill: #2e7d32;
+}
+
+/* 警告状态 (30-7天) - 橙色 */
+.license-status-box.license-warning {
+    -fx-background-color: #fff3e0;
+    -fx-border-color: #ff9800;
+}
+.license-status-box.license-warning .license-status-dot {
+    -fx-background-color: #ff9800;
+}
+.license-status-box.license-warning .license-status-text {
+    -fx-text-fill: #ef6c00;
+}
+
+/* 紧急状态 (<7天) - 橙红色 */
+.license-status-box.license-urgent {
+    -fx-background-color: #fff3e0;
+    -fx-border-color: #ff5722;
+}
+.license-status-box.license-urgent .license-status-dot {
+    -fx-background-color: #ff5722;
+}
+.license-status-box.license-urgent .license-status-text {
+    -fx-text-fill: #e64a19;
+}
+
+/* 已过期/错误状态 - 红色 */
+.license-status-box.license-expired {
+    -fx-background-color: #ffebee;
+    -fx-border-color: #f44336;
+}
+.license-status-box.license-expired .license-status-dot {
+    -fx-background-color: #f44336;
+}
+.license-status-box.license-expired .license-status-text {
+    -fx-text-fill: #c62828;
+}
+
+/* 试用状态 - 蓝色 */
+.license-status-box.license-trial {
+    -fx-background-color: #e3f2fd;
+    -fx-border-color: #2196f3;
+}
+.license-status-box.license-trial .license-status-dot {
+    -fx-background-color: #2196f3;
+}
+.license-status-box.license-trial .license-status-text {
+    -fx-text-fill: #1976d2;
+}
+
+/* 悬停效果 */
+.license-status-box:hover {
+    -fx-opacity: 0.85;
+}
+

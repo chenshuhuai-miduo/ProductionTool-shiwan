@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>状态栏示例 - 客户端原型</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        body {
+            background: #e0e0e0;
+            padding: 40px 20px;
+        }
+        .demo-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .demo-card {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .demo-title {
+            padding: 12px 16px;
+            background: var(--background-color);
+            font-weight: 600;
+            border-bottom: 1px solid var(--divider-color);
+        }
+        .demo-content {
+            padding: 16px;
+        }
+        .main-window {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .main-window-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        .main-window-content {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+        
+        /* 状态栏悬停提示 */
+        .statusbar-license {
+            position: relative;
+            cursor: pointer;
+        }
+        .statusbar-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-bottom: 8px;
+        }
+        .statusbar-license:hover .statusbar-tooltip {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 style="margin-bottom: 24px;">📊 状态栏集成示例</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">
+            状态栏位于主界面底部右侧，显示激活/试用状态和剩余天数。点击可跳转到"激活信息"页面。
+        </p>
+        
+        <!-- 已激活 - 正常 -->
+        <div class="demo-card">
+            <div class="demo-title">✅ 已激活（正常 &gt;30天）</div>
+            <div class="demo-content">
+                <div class="main-window">
+                    <div class="main-window-header">产线采集软件 - 主界面</div>
+                    <div class="main-window-content">主界面内容区域</div>
+                    <div class="statusbar">
+                        <div class="statusbar-item">当前功能: 主界面</div>
+                        <div class="statusbar-item">设备状态: 3个在线</div>
+                        <div class="statusbar-item">工作状态: 生产中</div>
+                        <div class="statusbar-right">
+                            <div class="statusbar-item statusbar-license" style="color: var(--success-color);">
+                                <span class="status-dot success"></span>
+                                激活剩余: 180天
+                                <div class="statusbar-tooltip">
+                                    到期: 2026-12-02
+                                </div>
+                            </div>
+                            <div class="statusbar-item">v2.0.0</div>
+                            <div class="statusbar-item">2025-12-02 14:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 已激活 - 警告 -->
+        <div class="demo-card">
+            <div class="demo-title">⚠️ 已激活（警告 30-7天）</div>
+            <div class="demo-content">
+                <div class="main-window">
+                    <div class="main-window-header">产线采集软件 - 主界面</div>
+                    <div class="main-window-content">主界面内容区域</div>
+                    <div class="statusbar">
+                        <div class="statusbar-item">当前功能: 主界面</div>
+                        <div class="statusbar-item">设备状态: 3个在线</div>
+                        <div class="statusbar-item">工作状态: 生产中</div>
+                        <div class="statusbar-right">
+                            <div class="statusbar-item statusbar-license" style="color: var(--warning-color);">
+                                <span class="status-dot warning"></span>
+                                激活剩余: 25天
+                                <div class="statusbar-tooltip">
+                                    到期: 2025-12-27<br>
+                                    ⚠️ 即将到期，请尽快续期
+                                </div>
+                            </div>
+                            <div class="statusbar-item">v2.0.0</div>
+                            <div class="statusbar-item">2025-12-02 14:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 已激活 - 紧急 -->
+        <div class="demo-card">
+            <div class="demo-title">🔴 已激活（紧急 &lt;7天，闪烁）</div>
+            <div class="demo-content">
+                <div class="main-window">
+                    <div class="main-window-header">产线采集软件 - 主界面</div>
+                    <div class="main-window-content">主界面内容区域</div>
+                    <div class="statusbar">
+                        <div class="statusbar-item">当前功能: 主界面</div>
+                        <div class="statusbar-item">设备状态: 3个在线</div>
+                        <div class="statusbar-item">工作状态: 生产中</div>
+                        <div class="statusbar-right">
+                            <div class="statusbar-item statusbar-license badge-blink" style="color: var(--warning-color);">
+                                <span class="status-dot warning"></span>
+                                激活剩余: 3天
+                                <div class="statusbar-tooltip">
+                                    到期: 2025-12-05<br>
+                                    ⚠️ 紧急：请立即续期！
+                                </div>
+                            </div>
+                            <div class="statusbar-item">v2.0.0</div>
+                            <div class="statusbar-item">2025-12-02 14:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 已过期 -->
+        <div class="demo-card">
+            <div class="demo-title">❌ 已过期（弹出过期对话框，必须续期或退出）</div>
+            <div class="demo-content">
+                <div class="main-window">
+                    <div class="main-window-header">产线采集软件 - 激活已过期</div>
+                    <div class="main-window-content" style="color: var(--error-color);">⚠️ 已过期 - 弹出过期对话框，必须续期或退出</div>
+                    <div class="statusbar">
+                        <div class="statusbar-item">当前功能: 主界面</div>
+                        <div class="statusbar-right">
+                            <div class="statusbar-item statusbar-license badge-blink" style="color: var(--error-color);">
+                                <span class="status-dot danger"></span>
+                                已过期
+                                <div class="statusbar-tooltip">
+                                    过期时间: 2025-11-02<br>
+                                    ❌ 已过期，必须续期
+                                </div>
+                            </div>
+                            <div class="statusbar-item">v2.0.0</div>
+                            <div class="statusbar-item">2025-12-02 14:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 试用期内 -->
+        <div class="demo-card">
+            <div class="demo-title">🔵 试用期内</div>
+            <div class="demo-content">
+                <div class="main-window">
+                    <div class="main-window-header">产线采集软件 - 主界面</div>
+                    <div class="main-window-content">主界面内容区域</div>
+                    <div class="statusbar">
+                        <div class="statusbar-item">当前功能: 主界面</div>
+                        <div class="statusbar-item">设备状态: 3个在线</div>
+                        <div class="statusbar-item">工作状态: 生产中</div>
+                        <div class="statusbar-right">
+                            <div class="statusbar-item statusbar-license" style="color: var(--info-color);">
+                                <span class="status-dot info"></span>
+                                试用剩余: 10天
+                                <div class="statusbar-tooltip">
+                                    试用模式<br>
+                                    到期: 2025-12-12<br>
+                                    💡 点击激活正式版
+                                </div>
+                            </div>
+                            <div class="statusbar-item">v2.0.0</div>
+                            <div class="statusbar-item">2025-12-02 14:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 试用已过期 -->
+        <div class="demo-card">
+            <div class="demo-title">❌ 试用已过期（弹出过期对话框，必须激活或退出）</div>
+            <div class="demo-content">
+                <div class="main-window">
+                    <div class="main-window-header">产线采集软件 - 试用已过期</div>
+                    <div class="main-window-content" style="color: var(--error-color);">⚠️ 试用已过期 - 弹出过期对话框，必须激活或退出</div>
+                    <div class="statusbar">
+                        <div class="statusbar-item">当前功能: 主界面</div>
+                        <div class="statusbar-right">
+                            <div class="statusbar-item statusbar-license" style="color: var(--error-color);">
+                                <span class="status-dot danger"></span>
+                                试用已过期
+                                <div class="statusbar-tooltip">
+                                    试用期已结束<br>
+                                    必须激活才能使用
+                                </div>
+                            </div>
+                            <div class="statusbar-item">v2.0.0</div>
+                            <div class="statusbar-item">2025-12-02 14:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p style="margin-top: 24px;">
+            <a href="../index.html" style="color: var(--primary-color);">← 返回导航</a>
+        </p>
+    </div>
+</body>
+</html>
+

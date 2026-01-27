@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>试用到期提醒 - 客户端原型</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .scene-tabs {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 2000;
+        }
+        .scene-tab {
+            padding: 8px 16px;
+            border: none;
+            background: #f5f5f5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .scene-tab.active {
+            background: var(--warning-color);
+            color: white;
+        }
+        .scene { display: none; }
+        .scene.active { display: flex; }
+        
+        .countdown-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--error-color);
+            color: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 场景切换 -->
+    <div class="scene-tabs">
+        <button class="scene-tab active" onclick="showScene('3days')">剩余3天</button>
+        <button class="scene-tab" onclick="showScene('1day')">剩余1天</button>
+    </div>
+
+    <!-- 场景1：剩余3天 -->
+    <div class="dialog-overlay scene active" id="scene-3days">
+        <div class="dialog dialog-sm">
+            <div class="dialog-header">
+                <span class="dialog-title">试用即将到期</span>
+                <button class="dialog-close" title="关闭">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="center-content">
+                    <div class="icon-lg" style="color: var(--warning-color);">⏰</div>
+                    <h2 class="mt-md">试用期即将到期</h2>
+                    <div class="countdown-badge" style="background: var(--warning-color);">3</div>
+                    <p style="font-size: 16px; color: var(--text-secondary);">剩余 <strong>3</strong> 天</p>
+                </div>
+                
+                <div class="divider-dashed"></div>
+                
+                <p class="tip-text text-center">
+                    试用到期后功能将不可用<br>请联系米多专员或拨打 15917372153
+                </p>
+            </div>
+            <div class="dialog-footer center">
+                <button class="btn btn-primary">立即激活</button>
+                <button class="btn btn-secondary">稍后提醒</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 场景2：剩余1天 -->
+    <div class="dialog-overlay scene" id="scene-1day">
+        <div class="dialog dialog-sm">
+            <div class="dialog-header">
+                <span class="dialog-title">试用即将到期</span>
+                <button class="dialog-close" title="关闭">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="center-content">
+                    <div class="icon-lg" style="color: var(--error-color);">⏰</div>
+                    <h2 class="mt-md">试用期即将到期</h2>
+                    <div class="countdown-badge badge-blink">1</div>
+                    <p style="font-size: 16px; color: var(--error-color);">剩余 <strong>1</strong> 天</p>
+                </div>
+                
+                <div class="divider-dashed"></div>
+                
+                <p class="tip-text text-center">
+                    ⚠️ 试用期明天到期！<br>请联系米多专员或拨打 15917372153
+                </p>
+            </div>
+            <div class="dialog-footer center">
+                <button class="btn btn-primary">立即激活</button>
+                <button class="btn btn-secondary">稍后提醒</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showScene(name) {
+            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.scene-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('scene-' + name).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+
+    <!-- 交互说明 -->
+    <div style="position: fixed; bottom: 20px; left: 20px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 300px; font-size: 13px;">
+        <strong>📝 交互说明（PRD 7.1.8）</strong>
+        <ul style="margin: 8px 0 0 16px; color: #666; line-height: 1.8;">
+            <li>试用剩余≤3天时显示</li>
+            <li>每次启动显示</li>
+            <li>"立即激活"打开激活对话框</li>
+            <li>"稍后提醒"关闭弹窗，下次启动再提醒</li>
+            <li>点击×关闭，等同"稍后提醒"</li>
+        </ul>
+        <p style="margin-top: 12px;">
+            <a href="../index.html" style="color: var(--primary-color);">← 返回导航</a>
+        </p>
+    </div>
+</body>
+</html>
+

@@ -20,6 +20,7 @@
             </Menu>
             <Menu text="配置">
                <MenuItem text="系统设置" onAction="#onSystemConfig"/>
+               <MenuItem text="许可证信息" onAction="#onLicenseInfo"/>
             </Menu>
             <Menu text="数据">
                <!-- <MenuItem text="产品管理" onAction="#onProductManagement"/> -->
@@ -222,6 +223,16 @@
          <Label fx:id="deviceStatusLabel" text="设备状态：未连接"/>
          <Label fx:id="workStatusLabel" text="工作状态：待机中"/>
          <Region HBox.hgrow="ALWAYS"/>
+         
+         <!-- 许可证状态显示 - 包含状态圆点和文本 -->
+         <HBox fx:id="licenseStatusBox" styleClass="license-status-box" alignment="CENTER" spacing="5" 
+               onMouseClicked="#onLicenseStatusClick">
+            <children>
+               <Region fx:id="licenseStatusDot" styleClass="license-status-dot"/>
+               <Label fx:id="licenseStatusLabel" text="许可证：未激活" styleClass="license-status-text"/>
+            </children>
+         </HBox>
+         
          <Label fx:id="currentTimeLabel" text="2024-12-01 10:30:25"/>
          <Label text="v1.0.0"/>
       </HBox>

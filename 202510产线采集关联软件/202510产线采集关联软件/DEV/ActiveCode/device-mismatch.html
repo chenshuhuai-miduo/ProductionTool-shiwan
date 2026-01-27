@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备验证失败 - 客户端原型</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="dialog-overlay">
+        <div class="dialog">
+            <div class="dialog-header">
+                <span class="dialog-title">设备验证失败</span>
+            </div>
+            <div class="dialog-body">
+                <div class="center-content">
+                    <div class="icon-lg icon-warning">⚠️</div>
+                    <h2 class="mt-md">检测到设备信息已变更</h2>
+                    <p class="tip-text">无法验证许可证</p>
+                </div>
+                
+                <div class="info-card mt-lg">
+                    <div style="font-weight: 500; margin-bottom: 12px;">可能原因：</div>
+                    <ul style="margin-left: 20px; color: var(--text-secondary); line-height: 1.8;">
+                        <li>更换了主板或CPU</li>
+                        <li>重装系统后硬件ID变化</li>
+                    </ul>
+                </div>
+                
+                <div class="divider-dashed"></div>
+                
+                <div class="info-card">
+                    <div style="font-weight: 500; margin-bottom: 12px;">当前设备信息：</div>
+                    <div class="info-row">
+                        <span class="info-label">设备ID</span>
+                        <span class="info-value mono">a3b2****o5p6</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">设备型号</span>
+                        <span class="info-value">HP EliteDesk 800 G5</span>
+                    </div>
+                </div>
+                
+                <div class="divider-dashed"></div>
+                
+                <div class="tip-box warning">
+                    <strong>解决方法：</strong>请联系米多专员或拨打 15917372153，重新申请许可证
+                </div>
+            </div>
+            <div class="dialog-footer center">
+                <button class="btn btn-danger">退出软件</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交互说明 -->
+    <div style="position: fixed; bottom: 20px; left: 20px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 300px; font-size: 13px;">
+        <strong>📝 交互说明（PRD 7.4.2）</strong>
+        <ul style="margin: 8px 0 0 16px; color: #666; line-height: 1.8;">
+            <li>设备标识与许可证不匹配时显示</li>
+            <li>显示设备信息供用户提供给客服</li>
+            <li>客服为用户重新生成许可证</li>
+        </ul>
+        <p style="margin-top: 12px;">
+            <a href="../index.html" style="color: var(--primary-color);">← 返回导航</a>
+        </p>
+    </div>
+</body>
+</html>
+
