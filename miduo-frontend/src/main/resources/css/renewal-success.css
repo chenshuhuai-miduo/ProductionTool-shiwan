@@ -1,0 +1,146 @@
+/* 续期成功弹窗样式 */
+
+/* 弹窗遮罩层 */
+.dialog-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+    -fx-alignment: center;
+}
+
+/* 弹窗容器 */
+.dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 16, 0, 0, 4);
+    -fx-border-color: black;
+    -fx-border-width: 0.5px;
+}
+
+.dialog-sm {
+    -fx-max-width: 400;
+}
+
+/* 对话框头部 */
+.dialog-header {
+    -fx-padding: 20 24;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 0 0 1 0;
+}
+
+.dialog-title {
+    -fx-font-size: 18;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* 对话框主体 */
+.dialog-body {
+    -fx-padding: 32 24;
+}
+
+/* 居中内容 */
+.center-content {
+    -fx-alignment: center;
+}
+
+/* 成功图标容器 */
+.success-icon-wrapper {
+    -fx-background-color: #2e7d32;
+    -fx-background-radius: 50;
+    -fx-min-width: 72;
+    -fx-min-height: 72;
+    -fx-max-width: 72;
+    -fx-max-height: 72;
+    -fx-alignment: center;
+}
+
+/* 成功图标 */
+.success-icon {
+    -fx-font-size: 36;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* 成功标题 */
+.success-title {
+    -fx-font-size: 20;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2e7d32;
+}
+
+/* 信息卡片 */
+.info-card {
+    -fx-background-color: #f5f5f5;
+    -fx-background-radius: 8;
+    -fx-padding: 0;
+}
+
+/* 信息行 */
+.info-row {
+    -fx-padding: 14 16;
+}
+
+/* 信息标签 */
+.info-label {
+    -fx-font-size: 14;
+    -fx-text-fill: #666666;
+    -fx-min-width: 80;
+}
+
+/* 信息值 */
+.info-value {
+    -fx-font-size: 14;
+    -fx-text-fill: #333333;
+}
+
+/* 成功高亮样式 */
+.highlight-success {
+    -fx-text-fill: #2e7d32;
+    -fx-font-weight: bold;
+}
+
+/* 分隔线 */
+.info-separator {
+    -fx-background-color: #e0e0e0;
+    -fx-padding: 0;
+}
+
+/* 对话框底部 */
+.dialog-footer {
+    -fx-padding: 16 24;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1 0 0 0;
+}
+
+.dialog-footer.center {
+    -fx-alignment: center;
+}
+
+/* 按钮基础样式 */
+.btn {
+    -fx-cursor: hand;
+    -fx-background-radius: 4;
+    -fx-font-size: 14;
+}
+
+/* 成功按钮 */
+.btn-success {
+    -fx-background-color: #2e7d32;
+    -fx-text-fill: white;
+}
+
+.btn-success:hover {
+    -fx-background-color: #1b5e20;
+}
+
+/* 大号按钮 */
+.btn-lg {
+    -fx-padding: 12 24;
+    -fx-font-size: 15;
+}
+
+/* 块级按钮 */
+.btn-block {
+    -fx-min-width: 200;
+    -fx-pref-width: infinity;
+}
+

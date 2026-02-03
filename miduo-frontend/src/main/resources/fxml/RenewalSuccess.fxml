@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.miduo.cloud.frontend.controller.RenewalSuccessController"
+           styleClass="dialog-overlay"
+           stylesheets="@../css/renewal-success.css">
+    
+    <!-- 续期成功弹窗 -->
+    <VBox styleClass="dialog, dialog-sm" prefWidth="400" alignment="TOP_CENTER">
+        
+        <!-- 对话框头部 -->
+        <HBox spacing="10" alignment="CENTER_LEFT" styleClass="dialog-header">
+            <Label text="续期成功" styleClass="dialog-title"/>
+        </HBox>
+        
+        <!-- 对话框主体 -->
+        <VBox spacing="24" styleClass="dialog-body">
+            
+            <!-- 成功图标和标题 -->
+            <VBox alignment="CENTER" spacing="12" styleClass="center-content">
+                <StackPane styleClass="success-icon-wrapper">
+                    <Label text="✓" styleClass="success-icon"/>
+                </StackPane>
+                <Label text="续期成功！" styleClass="success-title"/>
+            </VBox>
+            
+            <!-- 信息卡片 -->
+            <VBox spacing="0" styleClass="info-card">
+                <!-- 新到期时间 -->
+                <HBox spacing="10" alignment="CENTER_LEFT" styleClass="info-row">
+                    <Label text="新到期时间" styleClass="info-label"/>
+                    <Label fx:id="newExpirationLabel" text="2027-12-02" styleClass="info-value, highlight-success"/>
+                </HBox>
+                
+                <Separator styleClass="info-separator"/>
+                
+                <!-- 延长天数 -->
+                <HBox spacing="10" alignment="CENTER_LEFT" styleClass="info-row">
+                    <Label text="延长天数" styleClass="info-label"/>
+                    <Label fx:id="extensionDaysLabel" text="+365天" styleClass="info-value, highlight-success"/>
+                </HBox>
+            </VBox>
+            
+        </VBox>
+        
+        <!-- 对话框底部 -->
+        <HBox alignment="CENTER" styleClass="dialog-footer">
+            <Button fx:id="confirmButton" text="确定" onAction="#handleConfirm" styleClass="btn, btn-success, btn-lg, btn-block"/>
+        </HBox>
+        
+    </VBox>
+</StackPane>
+
