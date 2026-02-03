@@ -53,12 +53,13 @@ public class TcpConnectionService {
             throw new IOException("已经连接到服务器");
         }
         
-        System.out.println("[TCP] 正在连接到 " + host + ":" + port + " (超时: " + timeoutMs + "ms)");
+        System.out.println("[TCP] 正在连接到 " + host + ":" + port + " (连接超时: " + timeoutMs + "ms)");
         
         // 使用带超时的连接方式
         socket = new Socket();
         socket.connect(new InetSocketAddress(host, port), timeoutMs);
-        socket.setSoTimeout(timeoutMs); // 设置读取超时
+        // 注意：不设置 setSoTimeout，避免读取时超时导致误断连
+        // 连接超时用于快速失败，读取操作阻塞等待数据
         
         System.out.println("[TCP] Socket连接成功");
         
