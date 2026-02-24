@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.miduo.cloud.frontend.controller.LicenseInfoController" styleClass="root">
+
+    <!-- 顶部场景切换标签 - 已隐藏，改用外部传值方式 -->
+    <!--
+    <top>
+        <HBox styleClass="scene-tabs" spacing="0">
+            <Button fx:id="btnUnactivated" text="未激活" styleClass="scene-tab" 
+                    onAction="#showUnactivated"/>
+            <Button fx:id="btnTrial" text="试用期内" styleClass="scene-tab,active" 
+                    onAction="#showTrial"/>
+            <Button fx:id="btnTrialExpired" text="试用已过期" styleClass="scene-tab" 
+                    onAction="#showTrialExpired"/>
+            <Button fx:id="btnActivated" text="已激活" styleClass="scene-tab" 
+                    onAction="#showActivated"/>
+            <Button fx:id="btnExpired" text="已过期" styleClass="scene-tab" 
+                    onAction="#showExpired"/>
+        </HBox>
+    </top>
+    -->
+
+    <!-- 中心内容区域 - 使用 StackPane 切换不同场景 -->
+    <center>
+        <StackPane fx:id="sceneContainer" styleClass="scene-container">
+
+            <!-- 场景0: 未激活 -->
+            <VBox fx:id="sceneUnactivated" styleClass="scene" visible="false" managed="false">
+                <VBox styleClass="page-container" spacing="16">
+                    <!-- 状态图标区域 -->
+                    <VBox styleClass="status-icon-section" alignment="CENTER" spacing="12">
+                        <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/警示.png"/>
+                            </image>
+                        </ImageView>
+                        <Label text="未激活" styleClass="status-title,status-title-expired"/>
+                    </VBox>
+
+                    <!-- 设备信息卡片 -->
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="设备ID" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceIdLabelUnactivated" text="a3b2****o5p6" styleClass="info-value,mono"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="设备型号" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceModelLabelUnactivated" text="HP EliteDesk 800 G5" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="制造商" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="manufacturerLabelUnactivated" text="HP" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="操作系统" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="osVersionLabelUnactivated" text="Windows 10 Pro" styleClass="info-value"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <!-- 弹性空间 -->
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <!-- 底部提示 -->
+                    <HBox alignment="CENTER" spacing="4">
+                        <Label text="请联系米多专员或拨打" styleClass="help-tip"/>
+                        <Label text="15917372153" styleClass="help-tip,help-tip-link"/>
+                    </HBox>
+
+                    <!-- 底部按钮 -->
+                    <HBox styleClass="bottom-actions" spacing="12" alignment="CENTER">
+                        <Button text="关闭" styleClass="btn, btn-secondary"
+                                onAction="#onClose" prefWidth="150"/>
+                        <Button text="激活" styleClass="btn, btn-primary"
+                                onAction="#onActivate" prefWidth="150"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- 场景1: 试用期内 -->
+            <VBox fx:id="sceneTrial" styleClass="scene" visible="true" managed="true">
+                <VBox styleClass="page-container" spacing="16">
+                    <!-- 状态图标区域 -->
+                    <VBox styleClass="status-icon-section" alignment="CENTER" spacing="12">
+                        <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/提示.png"/>
+                            </image>
+                        </ImageView>
+                        <Label fx:id="trialStatusLabel" text="试用中，试用剩余: 12天" styleClass="status-title,status-title-trial"/>
+                    </VBox>
+
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="设备ID" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceIdLabelTrial" text="a3b2****o5p6" styleClass="info-value,mono"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="设备型号" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceModelLabelTrial" text="HP EliteDesk 800 G5" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="制造商" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="manufacturerLabelTrial" text="HP" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="操作系统" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="osVersionLabelTrial" text="Windows 10 Pro" styleClass="info-value"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <HBox alignment="CENTER" spacing="4">
+                        <Label text="请联系米多专员或拨打" styleClass="help-tip"/>
+                        <Label text="15917372153" styleClass="help-tip,help-tip-link"/>
+                    </HBox>
+
+                    <HBox styleClass="bottom-actions" spacing="12" alignment="CENTER">
+                        <Button text="关闭" styleClass="btn, btn-secondary"
+                                onAction="#onClose" prefWidth="150"/>
+                        <Button text="激活" styleClass="btn, btn-primary"
+                                onAction="#onActivate" prefWidth="150"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- 场景2: 试用已过期 -->
+            <VBox fx:id="sceneTrialExpired" styleClass="scene" visible="false" managed="false">
+                <VBox styleClass="page-container" spacing="16">
+                    <!-- 状态图标区域 -->
+                    <VBox styleClass="status-icon-section" alignment="CENTER" spacing="12">
+                        <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/警示.png"/>
+                            </image>
+                        </ImageView>
+                        <Label text="试用已过期" styleClass="status-title,status-title-expired"/>
+                    </VBox>
+
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="设备ID" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceIdLabelTrialExpired" text="a3b2****o5p6" styleClass="info-value,mono"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="设备型号" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceModelLabelTrialExpired" text="HP EliteDesk 800 G5" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="制造商" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="manufacturerLabelTrialExpired" text="HP" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="操作系统" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="osVersionLabelTrialExpired" text="Windows 10 Pro" styleClass="info-value"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <HBox alignment="CENTER" spacing="4">
+                        <Label text="请联系米多专员或拨打" styleClass="help-tip"/>
+                        <Label text="15917372153" styleClass="help-tip,help-tip-link"/>
+                    </HBox>
+
+                    <HBox styleClass="bottom-actions" spacing="12" alignment="CENTER">
+                        <Button text="关闭" styleClass="btn, btn-secondary"
+                                onAction="#onClose" prefWidth="150"/>
+                        <Button text="激活" styleClass="btn, btn-primary"
+                                onAction="#onActivate" prefWidth="150"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- 场景3: 已激活 -->
+            <VBox fx:id="sceneActivated" styleClass="scene" visible="false" managed="false">
+                <VBox styleClass="page-container" spacing="16">
+                    <!-- 状态图标区域 -->
+                    <VBox styleClass="status-icon-section" alignment="CENTER" spacing="12">
+                        <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/成功.png"/>
+                            </image>
+                        </ImageView>
+                        <Label fx:id="activatedStatusLabel" text="已激活，剩余180天" styleClass="status-title,status-title-active"/>
+                    </VBox>
+
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="激活时间" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="activationDateLabelActivated" text="2025-12-02 10:30" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="到期时间" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="expireDateLabelActivated" text="2026-12-02 10:30" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="有效期" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="validDaysLabelActivated" text="365天" styleClass="info-value"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="设备ID" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceIdLabelActivated" text="a3b2****o5p6" styleClass="info-value,mono"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="设备型号" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceModelLabelActivated" text="HP EliteDesk 800 G5" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="制造商" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="manufacturerLabelActivated" text="HP" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="操作系统" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="osVersionLabelActivated" text="Windows 10 Pro" styleClass="info-value"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <HBox alignment="CENTER" spacing="4">
+                        <Label text="请联系米多专员或拨打" styleClass="help-tip"/>
+                        <Label text="15917372153" styleClass="help-tip,help-tip-link"/>
+                    </HBox>
+
+                    <HBox styleClass="bottom-actions" spacing="12" alignment="CENTER">
+                        <Button text="关闭" styleClass="btn, btn-secondary"
+                                onAction="#onClose" prefWidth="150"/>
+                        <Button text="激活" styleClass="btn, btn-primary"
+                                onAction="#onActivate" prefWidth="150"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- 场景4: 已过期 -->
+            <VBox fx:id="sceneExpired" styleClass="scene" visible="false" managed="false">
+                <VBox styleClass="page-container" spacing="16">
+                    <!-- 状态图标区域 -->
+                    <VBox styleClass="status-icon-section" alignment="CENTER" spacing="12">
+                        <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/警示.png"/>
+                            </image>
+                        </ImageView>
+                        <Label text="已过期" styleClass="status-title,status-title-error"/>
+                    </VBox>
+
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="激活时间" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="activationDateLabelExpired" text="2024-12-02 10:30" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="到期时间" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="expireDateLabelExpired" text="2025-12-02 10:30" styleClass="info-value,error-text"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="过期天数" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="expiredDaysLabelExpired" text="365天" styleClass="info-value,error-text"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <VBox styleClass="card" spacing="8">
+                        <Label text="设备信息" styleClass="card-title"/>
+                        <VBox spacing="8">
+                            <HBox styleClass="info-row">
+                                <Label text="设备ID" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceIdLabelExpired" text="a3b2****o5p6" styleClass="info-value,mono"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="设备型号" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="deviceModelLabelExpired" text="HP EliteDesk 800 G5" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="制造商" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="manufacturerLabelExpired" text="HP" styleClass="info-value"/>
+                            </HBox>
+                            <HBox styleClass="info-row">
+                                <Label text="操作系统" styleClass="info-label"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="osVersionLabelExpired" text="Windows 10 Pro" styleClass="info-value"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <HBox alignment="CENTER" spacing="4">
+                        <Label text="请联系米多专员或拨打" styleClass="help-tip"/>
+                        <Label text="15917372153" styleClass="help-tip,help-tip-link"/>
+                    </HBox>
+
+                    <HBox styleClass="bottom-actions" spacing="12" alignment="CENTER">
+                        <Button text="关闭" styleClass="btn, btn-secondary"
+                                onAction="#onClose" prefWidth="150"/>
+                        <Button text="激活" styleClass="btn, btn-primary"
+                                onAction="#onActivate" prefWidth="150"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+        </StackPane>
+    </center>
+</BorderPane>
+

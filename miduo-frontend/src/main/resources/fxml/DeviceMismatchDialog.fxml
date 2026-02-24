@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.DeviceMismatchDialogController"
+      styleClass="dialog-fullscreen" prefWidth="520">
+
+    <!-- Dialog Header -->
+    <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+        <Label text="设备验证失败" styleClass="dialog-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="×" styleClass="dialog-close-btn" onAction="#onExit"/>
+    </HBox>
+
+    <!-- Dialog Body -->
+    <VBox styleClass="dialog-body-center" spacing="16" alignment="CENTER" VBox.vgrow="ALWAYS">
+        
+        <!-- 警示图标 -->
+        <VBox alignment="CENTER" spacing="0">
+            <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                <image>
+                    <Image url="@/icons/警示.png"/>
+                </image>
+            </ImageView>
+        </VBox>
+        
+        <!-- 状态文字 -->
+        <VBox alignment="CENTER" spacing="6">
+            <Label text="检测到设备信息已变更" styleClass="expire-title-text"/>
+            <Label text="无法验证许可证" styleClass="tip-text-gray"/>
+        </VBox>
+
+        <!-- 可能原因卡片 -->
+        <VBox styleClass="info-card-flat" spacing="10" maxWidth="480">
+            <Label text="可能原因" styleClass="info-card-title-flat"/>
+            <VBox spacing="6" styleClass="reason-list-flat">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="·" styleClass="bullet-flat"/>
+                    <Label text="更换了主板或CPU" styleClass="reason-item-flat"/>
+                </HBox>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="·" styleClass="bullet-flat"/>
+                    <Label text="重装系统后硬件ID变化" styleClass="reason-item-flat"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- 当前设备信息卡片 -->
+        <VBox styleClass="info-card-flat" spacing="10" maxWidth="480">
+            <Label text="当前设备信息" styleClass="info-card-title-flat"/>
+            <VBox spacing="8">
+                <HBox styleClass="info-row-flat" alignment="CENTER_LEFT">
+                    <Label text="设备ID" styleClass="info-label-flat"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="deviceIdLabel" text="a3b2****o5p6" styleClass="info-value-flat"/>
+                </HBox>
+                <HBox styleClass="info-row-flat" alignment="CENTER_LEFT">
+                    <Label text="设备型号" styleClass="info-label-flat"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="deviceModelLabel" text="HP EliteDesk 800 G5" styleClass="info-value-flat"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- 解决方法提示（橙色背景框） -->
+        <VBox alignment="CENTER" styleClass="warning-tip-box-outlined" maxWidth="480">
+            <HBox alignment="CENTER" spacing="4">
+                <Label text="解决方法：" styleClass="warning-tip-label-orange"/>
+                <Label text="请联系米多专员或拨打" styleClass="warning-tip-text-orange"/>
+                <Label text="15917372153" styleClass="warning-tip-phone-orange"/>
+                <Label text="，重新申请许可证" styleClass="warning-tip-text-orange"/>
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <!-- Dialog Footer -->
+    <HBox spacing="16" alignment="CENTER" styleClass="dialog-footer-center">
+        <Button fx:id="exitButton" text="退出软件" styleClass="btn, btn-primary"
+                onAction="#onExit" prefWidth="280"/>
+    </HBox>
+
+</VBox>

@@ -1,0 +1,174 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未激活提示弹窗 - 客户端原型</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        body {
+            background: var(--background-color);
+        }
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .dialog {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 480px;
+            max-width: 90vw;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        .dialog-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--divider-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dialog-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .dialog-close {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dialog-close:hover {
+            color: var(--text-primary);
+        }
+        .dialog-body {
+            padding: 32px 24px;
+        }
+        .center-content {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .icon-lg {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        .icon-lg.icon-app {
+            font-size: 48px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .divider-dashed {
+            border-top: 1px dashed var(--divider-color);
+            margin: 24px 0;
+        }
+        .info-list {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 0;
+            list-style: none;
+        }
+        .info-list li {
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .info-list li::before {
+            content: "• ";
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mt-md {
+            margin-top: 16px;
+        }
+        .mt-lg {
+            margin-top: 24px;
+        }
+        .dialog-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--divider-color);
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .dialog-footer.center {
+            justify-content: center;
+        }
+        .btn-lg {
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+<!-- 未激活提示弹窗 -->
+<div class="dialog-overlay">
+    <div class="dialog">
+        <div class="dialog-header">
+            <span class="dialog-title">产线采集软件</span>
+            <button class="dialog-close" onclick="handleClose()" title="关闭">×</button>
+        </div>
+        <div class="dialog-body">
+            <div class="center-content">
+                <div class="icon-lg icon-app">🏭</div>
+                <h2 class="mt-md">软件未激活</h2>
+            </div>
+
+            <div class="divider-dashed"></div>
+
+            <div class="text-center">
+                <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 14px;">请联系米多专员获取许可证：</p>
+                <ul class="info-list">
+                    <li>试用许可：用于产线调试（每次15天）</li>
+                    <li>正式许可：用于正式生产</li>
+                </ul>
+            </div>
+
+            <div class="divider-dashed"></div>
+
+            <div class="text-center">
+                <p style="color: var(--primary-color); font-weight: 500;">请联系米多专员或拨打 15917372153</p>
+            </div>
+        </div>
+        <div class="dialog-footer center">
+            <button class="btn btn-primary btn-lg" onclick="goActivate()">激活</button>
+            <button class="btn btn-secondary btn-lg" onclick="handleClose()">退出</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function goActivate() {
+        // 直接进入离线激活流程
+        window.location.href = 'offline-activation.html';
+    }
+
+    function handleClose() {
+        // 关闭弹窗，等同"退出"
+        // 实际应用中，关闭后功能不可用，但可查看许可证信息页面
+        alert('弹窗已关闭。功能不可用，但可查看许可证信息页面。');
+    }
+</script>
+
+
+
+</body></html>

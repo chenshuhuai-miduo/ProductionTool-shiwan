@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.TrialExpireDialogController"
+      styleClass="dialog-fullscreen">
+
+    <!-- 场景1：正式授权过期 -->
+    <VBox fx:id="sceneLicense" visible="false" managed="false"
+          styleClass="dialog-content" spacing="0" VBox.vgrow="ALWAYS">
+
+        <!-- Header -->
+        <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+            <Label text="激活已过期" styleClass="dialog-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="×" styleClass="dialog-close-btn" onAction="#onExitClick"/>
+        </HBox>
+
+        <!-- Body -->
+        <VBox styleClass="dialog-body-center" spacing="20" alignment="CENTER" VBox.vgrow="ALWAYS">
+            <!-- 警示图标 -->
+            <VBox alignment="CENTER" spacing="0">
+                <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                    <image>
+                        <Image url="@/icons/警示.png"/>
+                    </image>
+                </ImageView>
+            </VBox>
+            
+            <!-- 标题文字 -->
+            <Label text="您的软件授权已过期" styleClass="expire-title-text"/>
+            
+            <!-- 过期时间 -->
+            <Label fx:id="expireDateLabel" text="过期时间：--" styleClass="expire-date-text"/>
+
+            <!-- Divider -->
+            <HBox styleClass="divider-dashed" prefHeight="1" maxWidth="320"/>
+
+            <!-- Contact Info -->
+            <VBox alignment="CENTER" spacing="4">
+                <HBox alignment="CENTER" spacing="4">
+                    <Label text="请联系米多专员或拨打" styleClass="tip-text"/>
+                    <Label text="15917372153" styleClass="contact-phone"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Footer -->
+        <HBox spacing="16" alignment="CENTER" styleClass="dialog-footer-center">
+            <Button text="退出软件" styleClass="btn, btn-secondary"
+                    onAction="#onExitClick" prefWidth="130"/>
+            <Button text="续期" styleClass="btn, btn-primary"
+                    onAction="#onRenewClick" prefWidth="130"/>
+        </HBox>
+    </VBox>
+
+    <!-- 场景2：试用已过期（可续试用） -->
+    <VBox fx:id="sceneTrial" visible="false" managed="false"
+          styleClass="dialog-content" spacing="0" VBox.vgrow="ALWAYS">
+
+        <!-- Header -->
+        <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+            <Label text="试用已过期" styleClass="dialog-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="×" styleClass="dialog-close-btn" onAction="#onExitClick"/>
+        </HBox>
+
+        <!-- Body -->
+        <VBox styleClass="dialog-body-center" spacing="20" alignment="CENTER" VBox.vgrow="ALWAYS">
+            <!-- 警示图标 -->
+            <VBox alignment="CENTER" spacing="0">
+                <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                    <image>
+                        <Image url="@/icons/警示.png"/>
+                    </image>
+                </ImageView>
+            </VBox>
+            
+            <!-- 标题文字 -->
+            <Label text="试用期已结束" styleClass="expire-title-text"/>
+            
+            <!-- 试用次数说明 -->
+            <Label fx:id="trialCountLabel" text="（当前第1次/最多2次）" styleClass="trial-count-text"/>
+
+            <!-- Divider -->
+            <HBox styleClass="divider-dashed" prefHeight="1" maxWidth="320"/>
+
+            <!-- Contact Info -->
+            <VBox alignment="CENTER" spacing="8">
+                <Label fx:id="trialHintLabel" text="可续试用(剩余1次)或购买正式许可" styleClass="tip-text"/>
+                <HBox alignment="CENTER" spacing="4">
+                    <Label text="请联系米多专员或拨打" styleClass="tip-text"/>
+                    <Label text="15917372153" styleClass="contact-phone"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Footer -->
+        <HBox spacing="16" alignment="CENTER" styleClass="dialog-footer-center">
+            <Button text="续试用" styleClass="btn, btn-secondary"
+                    onAction="#onTrialClick" prefWidth="130"/>
+            <Button text="激活正式版" styleClass="btn, btn-primary"
+                    onAction="#onActivateClick" prefWidth="130"/>
+        </HBox>
+    </VBox>
+
+    <!-- 场景3：试用已过期（已达上限） -->
+    <VBox fx:id="sceneTrialLimit" visible="false" managed="false"
+          styleClass="dialog-content" spacing="0" VBox.vgrow="ALWAYS">
+
+        <!-- Header -->
+        <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+            <Label text="试用已过期" styleClass="dialog-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="×" styleClass="dialog-close-btn" onAction="#onExitClick"/>
+        </HBox>
+
+        <!-- Body -->
+        <VBox styleClass="dialog-body-center" spacing="20" alignment="CENTER" VBox.vgrow="ALWAYS">
+            <!-- 警示图标 -->
+            <VBox alignment="CENTER" spacing="0">
+                <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                    <image>
+                        <Image url="@/icons/警示.png"/>
+                    </image>
+                </ImageView>
+            </VBox>
+            
+            <!-- 标题文字 -->
+            <Label text="试用期已结束" styleClass="expire-title-text"/>
+            
+            <!-- 试用次数说明 -->
+            <Label text="（已使用2次试用机会）" styleClass="trial-limit-text"/>
+
+            <!-- Divider -->
+            <HBox styleClass="divider-dashed" prefHeight="1" maxWidth="320"/>
+
+            <!-- Contact Info -->
+            <VBox alignment="CENTER" spacing="8">
+                <Label text="试用已达上限，如需继续使用请购买正式许可" styleClass="tip-text"/>
+                <HBox alignment="CENTER" spacing="4">
+                    <Label text="请联系米多专员或拨打" styleClass="tip-text"/>
+                    <Label text="15917372153" styleClass="contact-phone"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Footer -->
+        <HBox spacing="16" alignment="CENTER" styleClass="dialog-footer-center">
+            <Button text="退出软件" styleClass="btn, btn-secondary"
+                    onAction="#onExitClick" prefWidth="130"/>
+            <Button text="激活正式版" styleClass="btn, btn-primary"
+                    onAction="#onActivateClick" prefWidth="130"/>
+        </HBox>
+    </VBox>
+
+</VBox>

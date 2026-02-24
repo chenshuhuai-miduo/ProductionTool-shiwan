@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.OfflineActivationController"
+      styleClass="dialog-fullscreen" prefWidth="520">
+
+    <!-- 隐藏的标签栏（仅用于控制器切换状态，不在界面上显示） -->
+    <HBox fx:id="sceneTabs" visible="false" managed="false" spacing="0" alignment="CENTER_LEFT">
+        <Button fx:id="tab1" text="步骤1" onAction="#showStep1"/>
+        <Button fx:id="tab2" text="步骤2" onAction="#showStep2"/>
+        <Button fx:id="tab3" text="步骤3"/>
+    </HBox>
+
+    <!-- 场景容器 -->
+    <StackPane fx:id="sceneContainer" VBox.vgrow="ALWAYS">
+
+        <!-- 场景1: 步骤1 - 导出设备请求文件 -->
+        <VBox fx:id="step1Scene" styleClass="dialog-fullscreen">
+
+            <!-- 对话框头部 -->
+            <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+                <Label text="离线激活" styleClass="dialog-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="×" styleClass="dialog-close-btn" onAction="#handleCancel"/>
+            </HBox>
+
+            <!-- 对话框主体 -->
+            <VBox styleClass="dialog-body-center" spacing="20" alignment="CENTER" VBox.vgrow="ALWAYS">
+
+                <!-- 步骤指示器 -->
+                <HBox spacing="0" alignment="CENTER" styleClass="step-indicator-container">
+                    <!-- 步骤1 激活 -->
+                    <VBox alignment="CENTER" spacing="6">
+                        <StackPane styleClass="step-circle-active">
+                            <Label text="1" styleClass="step-number-active"/>
+                        </StackPane>
+                        <Label text="导出设备文件" styleClass="step-label-active"/>
+                    </VBox>
+
+                    <!-- 连接线（使用StackPane定位到图标中心高度） -->
+                    <StackPane HBox.hgrow="ALWAYS" maxWidth="80" alignment="TOP_CENTER">
+                        <Region styleClass="step-line" prefWidth="80" StackPane.alignment="TOP_CENTER">
+                            <StackPane.margin>
+                                <Insets top="16"/>
+                            </StackPane.margin>
+                        </Region>
+                    </StackPane>
+
+                    <!-- 步骤2 未激活 -->
+                    <VBox alignment="CENTER" spacing="6">
+                        <StackPane styleClass="step-circle-inactive">
+                            <Label text="2" styleClass="step-number-inactive"/>
+                        </StackPane>
+                        <Label text="导入许可证" styleClass="step-label-inactive"/>
+                    </VBox>
+                </HBox>
+
+                <!-- 灰色背景内容区域 -->
+                <VBox alignment="CENTER" spacing="16" styleClass="content-card-gray" maxWidth="440">
+                    <!-- 设备ID（无背景框，加粗深灰色） -->
+                    <HBox alignment="CENTER" spacing="4">
+                        <Label text="设备ID：" styleClass="device-id-label-plain"/>
+                        <Label fx:id="deviceIdLabel" text="6138****c37d" styleClass="device-id-value-plain"/>
+                    </HBox>
+
+                    <!-- 文件图标 -->
+                    <ImageView fitWidth="64" fitHeight="64" preserveRatio="true">
+                        <image>
+                            <Image url="@/icons/文件.png"/>
+                        </image>
+                    </ImageView>
+
+                    <!-- 中心内容 -->
+                    <VBox alignment="CENTER" spacing="8">
+                        <Label text="导出设备请求文件" styleClass="content-title"/>
+                        <Label text="将生成的文件发送给米多客服" styleClass="tip-text-gray"/>
+                    </VBox>
+
+                    <!-- 导出按钮 -->
+                    <Button fx:id="exportButton" onAction="#handleExport" styleClass="btn, btn-export" maxWidth="360">
+                        <graphic>
+                            <HBox spacing="8" alignment="CENTER">
+                                <Label text="📥" style="-fx-text-fill: white; -fx-font-size: 16;"/>
+                                <Label text="导出设备请求文件" style="-fx-text-fill: white; -fx-font-size: 14;"/>
+                            </HBox>
+                        </graphic>
+                    </Button>
+                </VBox>
+
+                <!-- 文件路径 -->
+                <Label fx:id="filePathLabel" text="文件将保存至：桌面/设备激活请求_a3b2c1d4_20251205.devreq" 
+                       styleClass="file-path-label" wrapText="true"/>
+            </VBox>
+
+            <!-- 对话框底部 -->
+            <HBox spacing="16" alignment="CENTER" styleClass="dialog-footer-center">
+                <Button text="取消" onAction="#handleCancel" styleClass="btn, btn-secondary" prefWidth="130"/>
+                <Button text="下一步" onAction="#showStep2" styleClass="btn, btn-primary" prefWidth="130"/>
+            </HBox>
+        </VBox>
+
+        <!-- 场景2: 步骤2 - 导入许可证文件 -->
+        <VBox fx:id="step2Scene" styleClass="dialog-fullscreen" visible="false" managed="false">
+
+            <!-- 对话框头部 -->
+            <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+                <Label text="离线激活" styleClass="dialog-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="×" styleClass="dialog-close-btn" onAction="#handleCancel"/>
+            </HBox>
+
+            <!-- 对话框主体 -->
+            <VBox styleClass="dialog-body-center" spacing="20" alignment="CENTER" VBox.vgrow="ALWAYS">
+
+                <!-- 步骤指示器 -->
+                <HBox spacing="0" alignment="CENTER" styleClass="step-indicator-container">
+                    <!-- 步骤1 已完成 -->
+                    <VBox alignment="CENTER" spacing="6">
+                        <ImageView fitWidth="32" fitHeight="32" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/第一步完成.png"/>
+                            </image>
+                        </ImageView>
+                        <Label text="导出设备文件" styleClass="step-label-inactive"/>
+                    </VBox>
+
+                    <!-- 连接线（使用StackPane定位到图标中心高度） -->
+                    <StackPane HBox.hgrow="ALWAYS" maxWidth="80" alignment="TOP_CENTER">
+                        <Region styleClass="step-line" prefWidth="80" StackPane.alignment="TOP_CENTER">
+                            <StackPane.margin>
+                                <Insets top="16"/>
+                            </StackPane.margin>
+                        </Region>
+                    </StackPane>
+
+                    <!-- 步骤2 激活 -->
+                    <VBox alignment="CENTER" spacing="6">
+                        <StackPane styleClass="step-circle-active">
+                            <Label text="2" styleClass="step-number-active"/>
+                        </StackPane>
+                        <Label text="导入许可证" styleClass="step-label-active"/>
+                    </VBox>
+                </HBox>
+
+                <!-- 灰色背景内容区域 -->
+                <VBox alignment="CENTER" spacing="16" styleClass="content-card-gray" maxWidth="440">
+                    <!-- 中心内容 -->
+                    <VBox alignment="CENTER" spacing="8">
+                        <ImageView fitWidth="64" fitHeight="64" preserveRatio="true">
+                            <image>
+                                <Image url="@/icons/文件.png"/>
+                            </image>
+                        </ImageView>
+                        <Label text="导入许可证文件" styleClass="content-title"/>
+                        <Label text="导入从客服处获取的许可证文件" styleClass="tip-text-gray"/>
+                    </VBox>
+
+                    <!-- 文件拖放区域 -->
+                    <VBox fx:id="fileDropZone" alignment="CENTER" spacing="8" 
+                          onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
+                          styleClass="file-drop-zone" maxWidth="400">
+                        <Label text="📂" style="-fx-font-size: 40;"/>
+                        <Label text="点击选择或拖拽文件到此处" styleClass="drop-zone-text"/>
+                        <Label text="支持.lic格式文件" styleClass="drop-zone-hint"/>
+                    </VBox>
+
+                    <!-- 文件选中状态 -->
+                    <HBox fx:id="fileSelected" spacing="8" alignment="CENTER_LEFT" visible="false" managed="false"
+                          styleClass="file-selected-box" maxWidth="400">
+                        <Label fx:id="selectedFileName" text="production_line_a3b2c1d4_20251205.lic"
+                               styleClass="selected-file-name-small" HBox.hgrow="ALWAYS" maxWidth="340"/>
+                        <Label text="✓" style="-fx-font-size: 18; -fx-text-fill: #28A745;"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- 对话框底部 -->
+            <HBox spacing="16" alignment="CENTER" styleClass="dialog-footer-center">
+                <Button text="上一步" onAction="#showStep1" styleClass="btn, btn-secondary" prefWidth="130"/>
+                <Button fx:id="confirmButton" text="确认激活" onAction="#handleActivate" 
+                        styleClass="btn, btn-primary" prefWidth="130"/>
+            </HBox>
+        </VBox>
+
+        <!-- 场景3: 激活成功 -->
+        <VBox fx:id="successScene" styleClass="dialog-fullscreen" visible="false" managed="false">
+
+            <!-- 对话框头部 -->
+            <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
+                <Label text="离线激活成功" styleClass="dialog-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="×" styleClass="dialog-close-btn" onAction="#handleStartUsing"/>
+            </HBox>
+
+            <!-- 对话框主体 -->
+            <VBox styleClass="dialog-body-center" spacing="24" alignment="CENTER" VBox.vgrow="ALWAYS">
+
+                <!-- 成功图标 -->
+                <VBox alignment="CENTER" spacing="12">
+                    <ImageView fitWidth="80" fitHeight="80" preserveRatio="true">
+                        <image>
+                            <Image url="@/icons/成功.png"/>
+                        </image>
+                    </ImageView>
+                    <Label text="激活成功！" styleClass="success-title"/>
+                </VBox>
+
+                <!-- 信息卡片 -->
+                <VBox styleClass="info-card-flat" spacing="12" maxWidth="380">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="激活时间" styleClass="info-label-flat"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="activationDateLabel" text="2025-12-02 10:30" styleClass="info-value-flat"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="到期时间" styleClass="info-label-flat"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="expirationDateLabel" text="2026-12-02 10:30" styleClass="info-value-flat"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="有效期" styleClass="info-label-flat"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="validityLabel" text="365天" styleClass="info-value-flat"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- 对话框底部 -->
+            <HBox alignment="CENTER" styleClass="dialog-footer-center">
+                <Button text="开始使用" onAction="#handleStartUsing" styleClass="btn, btn-primary" prefWidth="200"/>
+            </HBox>
+        </VBox>
+
+    </StackPane>
+</VBox>
