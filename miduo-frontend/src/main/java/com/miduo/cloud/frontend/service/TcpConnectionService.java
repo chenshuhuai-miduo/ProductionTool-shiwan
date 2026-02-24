@@ -2,6 +2,7 @@ package com.miduo.cloud.frontend.service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
@@ -35,15 +36,31 @@ public class TcpConnectionService {
     }
     
     /**
-     * 连接到TCP服务器
+     * 连接到TCP服务器（使用默认超时5秒）
      */
     public void connect(String host, int port) throws IOException {
+        connect(host, port, 5000); // 默认5秒超时
+    }
+    
+    /**
+     * 连接到TCP服务器（带超时配置）
+     * @param host 主机地址
+     * @param port 端口号
+     * @param timeoutMs 连接超时时间（毫秒）
+     */
+    public void connect(String host, int port, int timeoutMs) throws IOException {
         if (isConnected()) {
             throw new IOException("已经连接到服务器");
         }
         
-        System.out.println("[TCP] 正在连接到 " + host + ":" + port);
-        socket = new Socket(host, port);
+        System.out.println("[TCP] 正在连接到 " + host + ":" + port + " (连接超时: " + timeoutMs + "ms)");
+        
+        // 使用带超时的连接方式
+        socket = new Socket();
+        socket.connect(new InetSocketAddress(host, port), timeoutMs);
+        // 注意：不设置 setSoTimeout，避免读取时超时导致误断连
+        // 连接超时用于快速失败，读取操作阻塞等待数据
+        
         System.out.println("[TCP] Socket连接成功");
         
         inputStream = socket.getInputStream();

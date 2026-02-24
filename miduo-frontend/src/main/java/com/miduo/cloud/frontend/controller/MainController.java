@@ -1,10 +1,18 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.service.LicenseValidationService;
+import com.miduo.cloud.frontend.util.LicenseGuard;
+import com.miduo.cloud.frontend.controller.TrialExpiringDialogController;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.task.TaskVO;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.entity.enums.LicenseStatusEnum;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
+import com.miduo.cloud.frontend.service.DeviceInfoService;
+import com.miduo.cloud.frontend.service.LicenseService;
+import com.miduo.cloud.frontend.controller.LicenseInfoController;
+import com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.SpringContextUtil;
@@ -28,6 +36,7 @@ import javafx.scene.shape.SVGPath;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.time.LocalDate;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -41,7 +50,10 @@ import java.util.Map;
  * 功能：任务执行控制界面
  */
 public class MainController {
-    
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MainController.class);
+    private static MainController currentInstance;
+
     // 左侧面板 - 当前生产信息
     @FXML private TextField productionOrderField;
     @FXML private Label productCodeLabel;
@@ -85,6 +97,11 @@ public class MainController {
     @FXML private Label deviceStatusLabel;
     @FXML private Label workStatusLabel;
     
+    // 许可证状态相关
+    @FXML private javafx.scene.layout.HBox licenseStatusBox;
+    @FXML private javafx.scene.layout.Region licenseStatusDot;
+    @FXML private Label licenseStatusLabel;
+
     // 当前选中的任务
     private TaskVO currentTask = null;
     
@@ -157,7 +174,8 @@ public class MainController {
     @FXML
     public void initialize() {
         System.out.println("主界面初始化...");
-        
+        currentInstance = this;
+
         // 初始化类型下拉框
         typeComboBox.setItems(FXCollections.observableArrayList("有箱码", "无箱码"));
         typeComboBox.getSelectionModel().selectFirst();
@@ -231,6 +249,12 @@ public class MainController {
         
         // 加载工具栏图标
         loadToolbarIcons();
+
+        // 初始化许可证守卫
+        com.miduo.cloud.frontend.util.LicenseGuard.initialize();
+
+        // 初始化许可证状态
+        updateLicenseStatus();
     }
     
     /**
@@ -1918,7 +1942,18 @@ public class MainController {
             showAlert(Alert.AlertType.ERROR, "错误", "无法打开操作日志界面");
         }
     }
-    
+
+    private void openLicenseInfo() {
+        try {
+            // 许可证信息窗口关闭后，刷新状态栏的许可证状态
+            updateLicenseStatus();
+            LicenseInfoController.showLicenseInfo();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "错误", "无法打开许可证信息界面");
+        }
+    }
+
     private void openCodeQuery() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/CodeQuery.fxml"));
@@ -2060,6 +2095,7 @@ public class MainController {
     }
     @FXML private void onSystemConfig() { openSystemConfig(); }
     @FXML private void onOperationLog() { openOperationLog(); }
+    @FXML private void onLicenseInfo() { openLicenseInfo(); }
     @FXML private void onHelp() { System.out.println("打开操作帮助"); }
     @FXML private void onAbout() { showAlert(Alert.AlertType.INFORMATION, "关于系统", "产线采集关联软件 v1.0.0"); }
     @FXML private void onProductManagement() { openProductManagement(); }
@@ -2190,6 +2226,30 @@ public class MainController {
         System.out.println("启用/停用任务");
         appendTextToTop(operationLogArea,getCurrentTime() + " 点击启用/停用任务按钮\n");
         
+        // 检查许可证状态
+        LicenseStatusEnum licenseStatus = LicenseGuard.getCurrentLicenseStatus();
+        if (licenseStatus == LicenseStatusEnum.UNACTIVATED)
+        {
+            // 显示许可证未激活弹窗
+            UnactivatedDialogController.showUnactivatedDialog();
+            return;
+        }
+        else if (licenseStatus == LicenseStatusEnum.TRIAL_EXPIRED ||
+                licenseStatus == LicenseStatusEnum.EXPIRED)
+        {
+            // 显示许可证过期弹窗
+            TrialExpireDialogController.showTrialExpireDialog(licenseStatus);
+            return;
+        }
+        else if (licenseStatus == LicenseStatusEnum.TRIAL_ACTIVE) {
+            // 试用期内，检查是否需要显示即将到期提醒
+            long remainingDays = LicenseGuard.getRemainingDays();
+            if (remainingDays >= 0 && remainingDays <= 3) {
+                // 剩余天数 <= 3 天，显示即将到期提醒（不阻止任务启用）
+                TrialExpiringDialogController.showTrialExpiringDialog(remainingDays);
+            }
+        }
+
         if (currentTask == null) {
             showAlert(Alert.AlertType.WARNING, "提示", "请先选择一个生产订单");
             appendTextToTop(operationLogArea,getCurrentTime() + " 未选择订单，无法启用/停用\n");
@@ -2244,16 +2304,16 @@ public class MainController {
                 String url = "/api/task/updateStatus/" + taskId + "/" + newStatus;
                 if (newStatus == 1) {
                     url += "?type=" + currentType;
-                    
+
                     // 获取所有设备的连接状态
                     Map<String, Boolean> deviceConnections = new HashMap<>();
                     try {
                         String deviceResponseJson = HttpUtil.doGet("/api/device/list");
                         ApiResult<List<IoDeviceDTO>> deviceResult = HttpUtil.parseJson(
-                            deviceResponseJson, 
+                            deviceResponseJson,
                             new TypeReference<ApiResult<List<IoDeviceDTO>>>() {}
                         );
-                        
+
                         if (deviceResult.getCode() == 200 && deviceResult.getData() != null) {
                             for (IoDeviceDTO device : deviceResult.getData()) {
                                 boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
@@ -2265,7 +2325,7 @@ public class MainController {
                         e.printStackTrace();
                         // 获取设备连接状态失败时，继续执行（不阻止任务启用）
                     }
-                    
+
                     // 将设备连接状态Map转换为JSON字符串，并作为查询参数传递
                     if (!deviceConnections.isEmpty()) {
                         try {
@@ -2319,9 +2379,10 @@ public class MainController {
                             .saveAsync();
                     } else {
                         appendTextToTop(operationLogArea,getCurrentTime() + " " + actionText + "任务失败：" + result.getMessage() + "\n");
-                        
+
                         // 如果是启用任务失败且错误信息包含设备连接相关提示，显示警告弹窗
-                        if (newStatus == 1 && result.getMessage() != null && result.getMessage().contains("设备未连接")) {
+                        if (newStatus == 1 && result.getMessage() != null && 
+                            (result.getMessage().contains("设备未连接") || result.getMessage().contains("启用任务失败"))) {
                             showAlert(Alert.AlertType.WARNING, "启用失败", result.getMessage());
                         } else {
                             showAlert(Alert.AlertType.ERROR, "错误", result.getMessage());
@@ -3559,5 +3620,156 @@ public class MainController {
                 System.out.println("[扫码枪] 查询码页面和码替换页面都未打开，仅后台记录日志");
             }
         });
+    }
+
+    /**
+     * 许可证状态点击事件 - 跳转到激活信息页面
+     */
+    @FXML
+    private void onLicenseStatusClick(javafx.scene.input.MouseEvent event) {
+        try {
+            // 许可证信息窗口关闭后，刷新状态栏的许可证状态
+            updateLicenseStatus();
+            LicenseInfoController.showLicenseInfo();
+        } catch (Exception e) {
+            log.error("打开许可证信息页面失败", e);
+        }
+    }
+
+    /**
+     * 更新许可证状态显示（内部方法）
+     */
+    private void updateLicenseStatusInternal() {
+        try {
+            // 获取设备信息服务
+            DeviceInfoService deviceInfoService = new DeviceInfoService();
+            LicenseService licenseService = new LicenseService(new LicenseValidationService());
+            licenseService.init();
+
+            if (deviceInfoService == null || licenseService == null) {
+                updateLicenseStatusUI("expired", "服务未初始化", "服务初始化失败");
+                return;
+            }
+
+            // 获取当前设备ID
+            String currentDeviceId = DeviceUniqueIdGenerator.generateDeviceId(deviceInfoService.getDeviceInfo());
+
+            // 获取许可证状态
+            LicenseStatusEnum status = licenseService.getCurrentLicenseStatus(currentDeviceId);
+
+            // 获取剩余天数（通过过期时间计算）
+            LicenseService.LicenseInfo licenseInfo = licenseService.getLicenseInfo(currentDeviceId);
+            long remainingDays = licenseInfo.getRemainingDays();
+            String expiredDay = licenseInfo.getExpireDate().toString();
+
+            // 根据状态和剩余天数确定显示内容
+            String statusType;
+            String statusText;
+            String tooltipText;
+
+            switch (status) {
+                case ACTIVATED:
+                    // 已激活 - 根据剩余天数显示不同颜色
+                    if (remainingDays > 30) {
+                        statusType = "normal";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay;
+                    } else if (remainingDays >= 7) {
+                        statusType = "warning";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠即将到期，请尽快续期";
+                    }else if (remainingDays > 0) {
+                        statusType = "urgent";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                    } else {
+                        statusType = "urgent";
+                        statusText = "授权剩余: 不足1天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                    }
+                    break;
+
+                case TRIAL_ACTIVE:
+                    statusType = "trial";
+                    tooltipText = "试用模式\n到期: " + expiredDay + "\n💡 点击激活正式版";
+                    // 试用期内 - 蓝色
+                    if (remainingDays > 0)
+                    {
+                        statusText = "试用剩余: " + remainingDays + "天";
+                    }
+                    else
+                    {
+                        statusText = "试用剩余: 不足1天";
+                    }
+                    break;
+
+                case TRIAL_EXPIRED:
+                    statusType = "expired";
+                    statusText = "试用已过期";
+                    tooltipText = "试用期已结束\n必须激活才能使用";
+                    break;
+
+                case EXPIRED:
+                    statusType = "expired";
+                    statusText = "已过期";
+                    tooltipText = "过期时间：" + expiredDay + "\n❌已过期，必须续期";
+                    break;
+
+                case UNACTIVATED:
+                default:
+                    statusType = "expired";
+                    statusText = "未激活";
+                    tooltipText = "软件未激活\n💡 点击进行激活";
+                    break;
+            }
+
+            updateLicenseStatusUI(statusType, statusText, tooltipText);
+
+        } catch (Exception e) {
+            log.error("更新许可证状态失败", e);
+            updateLicenseStatusUI("expired", "状态未知", "获取许可证状态失败");
+        }
+    }
+
+    /**
+     * 更新许可证状态UI显示
+     *
+     * @param statusType 状态类型: normal/warning/urgent/expired/trial
+     * @param statusText 状态文本
+     * @param tooltipText 提示文本
+     */
+    private void updateLicenseStatusUI(String statusType, String statusText, String tooltipText) {
+        Platform.runLater(() -> {
+            // 清除所有状态样式
+            licenseStatusBox.getStyleClass().removeAll(
+                "license-normal", "license-warning", "license-urgent",
+                "license-expired", "license-trial"
+            );
+
+            // 添加对应状态样式
+            licenseStatusBox.getStyleClass().add("license-" + statusType);
+
+            // 更新文本
+            licenseStatusLabel.setText(statusText);
+
+            // 设置Tooltip
+            Tooltip tooltip = new Tooltip(tooltipText);
+            tooltip.setShowDelay(javafx.util.Duration.millis(200));
+            Tooltip.install(licenseStatusBox, tooltip);
+        });
+    }
+
+    /**
+     * 获取当前MainController实例
+     */
+    public static MainController getCurrentInstance() {
+        return currentInstance;
+    }
+
+    /**
+     * 公开的许可证状态更新方法
+     */
+    public void updateLicenseStatus() {
+        updateLicenseStatusInternal();
     }
 }

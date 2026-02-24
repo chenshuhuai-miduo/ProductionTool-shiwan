@@ -1,0 +1,351 @@
+/* 根容器 */
+.dialog-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* 全屏对话框容器（方角铺满） */
+.dialog-fullscreen {
+    -fx-background-color: white;
+    -fx-border-color: black;
+    -fx-border-width: 0.5px;
+}
+
+/* 对话框内容区域 */
+.dialog-content {
+    -fx-background-color: white;
+}
+
+/* 对话框主体 */
+.dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 20, 0, 0, 4);
+}
+
+/* 对话框头部 */
+.dialog-header {
+    -fx-background-color: #f5f5f5;
+    -fx-background-radius: 12 12 0 0;
+    -fx-padding: 16 20;
+}
+
+/* 方角头部（铺满弹窗用） */
+.dialog-header-flat {
+    -fx-background-color: #f5f5f5;
+    -fx-background-radius: 0;
+    -fx-padding: 14 20;
+}
+
+.dialog-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* 对话框主体内容 */
+.dialog-body {
+    -fx-padding: 32 32 24 32;
+}
+
+/* 对话框主体内容（居中版） */
+.dialog-body-center {
+    -fx-padding: 40 40 30 40;
+    -fx-alignment: center;
+}
+
+/* 对话框底部 */
+.dialog-footer {
+    -fx-padding: 0 32 32 32;
+}
+
+/* 对话框底部（居中版） */
+.dialog-footer-center {
+    -fx-padding: 20 40 30 40;
+    -fx-alignment: center;
+}
+
+/* 图标样式 */
+.icon-lg {
+    -fx-font-size: 100px;
+    -fx-pref-width: 100px;
+    -fx-pref-height: 128px;
+    -fx-min-width: 100px;
+    -fx-min-height: 100px;
+    -fx-max-width: 100px;
+    -fx-max-height: 128px;
+    -fx-alignment: center;   /* 添加居中对齐 */
+    -fx-content-display: center; /* 确保内容居中显示 */
+}
+
+.icon-warning {
+    /* 警告图标 ⚠️ */
+}
+
+.icon-warning .svg-icon-path {
+    -fx-fill: #ff9800;
+}
+
+.icon-info {
+    /* 信息图标 ℹ️ */
+}
+
+.icon-info .svg-icon-path {
+    -fx-fill: #1976d2;
+}
+
+/* 标题样式 */
+.title-lg {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* 文本样式 */
+.text-muted {
+    -fx-text-fill: #999999;
+    -fx-font-size: 14px;
+}
+
+.text-secondary {
+    -fx-text-fill: #666666;
+    -fx-font-size: 14px;
+}
+
+.text-warning {
+    -fx-text-fill: #ff9800;
+    -fx-font-size: 14px;
+}
+
+.text-center {
+    -fx-alignment: center;
+}
+
+.center-content {
+    -fx-alignment: center;
+}
+
+/* 信息卡片 */
+.info-card {
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 8;
+    -fx-padding: 16 20;
+}
+
+.info-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 20;
+}
+
+.info-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #666666;
+}
+
+.info-value-error {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #f44336;
+}
+
+/* 联系信息 */
+.contact-info {
+    -fx-font-size: 14px;
+    -fx-text-fill: #1976d2;
+    -fx-font-weight: 500;
+}
+
+/* 分隔线 */
+.divider-dashed {
+    -fx-border-color: transparent transparent #e0e0e0 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-style: dashed;
+}
+
+/* 按钮基础样式 */
+.btn {
+    -fx-font-size: 15px;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-pref-height: 44;
+    -fx-min-height: 44;
+}
+
+/* 主要按钮 */
+.btn-primary {
+    -fx-background-color: #1976d2;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #1565c0;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #0d47a1;
+}
+
+/* 成功按钮 */
+.btn-success {
+    -fx-background-color: #2e7d32;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.btn-success:hover {
+    -fx-background-color: #27692c;
+}
+
+.btn-success:pressed {
+    -fx-background-color: #1b5e20;
+}
+
+/* 次要按钮 */
+.btn-secondary {
+    -fx-background-color: #f5f5f5;
+    -fx-text-fill: #666666;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #eeeeee;
+}
+
+.btn-secondary:pressed {
+    -fx-background-color: #e0e0e0;
+}
+
+/* 大按钮 */
+.btn-lg {
+    -fx-pref-width: 150;
+}
+
+/* ============ 试用即将到期提醒样式 ============ */
+
+/* 关闭按钮 */
+.dialog-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #999999;
+    -fx-font-size: 20px;
+    -fx-cursor: hand;
+    -fx-padding: 0 8;
+}
+
+.dialog-close-btn:hover {
+    -fx-text-fill: #666666;
+}
+
+/* 倒计时数字徽章 - 基础样式 */
+.countdown-badge {
+    -fx-font-size: 48px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-radius: 50;
+    -fx-min-width: 80;
+    -fx-min-height: 80;
+    -fx-pref-width: 80;
+    -fx-pref-height: 80;
+    -fx-alignment: center;
+}
+
+/* 倒计时数字 - 警告样式（橙色） */
+.countdown-warning {
+    -fx-background-color: #ff9800;
+}
+
+/* 倒计时数字 - 紧急样式（红色） */
+.countdown-urgent {
+    -fx-background-color: #f44336;
+}
+
+/* 剩余天数文本 */
+.remaining-days-text {
+    -fx-font-size: 16px;
+    -fx-text-fill: #666666;
+}
+
+/* 剩余天数文本 - 紧急样式 */
+.remaining-days-text-urgent {
+    -fx-font-size: 16px;
+    -fx-text-fill: #f44336;
+    -fx-font-weight: bold;
+}
+
+/* 提示文本 */
+.tip-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #666666;
+}
+
+/* 紧急提示文本 */
+.urgent-tip-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #f44336;
+    -fx-font-weight: 500;
+}
+
+/* 图标警告颜色 */
+.icon-warning {
+    -fx-text-fill: #ff9800;
+}
+
+/* 图标错误颜色 */
+.icon-error {
+    -fx-text-fill: #f44336;
+}
+
+/* ============ 试用即将到期新样式 ============ */
+
+/* 到期标题文字 */
+.expiring-title-text {
+    -fx-font-size: 18px;
+    -fx-text-fill: #F44336;
+    -fx-font-weight: normal;
+}
+
+/* 天数数字 - 蓝色高亮 */
+.expiring-days-number {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F44336;
+}
+
+/* 天数数字 - 紧急红色 */
+.expiring-days-number-urgent {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F44336;
+}
+
+/* 联系电话 */
+.contact-phone {
+    -fx-font-size: 14px;
+    -fx-text-fill: #1976d2;
+    -fx-font-weight: 500;
+}
+
+/* ============ 试用过期对话框样式 ============ */
+
+/* 过期标题文字 */
+.expire-title-text {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* 过期时间文字 */
+.expire-date-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #F44336;
+}
+
+/* 试用次数说明文字 */
+.trial-count-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #999999;
+}
+
+/* 试用达上限文字 */
+.trial-limit-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #999999;
+}

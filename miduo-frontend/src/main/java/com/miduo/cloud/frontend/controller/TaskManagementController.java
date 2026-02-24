@@ -345,6 +345,12 @@ public class TaskManagementController {
         System.out.println("添加任务");
         
         try {
+            // 获取当前窗口作为 owner
+            javafx.stage.Stage ownerStage = null;
+            if (taskTableView != null && taskTableView.getScene() != null) {
+                ownerStage = (javafx.stage.Stage) taskTableView.getScene().getWindow();
+            }
+            
             // 加载添加任务对话框FXML
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
                 getClass().getResource("/fxml/AddTaskDialog.fxml")
@@ -357,7 +363,15 @@ public class TaskManagementController {
             // 创建对话框Stage
             javafx.stage.Stage dialogStage = new javafx.stage.Stage();
             dialogStage.setTitle("添加任务");
-            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            
+            // 如果有 owner，使用 WINDOW_MODAL，否则使用 APPLICATION_MODAL
+            if (ownerStage != null) {
+                dialogStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+                dialogStage.initOwner(ownerStage);
+            } else {
+                dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            }
+            
             dialogStage.setScene(new javafx.scene.Scene(root));
             StageIconUtil.setStageIcon(dialogStage);
             dialogStage.showAndWait();

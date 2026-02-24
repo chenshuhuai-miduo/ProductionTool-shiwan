@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -348,7 +347,7 @@ public class TaskApplicationService {
                 }
                 
                 // 检查所有启用设备的连接状态
-                ApiResult<Boolean> deviceCheckResult = checkDeviceConnections(deviceConnectionsJson);
+                ApiResult<Boolean> deviceCheckResult = checkDeviceConnections(deviceConnectionsJson, type);
                 if (deviceCheckResult.getCode() != 200) {
                     return deviceCheckResult;
                 }
@@ -397,11 +396,12 @@ public class TaskApplicationService {
     }
     
     /**
-     * 检查所有启用设备的连接状态
+     * 检查启用设备的连接状态
      * @param deviceConnectionsJson 设备连接状态JSON字符串，格式：{"设备ID1":true,"设备ID2":false}
+     * @param type 采集类型：1-有箱码，2-无箱码
      * @return 操作结果，如果有未连接的设备则返回错误
      */
-    private ApiResult<Boolean> checkDeviceConnections(String deviceConnectionsJson) {
+    private ApiResult<Boolean> checkDeviceConnections(String deviceConnectionsJson, Integer type) {
         try {
             // 如果未传递设备连接状态信息，跳过检查（兼容旧版本）
             if (deviceConnectionsJson == null || deviceConnectionsJson.trim().isEmpty()) {
@@ -430,26 +430,42 @@ public class TaskApplicationService {
                 .filter(device -> device.getEnabled() != null && device.getEnabled())
                 .collect(Collectors.toList());
             
-            // 检查每个启用设备的连接状态
-            List<String> disconnectedDeviceNames = new ArrayList<>();
-            for (IoDeviceDTO device : enabledDevices) {
+            // 根据采集模式筛选需要检查的设备
+            List<IoDeviceDTO> devicesToCheck;
+            if (type != null && type == 2) {
+                // 无箱码模式：只检查托盘码关联设备
+                devicesToCheck = enabledDevices.stream()
+                    .filter(device -> "托盘码关联".equals(device.getDeviceCategory()))
+                    .collect(Collectors.toList());
+                System.out.println("[设备连接检查] 无箱码模式，只检查托盘码关联设备");
+            } else {
+                // 有箱码模式：检查所有启用的设备
+                devicesToCheck = enabledDevices;
+                System.out.println("[设备连接检查] 有箱码模式，检查所有启用设备");
+            }
+            
+            // 检查每个需要检查的设备的连接状态
+            boolean hasDisconnectedDevice = false;
+            for (IoDeviceDTO device : devicesToCheck) {
                 String deviceId = device.getId();
                 Boolean isConnected = deviceConnections.get(deviceId);
                 
                 // 如果设备连接状态为null或false，则认为未连接
                 if (isConnected == null || !isConnected) {
-                    disconnectedDeviceNames.add(device.getDeviceName());
+                    hasDisconnectedDevice = true;
+                    System.out.println("[设备连接检查] 设备未连接: " + device.getDeviceName() + " (类别: " + device.getDeviceCategory() + ")");
+                    break; // 找到一个未连接的设备即可返回错误
                 }
             }
             
             // 如果有未连接的设备，返回错误
-            if (!disconnectedDeviceNames.isEmpty()) {
-                String errorMessage = "启用任务失败：以下设备未连接：" + String.join("、", disconnectedDeviceNames);
+            if (hasDisconnectedDevice) {
+                String errorMessage = "启用任务失败：设备未连接，请检查设备连接状态后再试";
                 System.out.println("[设备连接检查] " + errorMessage);
                 return ApiResult.error(errorMessage);
             }
             
-            System.out.println("[设备连接检查] 所有启用设备均已连接");
+            System.out.println("[设备连接检查] 所有需要检查的设备均已连接");
             return ApiResult.success(true);
             
         } catch (Exception e) {

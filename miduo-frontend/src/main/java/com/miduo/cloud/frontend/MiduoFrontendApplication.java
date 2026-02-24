@@ -1,11 +1,20 @@
 package com.miduo.cloud.frontend;
 
+import com.miduo.cloud.frontend.controller.*;
+import com.miduo.cloud.frontend.service.DeviceInfoService;
+import com.miduo.cloud.frontend.service.LicenseService;
+import com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator;
 import com.miduo.cloud.frontend.util.OperateLogBatchManager;
+import com.miduo.cloud.frontend.service.LicenseValidationService;
 import com.miduo.cloud.frontend.util.StageIconUtil;
+import com.miduo.cloud.entity.enums.LicenseStatusEnum;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 
 /**
@@ -22,7 +31,17 @@ public class MiduoFrontendApplication extends Application {
         
         // 启动操作日志批量管理器
         OperateLogBatchManager.getInstance().start();
-        
+
+        // 执行许可证验证
+        if (!performLicenseValidation()) {
+            // 许可证验证失败，退出应用程序
+            System.err.println("========================================");
+            System.err.println("✗ 许可证验证失败，应用程序退出");
+            System.err.println("========================================");
+            Platform.exit();
+            return;
+        }
+
         try {
             // 加载主界面FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainWindow.fxml"));
@@ -95,6 +114,140 @@ public class MiduoFrontendApplication extends Application {
         super.stop();
         System.out.println("✓ 应用程序已安全退出");
         System.out.println("========================================");
+    }
+
+    /**
+     * 执行许可证验证
+     * @return 验证是否通过
+     */
+    private boolean performLicenseValidation() {
+        try {
+            System.out.println("正在验证许可证...");
+
+            DeviceInfoService deviceInfoService = new DeviceInfoService();
+            LicenseService licenseService = new LicenseService(new LicenseValidationService());
+            licenseService.init();
+
+            // 获取当前设备ID
+            String currentDeviceId = DeviceUniqueIdGenerator.generateDeviceId(deviceInfoService.getDeviceInfo());
+
+            // 先检查许可证文件是否存在
+            if (!licenseService.licenseExists()) {
+                System.out.println("检测到许可证文件不存在，显示未激活弹窗");
+                return handleUnactivatedStatus();
+            }
+
+            // 获取详细验证结果（包含设备不匹配信息）
+            LicenseValidationService.LicenseValidationResult validationResult = 
+                licenseService.readLicense(currentDeviceId);
+        
+            // 检查设备不匹配
+            if (validationResult.isDeviceMismatch()) {
+                DeviceMismatchDialogController.showDeviceMismatchDialog(
+                    validationResult.getMismatchedDeviceId());
+                return false; // 返回true让应用继续，但功能会被限制
+            }
+
+            // 读取许可证状态
+            LicenseStatusEnum status = licenseService.getCurrentLicenseStatus(currentDeviceId);
+
+            System.out.println("许可证状态: " + status.getDescription());
+
+            if (status == LicenseStatusEnum.UNACTIVATED) {
+                // 未激活，弹出未激活对话框
+                UnactivatedDialogController.showUnactivatedDialog();
+            } else if (status == LicenseStatusEnum.TRIAL_EXPIRED ||
+                    status == LicenseStatusEnum.EXPIRED) {
+                // 试用过期或正式授权过期，弹出过期对话框
+                TrialExpireDialogController.showTrialExpireDialog(status);
+            } else if (status == LicenseStatusEnum.TRIAL_ACTIVE) {
+                // 试用期内，检查是否需要显示即将到期提醒
+                long remainingDays = licenseService.getRemainingDays(currentDeviceId);
+                if (remainingDays >= 0 && remainingDays <= 3) {
+                    // 剩余天数 <= 3 天，显示即将到期提醒
+                    TrialExpiringDialogController.showTrialExpiringDialog(remainingDays);
+                }
+            }
+
+            return  true;
+
+        } catch (Exception e) {
+            System.err.println("许可证验证异常: " + e.getMessage());
+            e.printStackTrace();
+            return handleValidationError();
+        }
+    }
+
+    /**
+     * 处理未激活状态
+     */
+    private boolean handleUnactivatedStatus() {
+        System.out.println("检测到未激活状态，显示未激活提示");
+
+        try {
+            // 使用CompletableFuture等待弹窗结果
+           UnactivatedDialogController.showUnactivatedDialog();
+           return true;
+
+        } catch (Exception e) {
+            System.err.println("处理未激活状态异常: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 处理试用过期状态
+     */
+    private boolean handleTrialExpiredStatus() {
+
+        LicenseInfoController.showLicenseInfo();
+
+        return false;
+    }
+
+    /**
+     * 处理正式版过期状态
+     */
+    private boolean handleExpiredStatus() {
+        System.out.println("检测到正式版已过期状态，显示续期提示");
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("许可证已过期");
+            alert.setHeaderText("您的许可证已过期");
+            alert.setContentText("正式版许可证已过期，无法继续使用。\n\n请联系米多专员进行续期。");
+
+            ButtonType renewButton = new ButtonType("联系续期");
+            ButtonType exitButton = new ButtonType("退出软件");
+            alert.getButtonTypes().setAll(renewButton, exitButton);
+
+            alert.showAndWait().ifPresent(buttonType -> {
+                if (buttonType == renewButton) {
+                    Platform.runLater(() -> LicenseInfoController.showLicenseInfo());
+                }
+            });
+
+            Platform.exit();
+        });
+
+        return false;
+    }
+
+    /**
+     * 处理验证异常
+     */
+    private boolean handleValidationError() {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("许可证验证失败");
+            alert.setHeaderText("无法验证许可证状态");
+            alert.setContentText("许可证验证过程中发生错误。\n\n为了安全起见，应用程序将退出。\n\n请联系技术支持获取帮助。");
+            alert.showAndWait();
+            Platform.exit();
+        });
+
+        return false;
     }
 
     /**

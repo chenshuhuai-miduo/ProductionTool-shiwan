@@ -164,22 +164,25 @@ public class DeviceConnectionManager {
         int port = Integer.parseInt(device.getPort());
         String deviceId = device.getId();
         
+        // 获取超时配置（秒转毫秒），默认5秒
+        int timeoutMs = (device.getTimeout() != null ? device.getTimeout() : 5) * 1000;
+        
         if ("UDP".equals(protocolType)) {
             // UDP连接
             UdpConnectionService udpService = new UdpConnectionService();
             udpService.setMessageHandler(data -> handleReceivedData(deviceId, data));
-            udpService.setErrorHandler(this::handleError);
-            udpService.connect(address, port);
+            udpService.setErrorHandler(error -> handleError(deviceId, error)); // 传递设备ID
+            udpService.connect(address, port, timeoutMs); // 传递超时参数
             connectionServices.put(deviceId, udpService);
-            System.out.println("[连接管理器] UDP连接启动成功: " + device.getDeviceName() + " (" + address + ":" + port + ")");
+            System.out.println("[连接管理器] UDP连接启动成功: " + device.getDeviceName() + " (" + address + ":" + port + ", 超时: " + timeoutMs + "ms)");
         } else {
             // TCP连接（默认）
             TcpConnectionService tcpService = new TcpConnectionService();
             tcpService.setMessageHandler(data -> handleReceivedData(deviceId, data));
-            tcpService.setErrorHandler(this::handleError);
-            tcpService.connect(address, port);
+            tcpService.setErrorHandler(error -> handleError(deviceId, error)); // 传递设备ID
+            tcpService.connect(address, port, timeoutMs); // 传递超时参数
             connectionServices.put(deviceId, tcpService);
-            System.out.println("[连接管理器] TCP连接启动成功: " + device.getDeviceName() + " (" + address + ":" + port + ")");
+            System.out.println("[连接管理器] TCP连接启动成功: " + device.getDeviceName() + " (" + address + ":" + port + ", 超时: " + timeoutMs + "ms)");
         }
     }
     
@@ -192,11 +195,14 @@ public class DeviceConnectionManager {
         String deviceId = device.getId();
         String deviceCategory = device.getDeviceCategory();
         
+        // 获取超时配置（秒转毫秒），默认5秒
+        int timeoutMs = (device.getTimeout() != null ? device.getTimeout() : 5) * 1000;
+        
         // 判断是否为扫码枪设备（扫码枪只打开配置串口，数据接收串口由外部程序管理）
         if ("扫码枪".equals(deviceCategory)) {
             BarcodeScannerConnectionService scannerService = new BarcodeScannerConnectionService();
             scannerService.setMessageHandler(data -> handleReceivedData(deviceId, data));
-            scannerService.setErrorHandler(this::handleError);
+            scannerService.setErrorHandler(error -> handleError(deviceId, error)); // 传递设备ID
             scannerService.connect(portName, baudRate);
             connectionServices.put(deviceId, scannerService);
             System.out.println("[连接管理器] 扫码枪串口连接启动成功: " + device.getDeviceName() + 
@@ -205,10 +211,10 @@ public class DeviceConnectionManager {
             // 普通串口设备
             SerialConnectionService serialService = new SerialConnectionService();
             serialService.setMessageHandler(data -> handleReceivedData(deviceId, data));
-            serialService.setErrorHandler(this::handleError);
-            serialService.connect(portName, baudRate);
+            serialService.setErrorHandler(error -> handleError(deviceId, error)); // 传递设备ID
+            serialService.connect(portName, baudRate, timeoutMs); // 传递超时参数
             connectionServices.put(deviceId, serialService);
-            System.out.println("[连接管理器] 串口连接启动成功: " + device.getDeviceName());
+            System.out.println("[连接管理器] 串口连接启动成功: " + device.getDeviceName() + " (串口:" + portName + ", 超时: " + timeoutMs + "ms)");
         }
     }
     
@@ -319,19 +325,62 @@ public class DeviceConnectionManager {
     
     /**
      * 处理错误（设备断开连接时触发重试）
+     * @param deviceId 设备ID
+     * @param error 错误消息
      */
-    private void handleError(String error) {
-        System.err.println("[连接管理器] 错误: " + error);
+    private void handleError(String deviceId, String error) {
+        System.err.println("[连接管理器] 设备 " + deviceId + " 错误: " + error);
         
         // 通知主界面更新设备状态
         notifyDeviceStatusChange();
         
-        // 检查是否有设备断开连接，触发重试机制
-        checkAndRetryDisconnectedDevices();
+        // 只重连指定的设备
+        if (deviceId != null) {
+            retryDeviceConnection(deviceId);
+        } else {
+            // 如果deviceId为null，回退到检查所有设备（兼容性）
+            checkAndRetryDisconnectedDevices();
+        }
     }
     
     /**
-     * 检查并重试断开连接的设备
+     * 重连指定的设备
+     * @param deviceId 设备ID
+     */
+    private void retryDeviceConnection(String deviceId) {
+        // 从设备配置中获取设备信息
+        IoDeviceDTO device = deviceConfigs.get(deviceId);
+        if (device == null) {
+            System.out.println("[重连] 设备ID " + deviceId + " 未找到配置，跳过重连");
+            return;
+        }
+        
+        // 检查设备是否已启用
+        if (!device.getEnabled()) {
+            System.out.println("[重连] 设备 " + device.getDeviceName() + " 已禁用，跳过重连");
+            return;
+        }
+        
+        // 检查设备是否已连接
+        if (isConnected(deviceId)) {
+            System.out.println("[重连] 设备 " + device.getDeviceName() + " 已连接，无需重连");
+            return;
+        }
+        
+        // 检查是否已经在重试中
+        Thread existingRetryThread = retryThreads.get(deviceId);
+        if (existingRetryThread != null && existingRetryThread.isAlive()) {
+            System.out.println("[重连] 设备 " + device.getDeviceName() + " 已经在重试中，跳过");
+            return;
+        }
+        
+        // 启动重试线程
+        System.out.println("[重连] 检测到设备断开，准备启动重试: " + device.getDeviceName());
+        startRetryThread(device);
+    }
+    
+    /**
+     * 检查并重试断开连接的设备（全量检查，用于定期检查）
      */
     private void checkAndRetryDisconnectedDevices() {
         System.out.println("[重试检查] 开始检查断开的设备，当前设备配置数量: " + deviceConfigs.size());
