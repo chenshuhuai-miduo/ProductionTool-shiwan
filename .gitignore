@@ -31,4 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
-io_devices.ini
+
+*.ini
+logs
+*.lic
+*.devreq
