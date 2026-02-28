@@ -2260,29 +2260,6 @@
                       "children": [
                         {
                           "type": "frame",
-                          "id": "i8fVf",
-                          "name": "清空垛按钮",
-                          "width": "fill_container",
-                          "height": 40,
-                          "fill": "#DC2626",
-                          "cornerRadius": 8,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "DLHZi",
-                              "name": "btnClearPalletText",
-                              "fill": "#ffffff",
-                              "content": "清空垛",
-                              "fontFamily": "Microsoft YaHei",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
                           "id": "GiWPI",
                           "name": "提取未成垛按钮",
                           "width": "fill_container",
@@ -5046,8 +5023,8 @@
     {
       "type": "frame",
       "id": "ErR4z",
-      "x": 4936,
-      "y": 1313,
+      "x": 4977,
+      "y": 1342,
       "name": "批量取消关联确认对话框",
       "width": 600,
       "height": 520,
