@@ -14,7 +14,7 @@
     <artifactId>miduo-frontend</artifactId>
     <packaging>jar</packaging>
     <name>miduo-frontend</name>
-    <description>米多生产线采集系统 - JavaFX前端模块</description>
+    <description>米多赋码采集关联系统 - JavaFX前端模块</description>
 
     <properties>
         <javafx.version>17.0.2</javafx.version>

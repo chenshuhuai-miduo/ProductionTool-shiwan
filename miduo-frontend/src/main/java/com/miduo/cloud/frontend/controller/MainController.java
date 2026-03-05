@@ -2097,7 +2097,7 @@ public class MainController {
     @FXML private void onOperationLog() { openOperationLog(); }
     @FXML private void onLicenseInfo() { openLicenseInfo(); }
     @FXML private void onHelp() { System.out.println("打开操作帮助"); }
-    @FXML private void onAbout() { showAlert(Alert.AlertType.INFORMATION, "关于系统", "产线采集关联软件 v1.0.0"); }
+    @FXML private void onAbout() { showAlert(Alert.AlertType.INFORMATION, "关于系统", "米多赋码采集关联系统 v1.0.0"); }
     @FXML private void onProductManagement() { openProductManagement(); }
     @FXML private void onTaskManagement() { openTaskManagement(); }
     @FXML private void onDataUpload() { openDataUpload(); }
