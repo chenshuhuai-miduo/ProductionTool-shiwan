@@ -44,6 +44,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * 主界面控制器
@@ -101,6 +103,9 @@ public class MainController {
     @FXML private javafx.scene.layout.HBox licenseStatusBox;
     @FXML private javafx.scene.layout.Region licenseStatusDot;
     @FXML private Label licenseStatusLabel;
+
+    // 时间显示定时器（用于实时刷新）
+    private Timer timeUpdateTimer;
 
     // 当前选中的任务
     private TaskVO currentTask = null;
@@ -221,8 +226,8 @@ public class MainController {
             }
         });
         
-        // 初始化时间显示
-        updateTime();
+        // 启动时间显示动态更新
+        startRealtimeClock();
         
         // 初始化统计显示
         updateStatisticsDisplay();
@@ -1387,11 +1392,29 @@ public class MainController {
     // ==================== 辅助方法 ====================
     
     /**
+     * 启动实时时钟（每秒更新一次时间显示）
+     */
+    private void startRealtimeClock() {
+        if (timeUpdateTimer != null) {
+            timeUpdateTimer.cancel();
+        }
+        timeUpdateTimer = new Timer(true);
+        timeUpdateTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                Platform.runLater(() -> updateTime());
+            }
+        }, 0, 1000);
+    }
+    
+    /**
      * 更新时间显示
      */
     private void updateTime() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        currentTimeLabel.setText(LocalDateTime.now().format(formatter));
+        if (currentTimeLabel != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            currentTimeLabel.setText(LocalDateTime.now().format(formatter));
+        }
     }
     
     /**
