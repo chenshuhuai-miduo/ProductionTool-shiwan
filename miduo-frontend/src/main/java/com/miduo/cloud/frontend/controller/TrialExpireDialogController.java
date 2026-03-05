@@ -322,7 +322,7 @@ public class TrialExpireDialogController {
                             .map(window -> (Stage) window)
                             .filter(s -> {
                                 String title = s.getTitle();
-                                return title != null && title.contains("赋码关联系统");
+                                return title != null && title.contains("米多赋码采集关联系统");
                             })
                             .findFirst()
                             .ifPresent(mainStage -> {

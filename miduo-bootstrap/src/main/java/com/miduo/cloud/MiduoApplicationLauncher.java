@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 米多星球产线采集系统 - 统一启动类
+ * 米多赋码采集关联系统 - 统一启动类
  * 负责启动和管理前端和后端应用程序
  * 
  * 功能：
@@ -78,7 +78,7 @@ public class MiduoApplicationLauncher {
             
             System.out.println("\n========================================");
             System.out.println("✓ 所有服务已安全关闭");
-            System.out.println("感谢使用米多星球产线采集系统！");
+            System.out.println("感谢使用米多赋码采集关联系统！");
             System.out.println("========================================\n");
             
         } catch (Exception e) {
@@ -104,7 +104,7 @@ public class MiduoApplicationLauncher {
     private static void printWelcomeBanner() {
         System.out.println("\n");
         System.out.println("╔══════════════════════════════════════════════╗");
-        System.out.println("║    米多星球产线采集系统 v2.0.0              ║");
+        System.out.println("║    米多赋码采集关联系统 v2.0.0              ║");
         System.out.println("║    Miduo Production Line Collection System  ║");
         System.out.println("║                                              ║");
         System.out.println("║    统一启动器 (Backend + Frontend)         ║");
@@ -116,7 +116,7 @@ public class MiduoApplicationLauncher {
         System.out.println("  工作目录: " + System.getProperty("user.dir"));
         System.out.println();
         System.out.println("========================================");
-        System.out.println("正在启动米多星球产线采集系统...");
+        System.out.println("正在启动米多赋码采集关联系统...");
         System.out.println("========================================\n");
     }
     
@@ -228,7 +228,7 @@ public class MiduoApplicationLauncher {
             FileLogManager.getInstance().start();
             
             // 3. 记录系统启动日志
-            FileLogManager.getInstance().logInfo("系统启动", "米多星球产线采集系统正在启动...");
+            FileLogManager.getInstance().logInfo("系统启动", "米多赋码采集关联系统正在启动...");
             FileLogManager.getInstance().logInfo("系统启动", "Java版本: " + System.getProperty("java.version"));
             FileLogManager.getInstance().logInfo("系统启动", "操作系统: " + System.getProperty("os.name") + " " + System.getProperty("os.version"));
             FileLogManager.getInstance().logInfo("系统启动", "工作目录: " + System.getProperty("user.dir"));
@@ -248,7 +248,7 @@ public class MiduoApplicationLauncher {
      */
     private static void shutdownLogging() {
         try {
-            FileLogManager.getInstance().logInfo("系统关闭", "米多星球产线采集系统正在关闭...");
+            FileLogManager.getInstance().logInfo("系统关闭", "米多赋码采集关联系统正在关闭...");
             
             // 停止文件日志管理器（等待队列中的日志写完）
             FileLogManager.getInstance().stop();

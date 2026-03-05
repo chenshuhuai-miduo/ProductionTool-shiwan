@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * 米多星球后端服务启动类
+ * 米多赋码采集关联系统启动类
  * 
  * @SpringBootApplication 包含了以下三个注解：
  * - @SpringBootConfiguration：标识为配置类
@@ -35,7 +35,7 @@ public class MiduoBackendApplication {
     public static void main(String[] args) {
         SpringApplication.run(MiduoBackendApplication.class, args);
         System.out.println("========================================");
-        System.out.println("米多星球后端服务启动成功！");
+        System.out.println("米多赋码采集关联系统启动成功！");
         System.out.println("API地址：http://localhost:8080/api");
         System.out.println("========================================");
     }

@@ -18,7 +18,7 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 
 /**
- * 米多星球产线采集系统 - JavaFX应用程序类
+ * 米多赋码采集关联系统 - JavaFX应用程序类
  * 前端独立启动类（不依赖Spring Boot）
  */
 public class MiduoFrontendApplication extends Application {
@@ -26,7 +26,7 @@ public class MiduoFrontendApplication extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("========================================");
-        System.out.println("米多星球产线采集系统正在启动...");
+        System.out.println("米多赋码采集关联系统正在启动...");
         System.out.println("========================================");
         
         // 启动操作日志批量管理器
@@ -51,7 +51,7 @@ public class MiduoFrontendApplication extends Application {
             Scene scene = new Scene(root, 1400, 900);
             
             // 设置舞台属性
-            primaryStage.setTitle("赋码关联系统");
+            primaryStage.setTitle("米多赋码采集关联系统");
             primaryStage.setScene(scene);
             primaryStage.setResizable(true); // 允许调整窗口大小
             primaryStage.setMaximized(false); // 启动时不最大化（可根据需要改为true）
@@ -76,7 +76,7 @@ public class MiduoFrontendApplication extends Application {
             primaryStage.show();
             
             System.out.println("========================================");
-            System.out.println("✓ 米多星球产线采集系统启动成功！");
+            System.out.println("✓ 米多赋码采集关联系统启动成功！");
             System.out.println("  主界面已加载");
             System.out.println("  窗口大小: 1400x900");
             System.out.println("  后端地址: http://localhost:8080");
@@ -105,7 +105,7 @@ public class MiduoFrontendApplication extends Application {
     @Override
     public void stop() throws Exception {
         System.out.println("========================================");
-        System.out.println("米多星球产线采集系统正在关闭...");
+        System.out.println("米多赋码采集关联系统正在关闭...");
         System.out.println("========================================");
         
         // 停止操作日志批量管理器（会先保存所有待保存的日志）

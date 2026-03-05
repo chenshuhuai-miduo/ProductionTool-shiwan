@@ -36,3 +36,5 @@ build/
 logs
 *.lic
 *.devreq
+assets/*.log
+assets/*.exe

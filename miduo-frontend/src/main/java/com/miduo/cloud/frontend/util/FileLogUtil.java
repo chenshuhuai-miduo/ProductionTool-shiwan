@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * 文件组织结构：
  * 项目根目录/logs/年月/日.ini
- * 例如：D:/javaspace/miduo-basebackend/logs/2025年11月/2025-11-04.ini
+ * 例如：D:/javaspace/miduo-ccas/logs/2025年11月/2025-11-04.ini
  * 
  * @author System
  * @since 2025-10-30

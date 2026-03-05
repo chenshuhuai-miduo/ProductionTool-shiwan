@@ -6,7 +6,7 @@
     
     <parent>
         <groupId>com.miduo.cloud</groupId>
-        <artifactId>miduo-basebackend</artifactId>
+        <artifactId>miduo-ccas</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -50,7 +50,7 @@
     </dependencies>
     
     <build>
-        <finalName>miduo-launcher</finalName>
+        <finalName>miduo-ccas-launcher</finalName>
         <plugins>
             <!-- Spring Boot Maven Plugin：打包可执行JAR（包含所有依赖） -->
             <plugin>
@@ -116,7 +116,7 @@
                         </manifest>
                         <manifestEntries>
                             <Built-By>Miduo Team</Built-By>
-                            <Implementation-Title>Miduo Application Launcher</Implementation-Title>
+                            <Implementation-Title>Miduo CCAS</Implementation-Title>
                             <Implementation-Version>${project.version}</Implementation-Version>
                         </manifestEntries>
                     </archive>

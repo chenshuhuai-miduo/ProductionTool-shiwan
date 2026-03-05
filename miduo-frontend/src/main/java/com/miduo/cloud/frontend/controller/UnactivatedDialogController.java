@@ -112,7 +112,7 @@ public class UnactivatedDialogController {
             javafx.scene.Parent root = loader.load();
 
             Stage stage = new Stage();
-            stage.setTitle("产线采集软件");
+            stage.setTitle("米多赋码采集关联系统");
             
             javafx.scene.Scene scene = new javafx.scene.Scene(root);
             scene.getStylesheets().add(

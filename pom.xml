@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
     
     <groupId>com.miduo.cloud</groupId>
-    <artifactId>miduo-basebackend</artifactId>
+    <artifactId>miduo-ccas</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     
-    <name>Miduo Base Backend</name>
-    <description>米多星球后端基础服务 - 产线采集关联软件</description>
+    <name>Miduo CCAS</name>
+    <description>米多赋码采集关联系统 (Coding Collection &amp; Association System)</description>
     
     <properties>
         <java.version>11</java.version>

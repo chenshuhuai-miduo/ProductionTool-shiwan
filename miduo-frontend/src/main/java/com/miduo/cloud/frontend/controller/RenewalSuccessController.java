@@ -128,9 +128,9 @@ public class RenewalSuccessController {
                                 .filter(window -> window instanceof Stage)
                                 .map(window -> (Stage) window)
                                 .filter(stage -> {
-                                    // 查找主界面窗口（标题为"赋码关联系统"）
+                                    // 查找主界面窗口（标题为"米多赋码采集关联系统"）
                                     String title = stage.getTitle();
-                                    return title != null && title.contains("赋码关联系统");
+                                    return title != null && title.contains("米多赋码采集关联系统");
                                 })
                                 .findFirst()
                                 .ifPresent(mainStage -> {

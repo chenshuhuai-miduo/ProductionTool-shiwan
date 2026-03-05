@@ -1,7 +1,7 @@
 package com.miduo.cloud.frontend;
 
 /**
- * 米多星球产线采集系统 - 前端主启动类
+ * 米多赋码采集关联系统 - 前端主启动类
  * 使用普通main方法启动JavaFX应用程序
  * 
  * 启动方式：
@@ -24,7 +24,7 @@ public class FrontendMain {
     public static void main(String[] args) {
         System.out.println("\n");
         System.out.println("╔══════════════════════════════════════════════╗");
-        System.out.println("║    米多星球产线采集系统 v2.0.0              ║");
+        System.out.println("║    米多赋码采集关联系统 v2.0.0              ║");
         System.out.println("║    Miduo Production Line Collection System  ║");
         System.out.println("║                                              ║");
         System.out.println("║    前端模块 (JavaFX)                        ║");
@@ -49,7 +49,7 @@ public class FrontendMain {
         }
         
         System.out.println("\n应用程序已退出。");
-        System.out.println("感谢使用米多星球产线采集系统！\n");
+        System.out.println("感谢使用米多赋码采集关联系统！\n");
     }
 }
 

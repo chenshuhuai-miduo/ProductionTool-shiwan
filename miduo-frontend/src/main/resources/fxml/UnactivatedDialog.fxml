@@ -13,7 +13,7 @@
 
     <!-- Dialog Header -->
     <HBox styleClass="dialog-header-flat" alignment="CENTER_LEFT">
-        <Label text="产线采集软件" styleClass="dialog-title"/>
+        <Label text="米多赋码采集关联系统" styleClass="dialog-title"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button fx:id="closeButton" text="×" styleClass="dialog-close-btn" onAction="#onClose"/>
     </HBox>
