@@ -2191,49 +2191,77 @@
                           "width": "fill_container",
                           "fill": "#EFF6FF",
                           "cornerRadius": 8,
-                          "gap": 8,
                           "padding": [
                             10,
                             12
                           ],
-                          "justifyContent": "space_between",
-                          "alignItems": "center",
+                          "layout": "vertical",
+                          "gap": 8,
                           "children": [
                             {
-                              "type": "text",
-                              "id": "w0kHS",
-                              "fill": "#4B5563",
-                              "content": "1箱",
-                              "fontFamily": "Microsoft YaHei",
-                              "fontSize": 18,
-                              "fontWeight": "normal"
-                            },
-                            {
                               "type": "frame",
-                              "id": "pGXlx",
-                              "height": 26,
-                              "fill": "#EEF5FF",
-                              "cornerRadius": 12,
-                              "stroke": {
-                                "align": "inside",
-                                "thickness": 1,
-                                "fill": "#2563EB"
-                              },
-                              "padding": [
-                                4,
-                                10
-                              ],
-                              "justifyContent": "center",
+                              "id": "item1Row1",
+                              "width": "fill_container",
+                              "layout": "horizontal",
+                              "justifyContent": "space_between",
                               "alignItems": "center",
                               "children": [
                                 {
                                   "type": "text",
-                                  "id": "yYKYn",
-                                  "fill": "#2563EB",
-                                  "content": "待上传",
+                                  "id": "item1Pallet",
+                                  "fill": "#1F2937",
+                                  "content": "垛 P20241201001",
                                   "fontFamily": "Microsoft YaHei",
-                                  "fontSize": 14,
+                                  "fontSize": 16,
                                   "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "pGXlx",
+                                  "height": 26,
+                                  "fill": "#EEF5FF",
+                                  "cornerRadius": 12,
+                                  "stroke": {
+                                    "align": "inside",
+                                    "thickness": 1,
+                                    "fill": "#2563EB"
+                                  },
+                                  "padding": [
+                                    4,
+                                    10
+                                  ],
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "yYKYn",
+                                      "fill": "#2563EB",
+                                      "content": "待上传",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "item1Row2",
+                              "width": "fill_container",
+                              "layout": "horizontal",
+                              "justifyContent": "start",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "w0kHS",
+                                  "fill": "#4B5563",
+                                  "content": "70箱",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 16,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -2250,46 +2278,75 @@
                             10,
                             12
                           ],
-                          "justifyContent": "space_between",
-                          "alignItems": "center",
+                          "layout": "vertical",
+                          "gap": 8,
                           "children": [
                             {
-                              "type": "text",
-                              "id": "jT314",
-                              "name": "text2",
-                              "fill": "#4B5563",
-                              "content": "2箱",
-                              "fontFamily": "Microsoft YaHei",
-                              "fontSize": 18,
-                              "fontWeight": "normal"
-                            },
-                            {
                               "type": "frame",
-                              "id": "4sA5O",
-                              "name": "tag2",
-                              "fill": "#ECFDF5",
-                              "cornerRadius": 12,
-                              "stroke": {
-                                "align": "inside",
-                                "thickness": 1,
-                                "fill": "#059669"
-                              },
-                              "padding": [
-                                4,
-                                10
-                              ],
-                              "justifyContent": "center",
+                              "id": "item2Row1",
+                              "width": "fill_container",
+                              "layout": "horizontal",
+                              "justifyContent": "space_between",
                               "alignItems": "center",
                               "children": [
                                 {
                                   "type": "text",
-                                  "id": "lEckA",
-                                  "name": "tag2Text",
-                                  "fill": "#059669",
-                                  "content": "已上传",
+                                  "id": "item2Pallet",
+                                  "fill": "#1F2937",
+                                  "content": "垛 P20241201002",
                                   "fontFamily": "Microsoft YaHei",
-                                  "fontSize": 14,
+                                  "fontSize": 16,
                                   "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "4sA5O",
+                                  "name": "tag2",
+                                  "fill": "#ECFDF5",
+                                  "cornerRadius": 12,
+                                  "stroke": {
+                                    "align": "inside",
+                                    "thickness": 1,
+                                    "fill": "#059669"
+                                  },
+                                  "padding": [
+                                    4,
+                                    10
+                                  ],
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "lEckA",
+                                      "name": "tag2Text",
+                                      "fill": "#059669",
+                                      "content": "已上传",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "item2Row2",
+                              "width": "fill_container",
+                              "layout": "horizontal",
+                              "justifyContent": "start",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "jT314",
+                                  "name": "text2",
+                                  "fill": "#4B5563",
+                                  "content": "70箱",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 16,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -10947,7 +11004,7 @@
                       "id": "qFphM",
                       "name": "log1",
                       "fill": "#10B981",
-                      "content": "10:30:18: 垛码 D001 上传成功",
+                      "content": "10:30:18: 垛码 P20241201001 70箱 上传成功",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "normal"
@@ -10957,7 +11014,7 @@
                       "id": "LIZMg",
                       "name": "log2",
                       "fill": "#2563EB",
-                      "content": "10:30:16: 垛码 D001 上传中...",
+                      "content": "10:30:16: 垛码 P20241201001 70箱 上传中...",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "normal"
@@ -10967,7 +11024,7 @@
                       "id": "4Ttg3",
                       "name": "log3",
                       "fill": "#6B7280",
-                      "content": "10:30:15: 垛码 D001 开始上传",
+                      "content": "10:30:15: 垛码 P20241201001 70箱 开始上传",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "normal"
@@ -10977,7 +11034,7 @@
                       "id": "wgRuR",
                       "name": "log4",
                       "fill": "#EF4444",
-                      "content": "10:25:22: 垛码 D002 上传失败，网络超时",
+                      "content": "10:25:22: 垛码 P20241201002 70箱 上传失败，网络超时",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "normal"
