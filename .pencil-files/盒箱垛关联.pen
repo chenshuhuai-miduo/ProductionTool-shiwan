@@ -6341,13 +6341,13 @@
                 0,
                 16
               ],
-              "justifyContent": "center",
+              "justifyContent": "flex-start",
               "alignItems": "center",
               "children": [
                 {
                   "type": "frame",
                   "id": "hesWs",
-                  "name": "单个取消关联",
+                  "name": "单码取消",
                   "width": 150,
                   "height": 48,
                   "fill": "#2563EB",
@@ -6360,7 +6360,7 @@
                       "id": "9ezf8",
                       "name": "singleBtnText",
                       "fill": "#FFFFFF",
-                      "content": "单个取消关联",
+                      "content": "单码取消",
                       "fontFamily": "Arial",
                       "fontSize": 16,
                       "fontWeight": "600"
@@ -6370,7 +6370,7 @@
                 {
                   "type": "frame",
                   "id": "nF63K",
-                  "name": "批量取消关联",
+                  "name": "多码取消",
                   "width": 150,
                   "height": 48,
                   "fill": "#F3F4F6",
@@ -6383,9 +6383,31 @@
                       "id": "2ABNl",
                       "name": "batchBtnText",
                       "fill": "#6B7280",
-                      "content": "批量取消关联",
+                      "content": "多码取消",
                       "fontFamily": "Arial",
                       "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "helpQIcon",
+                  "name": "帮助图标",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F3F4F6",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "helpQText",
+                      "fill": "#6B7280",
+                      "content": "?",
+                      "fontFamily": "Arial",
+                      "fontSize": 14,
                       "fontWeight": "600"
                     }
                   ]
@@ -6422,7 +6444,7 @@
                       "id": "2OOKM",
                       "name": "leftTitle",
                       "fill": "#1F2937",
-                      "content": "单个取消关联",
+                      "content": "单码取消",
                       "fontFamily": "Arial",
                       "fontSize": 24,
                       "fontWeight": "600"
@@ -6449,33 +6471,10 @@
                           "id": "26Dez",
                           "name": "code1Label2",
                           "fill": "#1F2937",
-                          "content": "第一个码",
+                          "content": "码（瓶/盒）",
                           "fontFamily": "Arial",
                           "fontSize": 18,
                           "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "fxPDh",
-                          "name": "帮助",
-                          "width": 28,
-                          "height": 28,
-                          "fill": "#F3F4F6",
-                          "cornerRadius": 6,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "PRHPa",
-                              "name": "code1HelpIcon",
-                              "fill": "#6B7280",
-                              "content": "?",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            }
-                          ]
                         }
                       ]
                     },
@@ -6503,90 +6502,7 @@
                           "id": "8p47f",
                           "name": "code1Placeholder",
                           "fill": "#6B7280",
-                          "content": "请输入或扫描第一个码",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "rIFY2",
-                      "name": "第二个码标签",
-                      "gap": 2,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "DU0WA",
-                          "name": "code2Star2",
-                          "fill": "#EF4444",
-                          "content": "*",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "ylGLf",
-                          "name": "code2Label2",
-                          "fill": "#1F2937",
-                          "content": "第二个码",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "gTttP",
-                          "name": "帮助",
-                          "width": 28,
-                          "height": 28,
-                          "fill": "#F3F4F6",
-                          "cornerRadius": 6,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "Ap555",
-                              "name": "code2HelpIcon",
-                              "fill": "#6B7280",
-                              "content": "?",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "R9OtC",
-                      "name": "第二个码输入",
-                      "width": "fill_container",
-                      "height": 48,
-                      "fill": "#F9FAFB",
-                      "cornerRadius": 8,
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": 1,
-                        "fill": "#D1D5DB"
-                      },
-                      "padding": [
-                        0,
-                        16
-                      ],
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "mYRwR",
-                          "name": "code2Placeholder",
-                          "fill": "#6B7280",
-                          "content": "请输入或扫描第二个码（同一包装内的任意两个码）",
+                          "content": "请输入或扫描瓶码/盒码",
                           "fontFamily": "Arial",
                           "fontSize": 18,
                           "fontWeight": "normal"
@@ -6750,7 +6666,7 @@
                           "id": "7f14b",
                           "name": "pkgInfo",
                           "fill": "#1F2937",
-                          "content": "盒码 20241201001002，不可解除关联",
+                          "content": "盒码 20241201001002，不可取消关联",
                           "fontFamily": "Arial",
                           "fontSize": 18,
                           "fontWeight": "600"
@@ -7182,13 +7098,13 @@
                 0,
                 16
               ],
-              "justifyContent": "center",
+              "justifyContent": "flex-start",
               "alignItems": "center",
               "children": [
                 {
                   "type": "frame",
                   "id": "PZPek",
-                  "name": "单个取消关联",
+                  "name": "单码取消",
                   "width": 150,
                   "height": 48,
                   "fill": "#F3F4F6",
@@ -7201,7 +7117,7 @@
                       "id": "dAKww",
                       "name": "batchSingleBtnText2",
                       "fill": "#6B7280",
-                      "content": "单个取消关联",
+                      "content": "单码取消",
                       "fontFamily": "Arial",
                       "fontSize": 16,
                       "fontWeight": "600"
@@ -7211,7 +7127,7 @@
                 {
                   "type": "frame",
                   "id": "rCBjp",
-                  "name": "批量取消关联",
+                  "name": "多码取消",
                   "width": 150,
                   "height": 48,
                   "fill": "#2563EB",
@@ -7224,9 +7140,31 @@
                       "id": "lQyWG",
                       "name": "batchBatchBtnText2",
                       "fill": "#FFFFFF",
-                      "content": "批量取消关联",
+                      "content": "多码取消",
                       "fontFamily": "Arial",
                       "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "helpQIcon2",
+                  "name": "帮助图标",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F3F4F6",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "helpQText2",
+                      "fill": "#6B7280",
+                      "content": "?",
+                      "fontFamily": "Arial",
+                      "fontSize": 14,
                       "fontWeight": "600"
                     }
                   ]
@@ -7263,7 +7201,7 @@
                       "id": "Y0tDO",
                       "name": "batchLeftTitle",
                       "fill": "#1F2937",
-                      "content": "批量取消关联",
+                      "content": "多码取消",
                       "fontFamily": "Arial",
                       "fontSize": 24,
                       "fontWeight": "600"
@@ -7290,33 +7228,10 @@
                           "id": "6NQJx",
                           "name": "bigCodeLabel2",
                           "fill": "#1F2937",
-                          "content": "大码",
+                          "content": "盒/箱/垛码",
                           "fontFamily": "Arial",
                           "fontSize": 18,
                           "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "bTGGJ",
-                          "name": "帮助",
-                          "width": 28,
-                          "height": 28,
-                          "fill": "#F3F4F6",
-                          "cornerRadius": 6,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "8kiMt",
-                              "name": "bigCodeHelpIcon",
-                              "fill": "#6B7280",
-                              "content": "?",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            }
-                          ]
                         }
                       ]
                     },
@@ -7351,7 +7266,7 @@
                               "id": "vNrb1",
                               "name": "bigCodePlaceholder2",
                               "fill": "#6B7280",
-                              "content": "请输入或扫描大码（盒码/箱码/垛码）",
+                              "content": "盒码、箱码或垛码（垛码为虚拟，可从数据查询等界面复制）",
                               "fontFamily": "Arial",
                               "fontSize": 18,
                               "fontWeight": "normal"
@@ -7388,7 +7303,7 @@
                       "id": "xh1sV",
                       "name": "listTitleBatch",
                       "fill": "#374151",
-                      "content": "已添加的大码列表",
+                      "content": "已添加的码列表",
                       "fontFamily": "Arial",
                       "fontSize": 18,
                       "fontWeight": "600"
@@ -7398,7 +7313,7 @@
                       "id": "St3wb",
                       "name": "列表框",
                       "width": "fill_container",
-                      "height": 140,
+                      "height": 200,
                       "fill": "#FFFFFF",
                       "cornerRadius": 8,
                       "stroke": {
@@ -7568,7 +7483,7 @@
                               "id": "gYkix",
                               "name": "confirmBtnBatchText",
                               "fill": "#FFFFFF",
-                              "content": "确认批量取消关联",
+                              "content": "确认取消关联",
                               "fontFamily": "Arial",
                               "fontSize": 18,
                               "fontWeight": "600"
@@ -7622,7 +7537,7 @@
                           "id": "TmwCg",
                           "name": "unit1Title",
                           "fill": "#1F2937",
-                          "content": "盒码 20241201001001，可解除关联，解除12个",
+                          "content": "盒码 20241201001001，可取消关联，取消12个",
                           "fontFamily": "Arial",
                           "fontSize": 18,
                           "fontWeight": "600"
@@ -7640,7 +7555,7 @@
                           "id": "k0gJH",
                           "name": "unit2Title",
                           "fill": "#1F2937",
-                          "content": "箱码 20241201002001，不可解除关联",
+                          "content": "箱码 20241201002001，不可取消关联",
                           "fontFamily": "Arial",
                           "fontSize": 18,
                           "fontWeight": "600"
@@ -7691,7 +7606,7 @@
                           "id": "6QSxk",
                           "name": "totalDetail",
                           "fill": "#DC2626",
-                          "content": "总影响范围: 1个可解除，涉及12个码关系",
+                          "content": "总影响范围: 2个可取消，涉及1686个码关系",
                           "fontFamily": "Arial",
                           "fontSize": 16,
                           "fontWeight": "600"
