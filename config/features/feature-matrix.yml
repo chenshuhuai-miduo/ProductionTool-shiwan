@@ -1,0 +1,46 @@
+# config/features/feature-matrix.yml
+# 功能 ↔ 软件版本 对应表（示例）
+
+features:
+  - id: taskManagement
+    name: 任务管理
+    layer: core
+    variants: all
+
+  - id: codeCollect
+    name: 码采集与关联
+    layer: core
+    variants: all
+
+  - id: dataUpload
+    name: 数据上传
+    layer: core
+    variants: all
+
+  - id: codeQuery
+    name: 数据查询
+    layer: core
+    variants: all
+
+  - id: codeReplace
+    name: 码替换
+    layer: core
+    variants: all
+
+  - id: operateLog
+    name: 操作日志
+    layer: core
+    variants: all
+
+  - id: codePackage
+    name: 码包管理
+    layer: variant
+    variants:
+      - shiwan-m1
+      - shiwan-m2
+
+  - id: cancelAssociation
+    name: 取消关联
+    layer: variant
+    variants:
+      - shiwan-m2

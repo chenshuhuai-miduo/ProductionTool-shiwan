@@ -1,0 +1,11 @@
+# config/variants/shiwan-m1.yml
+# 石湾1号机（瓶盒关联软件）
+
+app:
+  name: 赋码采集关联系统-石湾1号机
+
+build:
+  variant: shiwan
+  machine: 1
+
+features: {}

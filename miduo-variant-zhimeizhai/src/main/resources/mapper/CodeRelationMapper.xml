@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miduo.cloud.variant.zhimeizhai.persistence.mybatis.mapper.CodeRelationMapper">
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO CodeRelationUpload (
+            BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber,
+            DxCode, SalesCode, VirtualSerialNumber, IsVirtual,
+            ProductNO, OrderNo, Status, TagNo, Qty, Type,
+            WarehouseNo, BatchNo, AddTime, ErrCount, Msg,
+            UploadTime, IsUpload, IsDel, TeamName
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.biggerSerialNumber}, #{item.bigSerialNumber}, #{item.mediumSerialNumber}, #{item.smallSerialNumber},
+                #{item.dxCode}, #{item.salesCode}, #{item.virtualSerialNumber}, #{item.isVirtual},
+                #{item.productNo}, #{item.orderNo}, #{item.status}, #{item.tagNo}, #{item.qty}, #{item.type},
+                #{item.warehouseNo}, #{item.batchNo}, #{item.addTime}, #{item.errCount}, #{item.msg},
+                #{item.uploadTime}, #{item.isUpload}, #{item.isDel}, #{item.teamName}
+            )
+        </foreach>
+    </insert>
+
+    <update id="batchUpdatePalletCode">
+        UPDATE CodeRelationUpload
+        SET BiggerSerialNumber = #{palletCode}
+        WHERE ID IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

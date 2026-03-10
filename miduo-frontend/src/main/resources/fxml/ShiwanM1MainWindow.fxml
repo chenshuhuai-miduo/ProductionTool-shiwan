@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+    石湾1号机（瓶盒关联软件）主界面
+    设计规格：1366x768
+    对应需求文档：P01-01-主界面-瓶盒关联.md
+    Controller：com.miduo.cloud.frontend.controller.ShiwanM1MainController
+-->
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.miduo.cloud.frontend.controller.ShiwanM1MainController"
+            styleClass="shiwan-m1-root"
+            stylesheets="@../css/base-styles.css,@../css/shiwan-m1-styles.css"
+            prefWidth="1366" prefHeight="768">
+
+    <!-- ==================== 菜单栏 ==================== -->
+    <top>
+        <MenuBar styleClass="menu-bar">
+            <Menu text="文件(F)">
+                <MenuItem text="退出软件" onAction="#onExit"/>
+            </Menu>
+            <Menu text="配置">
+                <MenuItem text="系统设置" onAction="#onSystemConfig"/>
+                <MenuItem text="许可证信息" onAction="#onLicenseInfo"/>
+            </Menu>
+            <Menu text="数据">
+                <MenuItem text="操作日志" onAction="#onOperationLog"/>
+            </Menu>
+            <Menu text="帮助(H)">
+                <MenuItem text="操作帮助" onAction="#onHelp"/>
+                <MenuItem text="关于系统" onAction="#onAbout"/>
+            </Menu>
+        </MenuBar>
+    </top>
+
+    <!-- ==================== 主内容区 ==================== -->
+    <center>
+        <VBox>
+
+            <!-- Tab 栏 -->
+            <HBox styleClass="shiwan-m1-tab-bar">
+                <Button text="数据采集" styleClass="shiwan-m1-tab-active" mouseTransparent="true"/>
+            </HBox>
+
+            <!-- 内容体：左侧面板 + 右侧面板 -->
+            <HBox VBox.vgrow="ALWAYS" styleClass="shiwan-m1-content-body">
+
+                <!-- ===== 左侧面板（500px 固定宽度） ===== -->
+                <VBox prefWidth="500" minWidth="500" maxWidth="500"
+                      VBox.vgrow="ALWAYS" styleClass="shiwan-m1-left-panel">
+
+                    <!-- 模块一：采集规格设置 -->
+                    <VBox styleClass="shiwan-m1-card" VBox.vgrow="NEVER" spacing="8">
+                        <Label text="采集规格设置" styleClass="shiwan-m1-card-title"/>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <VBox.margin>
+                                <Insets top="6"/>
+                            </VBox.margin>
+                            <Label text="1盒" styleClass="shiwan-m1-ratio-label"/>
+                            <TextField fx:id="bottlesPerBoxField"
+                                       text="6"
+                                       styleClass="shiwan-m1-ratio-input"
+                                       promptText="6"/>
+                            <Label text="瓶" styleClass="shiwan-m1-ratio-label"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- 模块二：单位实时统计（弹性填充剩余空间） -->
+                    <VBox styleClass="shiwan-m1-card" VBox.vgrow="ALWAYS" spacing="12">
+                        <Label text="单位实时统计" styleClass="shiwan-m1-card-title"/>
+                        <!-- 统计卡片行（两个卡片横向排列，各占一半） -->
+                        <HBox spacing="12" VBox.vgrow="ALWAYS">
+                            <!-- 合计瓶数 -->
+                            <VBox styleClass="shiwan-m1-stat-card"
+                                  HBox.hgrow="ALWAYS"
+                                  alignment="CENTER"
+                                  spacing="8">
+                                <Label text="合计瓶数" styleClass="shiwan-m1-stat-label"/>
+                                <Label fx:id="totalBottlesLabel"
+                                       text="0"
+                                       styleClass="shiwan-m1-stat-value-red"/>
+                            </VBox>
+                            <!-- 当前盒数 -->
+                            <VBox styleClass="shiwan-m1-stat-card"
+                                  HBox.hgrow="ALWAYS"
+                                  alignment="CENTER"
+                                  spacing="8">
+                                <Label text="当前盒数" styleClass="shiwan-m1-stat-label"/>
+                                <Label fx:id="totalBoxesLabel"
+                                       text="0"
+                                       styleClass="shiwan-m1-stat-value-blue"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <!-- 模块三：任务控制 -->
+                    <VBox styleClass="shiwan-m1-card" VBox.vgrow="NEVER" spacing="12">
+                        <!-- 标题行（含帮助按钮） -->
+                        <HBox spacing="6" alignment="CENTER_LEFT">
+                            <Label text="任务控制" styleClass="shiwan-m1-card-title"
+                                   style="-fx-border-color: transparent; -fx-border-width: 0; -fx-padding: 0;"/>
+                            <Button fx:id="taskHelpBtn"
+                                    text="?"
+                                    styleClass="shiwan-m1-help-btn"
+                                    onAction="#onTaskHelp"/>
+                        </HBox>
+                        <!-- 操作按钮行 -->
+                        <HBox spacing="12">
+                            <Button fx:id="startCaptureBtn"
+                                    text="开始采集"
+                                    styleClass="shiwan-m1-start-btn"
+                                    onAction="#onToggleCapture"
+                                    HBox.hgrow="ALWAYS"
+                                    maxWidth="Infinity"/>
+                            <Button text="关闭报警"
+                                    styleClass="shiwan-m1-alarm-btn"
+                                    onAction="#onCloseAlarm"
+                                    HBox.hgrow="ALWAYS"
+                                    maxWidth="Infinity"/>
+                        </HBox>
+                    </VBox>
+
+                </VBox>
+                <!-- /左侧面板 -->
+
+                <!-- ===== 右侧面板（弹性填充） ===== -->
+                <!--
+                    使用 SplitPane 实现 60/40 高度分割
+                    数据接收区约占 60%，操作日志约占 40%
+                -->
+                <SplitPane fx:id="rightSplitPane"
+                           orientation="VERTICAL"
+                           dividerPositions="0.62"
+                           HBox.hgrow="ALWAYS"
+                           styleClass="shiwan-m1-split-pane">
+
+                    <!-- 数据接收区（上，约60%） -->
+                    <VBox styleClass="shiwan-m1-area-card">
+                        <HBox styleClass="shiwan-m1-area-header-bar">
+                            <Label text="数据接收区" styleClass="shiwan-m1-area-header-label"/>
+                            <Label text="（最新在上，每行一条）"
+                                   styleClass="shiwan-m1-area-header-hint"/>
+                        </HBox>
+                        <ListView fx:id="dataLogList"
+                                  styleClass="shiwan-m1-log-list"
+                                  VBox.vgrow="ALWAYS"/>
+                    </VBox>
+
+                    <!-- 操作日志（下，约40%） -->
+                    <VBox styleClass="shiwan-m1-area-card">
+                        <HBox styleClass="shiwan-m1-area-header-bar">
+                            <Label text="操作日志" styleClass="shiwan-m1-area-header-label"/>
+                            <Label text="（最新在上）"
+                                   styleClass="shiwan-m1-area-header-hint"/>
+                        </HBox>
+                        <ListView fx:id="opLogList"
+                                  styleClass="shiwan-m1-log-list"
+                                  VBox.vgrow="ALWAYS"/>
+                    </VBox>
+
+                </SplitPane>
+                <!-- /右侧面板 -->
+
+            </HBox>
+            <!-- /内容体 -->
+
+        </VBox>
+    </center>
+    <!-- /主内容区 -->
+
+    <!-- ==================== 状态栏 ==================== -->
+    <bottom>
+        <HBox styleClass="status-bar" spacing="15" alignment="CENTER_LEFT">
+            <!-- 授权剩余天数（激活后才显示） -->
+            <Label fx:id="activationStatusLabel"
+                   styleClass="shiwan-m1-activation-badge"
+                   text="授权剩余: 0天"
+                   visible="false"
+                   managed="false"/>
+            <!-- 弹性占位 -->
+            <Region HBox.hgrow="ALWAYS"/>
+            <!-- 采集中指示（运行时显示） -->
+            <Label fx:id="runningStatusLabel"
+                   text="● 采集中"
+                   styleClass="shiwan-m1-running-label"
+                   visible="false"
+                   managed="false"/>
+            <!-- 系统标识 -->
+            <Label text="瓶盒关联采集系统 - 1号机"
+                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280;"/>
+            <!-- 实时时钟 -->
+            <Label fx:id="currentTimeLabel" text="2026-03-10 12:00:00"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

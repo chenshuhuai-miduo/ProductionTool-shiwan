@@ -1,0 +1,364 @@
+/* ============================================================
+   石湾1号机（瓶盒关联软件）主界面专属样式
+   依赖 base-styles.css 提供的 CSS 变量
+   ============================================================ */
+
+/* ---------- 根背景 ---------- */
+.shiwan-m1-root {
+    -fx-background-color: #E9EEF5;
+}
+
+/* ---------- Tab 栏 ---------- */
+.shiwan-m1-tab-bar {
+    -fx-background-color: #E6ECF5;
+    -fx-border-color: transparent transparent #d0d0d0 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 4px 8px;
+    -fx-spacing: 8px;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-height: 44px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.shiwan-m1-tab-active {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 4px 20px;
+    -fx-background-radius: 6px;
+    -fx-border-width: 0;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-cursor: default;
+    -fx-effect: null;
+}
+
+.shiwan-m1-tab-active:hover {
+    -fx-background-color: #2563EB;
+}
+
+.shiwan-m1-tab-active:pressed {
+    -fx-background-color: #2563EB;
+}
+
+/* ---------- 内容体 ---------- */
+.shiwan-m1-content-body {
+    -fx-background-color: #E9EEF5;
+    -fx-padding: 16px;
+    -fx-spacing: 16px;
+}
+
+/* ---------- 卡片通用 ---------- */
+.shiwan-m1-card {
+    -fx-background-color: white;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px 16px;
+}
+
+/* ---------- 卡片标题（带下边框） ---------- */
+.shiwan-m1-card-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 8px 0;
+    -fx-max-width: Infinity;
+}
+
+/* ---------- 采集规格：比例输入框 ---------- */
+.shiwan-m1-ratio-label {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4B5563;
+}
+
+.shiwan-m1-ratio-input {
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+    -fx-alignment: center;
+    -fx-border-color: #D7E7FF;
+    -fx-border-width: 1px;
+    -fx-background-color: white;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-pref-width: 80px;
+    -fx-min-width: 72px;
+    -fx-max-width: 80px;
+    -fx-pref-height: 56px;
+    -fx-min-height: 56px;
+    -fx-max-height: 56px;
+}
+
+.shiwan-m1-ratio-input:focused {
+    -fx-border-color: #2563EB;
+    -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.12), 4, 0, 0, 0);
+}
+
+/* ---------- 统计卡片 ---------- */
+.shiwan-m1-stat-card {
+    -fx-background-color: white;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-padding: 16px;
+    -fx-alignment: center;
+    -fx-spacing: 8px;
+}
+
+.shiwan-m1-stat-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.shiwan-m1-stat-value-red {
+    -fx-font-size: 44px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #DC2626;
+    -fx-line-spacing: 0;
+}
+
+.shiwan-m1-stat-value-blue {
+    -fx-font-size: 44px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2563EB;
+    -fx-line-spacing: 0;
+}
+
+/* ---------- 帮助图标按钮 ---------- */
+.shiwan-m1-help-btn {
+    -fx-background-color: #F3F4F6;
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-border-width: 0;
+    -fx-min-width: 28px;
+    -fx-max-width: 28px;
+    -fx-min-height: 28px;
+    -fx-max-height: 28px;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-effect: null;
+}
+
+.shiwan-m1-help-btn:hover {
+    -fx-background-color: #E5E7EB;
+    -fx-text-fill: #374151;
+}
+
+/* ---------- 开始/停止采集按钮 ---------- */
+.shiwan-m1-start-btn {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-background-radius: 8px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m1-start-btn:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.shiwan-m1-start-btn:pressed {
+    -fx-background-color: derive(#2563EB, -15%);
+}
+
+/* 采集中状态 —— 通过 Controller 动态添加 .running 样式类 */
+.shiwan-m1-start-btn.running {
+    -fx-background-color: #DC2626;
+}
+
+.shiwan-m1-start-btn.running:hover {
+    -fx-background-color: #b91c1c;
+}
+
+/* ---------- 关闭报警按钮 ---------- */
+.shiwan-m1-alarm-btn {
+    -fx-background-color: #DC2626;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-background-radius: 8px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m1-alarm-btn:hover {
+    -fx-background-color: #b91c1c;
+}
+
+.shiwan-m1-alarm-btn:pressed {
+    -fx-background-color: derive(#DC2626, -15%);
+}
+
+/* ---------- 数据展示区域卡片 ---------- */
+.shiwan-m1-area-card {
+    -fx-background-color: white;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 0;
+}
+
+/* 区域标题栏（带下边框） */
+.shiwan-m1-area-header-bar {
+    -fx-background-color: #F8FBFF;
+    -fx-border-color: transparent transparent #D7E7FF transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 16px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+    -fx-background-radius: 12px 12px 0 0;
+    -fx-spacing: 8px;
+}
+
+.shiwan-m1-area-header-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.shiwan-m1-area-header-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: #9CA3AF;
+}
+
+/* ---------- 日志 ListView ---------- */
+.shiwan-m1-log-list {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 6px 8px;
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.shiwan-m1-log-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.shiwan-m1-log-list .list-cell:selected {
+    -fx-background-color: derive(#2563EB, 80%);
+}
+
+.shiwan-m1-log-list .list-cell:hover {
+    -fx-background-color: derive(#E9EEF5, 50%);
+}
+
+/* 日志条目标签 */
+.log-cell-label {
+    -fx-wrap-text: true;
+    -fx-padding: 5px 8px 5px 10px;
+    -fx-background-radius: 0 6px 6px 0;
+    -fx-font-size: 14px;
+    -fx-max-width: Infinity;
+}
+
+.log-cell-success {
+    -fx-background-color: #F0FDF4;
+    -fx-border-color: transparent transparent transparent #16A34A;
+    -fx-border-width: 0 0 0 3px;
+    -fx-text-fill: #15803D;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.log-cell-error {
+    -fx-background-color: #FEF2F2;
+    -fx-border-color: transparent transparent transparent #DC2626;
+    -fx-border-width: 0 0 0 3px;
+    -fx-text-fill: #DC2626;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.log-cell-normal {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: transparent transparent transparent #9CA3AF;
+    -fx-border-width: 0 0 0 3px;
+    -fx-text-fill: #374151;
+}
+
+/* ---------- 右侧 SplitPane ---------- */
+.shiwan-m1-split-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-box-border: 0;
+}
+
+.shiwan-m1-split-pane > .split-pane-divider {
+    -fx-background-color: #E9EEF5;
+    -fx-padding: 5px 0;
+}
+
+.shiwan-m1-split-pane > .split-pane-divider:hover {
+    -fx-background-color: #D0D7E2;
+}
+
+/* ---------- 状态栏扩展 ---------- */
+.shiwan-m1-activation-badge {
+    -fx-background-color: #DCFCE7;
+    -fx-border-color: #86EFAC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-padding: 3px 12px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #16A34A;
+    -fx-font-weight: bold;
+}
+
+.shiwan-m1-running-label {
+    -fx-text-fill: #16A34A;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* ---------- 系统设置对话框扩展 ---------- */
+/* 码位数配置子标签 */
+.shiwan-m1-form-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+    -fx-min-width: 140px;
+    -fx-pref-width: 140px;
+}
+
+.shiwan-m1-form-input-sm {
+    -fx-pref-width: 100px;
+    -fx-min-width: 100px;
+    -fx-max-width: 100px;
+    -fx-alignment: center;
+}
+
+/* ---------- 右侧面板 VBox ---------- */
+.shiwan-m1-right-panel {
+    -fx-spacing: 12px;
+}
+
+/* ---------- 左侧面板 VBox ---------- */
+.shiwan-m1-left-panel {
+    -fx-spacing: 12px;
+}

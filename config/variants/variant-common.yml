@@ -1,0 +1,23 @@
+# config/variants/variant-common.yml
+# 全版本默认配置，各 variant 文件可覆盖
+
+app:
+  name: 赋码采集关联系统
+  server:
+    port: 8080
+
+# 参与构建的模块（核心层始终包含，此处仅列出扩展与变体）
+build:
+  extensions: []
+  variant: null
+
+# 功能开关（若使用功能矩阵）
+features:
+  taskManagement: true
+  codeCollect: true
+  dataUpload: true
+  codeQuery: true
+  codeReplace: true
+  operateLog: true
+  advancedReport: false
+  customUploadProtocol: false

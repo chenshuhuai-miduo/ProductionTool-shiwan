@@ -24,11 +24,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
     "com.miduo.cloud.application",
     "com.miduo.cloud.domain",
     "com.miduo.cloud.infrastructure",
-    "com.miduo.cloud.config"
+    "com.miduo.cloud.config",
+    "com.miduo.cloud.variant.zhimeizhai"
 })
 @MapperScan({
     "com.miduo.cloud.infrastructure.mapper",
-    "com.miduo.cloud.infrastructure.persistence.mybatis.mapper"
+    "com.miduo.cloud.variant.zhimeizhai.persistence.mybatis.mapper"
 })
 public class MiduoBackendApplication {
     

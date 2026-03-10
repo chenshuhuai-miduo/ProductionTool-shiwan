@@ -1,0 +1,10 @@
+# config/variants/zhimeizhai.yml
+# 致美斋产线软件版本
+
+app:
+  name: 赋码采集关联系统-致美斋
+
+build:
+  variant: zhimeizhai
+
+features: {}

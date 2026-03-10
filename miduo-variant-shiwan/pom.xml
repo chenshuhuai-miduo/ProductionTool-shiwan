@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.miduo.cloud</groupId>
+        <artifactId>miduo-ccas</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>miduo-variant-shiwan</artifactId>
+    <packaging>jar</packaging>
+
+    <name>miduo-variant-shiwan</name>
+    <description>变体模块 - 石湾产线专属实现与资源（1号机/2号机）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-controller</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-frontend</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-infrastructure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
+</project>
