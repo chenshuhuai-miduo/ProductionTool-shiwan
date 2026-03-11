@@ -17,14 +17,12 @@ import com.miduo.cloud.infrastructure.mapper.CodePackageCodeQueryMapper;
 import com.miduo.cloud.infrastructure.mapper.CodePackageImportMapper;
 import com.miduo.cloud.infrastructure.mapper.CodePackageItemColdMapper;
 import com.miduo.cloud.infrastructure.mapper.CodePackageItemHotMapper;
-import com.miduo.cloud.infrastructure.mapper.CodePackagePullTimeMapper;
 import com.miduo.cloud.infrastructure.mapper.CodePackageRelationMapper;
 import com.miduo.cloud.infrastructure.openplatform.CodePackageOpenPlatformClient;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodeAssociationTimePO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodePackageImportPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodePackageItemColdPO;
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodePackageItemHotPO;
-import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodePackagePullTimePO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -59,8 +57,6 @@ public class CodePackageApplicationService {
     private CodePackageItemHotMapper codePackageItemHotMapper;
     @Autowired
     private CodePackageItemColdMapper codePackageItemColdMapper;
-    @Autowired
-    private CodePackagePullTimeMapper codePackagePullTimeMapper;
     @Autowired
     private CodePackageCodeQueryMapper codePackageCodeQueryMapper;
     @Autowired
@@ -127,10 +123,9 @@ public class CodePackageApplicationService {
     public ApiResult<CodePackageOnlineImportResultVO> importOnline() {
         try {
             LocalDateTime defaultTime = parseTimeOrDefault(defaultPullStartTime, LocalDateTime.of(2024, 1, 1, 0, 0, 0));
-            LocalDateTime smallTypeStart = getLastPullTime(1, defaultTime);
-            LocalDateTime bigTypeStart = getLastPullTime(3, defaultTime);
+            LocalDateTime smallTypeStart = getLastOnlineImportCreateTime(1, defaultTime);
+            LocalDateTime bigTypeStart = getLastOnlineImportCreateTime(3, defaultTime);
             LocalDateTime queryStart = smallTypeStart.isBefore(bigTypeStart) ? smallTypeStart : bigTypeStart;
-            queryStart = queryStart.toLocalDate().atStartOfDay();
             LocalDateTime queryEnd = LocalDateTime.now().plusHours(6).toLocalDate().atTime(23, 59, 59);
 
             CodePackageOpenPlatformClient.QueryCompletedResponse response = openPlatformClient.queryCompleted(queryStart, queryEnd);
@@ -157,7 +152,6 @@ public class CodePackageApplicationService {
                             codeLines,
                             true
                     );
-                    updatePullTime(item.getRelationshipType(), resolveOnlineSuccessTime(item));
                     addOnlineSuccess(resultVO, item.getRelationshipType(), item.getFileName(), persistResult.getImportedCount());
                 } catch (Exception ex) {
                     addOnlineFailed(resultVO, item.getRelationshipType(), item.getFileName(), ex.getMessage());
@@ -306,32 +300,9 @@ public class CodePackageApplicationService {
         }
     }
 
-    private LocalDateTime getLastPullTime(Integer packageType, LocalDateTime defaultTime) {
-        LambdaQueryWrapper<CodePackagePullTimePO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CodePackagePullTimePO::getPackageType, packageType).last("LIMIT 1");
-        CodePackagePullTimePO record = codePackagePullTimeMapper.selectOne(wrapper);
-        if (record == null || record.getLastPullTime() == null) {
-            return defaultTime;
-        }
-        return record.getLastPullTime();
-    }
-
-    private void updatePullTime(Integer packageType, LocalDateTime pullTime) {
-        if (packageType == null || pullTime == null) {
-            return;
-        }
-        LambdaQueryWrapper<CodePackagePullTimePO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CodePackagePullTimePO::getPackageType, packageType).last("LIMIT 1");
-        CodePackagePullTimePO exists = codePackagePullTimeMapper.selectOne(wrapper);
-        if (exists == null) {
-            CodePackagePullTimePO insert = new CodePackagePullTimePO();
-            insert.setPackageType(packageType);
-            insert.setLastPullTime(pullTime);
-            codePackagePullTimeMapper.insert(insert);
-        } else {
-            exists.setLastPullTime(pullTime);
-            codePackagePullTimeMapper.updateById(exists);
-        }
+    private LocalDateTime getLastOnlineImportCreateTime(Integer packageType, LocalDateTime defaultTime) {
+        LocalDateTime latestCreateTime = codePackageImportMapper.selectLatestOnlineCreateTimeByType(packageType);
+        return latestCreateTime == null ? defaultTime : latestCreateTime;
     }
 
     private PersistResult persistCodes(Integer packageType,
@@ -545,18 +516,6 @@ public class CodePackageApplicationService {
         itemResult.setImportedCount(0);
         itemResult.setMessage(message);
         resultVO.getFailedItems().add(itemResult);
-    }
-
-    private LocalDateTime resolveOnlineSuccessTime(CodePackageOpenPlatformClient.QueryCompletedItem item) {
-        LocalDateTime uploadTime = parseTime(item.getUploadTime());
-        if (uploadTime != null) {
-            return uploadTime;
-        }
-        LocalDateTime endProcessTime = parseTime(item.getEndProcessTime());
-        if (endProcessTime != null) {
-            return endProcessTime;
-        }
-        return LocalDateTime.now();
     }
 
     private LocalDateTime parseTime(String timeText) {
