@@ -23,7 +23,7 @@
         </HBox>
 
         <!-- 上传信息日志 -->
-        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0" padding="0">
+        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0" style="-fx-padding:0;">
             <HBox styleClass="shiwan-m2-area-header-bar">
                 <Label text="上传信息（最新在上）" styleClass="shiwan-m2-area-header-label"/>
             </HBox>

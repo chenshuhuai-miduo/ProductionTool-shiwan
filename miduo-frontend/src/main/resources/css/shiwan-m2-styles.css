@@ -1090,3 +1090,154 @@
 .sw2-field-textarea:focused { -fx-border-color: #2563EB; }
 .sw2-required { -fx-text-fill: #DC2626; }
 
+/* ============================================================
+   系统设置弹窗 - 一级 TabPane
+   ============================================================ */
+.sw2-settings-tab-pane {
+    -fx-background-color: white;
+    -fx-tab-min-height: 40px;
+    -fx-tab-max-height: 40px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-tab-pane > .tab-header-area {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 0 0;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-height: 44px;
+}
+
+.sw2-settings-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.sw2-settings-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0;
+    -fx-padding: 8px 18px;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-tab-pane .tab > .tab-container > .tab-label {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 14px;
+    -fx-font-family: "Microsoft YaHei";
+}
+
+.sw2-settings-tab-pane .tab:hover > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+}
+
+.sw2-settings-tab-pane .tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #2563EB transparent;
+    -fx-border-width: 0 0 3px 0;
+}
+
+.sw2-settings-tab-pane .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+    -fx-font-weight: bold;
+}
+
+.sw2-settings-tab-pane > .tab-content-area {
+    -fx-background-color: white;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+/* ============================================================
+   系统设置弹窗 - 二级 TabPane（业务/设备/连接 的子TabPane）
+   ============================================================ */
+.sw2-settings-inner-tab-pane {
+    -fx-background-color: white;
+    -fx-tab-min-height: 36px;
+    -fx-tab-max-height: 36px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-inner-tab-pane > .tab-header-area {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 0 24px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+}
+
+.sw2-settings-inner-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.sw2-settings-inner-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 6px 14px;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-inner-tab-pane .tab > .tab-container > .tab-label {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 13px;
+    -fx-font-family: "Microsoft YaHei";
+}
+
+.sw2-settings-inner-tab-pane .tab:hover > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+}
+
+.sw2-settings-inner-tab-pane .tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #2563EB transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.sw2-settings-inner-tab-pane .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+    -fx-font-weight: bold;
+}
+
+.sw2-settings-inner-tab-pane > .tab-content-area {
+    -fx-background-color: white;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+/* ============================================================
+   ToggleButton 开关样式（通用）
+   ============================================================ */
+.sw2-toggle-switch {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-background-radius: 6px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.sw2-toggle-switch:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.sw2-toggle-disabled {
+    -fx-opacity: 0.6;
+    -fx-cursor: default;
+}
+

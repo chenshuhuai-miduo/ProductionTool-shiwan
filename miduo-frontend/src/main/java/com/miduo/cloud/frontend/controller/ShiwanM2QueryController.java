@@ -187,24 +187,23 @@ public class ShiwanM2QueryController implements Initializable {
         List<String[]> chain = new ArrayList<>();
 
         switch (level) {
-            case "瓶码" -> {
+            case "瓶码":
                 chain.add(new String[]{"垛码", "sw2-code-type-pallet", "P20241201001"});
                 chain.add(new String[]{"箱码", "sw2-code-type-case",   "20241201002001"});
                 chain.add(new String[]{"盒码", "sw2-code-type-box",    "20241201001002"});
-            }
-            case "盒码" -> {
+                break;
+            case "盒码":
                 chain.add(new String[]{"垛码", "sw2-code-type-pallet", "P20241201001"});
                 chain.add(new String[]{"箱码", "sw2-code-type-case",   "20241201002001"});
-            }
-            case "箱码" -> {
+                break;
+            case "箱码":
                 chain.add(new String[]{"垛码", "sw2-code-type-pallet", "P20241201001"});
-            }
-            default -> {
+                break;
+            default:
                 Label none = new Label("—（已是最高层级）");
                 none.setStyle("-fx-text-fill:#9CA3AF; -fx-font-size:14px;");
                 chainBox.getChildren().add(none);
                 return;
-            }
         }
 
         for (int i = 0; i < chain.size(); i++) {

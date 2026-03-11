@@ -90,11 +90,19 @@ public class ShiwanM2PackageController implements Initializable {
                 if (empty || status == null) { setGraphic(null); return; }
                 badge.setText(status);
                 badge.getStyleClass().removeAll("sw2-badge-green", "sw2-badge-gray", "sw2-badge-red");
-                badge.getStyleClass().add(switch (status) {
-                    case "正常" -> "sw2-badge-green";
-                    case "已删除" -> "sw2-badge-gray";
-                    default -> "sw2-badge-orange";
-                });
+                String badgeClass;
+                switch (status) {
+                    case "正常":
+                        badgeClass = "sw2-badge-green";
+                        break;
+                    case "已删除":
+                        badgeClass = "sw2-badge-gray";
+                        break;
+                    default:
+                        badgeClass = "sw2-badge-orange";
+                        break;
+                }
+                badge.getStyleClass().add(badgeClass);
                 setGraphic(badge);
                 setText(null);
             }
@@ -234,13 +242,20 @@ public class ShiwanM2PackageController implements Initializable {
                 .filter(r -> keyword.isEmpty() || r.name.toLowerCase().contains(keyword))
                 .filter(r -> "全部".equals(importType) || r.importWay.equals(importType))
                 .filter(r -> "全部".equals(status) || r.status.equals(status))
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
 
-        int pageSz = switch (pageSizeCombo.getValue()) {
-            case "50条"  -> 50;
-            case "100条" -> 100;
-            default      -> 20;
-        };
+        int pageSz;
+        switch (pageSizeCombo.getValue()) {
+            case "50条":
+                pageSz = 50;
+                break;
+            case "100条":
+                pageSz = 100;
+                break;
+            default:
+                pageSz = 20;
+                break;
+        }
         pageSize   = pageSz;
         totalPages = Math.max(1, (int) Math.ceil((double) filtered.size() / pageSize));
         currentPage = Math.min(currentPage, totalPages);

@@ -7,9 +7,12 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -18,13 +21,17 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -234,7 +241,62 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onSystemConfig() {
-        showInfo("系统设置", "请输入管理员密码以访问系统设置。");
+        // 密码验证：每次打开均需重新输入
+        TextInputDialog pwdDialog = new TextInputDialog();
+        pwdDialog.setTitle("系统密码验证");
+        pwdDialog.setHeaderText("请输入系统密码以访问系统设置");
+        pwdDialog.setContentText("密码：");
+        pwdDialog.getEditor().setPromptText("请输入密码");
+
+        // 将密码框设置为隐藏输入
+        javafx.scene.control.PasswordField pwdField = new javafx.scene.control.PasswordField();
+        pwdField.setPromptText("请输入密码");
+        pwdDialog.getDialogPane().setContent(pwdField);
+        pwdDialog.getDialogPane().lookupButton(ButtonType.OK).disableProperty()
+                .bind(pwdField.textProperty().isEmpty());
+
+        // 点击确认时取密码框值
+        pwdDialog.setResultConverter(btn -> {
+            if (btn == ButtonType.OK) return pwdField.getText();
+            return null;
+        });
+
+        Optional<String> result = pwdDialog.showAndWait();
+        if (result.isEmpty()) return;
+
+        if (!"123456".equals(result.get())) {
+            Alert errAlert = new Alert(Alert.AlertType.ERROR);
+            errAlert.setTitle("密码错误");
+            errAlert.setHeaderText(null);
+            errAlert.setContentText("密码错误，请重新输入。");
+            errAlert.showAndWait();
+            return;
+        }
+
+        // 密码验证通过，打开系统设置弹窗
+        openSystemSettingsDialog();
+    }
+
+    /** 打开系统设置弹窗 */
+    private void openSystemSettingsDialog() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/ShiwanM2SystemSettingsDialog.fxml"));
+            Parent root = loader.load();
+
+            Stage settingsStage = new Stage();
+            settingsStage.setTitle("系统设置（2号机）");
+            settingsStage.setScene(new Scene(root));
+            settingsStage.initModality(Modality.WINDOW_MODAL);
+            settingsStage.initOwner(currentTimeLabel.getScene().getWindow());
+            settingsStage.setResizable(true);
+            settingsStage.setMinWidth(760);
+            settingsStage.setMinHeight(500);
+            settingsStage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showInfo("系统设置", "无法打开系统设置界面，请联系技术人员。\n错误信息：" + e.getMessage());
+        }
     }
 
     @FXML
@@ -279,14 +341,24 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onHelp() {
-        showInfo("操作帮助",
-                "开始/停止采集：系统检测硬件后开始采集工作；再次点击停止采集，未满垛数据保留。\n" +
-                "无需采集码：当天不生产五码合一产品时开启，所有读码设备不工作。\n" +
-                "关闭报警：重置报警状态，停止声光报警器/蜂鸣器等。\n" +
-                "强制满垛：未达到设定箱数也强制结束当前垛，生成虚拟垛标并重置计数。\n" +
-                "提取工单未成垛：弹窗输入/扫描垛内任一箱码，查出对应生产订单继续生产。\n" +
-                "收回剔除：剔除设备未自动收回时，点击让剔除设备收回当前剔除动作。\n" +
-                "剔除数清零：将总剔除数重置为0。");
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/ShiwanM2HelpDialog.fxml"));
+            Parent root = loader.load();
+
+            Stage helpStage = new Stage();
+            helpStage.setTitle("操作帮助");
+            helpStage.setScene(new Scene(root));
+            helpStage.initModality(Modality.WINDOW_MODAL);
+            helpStage.initOwner(currentTimeLabel.getScene().getWindow());
+            helpStage.setResizable(true);
+            helpStage.setMinWidth(700);
+            helpStage.setMinHeight(500);
+            helpStage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showInfo("操作帮助", "无法打开操作帮助界面，请联系技术人员。\n错误信息：" + e.getMessage());
+        }
     }
 
     @FXML

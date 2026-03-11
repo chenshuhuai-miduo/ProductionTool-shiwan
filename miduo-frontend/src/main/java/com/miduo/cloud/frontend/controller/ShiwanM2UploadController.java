@@ -242,12 +242,22 @@ public class ShiwanM2UploadController implements Initializable {
             if (empty || item == null) { setGraphic(null); setText(null); return; }
             label.setText(item.text);
             label.getStyleClass().removeAll("sw2-ul-gray", "sw2-ul-blue", "sw2-ul-green", "sw2-ul-red");
-            label.getStyleClass().add(switch (item.color) {
-                case BLUE  -> "sw2-ul-blue";
-                case GREEN -> "sw2-ul-green";
-                case RED   -> "sw2-ul-red";
-                default    -> "sw2-ul-gray";
-            });
+            String colorClass;
+            switch (item.color) {
+                case BLUE:
+                    colorClass = "sw2-ul-blue";
+                    break;
+                case GREEN:
+                    colorClass = "sw2-ul-green";
+                    break;
+                case RED:
+                    colorClass = "sw2-ul-red";
+                    break;
+                default:
+                    colorClass = "sw2-ul-gray";
+                    break;
+            }
+            label.getStyleClass().add(colorClass);
             setGraphic(label);
             setText(null);
         }

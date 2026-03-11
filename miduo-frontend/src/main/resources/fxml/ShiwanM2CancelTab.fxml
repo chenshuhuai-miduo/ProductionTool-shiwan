@@ -21,7 +21,6 @@
         <Button text="?" styleClass="shiwan-m2-help-btn"
                 style="-fx-margin-left:8px;"
                 onAction="#onHelp"/>
-        <Insets left="8"/>
     </HBox>
 
     <!-- 主体：左侧表单 + 右侧结果 -->
@@ -126,7 +125,7 @@
         <VBox HBox.hgrow="ALWAYS" spacing="12">
 
             <!-- 识别结果 -->
-            <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0" padding="0">
+            <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0" style="-fx-padding:0;">
                 <HBox styleClass="shiwan-m2-area-header-bar">
                     <Label text="识别结果" styleClass="shiwan-m2-area-header-label"/>
                     <Label fx:id="recognizeHint" text="识别后将在此显示"
