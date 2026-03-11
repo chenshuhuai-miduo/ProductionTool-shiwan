@@ -27,7 +27,6 @@ import javafx.stage.Stage;
  * </p>
  */
 public class ShiwanM2FrontendApplication extends Application {
-
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("========================================");
