@@ -41,6 +41,16 @@
             </FXCollections></items>
             <value><String fx:value="全部"/></value>
         </ComboBox>
+        <Label text="码包类型：" styleClass="sw2-filter-label"/>
+        <ComboBox fx:id="packageTypeCombo" styleClass="sw2-filter-combo" prefWidth="120">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="全部"/>
+                <String fx:value="盖外码小标"/>
+                <String fx:value="盒外码中标"/>
+                <String fx:value="箱外码大标"/>
+            </FXCollections></items>
+            <value><String fx:value="全部"/></value>
+        </ComboBox>
         <Label text="状态：" styleClass="sw2-filter-label"/>
         <ComboBox fx:id="statusCombo" styleClass="sw2-filter-combo" prefWidth="90">
             <items><FXCollections fx:factory="observableArrayList">

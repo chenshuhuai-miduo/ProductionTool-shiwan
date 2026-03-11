@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2PackageViewCodesDialogController"
+      spacing="10" prefWidth="720" prefHeight="620"
+      styleClass="sw2-tab-content"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <HBox alignment="CENTER_LEFT">
+        <Label fx:id="titleLabel" text="查看码包" styleClass="sw2-section-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="关闭" styleClass="sw2-btn-outline" onAction="#onClose"/>
+    </HBox>
+
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <TextField fx:id="keywordField" promptText="请输入码值搜索..." styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
+        <Button text="搜索" styleClass="sw2-btn-primary" onAction="#onSearch"/>
+    </HBox>
+
+    <TableView fx:id="codeTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+        <columns>
+            <TableColumn fx:id="codeValueColumn" text="码值" prefWidth="350"/>
+            <TableColumn fx:id="associatedStatusColumn" text="关联状态" prefWidth="120"/>
+            <TableColumn fx:id="associatedTimeColumn" text="关联时间" prefWidth="220"/>
+        </columns>
+        <placeholder>
+            <Label text="暂无数据" style="-fx-text-fill:#9CA3AF;"/>
+        </placeholder>
+    </TableView>
+
+    <HBox styleClass="sw2-pagination-bar" spacing="8" alignment="CENTER_LEFT">
+        <Label fx:id="totalLabel" text="共 0 条" styleClass="sw2-page-info"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="上一页" styleClass="sw2-page-btn" onAction="#onPrevPage"/>
+        <Label fx:id="pageLabel" text="第 1 / 1 页" styleClass="sw2-page-info"/>
+        <Button text="下一页" styleClass="sw2-page-btn" onAction="#onNextPage"/>
+        <ComboBox fx:id="pageSizeCombo" styleClass="sw2-filter-combo" prefWidth="72">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="20条"/>
+                <String fx:value="50条"/>
+                <String fx:value="100条"/>
+            </FXCollections></items>
+            <value><String fx:value="20条"/></value>
+        </ComboBox>
+    </HBox>
+</VBox>
