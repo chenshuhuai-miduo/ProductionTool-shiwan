@@ -20,8 +20,13 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputDialog;
+
+import com.miduo.cloud.frontend.config.ShiwanM2Settings;
+import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.HttpUtil;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -35,6 +40,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -143,6 +150,11 @@ public class ShiwanM2MainController implements Initializable {
 
     // ==================== 初始化 ====================
 
+    /** 页面 id 与 Tab 索引对应（与 FXML 中 8 个 Tab 顺序一致） */
+    private static final String[] PAGE_IDS = {
+        "dataCollection", "manual", "query", "replace", "stats", "package", "cancel", "upload"
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupProductComboBox();
@@ -151,6 +163,33 @@ public class ShiwanM2MainController implements Initializable {
         setupClock();
         setupInitialLogs();
         initActivationStatus();
+        applyPageConfig();
+    }
+
+    /** 根据系统设置中的页面配置，调整主界面 Tab 的显示与顺序（重启后生效） */
+    private void applyPageConfig() {
+        if (mainTabPane == null) return;
+        var settings = ShiwanM2SettingsStore.get();
+        List<String> order = settings.getPageTabOrder() != null ? settings.getPageTabOrder() : ShiwanM2Settings.defaultPageTabOrder();
+        var visible = settings.getPageVisible() != null ? settings.getPageVisible() : ShiwanM2Settings.defaultPageVisible();
+        var tabs = mainTabPane.getTabs();
+        if (tabs.size() < 8) return;
+        List<Tab> newOrder = new ArrayList<>();
+        for (String id : order) {
+            if (!Boolean.TRUE.equals(visible.get(id))) continue;
+            int idx = indexOfPageId(id);
+            if (idx >= 0 && idx < tabs.size()) newOrder.add(tabs.get(idx));
+        }
+        if (newOrder.isEmpty()) return;
+        tabs.clear();
+        tabs.addAll(newOrder);
+    }
+
+    private int indexOfPageId(String id) {
+        for (int i = 0; i < PAGE_IDS.length; i++) {
+            if (PAGE_IDS[i].equals(id)) return i;
+        }
+        return -1;
     }
 
     /** 初始化产品下拉框示例数据 */
@@ -264,7 +303,9 @@ public class ShiwanM2MainController implements Initializable {
         Optional<String> result = pwdDialog.showAndWait();
         if (result.isEmpty()) return;
 
-        if (!"123456".equals(result.get())) {
+        String expectedPwd = ShiwanM2SettingsStore.get().getSystemSettingsPassword();
+        if (expectedPwd == null) expectedPwd = "123456";
+        if (!expectedPwd.equals(result.get())) {
             Alert errAlert = new Alert(Alert.AlertType.ERROR);
             errAlert.setTitle("密码错误");
             errAlert.setHeaderText(null);
@@ -472,7 +513,10 @@ public class ShiwanM2MainController implements Initializable {
         confirm.setContentText("当前箱数：" + currentCases + "箱\n强制满垛将生成虚拟垛标并重置计数。");
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            String palletCode = "P" + orderNumField.getText() + String.format("%03d", palletCount + 1);
+            String palletCode = fetchNextVirtualSerialNumber();
+            if (palletCode == null) {
+                palletCode = "P" + orderNumField.getText() + String.format("%03d", palletCount + 1);
+            }
             palletCount++;
             palletCountLabel.setText(String.valueOf(palletCount));
 
@@ -577,12 +621,15 @@ public class ShiwanM2MainController implements Initializable {
         });
     }
 
-    /** 满垛处理 */
+    /** 满垛处理（箱数达到每垛箱数时调用，使用 VirtualPalletSequence 取号生成虚拟垛标） */
     private void onPalletFull() {
         palletCount++;
         palletCountLabel.setText(String.valueOf(palletCount));
 
-        String palletCode = "P" + orderNumField.getText() + String.format("%03d", palletCount);
+        String palletCode = fetchNextVirtualSerialNumber();
+        if (palletCode == null) {
+            palletCode = "P" + orderNumField.getText() + String.format("%03d", palletCount);
+        }
         int cpp = parseSpecValue(casesPerPalletField.getText(), 70);
 
         String now = LocalDateTime.now().format(TIME_FMT);
@@ -595,6 +642,22 @@ public class ShiwanM2MainController implements Initializable {
         currentBoxes = 0;
         curCasesLabel.setText("0");
         curBoxesLabel.setText("0");
+    }
+
+    /**
+     * 从后端获取下一个虚拟垛标（VirtualPalletSequence + 系统设置前缀/产线号）。
+     * 失败时返回 null，调用方可用本地 fallback。
+     */
+    private String fetchNextVirtualSerialNumber() {
+        try {
+            String response = HttpUtil.doGet("/api/shiwan-m2/pallet/next-virtual-serial-number");
+            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
+            if (node.has("code") && node.get("code").asInt(500) == 200 && node.has("data") && !node.get("data").isNull()) {
+                return node.get("data").asText();
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     // ==================== 日志管理 ====================

@@ -1,5 +1,8 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.config.ShiwanM2Settings;
+import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.HttpUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -19,7 +22,10 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -114,6 +120,58 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupToggleStyles();
         setupIoDeviceTable();
+        loadSettingsIntoUI();
+    }
+
+    /** 从配置加载到界面 */
+    private void loadSettingsIntoUI() {
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getCodeDigits() != null) {
+            smallCodeDigitsField.setText(String.valueOf(s.getCodeDigits().getSmallCodeDigits()));
+            mediumCodeDigitsField.setText(String.valueOf(s.getCodeDigits().getMediumCodeDigits()));
+            largeCodeDigitsField.setText(String.valueOf(s.getCodeDigits().getLargeCodeDigits()));
+        }
+        if (s.getPalletRule() != null) {
+            palletPrefixField.setText(s.getPalletRule().getPrefix() != null ? s.getPalletRule().getPrefix() : "V");
+            palletLineNumField.setText(s.getPalletRule().getLineCode() != null ? s.getPalletRule().getLineCode() : "A");
+        }
+        if (s.getUpload() != null) {
+            autoUploadToggle.setSelected(s.getUpload().isAutoUpload());
+            syncToggleStyle(autoUploadToggle);
+        }
+        if (s.getPageVisible() != null) {
+            if (Boolean.TRUE.equals(s.getPageVisible().get("manual"))) pageManualToggle.setSelected(true); else pageManualToggle.setSelected(false);
+            if (Boolean.TRUE.equals(s.getPageVisible().get("query"))) pageQueryToggle.setSelected(true); else pageQueryToggle.setSelected(false);
+            if (Boolean.TRUE.equals(s.getPageVisible().get("replace"))) pageReplaceToggle.setSelected(true); else pageReplaceToggle.setSelected(false);
+            if (Boolean.TRUE.equals(s.getPageVisible().get("stats"))) pageStatsToggle.setSelected(true); else pageStatsToggle.setSelected(false);
+            if (Boolean.TRUE.equals(s.getPageVisible().get("package"))) pagePackageToggle.setSelected(true); else pagePackageToggle.setSelected(false);
+            if (Boolean.TRUE.equals(s.getPageVisible().get("cancel"))) pageCancelToggle.setSelected(true); else pageCancelToggle.setSelected(false);
+            if (Boolean.TRUE.equals(s.getPageVisible().get("upload"))) pageUploadToggle.setSelected(true); else pageUploadToggle.setSelected(false);
+            for (ToggleButton tb : new ToggleButton[]{pageManualToggle, pageQueryToggle, pageReplaceToggle, pageStatsToggle, pagePackageToggle, pageCancelToggle, pageUploadToggle}) {
+                if (tb != null) syncToggleStyle(tb);
+            }
+        }
+        if (s.getDbConnection() != null) {
+            dbHostField.setText(s.getDbConnection().getHost() != null ? s.getDbConnection().getHost() : "127.0.0.1");
+            dbPortField.setText(s.getDbConnection().getPort() != null ? s.getDbConnection().getPort() : "3306");
+            dbNameField.setText(s.getDbConnection().getDatabase() != null ? s.getDbConnection().getDatabase() : "");
+            dbUserField.setText(s.getDbConnection().getUsername() != null ? s.getDbConnection().getUsername() : "");
+            dbPasswordField.setText(s.getDbConnection().getPassword() != null ? s.getDbConnection().getPassword() : "");
+        }
+        if (s.getPrinter() != null) {
+            printerNameField.setText(s.getPrinter().getPrinterName() != null ? s.getPrinter().getPrinterName() : "");
+            printerIpField.setText(s.getPrinter().getPrinterIp() != null ? s.getPrinter().getPrinterIp() : "");
+            printerPortField.setText(s.getPrinter().getPrinterPort() != null ? s.getPrinter().getPrinterPort() : "9100");
+            if (paperSizeCombo != null && s.getPrinter().getPaperSize() != null) {
+                paperSizeCombo.setValue(s.getPrinter().getPaperSize());
+            }
+        }
+        if (s.getAlarm() != null) {
+            soundAlarmToggle.setSelected(s.getAlarm().isSoundAlarmEnabled());
+            alarmDelayField.setText(String.valueOf(s.getAlarm().getAlarmDelayMs()));
+            alarmIntervalField.setText(String.valueOf(s.getAlarm().getAlarmIntervalMs()));
+            syncToggleStyle(soundAlarmToggle);
+        }
     }
 
     /** 初始化 ToggleButton 样式联动 */
@@ -238,6 +296,12 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             showError("输入有误", "码位数请填写正整数或 -1（-1 表示不校验）。");
             return;
         }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getCodeDigits() == null) s.setCodeDigits(new ShiwanM2Settings.CodeDigitsConfig());
+        s.getCodeDigits().setSmallCodeDigits(Integer.parseInt(small));
+        s.getCodeDigits().setMediumCodeDigits(Integer.parseInt(medium));
+        s.getCodeDigits().setLargeCodeDigits(Integer.parseInt(large));
+        saveSettings(s);
         showSuccess("码位数配置", "码位数配置已保存。\n小标：" + small + "位  中标：" + medium + "位  大标：" + large + "位");
     }
 
@@ -249,6 +313,11 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             showError("输入有误", "前缀和产线号不能为空。");
             return;
         }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getPalletRule() == null) s.setPalletRule(new ShiwanM2Settings.PalletRuleConfig());
+        s.getPalletRule().setPrefix(prefix);
+        s.getPalletRule().setLineCode(lineNum);
+        saveSettings(s);
         showSuccess("虚拟垛标规则", "虚拟垛标规则已保存。\n前缀：" + prefix + "  产线号：" + lineNum);
     }
 
@@ -259,7 +328,19 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @FXML
     private void onSaveUploadConfig() {
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getUpload() == null) s.setUpload(new ShiwanM2Settings.UploadConfig());
+        s.getUpload().setAutoUpload(autoUploadToggle.isSelected());
+        saveSettings(s);
         showSuccess("上传配置", "上传配置已保存。\n自动上传：" + (autoUploadToggle.isSelected() ? "开启" : "关闭"));
+    }
+
+    private void saveSettings(ShiwanM2Settings s) {
+        try {
+            ShiwanM2SettingsStore.save(s);
+        } catch (IOException e) {
+            showError("保存失败", "配置文件写入失败：" + e.getMessage());
+        }
     }
 
     // ==================== 页面配置 Tab 事件处理 ====================
@@ -276,6 +357,28 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @FXML
     private void onSavePageConfig() {
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        Map<String, Boolean> visible = new LinkedHashMap<>();
+        visible.put("dataCollection", true);
+        visible.put("manual", pageManualToggle.isSelected());
+        visible.put("query", pageQueryToggle.isSelected());
+        visible.put("replace", pageReplaceToggle.isSelected());
+        visible.put("stats", pageStatsToggle.isSelected());
+        visible.put("package", pagePackageToggle.isSelected());
+        visible.put("cancel", pageCancelToggle.isSelected());
+        visible.put("upload", pageUploadToggle.isSelected());
+        s.setPageVisible(visible);
+        java.util.List<String> order = new java.util.ArrayList<>();
+        order.add("dataCollection");
+        if (pageManualToggle.isSelected()) order.add("manual");
+        if (pageQueryToggle.isSelected()) order.add("query");
+        if (pageReplaceToggle.isSelected()) order.add("replace");
+        if (pageStatsToggle.isSelected()) order.add("stats");
+        if (pagePackageToggle.isSelected()) order.add("package");
+        if (pageCancelToggle.isSelected()) order.add("cancel");
+        if (pageUploadToggle.isSelected()) order.add("upload");
+        s.setPageTabOrder(order);
+        saveSettings(s);
         showSuccess("页面配置", "页面配置已保存至配置文件，重启后生效。");
     }
 
@@ -322,6 +425,13 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @FXML
     private void onSavePrinterConfig() {
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getPrinter() == null) s.setPrinter(new ShiwanM2Settings.PrinterConfig());
+        s.getPrinter().setPrinterName(printerNameField.getText().trim());
+        s.getPrinter().setPrinterIp(printerIpField.getText().trim());
+        s.getPrinter().setPrinterPort(printerPortField.getText().trim());
+        if (paperSizeCombo != null) s.getPrinter().setPaperSize(paperSizeCombo.getValue());
+        saveSettings(s);
         showSuccess("打印机配置", "打印机配置已保存。\n打印机：" + printerNameField.getText()
             + "\nIP：" + printerIpField.getText() + ":" + printerPortField.getText());
     }
@@ -342,6 +452,12 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             showError("输入有误", "报警延时和报警间隔必须为非负整数（毫秒）。");
             return;
         }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getAlarm() == null) s.setAlarm(new ShiwanM2Settings.AlarmConfig());
+        s.getAlarm().setSoundAlarmEnabled(soundAlarmToggle.isSelected());
+        s.getAlarm().setAlarmDelayMs(Integer.parseInt(alarmDelayField.getText().trim()));
+        s.getAlarm().setAlarmIntervalMs(Integer.parseInt(alarmIntervalField.getText().trim()));
+        saveSettings(s);
         showSuccess("报警设置", "报警设置已保存。\n声音报警：" + (soundAlarmToggle.isSelected() ? "开启" : "关闭")
             + "\n延时：" + alarmDelayField.getText() + "ms  间隔：" + alarmIntervalField.getText() + "ms");
     }
@@ -353,17 +469,38 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         String host = dbHostField.getText().trim();
         String port = dbPortField.getText().trim();
         String name = dbNameField.getText().trim();
-        if (host.isEmpty() || port.isEmpty() || name.isEmpty()) {
+        String user = dbUserField.getText().trim();
+        String pwd  = dbPasswordField.getText();
+        if (host.isEmpty() || port.isEmpty() || name.isEmpty() || user.isEmpty()) {
             dbTestResultLabel.setText("❌ 请填写完整的数据库连接信息");
             dbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
             return;
         }
         dbTestResultLabel.setText("⏳ 正在测试...");
         dbTestResultLabel.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
-        showInfo("连接测试", "正在测试连接：jdbc:mysql://" + host + ":" + port + "/" + name
-            + "\n\n（此功能依赖实际数据库服务，当前为演示模式）");
-        dbTestResultLabel.setText("（请在实际部署环境中测试）");
-        dbTestResultLabel.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 12px; -fx-font-family: 'Microsoft YaHei';");
+        try {
+            Map<String, String> body = new LinkedHashMap<>();
+            body.put("host", host);
+            body.put("port", port);
+            body.put("database", name);
+            body.put("username", user);
+            body.put("password", pwd != null ? pwd : "");
+            String jsonBody = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(body);
+            String response = HttpUtil.doPost("/api/shiwan-m2/settings/test-db-connection", jsonBody);
+            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
+            boolean ok = node.has("code") && node.get("code").asInt(500) == 200;
+            if (ok) {
+                dbTestResultLabel.setText("✅ 连接成功");
+                dbTestResultLabel.setStyle("-fx-text-fill: #059669; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            } else {
+                String msg = node.has("message") ? node.get("message").asText() : "连接失败";
+                dbTestResultLabel.setText("❌ " + (msg != null && !msg.isEmpty() ? msg : "连接失败"));
+                dbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            }
+        } catch (Exception e) {
+            dbTestResultLabel.setText("❌ 请求失败：" + (e.getMessage() != null ? e.getMessage() : "请确认后端已启动并提供 /api/shiwan-m2/settings/test-db-connection 接口"));
+            dbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px; -fx-font-family: 'Microsoft YaHei';");
+        }
     }
 
     @FXML
@@ -372,10 +509,19 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         String port = dbPortField.getText().trim();
         String name = dbNameField.getText().trim();
         String user = dbUserField.getText().trim();
+        String pwd  = dbPasswordField.getText();
         if (host.isEmpty() || port.isEmpty() || name.isEmpty() || user.isEmpty()) {
             showError("输入有误", "数据库地址、端口、数据库名、用户名均为必填项。");
             return;
         }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getDbConnection() == null) s.setDbConnection(new ShiwanM2Settings.DbConnectionConfig());
+        s.getDbConnection().setHost(host);
+        s.getDbConnection().setPort(port);
+        s.getDbConnection().setDatabase(name);
+        s.getDbConnection().setUsername(user);
+        s.getDbConnection().setPassword(pwd != null ? pwd : "");
+        saveSettings(s);
         showSuccess("数据库连接", "数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name);
     }
 
