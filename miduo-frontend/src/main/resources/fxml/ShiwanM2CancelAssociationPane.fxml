@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2CancelAssociationController"
+      styleClass="shiwan-m2-content-body" spacing="12">
+
+    <VBox prefWidth="560" minWidth="520" spacing="12" styleClass="shiwan-m2-maint-card">
+        <HBox spacing="8">
+            <Label text="取消关联" styleClass="shiwan-m2-maint-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onShowCancelHelp"/>
+        </HBox>
+
+        <TabPane tabClosingPolicy="UNAVAILABLE" styleClass="shiwan-m2-inner-tab-pane">
+            <tabs>
+                <Tab text="单码取消">
+                    <VBox spacing="10" styleClass="shiwan-m2-tab-content">
+                        <Label text="*码（瓶/盒）" styleClass="shiwan-m2-maint-label"/>
+                        <TextField fx:id="singleCodeField"
+                                   promptText="请输入或扫描瓶码/盒码"
+                                   styleClass="shiwan-m2-maint-input"/>
+                        <HBox spacing="10">
+                            <Button text="识别" styleClass="shiwan-m2-maint-btn-primary" onAction="#onSingleIdentify"/>
+                            <Button text="清空" styleClass="shiwan-m2-maint-btn-secondary" onAction="#onSingleClear"/>
+                            <Button fx:id="singleConfirmCancelButton"
+                                    text="确认取消关联"
+                                    styleClass="shiwan-m2-maint-btn-danger"
+                                    onAction="#onSingleConfirmCancel"/>
+                        </HBox>
+                        <Label text="操作不可恢复，请确认后执行。" styleClass="shiwan-m2-maint-warning"/>
+                    </VBox>
+                </Tab>
+                <Tab text="多码取消">
+                    <VBox spacing="10" styleClass="shiwan-m2-tab-content">
+                        <Label text="*盒/箱/垛码" styleClass="shiwan-m2-maint-label"/>
+                        <HBox spacing="10">
+                            <TextField fx:id="multiCodeField"
+                                       HBox.hgrow="ALWAYS"
+                                       promptText="请输入盒码、箱码或垛码"
+                                       styleClass="shiwan-m2-maint-input"/>
+                            <Button text="添加" styleClass="shiwan-m2-maint-btn-primary" onAction="#onMultiAddCode"/>
+                        </HBox>
+                        <ListView fx:id="multiCodeList" prefHeight="180" styleClass="shiwan-m2-maint-result-list"/>
+                        <HBox spacing="10">
+                            <Button text="识别" styleClass="shiwan-m2-maint-btn-primary" onAction="#onMultiIdentify"/>
+                            <Button text="清空" styleClass="shiwan-m2-maint-btn-secondary" onAction="#onMultiClear"/>
+                            <Button fx:id="multiConfirmCancelButton"
+                                    text="确认取消关联"
+                                    styleClass="shiwan-m2-maint-btn-danger"
+                                    onAction="#onMultiConfirmCancel"/>
+                        </HBox>
+                        <Label text="操作不可恢复，请确认后执行。" styleClass="shiwan-m2-maint-warning"/>
+                    </VBox>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </VBox>
+
+    <VBox HBox.hgrow="ALWAYS" spacing="12" styleClass="shiwan-m2-maint-card">
+        <Label text="识别结果" styleClass="shiwan-m2-maint-title"/>
+        <Label fx:id="identifySummaryLabel" styleClass="shiwan-m2-maint-hint"/>
+        <ListView fx:id="identifyResultList"
+                  VBox.vgrow="ALWAYS"
+                  styleClass="shiwan-m2-maint-result-list"/>
+        <Label text="取消结果" styleClass="shiwan-m2-maint-title"/>
+        <ListView fx:id="cancelResultList"
+                  VBox.vgrow="ALWAYS"
+                  styleClass="shiwan-m2-maint-result-list"/>
+    </VBox>
+</HBox>
