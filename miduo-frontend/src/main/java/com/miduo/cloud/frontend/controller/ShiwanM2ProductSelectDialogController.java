@@ -46,16 +46,10 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
 
     private void loadPage(int page) {
         currentPage = page;
-        String url = "/api/shiwan-m2/products?page=" + page + "&pagesize=" + PAGE_SIZE;
-        if (keyword != null && !keyword.isEmpty()) {
-            try {
-                url += "&keyword=" + java.net.URLEncoder.encode(keyword, "UTF-8");
-            } catch (Exception ignored) {}
-        }
-        final String reqUrl = url;
+        final String body = buildQueryBody(page);
         CompletableFuture.runAsync(() -> {
             try {
-                String json = HttpUtil.doGet(reqUrl);
+                String json = HttpUtil.doPost("/api/shiwan-m2/products/query", body);
                 JsonNode root = MAPPER.readTree(json);
                 int code = root.has("code") ? root.get("code").asInt() : 500;
                 if (code != 200 || !root.has("data")) {
@@ -78,6 +72,22 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
                 Platform.runLater(() -> updateTable(java.util.Collections.emptyList(), 0));
             }
         });
+    }
+
+    private String buildQueryBody(int page) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("page", page);
+        body.put("pagesize", PAGE_SIZE);
+        Map<String, Object> query = new HashMap<>();
+        String k = keyword != null ? keyword.trim() : "";
+        query.put("name", k);
+        query.put("pronumber", k);
+        body.put("query", query);
+        try {
+            return MAPPER.writeValueAsString(body);
+        } catch (Exception e) {
+            return "{\"page\":" + page + ",\"pagesize\":" + PAGE_SIZE + "}";
+        }
     }
 
     private void updateTable(java.util.List<Map<String, String>> list, int total) {

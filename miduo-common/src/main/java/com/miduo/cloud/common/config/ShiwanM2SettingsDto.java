@@ -15,6 +15,8 @@ public class ShiwanM2SettingsDto {
     private M1DbConnection m1DbConnection;
     private Long lastSyncedM1SerialNo;
     private PalletRule palletRule;
+    private UploadConfig upload;
+    private ApiConfig api;
 
     public DbConnection getDbConnection() { return dbConnection; }
     public void setDbConnection(DbConnection dbConnection) { this.dbConnection = dbConnection; }
@@ -24,6 +26,10 @@ public class ShiwanM2SettingsDto {
     public void setLastSyncedM1SerialNo(Long lastSyncedM1SerialNo) { this.lastSyncedM1SerialNo = lastSyncedM1SerialNo; }
     public PalletRule getPalletRule() { return palletRule; }
     public void setPalletRule(PalletRule palletRule) { this.palletRule = palletRule; }
+    public UploadConfig getUpload() { return upload; }
+    public void setUpload(UploadConfig upload) { this.upload = upload; }
+    public ApiConfig getApi() { return api; }
+    public void setApi(ApiConfig api) { this.api = api; }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -77,5 +83,40 @@ public class ShiwanM2SettingsDto {
         public void setPrefix(String prefix) { this.prefix = prefix; }
         public String getLineCode() { return lineCode; }
         public void setLineCode(String lineCode) { this.lineCode = lineCode; }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class UploadConfig {
+        private boolean autoUpload = true;
+        public boolean isAutoUpload() { return autoUpload; }
+        public void setAutoUpload(boolean autoUpload) { this.autoUpload = autoUpload; }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ApiConfig {
+        private String baseUrl;
+        private String appKey;
+        private String appSecret;
+        private String syncCodeAndVirtualRelationPath;
+        private String getSyncResultPath;
+        private String codePackageQueryCompletedPath;
+        private String productsListPath;
+
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getAppKey() { return appKey; }
+        public void setAppKey(String appKey) { this.appKey = appKey; }
+        public String getAppSecret() { return appSecret; }
+        public void setAppSecret(String appSecret) { this.appSecret = appSecret; }
+        public String getSyncCodeAndVirtualRelationPath() { return syncCodeAndVirtualRelationPath; }
+        public void setSyncCodeAndVirtualRelationPath(String syncCodeAndVirtualRelationPath) { this.syncCodeAndVirtualRelationPath = syncCodeAndVirtualRelationPath; }
+        public String getGetSyncResultPath() { return getSyncResultPath; }
+        public void setGetSyncResultPath(String getSyncResultPath) { this.getSyncResultPath = getSyncResultPath; }
+        public String getCodePackageQueryCompletedPath() { return codePackageQueryCompletedPath; }
+        public void setCodePackageQueryCompletedPath(String codePackageQueryCompletedPath) { this.codePackageQueryCompletedPath = codePackageQueryCompletedPath; }
+        public String getProductsListPath() { return productsListPath; }
+        public void setProductsListPath(String productsListPath) { this.productsListPath = productsListPath; }
     }
 }
