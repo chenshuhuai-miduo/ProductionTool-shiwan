@@ -82,6 +82,28 @@ public class ShiwanM2BoxCaseController {
         return ApiResult.success("查询成功", count);
     }
 
+    /**
+     * 实时上传列表：按订单号返回垛码、箱数、上传状态（PENDING/DONE/FAILED）。
+     * GET /api/shiwan-m2/upload-list?orderNo=xxx
+     */
+    @GetMapping("/upload-list")
+    public ApiResult<List<Map<String, Object>>> uploadList(@RequestParam String orderNo) {
+        List<Map<String, Object>> list = shiwanM2BoxCaseService.listUploadItems(orderNo);
+        return ApiResult.success("查询成功", list);
+    }
+
+    /**
+     * 手动上传：按订单号+垛码触发一次上传。
+     * POST /api/shiwan-m2/upload/trigger
+     * Body: {orderNo, palletCode}
+     */
+    @PostMapping("/upload/trigger")
+    public ApiResult<Map<String, Object>> triggerUpload(@RequestBody Map<String, Object> body) {
+        String orderNo = getStr(body, "orderNo");
+        String palletCode = getStr(body, "palletCode");
+        return shiwanM2BoxCaseService.triggerUpload(orderNo, palletCode);
+    }
+
     private static String getStr(Map<String, Object> body, String key) {
         if (body == null) return null;
         Object v = body.get(key);

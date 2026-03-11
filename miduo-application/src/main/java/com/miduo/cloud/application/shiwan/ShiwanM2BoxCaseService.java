@@ -1,10 +1,21 @@
 package com.miduo.cloud.application.shiwan;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.miduo.cloud.common.config.ShiwanM2SettingsDto;
+import com.miduo.cloud.common.config.ShiwanM2SettingsFileLoader;
 import com.miduo.cloud.common.dto.ApiResult;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -18,6 +29,7 @@ public class ShiwanM2BoxCaseService {
 
     private static final String TAG_M2_BOX = "M2-BOX";
     private static final String EMPTY = "";
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private final JdbcTemplate jdbcTemplate;
     private final VirtualPalletSequenceService virtualPalletSequenceService;
@@ -107,9 +119,13 @@ public class ShiwanM2BoxCaseService {
             int currentCaseCount = countCurrentCasesInPallet(orderNo);
             boolean fullPallet = currentCaseCount >= boxesPerPallet;
             String palletCode = null;
+            UploadResult uploadResult = null;
             if (fullPallet) {
                 palletCode = completeCurrentPallet(orderNo, boxesPerPallet);
                 currentCaseCount = 0;
+                if (palletCode != null && isAutoUploadEnabled()) {
+                    uploadResult = uploadPallet(orderNo, palletCode);
+                }
             }
 
             Map<String, Object> data = new HashMap<>();
@@ -123,6 +139,13 @@ public class ShiwanM2BoxCaseService {
             data.put("fullPallet", fullPallet);
             if (fullPallet && palletCode != null) {
                 data.put("palletCode", palletCode);
+            }
+            if (uploadResult != null) {
+                data.put("uploadTriggered", true);
+                data.put("uploadStatus", uploadResult.success ? "DONE" : "FAILED");
+                data.put("uploadMessage", uploadResult.message);
+            } else if (fullPallet) {
+                data.put("uploadTriggered", false);
             }
             return ApiResult.success("盒箱关联成功", data);
         } catch (Exception e) {
@@ -148,10 +171,21 @@ public class ShiwanM2BoxCaseService {
                 return ApiResult.success("当前无未成垛箱", data);
             }
             String palletCode = completeCurrentPallet(orderNo, casesToClose);
+            UploadResult uploadResult = null;
+            if (palletCode != null && isAutoUploadEnabled()) {
+                uploadResult = uploadPallet(orderNo, palletCode);
+            }
             Map<String, Object> data = new HashMap<>();
             data.put("palletCode", palletCode);
             data.put("currentCaseCount", 0);
             data.put("closedCaseCount", casesToClose);
+            if (uploadResult != null) {
+                data.put("uploadTriggered", true);
+                data.put("uploadStatus", uploadResult.success ? "DONE" : "FAILED");
+                data.put("uploadMessage", uploadResult.message);
+            } else {
+                data.put("uploadTriggered", false);
+            }
             return ApiResult.success("强制满垛成功", data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -254,6 +288,221 @@ public class ShiwanM2BoxCaseService {
             return n != null ? n.intValue() : 0;
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    /**
+     * 上传列表：按垛码聚合返回箱数与上传状态。
+     */
+    public List<Map<String, Object>> listUploadItems(String orderNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return Collections.emptyList();
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT VirtualSerialNumber AS palletCode, " +
+                        "COUNT(DISTINCT BigSerialNumber) AS boxCount, " +
+                        "MAX(CASE WHEN IsUpload = 0 THEN 1 ELSE 0 END) AS uploaded, " +
+                        "MAX(CASE WHEN IFNULL(ErrCount,0) > 0 THEN 1 ELSE 0 END) AS failed, " +
+                        "MAX(IFNULL(Msg,'')) AS msg, " +
+                        "MAX(COALESCE(UploadTime, AddTime)) AS sortTime " +
+                        "FROM CodeRelationUpload " +
+                        "WHERE OrderNo = ? AND IsDel = 0 " +
+                        "AND VirtualSerialNumber IS NOT NULL AND VirtualSerialNumber != '' " +
+                        "GROUP BY VirtualSerialNumber " +
+                        "ORDER BY sortTime DESC",
+                orderNo.trim());
+        if (rows == null || rows.isEmpty()) return Collections.emptyList();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> item = new HashMap<>();
+            String palletCode = str(row.get("palletCode"));
+            int boxCount = toInt(row.get("boxCount"));
+            boolean uploaded = toInt(row.get("uploaded")) == 1;
+            boolean failed = toInt(row.get("failed")) == 1;
+            String status = uploaded ? "DONE" : (failed ? "FAILED" : "PENDING");
+            item.put("palletCode", palletCode);
+            item.put("boxCount", boxCount);
+            item.put("status", status);
+            item.put("message", str(row.get("msg")));
+            list.add(item);
+        }
+        return list;
+    }
+
+    /**
+     * 手动触发上传：按订单+垛码调用开放平台上传并更新状态。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResult<Map<String, Object>> triggerUpload(String orderNo, String palletCode) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return ApiResult.error(400, "订单号不能为空");
+        }
+        if (palletCode == null || palletCode.trim().isEmpty()) {
+            return ApiResult.error(400, "垛码不能为空");
+        }
+        try {
+            UploadResult result = uploadPallet(orderNo.trim(), palletCode.trim());
+            Map<String, Object> data = new HashMap<>();
+            data.put("palletCode", palletCode.trim());
+            data.put("status", result.success ? "DONE" : "FAILED");
+            data.put("message", result.message);
+            return result.success
+                    ? ApiResult.success("上传成功", data)
+                    : ApiResult.error(500, result.message);
+        } catch (Exception e) {
+            return ApiResult.error("上传失败：" + e.getMessage());
+        }
+    }
+
+    private boolean isAutoUploadEnabled() {
+        ShiwanM2SettingsDto settings = ShiwanM2SettingsFileLoader.load();
+        return settings != null && settings.getUpload() != null && settings.getUpload().isAutoUpload();
+    }
+
+    private UploadResult uploadPallet(String orderNo, String palletCode) {
+        UploadResult result = callOpenPlatformUpload(orderNo, palletCode);
+        if (result.success) {
+            markUploadSuccess(orderNo, palletCode, result.message);
+        } else {
+            markUploadFailed(orderNo, palletCode, result.message);
+        }
+        return result;
+    }
+
+    private UploadResult callOpenPlatformUpload(String orderNo, String palletCode) {
+        ShiwanM2SettingsDto settings = ShiwanM2SettingsFileLoader.load();
+        ShiwanM2SettingsDto.ApiConfig api = settings != null ? settings.getApi() : null;
+        String baseUrl = api != null ? str(api.getBaseUrl()).trim() : "";
+        String uploadPath = api != null ? str(api.getSyncCodeAndVirtualRelationPath()).trim() : "";
+        if (uploadPath.isEmpty()) {
+            uploadPath = "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation";
+        }
+        if (baseUrl.isEmpty()) {
+            return new UploadResult(false, "未配置开放平台 baseUrl，自动上传跳过");
+        }
+        String endpoint = joinUrl(baseUrl, uploadPath);
+
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("orderNo", orderNo);
+            payload.put("virtualSerialNumber", palletCode);
+            String requestJson = JSON.writeValueAsString(payload);
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(10000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            if (api != null) {
+                if (!str(api.getAppKey()).trim().isEmpty()) {
+                    conn.setRequestProperty("appKey", api.getAppKey());
+                    conn.setRequestProperty("AppKey", api.getAppKey());
+                }
+                if (!str(api.getAppSecret()).trim().isEmpty()) {
+                    conn.setRequestProperty("appSecret", api.getAppSecret());
+                    conn.setRequestProperty("AppSecret", api.getAppSecret());
+                }
+            }
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(requestJson.getBytes(StandardCharsets.UTF_8));
+            }
+            int code = conn.getResponseCode();
+            String resp = readBody(code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream());
+            JsonNode root = JSON.readTree(resp);
+            if (root == null) {
+                return new UploadResult(false, "上传失败：开放平台返回为空");
+            }
+            if (isSuccessResponse(root)) {
+                return new UploadResult(true, "上传成功");
+            }
+            String msg = pickMessage(root, "上传失败：开放平台返回失败");
+            return new UploadResult(false, msg);
+        } catch (Exception e) {
+            return new UploadResult(false, "上传失败：" + e.getMessage());
+        }
+    }
+
+    private boolean isSuccessResponse(JsonNode root) {
+        if (root.has("error_code")) {
+            String ec = root.get("error_code").asText("");
+            if ("0".equals(ec) || "200".equals(ec)) return true;
+        }
+        if (root.has("return_code")) {
+            String rc = root.get("return_code").asText("");
+            if ("0".equals(rc) || "200".equals(rc)) return true;
+        }
+        if (root.has("code")) {
+            int c = root.get("code").asInt(500);
+            if (c == 200) return true;
+        }
+        if (root.has("success") && root.get("success").asBoolean(false)) {
+            return true;
+        }
+        return false;
+    }
+
+    private String pickMessage(JsonNode root, String defaultMsg) {
+        if (root == null) return defaultMsg;
+        String[] keys = new String[] {"message", "error_msg", "return_msg", "msg"};
+        for (String k : keys) {
+            if (root.has(k) && !root.get(k).asText("").trim().isEmpty()) {
+                return root.get(k).asText();
+            }
+        }
+        return defaultMsg;
+    }
+
+    private void markUploadSuccess(String orderNo, String palletCode, String msg) {
+        jdbcTemplate.update(
+                "UPDATE CodeRelationUpload SET IsUpload = 0, UploadTime = ?, Msg = ?, ErrCount = 0 " +
+                        "WHERE OrderNo = ? AND IsDel = 0 AND VirtualSerialNumber = ?",
+                LocalDateTime.now(), msg, orderNo, palletCode);
+    }
+
+    private void markUploadFailed(String orderNo, String palletCode, String msg) {
+        jdbcTemplate.update(
+                "UPDATE CodeRelationUpload SET IsUpload = 1, Msg = ?, ErrCount = IFNULL(ErrCount,0) + 1 " +
+                        "WHERE OrderNo = ? AND IsDel = 0 AND VirtualSerialNumber = ?",
+                msg, orderNo, palletCode);
+    }
+
+    private static String joinUrl(String baseUrl, String path) {
+        String b = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String p = path.startsWith("/") ? path : "/" + path;
+        return b + p;
+    }
+
+    private static int toInt(Object v) {
+        if (v == null) return 0;
+        if (v instanceof Number) return ((Number) v).intValue();
+        try {
+            return Integer.parseInt(v.toString());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private static String str(Object o) {
+        return o == null ? "" : o.toString();
+    }
+
+    private static String readBody(InputStream is) throws Exception {
+        if (is == null) return "";
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+            return sb.toString();
+        }
+    }
+
+    private static class UploadResult {
+        private final boolean success;
+        private final String message;
+        private UploadResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
         }
     }
 }

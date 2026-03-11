@@ -254,10 +254,6 @@ public class ShiwanM2MainController implements Initializable {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  系统启动完成", LogType.INFO);
         addOpLog(now + "  等待设备连接...", LogType.INFO);
-
-        // 示例上传数据
-        uploadItems.add(new UploadItem("垛 P20241201001", "70箱", UploadStatus.PENDING));
-        uploadItems.add(new UploadItem("垛 P20241201002", "70箱", UploadStatus.DONE));
     }
 
     /** 初始化激活状态显示 */
@@ -471,11 +467,35 @@ public class ShiwanM2MainController implements Initializable {
             JsonNode first = list.get(0);
             String orderNo = first.has("OrderNo") ? first.get("OrderNo").asText() : (first.has("orderNo") ? first.get("orderNo").asText() : "");
             long currentCaseCount = first.has("currentCaseCount") ? first.get("currentCaseCount").asLong() : (first.has("currentcasecount") ? first.get("currentcasecount").asLong() : 0);
+            String productNo = first.has("productNo") ? first.get("productNo").asText() : (first.has("ProductNo") ? first.get("ProductNo").asText() : "");
+            String productName = first.has("productName") ? first.get("productName").asText() : (first.has("ProductName") ? first.get("ProductName").asText() : "");
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("未成垛数据恢复");
             alert.setHeaderText("检测到上次退出软件时有未满垛数据，默认继续使用该垛数据继续采集。");
             alert.setContentText("订单号：" + orderNo + "\n未成垛箱数：" + currentCaseCount + " 箱");
             alert.showAndWait();
+            if (orderNo != null && !orderNo.isEmpty()) {
+                orderNumField.setText(orderNo);
+                currentCases = (int) currentCaseCount;
+                currentBoxes = 0;
+                curCasesLabel.setText(String.valueOf(currentCases));
+                curBoxesLabel.setText("0");
+                if (productNo != null && !productNo.isEmpty()) {
+                    productCodeLabel.setText(productNo);
+                    productCodeRow.setVisible(true);
+                    productCodeRow.setManaged(true);
+                }
+                if (productName != null && !productName.isEmpty()) {
+                    if (!productComboBox.getItems().contains(productName)) {
+                        productComboBox.getItems().add(productName);
+                    }
+                    productComboBox.setValue(productName);
+                }
+                refreshProducedPalletCount(orderNo);
+                refreshRejectCount(orderNo);
+                refreshUploadList(orderNo);
+                addOpLog(LocalDateTime.now().format(TIME_FMT) + "  已恢复未成垛数据，订单：" + orderNo + "，当前箱数：" + currentCaseCount, LogType.INFO);
+            }
         } catch (Exception ignored) {}
     }
 
@@ -626,6 +646,7 @@ public class ShiwanM2MainController implements Initializable {
         addDataLog(now + "  设备初始化完成，开始接收数据", LogType.SUCCESS);
         refreshProducedPalletCount(orderNo);
         refreshRejectCount(orderNo);
+        refreshUploadList(orderNo);
     }
 
     private static String escapeJson(String s) {
@@ -711,14 +732,24 @@ public class ShiwanM2MainController implements Initializable {
 
             String now = LocalDateTime.now().format(TIME_FMT);
             addDataLog(now + "  强制满垛 - 垛码：" + palletCode + " 已生成，共" + currentCaseCount + "箱", LogType.SUCCESS);
+            if (data != null && data.has("uploadTriggered") && data.get("uploadTriggered").asBoolean(false)) {
+                String uploadStatus = data.has("uploadStatus") ? data.get("uploadStatus").asText() : "PENDING";
+                String uploadMsg = data.has("uploadMessage") ? data.get("uploadMessage").asText() : "";
+                if ("DONE".equalsIgnoreCase(uploadStatus)) {
+                    addDataLog(now + "  垛码 " + palletCode + " 自动上传成功", LogType.SUCCESS);
+                } else {
+                    addDataLog(now + "  垛码 " + palletCode + " 自动上传失败：" + uploadMsg, LogType.WARN);
+                    addAlarmLog(now + "  上传失败：" + palletCode + "，原因：" + uploadMsg, LogType.ERROR);
+                }
+            }
             addOpLog(now + "  强制满垛操作完成，已生产垛数：" + palletCount, LogType.INFO);
-            uploadItems.add(0, new UploadItem("垛 " + palletCode, currentCaseCount + "箱", UploadStatus.PENDING));
 
             currentCases = 0;
             currentBoxes = 0;
             curCasesLabel.setText("0");
             curBoxesLabel.setText("0");
             refreshProducedPalletCount(orderNumField.getText());
+            refreshUploadList(orderNumField.getText());
         } catch (Exception e) {
             showWarn("强制满垛失败", e.getMessage());
         }
@@ -773,6 +804,7 @@ public class ShiwanM2MainController implements Initializable {
         statsRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
             refreshProducedPalletCount(orderNo);
             refreshRejectCount(orderNo);
+            refreshUploadList(orderNo);
         }));
         statsRefreshTimeline.setCycleCount(Animation.INDEFINITE);
         statsRefreshTimeline.play();
@@ -784,6 +816,34 @@ public class ShiwanM2MainController implements Initializable {
             statsRefreshTimeline.stop();
             statsRefreshTimeline = null;
         }
+    }
+
+    /** 刷新实时上传数据区（后端聚合列表）。 */
+    private void refreshUploadList(String orderNo) {
+        if (orderNo == null || orderNo.isEmpty()) return;
+        try {
+            String json = HttpUtil.doGet("/api/shiwan-m2/upload-list?orderNo=" + java.net.URLEncoder.encode(orderNo, "UTF-8"));
+            JsonNode root = JSON.readTree(json);
+            if (root == null || !root.has("code") || root.get("code").asInt() != 200 || !root.has("data")) return;
+            JsonNode list = root.get("data");
+            if (!list.isArray()) return;
+            List<UploadItem> refreshed = new ArrayList<>();
+            for (JsonNode item : list) {
+                String palletCode = item.has("palletCode") ? item.get("palletCode").asText() : "";
+                String boxCount = item.has("boxCount") ? item.get("boxCount").asText() : "0";
+                String status = item.has("status") ? item.get("status").asText() : "PENDING";
+                UploadStatus st;
+                if ("DONE".equalsIgnoreCase(status)) {
+                    st = UploadStatus.DONE;
+                } else if ("FAILED".equalsIgnoreCase(status)) {
+                    st = UploadStatus.FAILED;
+                } else {
+                    st = UploadStatus.PENDING;
+                }
+                refreshed.add(new UploadItem("垛 " + palletCode, boxCount + "箱", st));
+            }
+            uploadItems.setAll(refreshed);
+        } catch (Exception ignored) {}
     }
 
     @FXML
@@ -895,6 +955,7 @@ public class ShiwanM2MainController implements Initializable {
         currentBoxes = 0;
         curCasesLabel.setText("0");
         curBoxesLabel.setText("0");
+        refreshUploadList(orderNumField.getText());
     }
 
     /**
