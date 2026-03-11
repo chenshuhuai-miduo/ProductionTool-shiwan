@@ -280,6 +280,42 @@ public class CodePackageApplicationService {
         }
     }
 
+    /**
+     * 门禁检查：小标(1)、中标(2)、大标(3) 是否均已导入（至少有一条 Status=1 的导入记录）。
+     * 用于 2 号机开始采集前码包门禁。
+     */
+    public ApiResult<Map<String, Object>> checkCodePackageGate() {
+        try {
+            LambdaQueryWrapper<CodePackageImportPO> q1 = new LambdaQueryWrapper<>();
+            q1.eq(CodePackageImportPO::getPackageType, 1).eq(CodePackageImportPO::getStatus, 1);
+            long c1 = codePackageImportMapper.selectCount(q1);
+            LambdaQueryWrapper<CodePackageImportPO> q2 = new LambdaQueryWrapper<>();
+            q2.eq(CodePackageImportPO::getPackageType, 2).eq(CodePackageImportPO::getStatus, 1);
+            long c2 = codePackageImportMapper.selectCount(q2);
+            LambdaQueryWrapper<CodePackageImportPO> q3 = new LambdaQueryWrapper<>();
+            q3.eq(CodePackageImportPO::getPackageType, 3).eq(CodePackageImportPO::getStatus, 1);
+            long c3 = codePackageImportMapper.selectCount(q3);
+            Map<String, Object> data = new HashMap<>();
+            data.put("smallImported", c1 > 0);
+            data.put("mediumImported", c2 > 0);
+            data.put("largeImported", c3 > 0);
+            data.put("passed", c1 > 0 && c2 > 0 && c3 > 0);
+            if (c1 > 0 && c2 > 0 && c3 > 0) {
+                return ApiResult.success("小标、中标、大标均已导入", data);
+            }
+            List<String> missing = new ArrayList<>();
+            if (c1 == 0) missing.add("小标");
+            if (c2 == 0) missing.add("中标");
+            if (c3 == 0) missing.add("大标");
+            ApiResult<Map<String, Object>> err = ApiResult.error(400, "请先导入对应码包：" + String.join("、", missing));
+            err.setData(data);
+            return err;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResult.error("码包门禁检查失败：" + e.getMessage());
+        }
+    }
+
     private void refreshAssociationInfo(Integer packageType, List<CodePackageViewCodeVO> records) {
         if (records == null || records.isEmpty()) {
             return;

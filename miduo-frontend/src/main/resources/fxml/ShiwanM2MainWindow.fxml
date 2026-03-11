@@ -66,11 +66,14 @@
 
                                 <!-- 选择产品 -->
                                 <Label text="选择产品" styleClass="shiwan-m2-form-label-small"/>
-                                <ComboBox fx:id="productComboBox"
-                                          promptText="-- 点击选择产品 --"
-                                          styleClass="shiwan-m2-product-combo"
-                                          maxWidth="Infinity"
-                                          onAction="#onProductSelect"/>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <ComboBox fx:id="productComboBox"
+                                              promptText="-- 点击选择产品 --"
+                                              styleClass="shiwan-m2-product-combo"
+                                              HBox.hgrow="ALWAYS"
+                                              onAction="#onProductSelect"/>
+                                    <Button text="选择" onAction="#onOpenProductSelectDialog" styleClass="primary-button"/>
+                                </HBox>
 
                                 <!-- 产品编号（初始隐藏，选中后显示） -->
                                 <HBox fx:id="productCodeRow" spacing="8" alignment="CENTER_LEFT"

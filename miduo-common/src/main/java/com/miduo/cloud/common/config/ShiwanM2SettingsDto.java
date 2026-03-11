@@ -12,10 +12,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class ShiwanM2SettingsDto {
 
     private DbConnection dbConnection;
+    private M1DbConnection m1DbConnection;
+    private Long lastSyncedM1SerialNo;
     private PalletRule palletRule;
 
     public DbConnection getDbConnection() { return dbConnection; }
     public void setDbConnection(DbConnection dbConnection) { this.dbConnection = dbConnection; }
+    public M1DbConnection getM1DbConnection() { return m1DbConnection; }
+    public void setM1DbConnection(M1DbConnection m1DbConnection) { this.m1DbConnection = m1DbConnection; }
+    public Long getLastSyncedM1SerialNo() { return lastSyncedM1SerialNo; }
+    public void setLastSyncedM1SerialNo(Long lastSyncedM1SerialNo) { this.lastSyncedM1SerialNo = lastSyncedM1SerialNo; }
     public PalletRule getPalletRule() { return palletRule; }
     public void setPalletRule(PalletRule palletRule) { this.palletRule = palletRule; }
 
@@ -33,6 +39,29 @@ public class ShiwanM2SettingsDto {
         public void setPort(String port) { this.port = port; }
         public String getDatabase() { return database; }
         public void setDatabase(String database) { this.database = database; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class M1DbConnection {
+        private String host;
+        private String port;
+        private String database;
+        private String tableName;
+        private String username;
+        private String password;
+        public String getHost() { return host; }
+        public void setHost(String host) { this.host = host; }
+        public String getPort() { return port; }
+        public void setPort(String port) { this.port = port; }
+        public String getDatabase() { return database; }
+        public void setDatabase(String database) { this.database = database; }
+        public String getTableName() { return tableName; }
+        public void setTableName(String tableName) { this.tableName = tableName; }
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }

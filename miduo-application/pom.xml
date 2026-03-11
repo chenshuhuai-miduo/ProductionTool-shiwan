@@ -53,6 +53,12 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
         </dependency>
+
+        <!-- Spring JDBC（1号机 T_Code 同步等使用 JdbcTemplate）-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
         
         <!-- Lombok -->
         <dependency>

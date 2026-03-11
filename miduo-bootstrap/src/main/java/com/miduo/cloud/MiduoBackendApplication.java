@@ -3,6 +3,7 @@ package com.miduo.cloud;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 米多赋码采集关联系统启动类
@@ -19,6 +20,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - com.miduo.cloud.infrastructure：基础设施层
  * - com.miduo.cloud.config：配置类
  */
+@EnableScheduling
 @SpringBootApplication(scanBasePackages = {
     "com.miduo.cloud.controller",
     "com.miduo.cloud.application",

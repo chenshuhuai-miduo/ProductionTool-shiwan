@@ -656,6 +656,93 @@
                     </ScrollPane>
                 </Tab>
 
+                <!-- 1号机连接（SQL Server，T_Code 同步） -->
+                <Tab text="1号机连接">
+                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
+                            <Label text="1号机数据库连接配置（SQL Server）"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+
+                            <Label text="用于定时同步 1 号机 T_Code 表中 Status=0 的数据到 2 号机 CodeRelationUpload，同步时 OrderNo/ProductNO 取当前 2 号机生产订单号与选择的产品编码。"
+                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="数据库地址" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="m1DbHostField"
+                                           HBox.hgrow="ALWAYS" maxWidth="300"
+                                           styleClass="sw2-field-input"
+                                           promptText="1号机 SQL Server IP"/>
+                            </HBox>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="端口" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="m1DbPortField"
+                                           text="1433"
+                                           prefWidth="120"
+                                           styleClass="sw2-field-input"/>
+                            </HBox>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="数据库名" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="m1DbNameField"
+                                           HBox.hgrow="ALWAYS" maxWidth="300"
+                                           styleClass="sw2-field-input"/>
+                            </HBox>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="表名" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="m1DbTableField"
+                                           text="T_Code"
+                                           HBox.hgrow="ALWAYS" maxWidth="300"
+                                           styleClass="sw2-field-input"
+                                           promptText="默认 T_Code"/>
+                            </HBox>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="用户名" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="m1DbUserField"
+                                           HBox.hgrow="ALWAYS" maxWidth="300"
+                                           styleClass="sw2-field-input"/>
+                            </HBox>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="密码" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <PasswordField fx:id="m1DbPasswordField"
+                                               HBox.hgrow="ALWAYS" maxWidth="300"
+                                               styleClass="sw2-field-input"/>
+                            </HBox>
+
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button text="连接测试"
+                                        styleClass="sw2-btn-outline"
+                                        minWidth="90" minHeight="36"
+                                        onAction="#onTestM1DbConnection"/>
+                                <Button text="保 存"
+                                        styleClass="sw2-btn-primary"
+                                        minWidth="80" minHeight="36"
+                                        onAction="#onSaveM1DbConfig"/>
+                                <Label fx:id="m1DbTestResultLabel"
+                                       text=""
+                                       style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+                        </VBox>
+                    </ScrollPane>
+                </Tab>
+
             </TabPane>
         </Tab>
 

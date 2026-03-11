@@ -101,6 +101,7 @@ public final class ShiwanM2SettingsStore {
         if (s.getPageVisible() == null) s.setPageVisible(ShiwanM2Settings.defaultPageVisible());
         if (s.getPageTabOrder() == null) s.setPageTabOrder(ShiwanM2Settings.defaultPageTabOrder());
         if (s.getDbConnection() == null) s.setDbConnection(new ShiwanM2Settings.DbConnectionConfig());
+        if (s.getM1DbConnection() == null) s.setM1DbConnection(new ShiwanM2Settings.M1DbConnectionConfig());
         if (s.getPrinter() == null) s.setPrinter(new ShiwanM2Settings.PrinterConfig());
         if (s.getAlarm() == null) s.setAlarm(new ShiwanM2Settings.AlarmConfig());
         if (s.getApi() == null) s.setApi(new ShiwanM2Settings.ApiConfig());

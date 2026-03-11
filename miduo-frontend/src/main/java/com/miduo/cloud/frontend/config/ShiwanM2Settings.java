@@ -34,8 +34,14 @@ public class ShiwanM2Settings {
     /** 页面配置：Tab 显示顺序（仅包含启用的页面 id，第一个为数据采集） */
     private List<String> pageTabOrder = defaultPageTabOrder();
 
-    /** 连接：数据库配置 */
+    /** 连接：2 号机数据库配置（MySQL） */
     private DbConnectionConfig dbConnection = new DbConnectionConfig();
+
+    /** 连接：1 号机数据库配置（SQL Server，用于 T_Code 同步） */
+    private M1DbConnectionConfig m1DbConnection = new M1DbConnectionConfig();
+
+    /** 1 号机 T_Code 同步：上次已同步的最大 SerialNo（持久化到配置或由后端维护） */
+    private Long lastSyncedM1SerialNo;
 
     /** 设备：打印机配置 */
     private PrinterConfig printer = new PrinterConfig();
@@ -45,6 +51,10 @@ public class ShiwanM2Settings {
 
     /** 接口：API base URL 等 */
     private ApiConfig api = new ApiConfig();
+
+    /** 采集规格：每垛箱数、每箱盒数（用于持久化上次采集规格） */
+    private Integer boxesPerPallet = 70;
+    private Integer boxesPerCase = 4;
 
     public static Map<String, Boolean> defaultPageVisible() {
         Map<String, Boolean> m = new LinkedHashMap<>();
@@ -130,6 +140,22 @@ public class ShiwanM2Settings {
         this.dbConnection = dbConnection;
     }
 
+    public M1DbConnectionConfig getM1DbConnection() {
+        return m1DbConnection;
+    }
+
+    public void setM1DbConnection(M1DbConnectionConfig m1DbConnection) {
+        this.m1DbConnection = m1DbConnection;
+    }
+
+    public Long getLastSyncedM1SerialNo() {
+        return lastSyncedM1SerialNo;
+    }
+
+    public void setLastSyncedM1SerialNo(Long lastSyncedM1SerialNo) {
+        this.lastSyncedM1SerialNo = lastSyncedM1SerialNo;
+    }
+
     public PrinterConfig getPrinter() {
         return printer;
     }
@@ -152,6 +178,22 @@ public class ShiwanM2Settings {
 
     public void setApi(ApiConfig api) {
         this.api = api;
+    }
+
+    public Integer getBoxesPerPallet() {
+        return boxesPerPallet;
+    }
+
+    public void setBoxesPerPallet(Integer boxesPerPallet) {
+        this.boxesPerPallet = boxesPerPallet;
+    }
+
+    public Integer getBoxesPerCase() {
+        return boxesPerCase;
+    }
+
+    public void setBoxesPerCase(Integer boxesPerCase) {
+        this.boxesPerCase = boxesPerCase;
     }
 
     // ---------- 嵌套配置类 ----------
@@ -209,6 +251,30 @@ public class ShiwanM2Settings {
         public void setPassword(String password) { this.password = password; }
     }
 
+    /** 1 号机 SQL Server 连接配置（T_Code 表同步） */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class M1DbConnectionConfig {
+        private String host = "192.168.1.100";
+        private String port = "1433";
+        private String database = "";
+        private String tableName = "T_Code";
+        private String username = "sa";
+        private String password = "";
+
+        public String getHost() { return host; }
+        public void setHost(String host) { this.host = host; }
+        public String getPort() { return port; }
+        public void setPort(String port) { this.port = port; }
+        public String getDatabase() { return database; }
+        public void setDatabase(String database) { this.database = database; }
+        public String getTableName() { return tableName; }
+        public void setTableName(String tableName) { this.tableName = tableName; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+    }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class PrinterConfig {
         private String printerName = "Canon LBP2900";
@@ -243,17 +309,26 @@ public class ShiwanM2Settings {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ApiConfig {
         private String baseUrl = "https://openapi.weixin12315.com";
+        private String appKey;
+        private String appSecret;
         private String syncCodeAndVirtualRelationPath = "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation";
         private String getSyncResultPath = "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult";
         private String codePackageQueryCompletedPath = "/api/v1/code/package/query-completed";
+        private String productsListPath = "/api/sign/md.shop.products/v1/list";
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getAppKey() { return appKey; }
+        public void setAppKey(String appKey) { this.appKey = appKey; }
+        public String getAppSecret() { return appSecret; }
+        public void setAppSecret(String appSecret) { this.appSecret = appSecret; }
         public String getSyncCodeAndVirtualRelationPath() { return syncCodeAndVirtualRelationPath; }
         public void setSyncCodeAndVirtualRelationPath(String path) { this.syncCodeAndVirtualRelationPath = path; }
         public String getGetSyncResultPath() { return getSyncResultPath; }
         public void setGetSyncResultPath(String path) { this.getSyncResultPath = path; }
         public String getCodePackageQueryCompletedPath() { return codePackageQueryCompletedPath; }
         public void setCodePackageQueryCompletedPath(String path) { this.codePackageQueryCompletedPath = path; }
+        public String getProductsListPath() { return productsListPath; }
+        public void setProductsListPath(String path) { this.productsListPath = path; }
     }
 }

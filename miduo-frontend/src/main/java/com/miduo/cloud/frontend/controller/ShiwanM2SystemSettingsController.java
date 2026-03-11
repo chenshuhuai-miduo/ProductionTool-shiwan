@@ -89,6 +89,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private PasswordField dbPasswordField;
     @FXML private Label dbTestResultLabel;
 
+    // ==================== 连接 - 1号机连接 ====================
+    @FXML private TextField m1DbHostField;
+    @FXML private TextField m1DbPortField;
+    @FXML private TextField m1DbNameField;
+    @FXML private TextField m1DbTableField;
+    @FXML private TextField m1DbUserField;
+    @FXML private PasswordField m1DbPasswordField;
+    @FXML private Label m1DbTestResultLabel;
+
     // ==================== 数据模型 ====================
 
     /** IO 设备行数据模型 */
@@ -157,6 +166,14 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             dbNameField.setText(s.getDbConnection().getDatabase() != null ? s.getDbConnection().getDatabase() : "");
             dbUserField.setText(s.getDbConnection().getUsername() != null ? s.getDbConnection().getUsername() : "");
             dbPasswordField.setText(s.getDbConnection().getPassword() != null ? s.getDbConnection().getPassword() : "");
+        }
+        if (s.getM1DbConnection() != null && m1DbHostField != null) {
+            m1DbHostField.setText(s.getM1DbConnection().getHost() != null ? s.getM1DbConnection().getHost() : "192.168.1.100");
+            m1DbPortField.setText(s.getM1DbConnection().getPort() != null ? s.getM1DbConnection().getPort() : "1433");
+            m1DbNameField.setText(s.getM1DbConnection().getDatabase() != null ? s.getM1DbConnection().getDatabase() : "");
+            m1DbTableField.setText(s.getM1DbConnection().getTableName() != null ? s.getM1DbConnection().getTableName() : "T_Code");
+            m1DbUserField.setText(s.getM1DbConnection().getUsername() != null ? s.getM1DbConnection().getUsername() : "");
+            m1DbPasswordField.setText(s.getM1DbConnection().getPassword() != null ? s.getM1DbConnection().getPassword() : "");
         }
         if (s.getPrinter() != null) {
             printerNameField.setText(s.getPrinter().getPrinterName() != null ? s.getPrinter().getPrinterName() : "");
@@ -523,6 +540,71 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getDbConnection().setPassword(pwd != null ? pwd : "");
         saveSettings(s);
         showSuccess("数据库连接", "数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name);
+    }
+
+    @FXML
+    private void onTestM1DbConnection() {
+        if (m1DbHostField == null || m1DbTestResultLabel == null) return;
+        String host = m1DbHostField.getText().trim();
+        String port = m1DbPortField.getText().trim();
+        String name = m1DbNameField.getText().trim();
+        String user = m1DbUserField.getText().trim();
+        String pwd  = m1DbPasswordField.getText();
+        if (host.isEmpty() || port.isEmpty() || name.isEmpty() || user.isEmpty()) {
+            m1DbTestResultLabel.setText("❌ 请填写完整的连接信息");
+            m1DbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            return;
+        }
+        m1DbTestResultLabel.setText("⏳ 正在测试...");
+        m1DbTestResultLabel.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+        try {
+            Map<String, String> body = new LinkedHashMap<>();
+            body.put("host", host);
+            body.put("port", port);
+            body.put("database", name);
+            body.put("username", user);
+            body.put("password", pwd != null ? pwd : "");
+            String jsonBody = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(body);
+            String response = HttpUtil.doPost("/api/shiwan-m2/settings/test-m1-db-connection", jsonBody);
+            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
+            boolean ok = node.has("code") && node.get("code").asInt(500) == 200;
+            if (ok) {
+                m1DbTestResultLabel.setText("✅ 连接成功");
+                m1DbTestResultLabel.setStyle("-fx-text-fill: #059669; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            } else {
+                String msg = node.has("message") ? node.get("message").asText() : "连接失败";
+                m1DbTestResultLabel.setText("❌ " + (msg != null && !msg.isEmpty() ? msg : "连接失败"));
+                m1DbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            }
+        } catch (Exception e) {
+            m1DbTestResultLabel.setText("❌ 请求失败：" + (e.getMessage() != null ? e.getMessage() : "请确认后端已启动"));
+            m1DbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px; -fx-font-family: 'Microsoft YaHei';");
+        }
+    }
+
+    @FXML
+    private void onSaveM1DbConfig() {
+        if (m1DbHostField == null) return;
+        String host = m1DbHostField.getText().trim();
+        String port = m1DbPortField.getText().trim();
+        String name = m1DbNameField.getText().trim();
+        String tableName = m1DbTableField.getText().trim();
+        String user = m1DbUserField.getText().trim();
+        String pwd  = m1DbPasswordField.getText();
+        if (host.isEmpty() || port.isEmpty() || name.isEmpty() || user.isEmpty()) {
+            showError("输入有误", "数据库地址、端口、数据库名、用户名均为必填项。");
+            return;
+        }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getM1DbConnection() == null) s.setM1DbConnection(new ShiwanM2Settings.M1DbConnectionConfig());
+        s.getM1DbConnection().setHost(host);
+        s.getM1DbConnection().setPort(port);
+        s.getM1DbConnection().setDatabase(name);
+        s.getM1DbConnection().setTableName(tableName != null && !tableName.isEmpty() ? tableName : "T_Code");
+        s.getM1DbConnection().setUsername(user);
+        s.getM1DbConnection().setPassword(pwd != null ? pwd : "");
+        saveSettings(s);
+        showSuccess("1号机连接", "1号机数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name + " 表：" + (tableName.isEmpty() ? "T_Code" : tableName));
     }
 
     // ==================== 关闭 ====================
