@@ -1,0 +1,3996 @@
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1366">
+<title>盒箱垛关联采集系统 - 2号机</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Microsoft YaHei', '微软雅黑', 'Segoe UI', sans-serif;
+  background: #E9EEF5;
+  width: 1366px;
+  height: 768px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #1F2937;
+}
+
+/* ==================== 菜单栏 ==================== */
+.menu-bar {
+  height: 32px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 24px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 200;
+}
+.menu-item {
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  user-select: none;
+  position: relative;
+}
+.menu-item:hover { background: #f0f4ff; }
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  min-width: 140px;
+  z-index: 1000;
+}
+.menu-item:hover .menu-dropdown { display: block; }
+.menu-dropdown-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-dropdown-item:hover { background: #f0f4ff; color: #2563EB; }
+
+/* ==================== Tab栏 ==================== */
+.tab-bar {
+  height: 44px;
+  background: #E6ECF5;
+  border-bottom: 1px solid #d0d0d0;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.tab-item {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  background: #D7DEE9;
+  user-select: none;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tab-item:hover { background: #C4CFE0; }
+.tab-item.active {
+  background: #2563EB;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ==================== 主内容区 ==================== */
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tab-content { display: none; flex: 1; overflow: hidden; }
+.tab-content.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+/* ==================== 状态栏 ==================== */
+.status-bar {
+  height: 32px;
+  background: #F5F7FA;
+  border-top: 1px solid #D0D0D0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #374151;
+  justify-content: flex-end;
+}
+.activation-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+  font-size: 13px;
+  color: #16A34A;
+  font-weight: 500;
+}
+.activation-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16A34A;
+  flex-shrink: 0;
+}
+
+/* ==================== 通用组件 ==================== */
+.card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid #D9E1EC;
+  padding: 14px 16px;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.help-icon {
+  font-size: 12px;
+  color: #9CA3AF;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #9CA3AF;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  transition: all 0.15s;
+}
+.help-icon:hover { color: #374151; border-color: #374151; }
+
+.btn {
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: #2563EB; color: #fff; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary { background: #6B7280; color: #fff; }
+.btn-secondary:hover { background: #4B5563; }
+.btn-warning { background: #F59E0B; color: #fff; }
+.btn-warning:hover { background: #D97706; }
+.btn-orange { background: #EA580C; color: #fff; }
+.btn-orange:hover { background: #C2410C; }
+.btn-danger { background: #DC2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-outline {
+  background: #fff;
+  border: 1px solid #D1D5DB;
+  color: #374151;
+}
+.btn-outline:hover { background: #F3F4F6; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-green { background: #D1FAE5; color: #065F46; }
+.badge-red { background: #FEE2E2; color: #991B1B; }
+.badge-yellow { background: #FEF3C7; color: #92400E; }
+.badge-blue { background: #DBEAFE; color: #1E40AF; }
+.badge-gray { background: #F3F4F6; color: #6B7280; }
+
+.form-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.form-label { font-size: 14px; color: #374151; font-weight: 600; flex-shrink: 0; text-align: right; }
+.form-label.db { width: 110px; }
+.form-label.code { width: 140px; }
+.form-label.virtual { width: 90px; }
+.form-input.fixed { width: 200px; min-width: 200px; }
+.form-input.fixed-sm { width: 120px; min-width: 120px; }
+.form-input {
+  height: 40px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  color: #1F2937;
+}
+.form-input:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+.form-select {
+  height: 40px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  background: #fff;
+  color: #1F2937;
+}
+.form-textarea {
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  color: #1F2937;
+  resize: none;
+}
+.form-textarea:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+
+/* 表格 */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.data-table th {
+  background: #F3F4F6;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #E5E7EB;
+  color: #374151;
+}
+.data-table tr:hover td { background: #F9FAFB; }
+.data-table .row-even td { background: #FAFAFA; }
+/* 上传统计表格：固定列宽、表头粘顶，确保表头与内容列对齐 */
+.stats-upload-table { table-layout: fixed; }
+.stats-upload-table th { position: sticky; top: 0; z-index: 2; background: #F3F4F6; box-shadow: 0 1px 0 0 #E5E7EB; }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #F1F5F9; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ==================== 弹窗 ==================== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  border: 2px solid #2563EB;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.modal-header {
+  background: #2563EB;
+  color: #fff;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.modal-title { font-size: 18px; font-weight: 700; }
+.modal-close-btn {
+  width: 28px; height: 28px;
+  min-width: 28px; flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close-btn:hover { background: rgba(255,255,255,0.35); }
+.modal-body { flex: 1; overflow-y: auto; padding: 24px; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* 密码弹窗 */
+.pwd-box {
+  background: #fff;
+  border-radius: 12px;
+  width: 380px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  border: 1px solid #D9E1EC;
+}
+.pwd-title { font-size: 18px; font-weight: 700; color: #1F2937; margin-bottom: 20px; text-align: center; }
+.pwd-input {
+  width: 100%; height: 48px;
+  border: 1px solid #D1D5DB; border-radius: 8px;
+  padding: 0 16px; font-size: 18px; font-family: inherit;
+  outline: none; text-align: center; letter-spacing: 4px; margin-bottom: 8px;
+}
+.pwd-input:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+.pwd-error { color: #DC2626; font-size: 13px; text-align: center; min-height: 20px; margin-bottom: 16px; }
+
+/* 确认弹窗 */
+.confirm-box {
+  background: #fff;
+  border-radius: 12px;
+  width: 420px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  border: 1px solid #D9E1EC;
+}
+
+/* ==================== Tab1: 数据采集主界面 ==================== */
+.data-collection-layout {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+/* 左侧 */
+.dc-left { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+
+/* 产品选择区 */
+.product-select-area { padding: 14px 16px; }
+.product-dropdown {
+  width: 100%; height: 40px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' fill='none' stroke-width='2'/%3E%3C/svg%3E") right 12px center no-repeat #fff;
+  appearance: none;
+  outline: none;
+}
+.product-info { font-size: 13px; color: #6B7280; }
+.product-num { font-size: 18px; color: #374151; font-weight: 600; }
+.product-code-row { display: flex; align-items: center; gap: 8px; }
+.product-code-row .product-info { margin-top: 0; }
+.order-row { display: flex; align-items: center; gap: 8px; }
+.order-row > span { flex-shrink: 0; }
+
+.order-input {
+  width: 100%; height: 48px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 18px;
+  font-family: inherit;
+  outline: none;
+  margin-top: 8px;
+}
+.order-input:focus { border-color: #2563EB; }
+
+/* 数量统计 */
+.qty-stats { padding: 14px 16px; }
+.qty-item {
+  text-align: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+.qty-item:last-child { border-bottom: none; }
+.qty-label { font-size: 16px; color: #374151; margin-bottom: 6px; }
+.qty-fraction {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+}
+.qty-num { color: #2563EB; }
+.qty-sep { color: #9CA3AF; font-size: 36px; margin: 0 2px; }
+.qty-total { color: #DC2626; }
+.qty-input {
+  width: 80px;
+  height: 56px;
+  border: 2px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 0 6px;
+  font-size: 42px;
+  font-weight: 700;
+  color: #374151;
+  font-family: inherit;
+  outline: none;
+  text-align: center;
+  background: #FAFAFA;
+  transition: border-color 0.15s;
+  line-height: 1;
+}
+.qty-input:hover { border-color: #93C5FD; }
+.qty-input:focus { border-color: #2563EB; background: #EFF6FF; }
+/* 隐藏数字输入框的上下箭头 */
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button { opacity: 0; width: 0; }
+
+/* 实时上传数据区 - 参考 pen */
+.upload-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #EFF6FF;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.upload-row-top { display: flex; align-items: center; justify-content: space-between; }
+.upload-row-box { font-size: 14px; color: #6B7280; }
+.upload-tag {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid;
+}
+.upload-tag-pending { color: #2563EB; background: #EEF5FF; border-color: #2563EB; }
+.upload-tag-done { color: #059669; background: #ECFDF5; border-color: #059669; }
+
+/* 单位实时统计 - 参考 pen 设计 */
+.qty-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+.qty-stats-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex: 1;
+  min-height: 80px;
+}
+.qty-card {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 100px;
+  min-height: 80px;
+  flex: 1;
+}
+.qty-card-label { font-size: 14px; font-weight: 600; color: #374151; }
+.qty-card-num { font-size: 32px; font-weight: 700; line-height: 1; color: #1F2937; }
+.qty-stats-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  flex-shrink: 0;
+  min-height: 28px;
+}
+.qty-stats-line .label { font-size: 15px; font-weight: 600; color: #4B5563; }
+.qty-stats-line .val { font-size: 18px; font-weight: 600; color: #1F2937; line-height: 1.2; }
+.qty-stats-line .val.red { color: #DC2626; }
+
+/* 中间栏 - 三个独立卡片，间距参考1号机 */
+.dc-mid { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow: hidden; }
+.dc-mid .log-card { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 12px; border: 1px solid #D9E1EC; background: #fff; }
+.log-section { display: flex; flex-direction: column; overflow: hidden; }
+.log-section-header {
+  padding: 8px 14px;
+  background: #F8FBFF;
+  border-bottom: 1px solid #D7E7FF;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.4s;
+}
+.log-section-header.flash-header {
+  animation: headerFlash 0.6s ease-out;
+}
+.log-section-body { flex: 1; overflow-y: auto; padding: 8px 14px; }
+.log-entry {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  border-left: 3px solid transparent;
+}
+.le-data { color: #1F2937; border-color: #D1D5DB; }
+.le-success { color: #16A34A; border-color: #16A34A; background: #F0FDF4; font-weight: 600; }
+.le-warn { color: #92400E; border-color: #F59E0B; background: #FFFBEB; }
+.le-error { color: #DC2626; border-color: #DC2626; background: #FEF2F2; font-weight: 600; }
+.le-info { color: #374151; border-color: #9CA3AF; background: #F9FAFB; }
+.ts { color: #9CA3AF; font-size: 12px; margin-right: 6px; }
+
+/* 日志条目进入动画 */
+@keyframes logSlideIn {
+  0%   { opacity: 0; transform: translateX(-18px) scaleY(0.7); max-height: 0; }
+  60%  { opacity: 1; transform: translateX(3px) scaleY(1.04); max-height: 80px; }
+  100% { opacity: 1; transform: translateX(0) scaleY(1); max-height: 80px; }
+}
+@keyframes logSuccessFlash {
+  0%   { opacity: 0; transform: translateX(-18px); background: #DCFCE7; box-shadow: 0 0 0 2px #22C55E44; }
+  50%  { background: #DCFCE7; box-shadow: 0 0 0 3px #22C55E44; }
+  100% { opacity: 1; transform: translateX(0); background: #F0FDF4; box-shadow: none; }
+}
+@keyframes logErrorFlash {
+  0%   { opacity: 0; transform: translateX(-18px); background: #FEE2E2; box-shadow: 0 0 0 2px #EF444444; }
+  30%  { transform: translateX(4px); box-shadow: 0 0 0 3px #EF444444; }
+  60%  { transform: translateX(-2px); background: #FEE2E2; }
+  100% { opacity: 1; transform: translateX(0); background: #FEF2F2; box-shadow: none; }
+}
+@keyframes headerFlash {
+  0%   { background: #EFF6FF; }
+  50%  { background: #DBEAFE; }
+  100% { background: #F8FBFF; }
+}
+@keyframes alarmPulse {
+  0%   { background: #FEF2F2; }
+  40%  { background: #FEE2E2; }
+  100% { background: #FEF2F2; }
+}
+.log-entry-new       { animation: logSlideIn 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+.log-entry-success   { animation: logSuccessFlash 0.5s ease-out both; }
+.log-entry-error     { animation: logErrorFlash 0.5s ease-out both; }
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50%       { opacity: 0.7; transform: scale(1.3); box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+
+/* 右侧 - 参考 pen 设计 */
+.dc-right { width: 336px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+.dc-right .card { flex: 1; display: flex; flex-direction: column; }
+.ctrl-group { padding: 14px; }
+.ctrl-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.ctrl-help-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: #F3F4F6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px; font-weight: 600; color: #6B7280;
+  cursor: pointer;
+}
+.ctrl-btn-row { display: flex; gap: 12px; margin-bottom: 12px; }
+.ctrl-btn-row:last-child { margin-bottom: 0; }
+.ctrl-btn {
+  flex: 1; height: 40px;
+  border-radius: 8px;
+  font-size: 16px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.ctrl-btn:active { transform: scale(0.97); }
+.ctrl-btn-solid { color: #fff; }
+.ctrl-btn-outline { background: #fff; border: 2px solid; }
+.ctrl-btn-primary { background: #2563EB; color: #fff; }
+.ctrl-btn-primary:hover { background: #1d4ed8; }
+.ctrl-btn-outline-blue { border-color: #2563EB; color: #2563EB; }
+.ctrl-btn-outline-blue:hover { background: #EFF6FF; }
+.ctrl-btn-red { background: #DC2626; color: #fff; }
+.ctrl-btn-red:hover { background: #b91c1c; }
+.ctrl-btn-green { background: #059669; color: #fff; }
+.ctrl-btn-green:hover { background: #047857; }
+.ctrl-btn-outline-red { border-color: #DC2626; color: #DC2626; }
+.ctrl-btn-outline-red:hover { background: #FEF2F2; }
+
+.sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sync-ok { background: #D1FAE5; color: #065F46; }
+.sync-ing { background: #FEF3C7; color: #92400E; animation: pulse 1.5s infinite; }
+.sync-fail { background: #FEE2E2; color: #991B1B; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.reject-count {
+  font-size: 38px;
+  font-weight: 700;
+  color: #DC2626;
+  display: inline-block;
+  line-height: 1;
+}
+
+/* ==================== Tab2: 手工采集 ==================== */
+.manual-layout {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+.manual-left { width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.manual-left .manual-spec-card { flex-shrink: 0; }
+.manual-left .manual-prompt-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.manual-mid { flex: 1; min-width: 400px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.manual-right { width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.manual-right .manual-stats-card { flex-shrink: 0; }
+.manual-right .manual-ctrl-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.radio-group { display: flex; gap: 24px; align-items: center; }
+.radio-item {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 16px; color: #374151;
+}
+.radio-item input[type="radio"] { width: 18px; height: 18px; accent-color: #2563EB; cursor: pointer; }
+
+.count-big {
+  font-size: 56px;
+  font-weight: 700;
+  color: #1F2937;
+  text-align: center;
+  line-height: 1;
+}
+.status-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.light-active { background: #D1FAE5; color: #065F46; }
+.light-next { background: #FEF3C7; color: #92400E; }
+
+/* 手工采集 - 开始采集提示 参考 pen，平铺剩余空间 */
+.prompt-area {
+  background: #fff;
+  border-radius: 0;
+  border: none;
+  padding: 18px 22px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.prompt-main {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+.prompt-codes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 44px;
+  font-weight: 700;
+}
+.code-scan { color: #2563EB; }
+.code-wait { color: #D1D5DB; }
+.code-divider { color: #9CA3AF; font-size: 32px; }
+
+/* 手工采集 - 右侧单位实时统计、任务控制 参考 pen */
+.manual-stats-card { padding: 14px 16px; }
+.manual-stats-row { display: flex; gap: 12px; }
+.manual-qty-card { flex: 1; min-width: 0; }
+.manual-qty-num { font-size: 44px !important; font-weight: 700; line-height: 1; }
+.manual-total-row { margin-top: 12px; padding-top: 12px; border-top: 1px solid #E5E7EB; }
+.manual-total-num { font-size: 48px; font-weight: 700; color: #1F2937; line-height: 1.2; }
+.manual-ctrl-card { padding: 14px 16px; }
+.manual-ctrl-card .card-title { flex-shrink: 0; }
+.manual-ctrl-btns { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+.manual-ctrl-btns .btn { flex: 1; min-width: 0; height: 48px; font-size: 16px; }
+
+/* ==================== Tab3: 码包管理 ==================== */
+.package-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  gap: 10px;
+}
+.toolbar { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #D9E1EC;
+  padding: 10px 14px;
+}
+
+/* ==================== 数据查询 ==================== */
+.query-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  gap: 10px;
+}
+.query-top-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #D9E1EC;
+  padding: 12px 16px;
+}
+.query-status { font-size: 13px; color: #6B7280; margin-left: auto; }
+.query-split {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  overflow: hidden;
+  min-height: 0;
+}
+.query-left {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #D9E1EC;
+}
+.query-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #D9E1EC;
+}
+.query-table-wrap { flex: 1; overflow: auto; }
+
+.query-input-cell { color: #DC2626 !important; font-weight: 600; }
+.reject-problem { color: #DC2626 !important; font-weight: 600; }
+.reject-row { cursor: pointer; }
+.reject-row:hover { background: #FEF2F2; }
+.reject-row.selected { background: #EFF6FF; }
+
+/* ==================== 数据替换 ==================== */
+.replace-layout {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  padding: 16px;
+  overflow: hidden;
+  align-items: flex-start;
+}
+.replace-left { width: 480px; flex-shrink: 0; }
+.replace-right { flex: 1; }
+
+/* ==================== 取消关联 ==================== */
+.cancel-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  gap: 10px;
+}
+.cancel-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.cancel-mode-btn {
+  padding: 9px 28px;
+  border: 1px solid #D1D5DB;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  background: #fff;
+  color: #374151;
+  transition: all 0.15s;
+}
+.cancel-mode-btn:first-child { border-radius: 6px 0 0 6px; }
+.cancel-mode-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.cancel-mode-btn.active { background: #2563EB; color: #fff; border-color: #2563EB; }
+.cancel-body { display: flex; flex: 1; gap: 12px; overflow: hidden; min-height: 0; }
+.cancel-left { width: 600px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0; }
+.cancel-left .card { border-radius: 12px; }
+.cancel-right { flex: 1; min-width: 500px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.cancel-form { display: none; flex-direction: column; gap: 14px; }
+.cancel-form.active { display: flex; }
+.cancel-field-label {
+  font-size: 16px; font-weight: 700; color: #1F2937;
+  margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.cancel-field-label .req { color: #DC2626; }
+.cancel-input {
+  width: 100%; height: 48px;
+  border: 1.5px solid #D1D5DB; border-radius: 8px;
+  padding: 0 14px; font-size: 16px; font-family: inherit;
+  outline: none; transition: border-color 0.15s;
+}
+.cancel-input:focus { border-color: #2563EB; }
+.cancel-warn {
+  background: #FEF2F2; border: 1px solid #FCA5A5;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 15px; font-weight: 700; color: #DC2626;
+  display: flex; align-items: center; gap: 8px;
+}
+.cancel-action-row { display: flex; gap: 12px; align-items: center; }
+/* 识别结果卡片 */
+.cr-item {
+  border-radius: 8px; padding: 12px 14px;
+  margin-bottom: 10px; border: 1px solid #E5E7EB;
+  font-size: 14px; line-height: 1.8;
+}
+.cr-item:last-child { margin-bottom: 0; }
+.cr-ok  { background: #F0FDF4; border-color: #86EFAC; }
+.cr-err { background: #FEF2F2; border-color: #FCA5A5; }
+.cr-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 10px; border-radius: 20px;
+  font-size: 13px; font-weight: 700; margin-right: 6px;
+}
+.cr-badge-ok  { background: #DCFCE7; color: #15803D; }
+.cr-badge-err { background: #FEE2E2; color: #DC2626; }
+.cr-chain { font-size: 13px; color: #6B7280; margin-top: 4px; padding-left: 4px; border-left: 2px solid #D1D5DB; }
+.cr-summary {
+  background: #FEF9C3; border: 1px solid #FDE047;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 14px; font-weight: 700; color: #854D0E;
+  margin-top: 4px;
+}
+/* 取消结果日志 */
+.cancel-log-body { flex: 1; overflow-y: auto; padding: 10px 14px; }
+.cl-entry { font-size: 14px; margin-bottom: 8px; line-height: 1.6; }
+.cl-ok   { color: #15803D; }
+.cl-fail { color: #DC2626; }
+.cl-ts   { color: #9CA3AF; font-size: 12px; margin-right: 6px; }
+/* 批量码列表 */
+.batch-list {
+  border: 1px solid #E5E7EB; border-radius: 8px;
+  max-height: 200px; overflow-y: auto; background: #F9FAFB;
+}
+.batch-list-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 12px; border-bottom: 1px solid #E5E7EB;
+  font-size: 14px; color: #374151;
+}
+.batch-list-item:last-child { border-bottom: none; }
+.batch-del-btn {
+  background: none; border: none; color: #DC2626;
+  cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit;
+}
+.batch-del-btn:hover { text-decoration: underline; }
+
+/* ==================== 生产统计 ==================== */
+.stats-layout {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+.stats-left { width: 30%; min-width: 280px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; }
+.stats-left-card { display: flex; flex-direction: column; gap: 20px; flex: 1; min-height: 0; overflow-y: auto; }
+.stats-left-card .stats-cards-row { margin-top: 0; }
+.stats-cards-row { display: flex; gap: 12px; height: 100px; }
+.stats-cards-row .stat-card { flex: 1; height: 100px; }
+.stats-right { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.stat-card {
+  background: #F9FAFB;
+  border: 2px solid #2563EB;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.stat-card:hover { background: #EFF6FF; border-color: #1D4ED8; }
+.stat-card[title] { cursor: pointer; }
+.stat-card-reject {
+  background: #F9FAFB;
+  border: 2px solid #EF4444;
+  cursor: pointer;
+}
+.stat-card-reject:hover { background: #FEF2F2; border-color: #DC2626; }
+.stat-num-reject { color: #EF4444 !important; text-decoration: underline; text-decoration-color: #EF4444; text-underline-offset: 4px; }
+.stat-card-plain {
+  background: #F9FAFB;
+  border: 1px solid #D1D5DB;
+  cursor: default;
+}
+.stat-card-plain:hover { background: #F9FAFB; border-color: #D1D5DB; }
+.stat-num {
+  font-size: 36px;
+  font-weight: 700;
+  color: #2563EB;
+  text-decoration: underline;
+  line-height: 1;
+}
+.stat-num-plain { color: #1F2937; text-decoration: none; }
+.stat-label { font-size: 18px; color: #6B7280; }
+
+/* ==================== 数据上传 ==================== */
+.upload-layout {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+.upload-left { width: 40%; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.upload-right { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.upload-log {
+  flex: 1;
+  overflow-y: auto;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 12px;
+}
+.ul-entry { font-size: 14px; margin-bottom: 6px; }
+.ul-gray { color: #9CA3AF; }
+.ul-blue { color: #2563EB; }
+.ul-green { color: #16A34A; font-weight: 600; }
+.ul-red { color: #DC2626; font-weight: 600; }
+
+.upload-query-result { font-size: 14px; line-height: 2.2; text-align: left; }
+.upload-query-row { display: flex; align-items: center; gap: 12px; }
+.upload-query-label { width: 90px; flex-shrink: 0; text-align: right; color: #6B7280; }
+
+/* 系统设置 */
+.sys-tab-bar { display: flex; border-bottom: 1px solid #E5E7EB; background: #F9FAFB; padding: 0 16px; }
+.sys-tab-bar-sub { display: none; padding-left: 24px; }
+.sys-tab-bar-sub.visible { display: flex; }
+#sysSubTabsDevice.visible, #sysSubTabsConn.visible, #sysSubTabsBusiness.visible { display: flex; }
+.sys-tab { padding: 10px 18px; font-size: 14px; color: #6B7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.sys-tab.active { color: #2563EB; border-color: #2563EB; font-weight: 600; }
+.sys-tab-panel { display: none; padding: 20px 24px; overflow-y: auto; }
+.sys-tab-panel.active { display: flex; }
+#st-device.sys-tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#st-device > .sys-tab-panel { display: none; }
+#st-device > .sys-tab-panel.active { display: block; }
+#st-io.sys-tab-panel.active, #st-printer.sys-tab-panel.active, #st-alarm.sys-tab-panel.active { display: block; }
+#st-conn.sys-tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#st-conn > .sys-tab-panel { display: none; padding: 20px 24px; }
+#st-conn > .sys-tab-panel.active { display: block; }
+#st-business.sys-tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#st-business > .sys-tab-panel { display: none; padding: 20px 24px; }
+#st-business > .sys-tab-panel.active { display: block; }
+.device-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.device-table th { background: #F3F4F6; padding: 8px 12px; text-align: left; font-weight: 600; color: #374151; border: 1px solid #E5E7EB; }
+.device-table td { padding: 8px 12px; border: 1px solid #E5E7EB; color: #374151; }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 4px; border: none; cursor: pointer; font-family: inherit; }
+.btn-sm-blue { background: #EFF6FF; color: #2563EB; } .btn-sm-blue:hover { background: #DBEAFE; }
+.btn-sm-red { background: #FEF2F2; color: #DC2626; } .btn-sm-red:hover { background: #FEE2E2; }
+.btn-sm-green { background: #F0FDF4; color: #16A34A; } .btn-sm-green:hover { background: #DCFCE7; }
+
+.toggle-track { width: 40px; height: 22px; background: #E5E7EB; border-radius: 11px; position: relative; cursor: pointer; transition: background 0.2s; display: inline-block; }
+.toggle-track.on { background: #2563EB; }
+.toggle-thumb { width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle-track.on .toggle-thumb { transform: translateX(18px); }
+.toggle-track.disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+.page-config-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.page-config-table th { background: #F3F4F6; padding: 10px 14px; text-align: left; font-weight: 600; border: 1px solid #E5E7EB; }
+.page-config-table td { padding: 10px 14px; border: 1px solid #E5E7EB; }
+#st-pages.sys-tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
+
+/* ==================== 操作帮助弹窗 ==================== */
+.help-toc-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.help-toc-item:hover { background: #EFF6FF; color: #2563EB; }
+.help-toc-item.active { background: #EFF6FF; color: #2563EB; border-left-color: #2563EB; font-weight: 600; }
+.help-toc-sub {
+  padding: 5px 16px 5px 28px;
+  font-size: 13px;
+  color: #6B7280;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.help-toc-sub:hover { background: #F0F4FF; color: #2563EB; }
+.help-toc-sub.active { color: #2563EB; font-weight: 600; }
+.help-section { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #E5E7EB; }
+.help-section:last-child { border-bottom: none; }
+.help-h1 {
+  font-size: 20px; font-weight: 700; color: #1F2937;
+  margin-bottom: 16px; padding-bottom: 8px;
+  border-bottom: 2px solid #2563EB;
+}
+.help-h2 {
+  font-size: 16px; font-weight: 700; color: #1F2937;
+  margin: 16px 0 8px;
+}
+.help-step-title {
+  font-size: 15px; font-weight: 700; color: #374151;
+  margin: 12px 0 6px;
+}
+.help-ul, .help-ol {
+  margin: 0 0 8px 20px;
+  color: #374151;
+}
+.help-ul li, .help-ol li { margin-bottom: 4px; }
+.help-warn {
+  color: #DC2626; font-weight: 600;
+  list-style: none !important;
+}
+.help-warn::before { content: ''; }
+.help-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px; margin: 10px 0;
+}
+.help-table th {
+  background: #F3F4F6; padding: 8px 12px;
+  text-align: left; font-weight: 600; color: #374151;
+  border: 1px solid #E5E7EB;
+}
+.help-table td {
+  padding: 8px 12px; border: 1px solid #E5E7EB; color: #374151;
+}
+.help-table tr:nth-child(even) td { background: #FAFAFA; }
+.help-info-box {
+  background: #FFF7ED; border: 1px solid #FCD34D;
+  border-radius: 8px; padding: 14px 16px;
+  margin: 10px 0; color: #92400E; font-size: 14px;
+}
+.help-faq-item {
+  background: #F9FAFB; border: 1px solid #E5E7EB;
+  border-radius: 8px; padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.help-faq-q {
+  font-size: 15px; font-weight: 700; color: #1D4ED8;
+  margin-bottom: 8px;
+}
+.help-faq-a { font-size: 14px; color: #374151; line-height: 1.7; }
+.help-badge-warn {
+  display: inline-flex; align-items: center;
+  background: #FEF3C7; color: #92400E;
+  border-radius: 20px; padding: 2px 10px;
+  font-size: 13px; font-weight: 600;
+  border: 1px solid #FCD34D;
+  margin-left: 8px;
+}
+
+/* 帮助浮层 */
+.help-popup {
+  display: none;
+  position: absolute;
+  background: #fff;
+  border: 1px solid #CCCCCC;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #333;
+  max-width: 350px;
+  z-index: 300;
+  line-height: 1.7;
+}
+.help-popup.show { display: block; }
+
+/* 产品选择弹窗 */
+.product-modal { width: 800px; max-height: 600px; }
+</style>
+</head>
+<body>
+
+<!-- 菜单栏 -->
+<div class="menu-bar">
+  <div class="menu-item">文件(F)<div class="menu-dropdown"><div class="menu-dropdown-item" onclick="confirmExit()">退出软件</div></div></div>
+  <div class="menu-item">配置<div class="menu-dropdown"><div class="menu-dropdown-item" onclick="openSysSettings()">系统设置</div><div class="menu-dropdown-item" onclick="openLicenseInfo2()">许可证信息</div></div></div>
+  <div class="menu-item">数据<div class="menu-dropdown">
+    <div class="menu-dropdown-item" onclick="switchTab('tab-package')">码包管理</div>
+    <div class="menu-dropdown-item" onclick="switchTab('tab-query')">数据查询</div>
+    <div class="menu-dropdown-item" onclick="switchTab('tab-replace')">数据替换</div>
+    <div class="menu-dropdown-item" onclick="switchTab('tab-cancel')">取消关联</div>
+    <div class="menu-dropdown-item" onclick="switchTab('tab-stats')">生产统计</div>
+    <div class="menu-dropdown-item" onclick="switchTab('tab-upload')">数据上传</div>
+    <div class="menu-dropdown-item" onclick="alert('操作日志功能')">操作日志</div>
+  </div></div>
+  <div class="menu-item">帮助(H)<div class="menu-dropdown">
+    <div class="menu-dropdown-item" onclick="openHelpModal()">操作帮助</div>
+    <div class="menu-dropdown-item" onclick="alert('盒箱垛关联采集系统 v1.2\n石湾产线 2号机')">关于系统</div>
+    <div class="menu-dropdown-item" onclick="window.location.href='P01-bottle-box-association.html'">切换至1号机原型</div>
+  </div></div>
+  <div style="margin-left:auto; font-size:13px; color:#6B7280;">盒箱垛关联采集系统 - 2号机</div>
+</div>
+
+<!-- Tab栏 -->
+<div class="tab-bar">
+  <div class="tab-item active" id="tabBtn-collection" onclick="switchTab('tab-collection')">数据采集</div>
+  <div class="tab-item" id="tabBtn-manual" onclick="switchTab('tab-manual')">手工采集</div>
+  <div class="tab-item" id="tabBtn-query" onclick="switchTab('tab-query')">数据查询</div>
+  <div class="tab-item" id="tabBtn-replace" onclick="switchTab('tab-replace')">数据替换</div>
+  <div class="tab-item" id="tabBtn-stats" onclick="switchTab('tab-stats')">生产统计</div>
+  <div class="tab-item" id="tabBtn-package" onclick="switchTab('tab-package')">码包管理</div>
+  <div class="tab-item" id="tabBtn-cancel" onclick="switchTab('tab-cancel')">取消关联</div>
+  <div class="tab-item" id="tabBtn-upload" onclick="switchTab('tab-upload')">数据上传</div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+
+<!-- ===================== Tab1: 数据采集 ===================== -->
+<div class="tab-content active" id="tab-collection">
+  <div class="data-collection-layout">
+
+    <!-- 左侧栏 -->
+    <div class="dc-left">
+      <!-- 当前生产信息（含采集规格设置） -->
+      <div class="card product-select-area">
+        <div class="card-title">当前生产信息</div>
+        <div style="font-size:13px; color:#6B7280; margin-bottom:4px;">选择产品</div>
+        <select class="product-dropdown" id="productSelect" onchange="updateProductInfo()" style="width:100%">
+          <option value="">-- 点击选择产品 --</option>
+          <option value="P001">石湾酒 52度 500ml</option>
+          <option value="P002">石湾酒 38度 500ml</option>
+          <option value="P003">石湾酒 42度 250ml</option>
+          <option value="P004">石湾酒 52度 250ml</option>
+        </select>
+        <div id="productCodeArea" style="display:none; margin-top:8px;" class="product-code-row">
+          <span class="product-info">产品编号</span>
+          <span class="product-num" id="productCodeDisplay">—</span>
+        </div>
+        <div class="order-row" style="margin-top:12px;">
+          <span style="font-size:13px; color:#6B7280;">生产单号</span>
+          <input type="text" class="order-input" id="orderNum" value="20241201001" style="flex:1; min-width:0;">
+        </div>
+        <div style="margin-top:16px; padding-top:12px; border-top:1px solid #E5E7EB;">
+          <div style="font-size:14px; font-weight:600; color:#1F2937; margin-bottom:10px;">采集规格设置</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">1垛</span>
+              <input type="number" id="casePerPallet" value="70" min="1" class="qty-input" title="每垛箱数" style="width:70px; height:44px; font-size:26px;" oninput="document.getElementById('dispCasePerPallet').textContent=this.value||'70'">
+              <span style="font-size:16px;">箱</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">1箱</span>
+              <input type="number" id="boxPerCase" value="4" min="1" class="qty-input" title="每箱盒数" style="width:70px; height:44px; font-size:26px;" oninput="document.getElementById('dispBoxPerCase').textContent=this.value||'4'">
+              <span style="font-size:16px;">盒</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 实时上传数据区 - 参考 pen 设计，列表行+状态标签 -->
+      <div class="card" style="flex:1; padding:14px 16px; min-height:0; display:flex; flex-direction:column;">
+        <div class="card-title">实时上传数据区</div>
+        <div id="uploadDataList" style="flex:1; display:flex; flex-direction:column; gap:8px; overflow-y:auto;">
+          <div class="upload-row">
+            <div class="upload-row-top">
+              <span style="font-size:18px; color:#4B5563;">垛 P20241201001</span>
+              <span class="upload-tag upload-tag-pending">待上传</span>
+            </div>
+            <div class="upload-row-box">70箱</div>
+          </div>
+          <div class="upload-row">
+            <div class="upload-row-top">
+              <span style="font-size:18px; color:#4B5563;">垛 P20241201002</span>
+              <span class="upload-tag upload-tag-done">已上传</span>
+            </div>
+            <div class="upload-row-box">70箱</div>
+          </div>
+          <div class="upload-row">
+            <div class="upload-row-top">
+              <span style="font-size:18px; color:#4B5563;">垛 P20241201003</span>
+              <span class="upload-tag upload-tag-done">已上传</span>
+            </div>
+            <div class="upload-row-box">70箱</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中间栏 - 三个独立卡片，间距参考1号机 -->
+    <div class="dc-mid">
+      <!-- 数据接收区 60% -->
+      <div class="log-card" style="flex:3;">
+        <div class="log-section" style="flex:1;">
+          <div class="log-section-header" id="dataAreaHeader">
+            <span>📡 数据接收区 <span style="font-size:11px; color:#9CA3AF; font-weight:400;">（最新在上）</span></span>
+            <span id="receivingDot" style="display:none; align-items:center; gap:5px; font-size:12px; color:#16A34A; font-weight:500;">
+              <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#22C55E; animation:dotPulse 1s ease-in-out infinite;"></span>接收中
+            </span>
+          </div>
+          <div class="log-section-body" id="dataArea">
+            <div class="log-entry le-success"><span class="ts">10:30:18</span>⚡ 满垛提示 - 垛码：P20241201001 已生成，共3箱，正在上传...</div>
+            <div class="log-entry le-data"><span class="ts">10:30:16</span>装箱完成 - 箱码：20241201C003 已关联4盒，共24瓶</div>
+            <div class="log-entry le-data"><span class="ts">10:30:16</span>盒箱关联 - 盒码：20241201B0304 → 箱码：20241201C003</div>
+            <div class="log-entry le-data"><span class="ts">10:30:14</span>盒箱关联 - 盒码：20241201B0303 → 箱码：20241201C003</div>
+            <div class="log-entry le-data"><span class="ts">10:30:12</span>接收1号机数据 - 瓶盒关联：盒码20241201B0302（6瓶）</div>
+            <div class="log-entry le-data"><span class="ts">10:30:10</span>接收1号机数据 - 瓶盒关联：盒码20241201B0301（6瓶）</div>
+            <div class="log-entry le-success"><span class="ts">10:29:58</span>✓ 垛码：P20241201001 上传成功</div>
+            <div class="log-entry le-data"><span class="ts">10:29:45</span>满垛 - 垛码：P20241201001 已生成（3箱12盒72瓶）</div>
+          </div>
+        </div>
+      </div>
+      <!-- 操作日志 20% -->
+      <div class="log-card" style="flex:1;">
+        <div class="log-section" style="flex:1;">
+          <div class="log-section-header">
+            <span>📋 操作日志 <span style="font-size:11px; color:#9CA3AF; font-weight:400;">（最新在上）</span></span>
+          </div>
+          <div class="log-section-body" id="opLogArea">
+            <div class="log-entry le-info"><span class="ts">10:30:15</span>设备初始化完成，已连接2个设备</div>
+            <div class="log-entry le-info"><span class="ts">10:30:01</span>开始采集 - 产品：石湾酒52度500ml，生产单：20241201001</div>
+            <div class="log-entry le-info"><span class="ts">10:29:55</span>系统启动完成</div>
+          </div>
+        </div>
+      </div>
+      <!-- 报警信息 20% -->
+      <div class="log-card" style="flex:1;">
+        <div class="log-section" style="flex:1;">
+          <div class="log-section-header">
+            <span>⚠ 报警信息 <span style="font-size:11px; color:#9CA3AF; font-weight:400;">（最新在上）</span></span>
+          </div>
+          <div class="log-section-body" id="alarmArea">
+            <div class="log-entry le-error"><span class="ts">10:30:15</span>重码: 20241201V010101 - 已在码包中出现过</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧栏 -->
+    <div class="dc-right">
+      <!-- 单位实时统计 - 参考 pen 设计 -->
+      <div class="card" style="flex:1; padding:14px; min-height:0;">
+        <div class="card-title">单位实时统计</div>
+        <div class="qty-stats-grid">
+          <div class="qty-stats-row">
+            <div class="qty-card"><div class="qty-card-label">当前箱数</div><div class="qty-card-num" style="color:#DC2626;" id="curCases">0</div></div>
+            <div class="qty-card"><div class="qty-card-label">每垛箱数</div><div class="qty-card-num" style="color:#2563EB;" id="dispCasePerPallet">70</div></div>
+          </div>
+          <div class="qty-stats-row">
+            <div class="qty-card"><div class="qty-card-label">当前盒数</div><div class="qty-card-num" id="curBoxes">0</div></div>
+            <div class="qty-card"><div class="qty-card-label">每箱盒数</div><div class="qty-card-num" id="dispBoxPerCase">4</div></div>
+          </div>
+          <div class="qty-stats-line">
+            <span class="label">已生产垛数</span>
+            <span class="val" id="palletCount">0</span>
+          </div>
+          <div class="qty-stats-line">
+            <span class="label">总剔除数</span>
+            <span class="val red" id="rejectCount">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 任务控制 - 参考 pen 设计 -->
+      <div class="card ctrl-group">
+        <div class="ctrl-title-row">
+          <span class="card-title" style="margin-bottom:0;">任务控制</span>
+          <span class="ctrl-help-icon" onclick="showHelp('任务控制', '开始/停止采集：系统检测硬件后开始采集；再次点击停止，未满垛数据保留。\n无需采集码：不生产五码合一产品时开启，所有读码设备不工作。\n关闭报警：重置报警状态，停止声光报警器。\n强制满垛：未达到设定箱数也强制结束当前垛。\n提取工单未成垛：提取之前未完成垛的数据。\n收回剔除：剔除设备未自动收回时收回动作。\n剔除数清零：将总剔除数重置为0。')">?</span>
+        </div>
+        <div class="ctrl-btn-row">
+          <button class="ctrl-btn ctrl-btn-solid ctrl-btn-primary" id="collectBtn" onclick="toggleCollect()">开始采集</button>
+          <button class="ctrl-btn ctrl-btn-outline ctrl-btn-outline-blue" onclick="alert('无需采集码功能已开启')">无需采集码</button>
+        </div>
+        <div class="ctrl-btn-row">
+          <button class="ctrl-btn ctrl-btn-solid ctrl-btn-red" onclick="closeAlarmDC()">关闭报警</button>
+          <button class="ctrl-btn ctrl-btn-solid ctrl-btn-green" onclick="forcePallet()">强制满垛</button>
+        </div>
+        <div class="ctrl-btn-row">
+          <button class="ctrl-btn ctrl-btn-solid ctrl-btn-primary" onclick="extractUnfinished()">提取工单未成垛</button>
+          <button class="ctrl-btn ctrl-btn-outline ctrl-btn-outline-blue" onclick="alert('已发送收回指令到PLC')">收回剔除</button>
+        </div>
+        <div class="ctrl-btn-row">
+          <button class="ctrl-btn ctrl-btn-outline ctrl-btn-outline-red" onclick="resetReject()">剔除数清零</button>
+          <div style="flex:1; min-width:0;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== Tab2: 手工采集 ===================== -->
+<div class="tab-content" id="tab-manual">
+  <div class="manual-layout">
+    <!-- 左侧：采集规格 + 开始采集提示（平铺剩余空间） -->
+    <div class="manual-left">
+      <div class="card manual-spec-card">
+        <div class="card-title">采集规格设置</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">1盒</span>
+          <input type="number" id="manualN" value="6" min="1" max="24" class="qty-input" style="width:70px; height:44px; font-size:26px;" oninput="var e=document.getElementById('manualPerCount');if(e)e.textContent=this.value||'6'">
+          <span style="font-size:16px;">瓶</span>
+        </div>
+      </div>
+      <div class="card manual-prompt-card" style="padding:0; overflow:hidden; display:flex; flex-direction:column; background:#fff;">
+        <div class="card-title" style="padding:14px 16px 0;">开始采集提示</div>
+        <div class="prompt-area">
+          <div class="prompt-main">当前应扫</div>
+        <div class="prompt-codes">
+          <span class="code-scan" id="promptCode1">瓶码</span>
+          <span class="code-divider">/</span>
+          <span class="code-wait" id="promptCode2">盒码</span>
+        </div>
+        </div>
+      </div>
+    </div>
+    <!-- 中间：数据接收区、操作日志 独立卡片，间距12 -->
+    <div class="manual-mid">
+      <div class="card" style="flex:2; padding:0; overflow:hidden; display:flex; flex-direction:column; min-height:0;">
+        <div class="log-section" style="flex:1; min-height:0;">
+          <div class="log-section-header">📡 数据接收区 <span style="font-size:11px; color:#9CA3AF; font-weight:400;">（最新在上）</span></div>
+          <div class="log-section-body" id="manualDataArea">
+            <div class="log-entry le-success"><span class="ts">10:30:38</span>盒码关联成功：20241201002001（6瓶→1盒）</div>
+            <div class="log-entry le-data"><span class="ts">10:30:36</span>扫码完成，请扫盒码</div>
+            <div class="log-entry le-data"><span class="ts">10:30:35</span>瓶码采集：20241201010006</div>
+            <div class="log-entry le-data"><span class="ts">10:30:34</span>瓶码采集：20241201010005</div>
+            <div class="log-entry le-data"><span class="ts">10:30:33</span>瓶码采集：20241201010004</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="flex:1; padding:0; overflow:hidden; display:flex; flex-direction:column; min-height:0;">
+        <div class="log-section" style="flex:1; min-height:0;">
+          <div class="log-section-header">📋 操作日志 <span style="font-size:11px; color:#9CA3AF; font-weight:400;">（最新在上）</span></div>
+          <div class="log-section-body" id="manualOpLogArea">
+            <div class="log-entry le-info"><span class="ts">10:30:40</span>进入手工采集模式 - 关联类型：瓶盒关联</div>
+            <div class="log-entry le-info"><span class="ts">10:30:40</span>设备状态：扫码枪已就绪，等待扫码</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 右侧：单位实时统计 + 任务控制 参考 pen -->
+    <div class="manual-right">
+      <div class="card manual-stats-card">
+        <div class="card-title">单位实时统计</div>
+        <div class="manual-stats-row">
+          <div class="qty-card manual-qty-card"><div class="qty-card-label">当前已读</div><div class="qty-card-num manual-qty-num" style="color:#DC2626;" id="manualCurrentCount">0</div></div>
+          <div class="qty-card manual-qty-card"><div class="qty-card-label">每盒瓶数</div><div class="qty-card-num manual-qty-num" style="color:#2563EB;" id="manualPerCount">6</div></div>
+        </div>
+        <div class="manual-total-row">
+          <div class="qty-card-label">生产总数</div>
+          <div class="manual-total-num" id="manualTotal">0</div>
+        </div>
+      </div>
+      <div class="card ctrl-group manual-ctrl-card">
+        <div class="card-title">任务控制</div>
+        <div class="manual-ctrl-btns">
+          <button class="btn btn-primary" id="manualCollectBtn" onclick="toggleManualCollect()">开始采集</button>
+          <button class="btn btn-secondary" onclick="if(confirm('确认清零？')){document.getElementById('manualTotal').textContent='0';document.getElementById('manualCurrentCount').textContent='0';}">清零</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Tab3: 数据查询 ===================== -->
+<div class="tab-content" id="tab-query">
+  <div class="query-layout">
+    <div class="query-top-bar">
+      <input type="text" class="form-input" id="queryInput" value="20241201C001" placeholder="如：20241201C001、20241201V010101、P20241201001" style="flex:1; min-width:200px;" onkeydown="if(event.key==='Enter')doQuery()">
+      <button class="btn btn-primary" style="height:40px; padding:0 20px; font-size:14px;" onclick="doQuery()">查询</button>
+      <button class="btn btn-outline" style="height:40px; padding:0 16px; font-size:14px;" onclick="clearQuery()">清空</button>
+      <span class="help-icon" onclick="showQueryHelp()" style="width:24px;height:24px;font-size:14px;">?</span>
+      <span class="query-status" id="queryStatus">未查询</span>
+    </div>
+
+    <div class="query-split" id="querySplit" style="display:none;">
+      <div class="query-left">
+        <div style="padding:12px 16px; border-bottom:1px solid #E5E7EB; font-weight:600; font-size:15px;">码关联信息</div>
+        <div style="padding:8px 16px; font-size:13px; color:#6B7280;" id="queryCount">已查询到 0 条码信息</div>
+        <div class="query-table-wrap">
+          <table class="data-table" id="queryTable">
+            <thead><tr><th style="width:50px;">序号</th><th>第一层(瓶码)</th><th>第二层(盒码)</th><th>第三层(箱码)</th><th>第四层(垛码)</th></tr></thead>
+            <tbody id="queryTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="query-right">
+        <div style="padding:12px 16px; border-bottom:1px solid #E5E7EB; font-weight:600; font-size:15px;">具体信息</div>
+        <div style="flex:1; padding:16px; overflow-y:auto; color:#9CA3AF; font-size:14px;" id="queryDetail">
+          请点击左侧记录查看详细信息
+        </div>
+      </div>
+    </div>
+
+    <div id="queryEmpty" style="flex:1; display:flex; align-items:center; justify-content:center; color:#9CA3AF; font-size:15px;">
+      <div style="text-align:center;"><div style="font-size:48px; margin-bottom:12px;">🔍</div>请输入码进行查询</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Tab4: 数据替换 ===================== -->
+<div class="tab-content" id="tab-replace">
+  <div class="replace-layout">
+    <div class="replace-left">
+      <div class="card">
+        <div class="card-title">码替换</div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:14px; font-weight:600; color:#374151; margin-bottom:6px;">* 原码 <span class="help-icon" onclick="showHelp('原码说明','请输入需要替换的原码，该码必须已在系统中存在关联关系')">?</span></div>
+          <input type="text" class="form-input" id="origCode" placeholder="如：20241201V010101（待替换的码，需已在系统中）" value="20241201V010101" style="width:100%;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:14px; font-weight:600; color:#374151; margin-bottom:6px;">* 新码 <span class="help-icon" onclick="showHelp('新码说明','新码必须在已导入的码包范围内，且未被使用过（系统中不存在该码的关联关系）')">?</span></div>
+          <input type="text" class="form-input" id="newCode" placeholder="如：20241201V010101N（替换后的码，需在码包内且未使用）" value="20241201V010101N" style="width:100%;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:14px; font-weight:600; color:#374151; margin-bottom:6px;">替换原因</div>
+          <textarea class="form-textarea" id="replaceReason" placeholder="请输入替换原因（如：码损坏、码错误等）" style="width:100%; height:60px;"></textarea>
+        </div>
+        <div style="background:#FEF2F2; border:1px solid #FCA5A5; border-radius:6px; padding:10px 14px; margin-bottom:16px; font-size:14px; color:#DC2626; font-weight:600;">
+          ⚠ 替换操作不可恢复，请确认码值无误后再执行替换。
+        </div>
+        <div style="display:flex; gap:12px;">
+          <button class="btn btn-secondary" style="height:48px; width:80px; font-size:15px;" onclick="clearReplace()">清空</button>
+          <button class="btn btn-primary" style="height:48px; flex:1; font-size:15px;" onclick="openReplaceConfirm()">确认替换</button>
+        </div>
+      </div>
+    </div>
+    <div class="replace-right">
+      <div class="card" style="height:100%; display:flex; flex-direction:column;">
+        <div class="card-title">替换结果</div>
+        <div style="flex:1; background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px; overflow-y:auto; padding:12px;" id="replaceResultArea">
+          <div style="color:#9CA3AF; text-align:center; padding:40px 0; font-size:15px;">暂无替换记录</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Tab5: 生产统计 ===================== -->
+<div class="tab-content" id="tab-stats">
+  <div class="stats-layout">
+    <div class="stats-left">
+      <div class="card stats-left-card">
+        <div class="card-title">生产统计</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+          <span style="font-size:14px; color:#374151; margin-right:4px;">日期:</span>
+          <input type="date" class="form-input" style="flex:1; min-width:120px; height:40px;" value="2024-12-01">
+          <span style="color:#9CA3AF;">~</span>
+          <input type="date" class="form-input" style="flex:1; min-width:120px; height:40px;" value="2024-12-31">
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="font-size:14px; color:#374151; white-space:nowrap;">生产单号:</span>
+          <input type="text" class="form-input" placeholder="请输入生产单号" style="flex:1; height:40px;">
+        </div>
+        <button class="btn btn-primary" style="width:100%; height:48px; font-size:15px;" onclick="doStatsQuery()">查询</button>
+        <div class="stats-cards-row">
+          <div class="stat-card" onclick="openPalletList()" title="点击查看垛码列表">
+            <div class="stat-label">垛数</div>
+            <div class="stat-num" id="statPallet">10</div>
+          </div>
+          <div class="stat-card stat-card-plain">
+            <div class="stat-label">箱数</div>
+            <div class="stat-num stat-num-plain" id="statCase">30</div>
+          </div>
+        </div>
+        <div class="stats-cards-row">
+          <div class="stat-card stat-card-plain">
+            <div class="stat-label">盒数</div>
+            <div class="stat-num stat-num-plain" id="statBox">120</div>
+          </div>
+          <div class="stat-card stat-card-reject" onclick="openRejectList()" title="点击查看剔除记录">
+            <div class="stat-label">剔除数</div>
+            <div class="stat-num stat-num-reject" id="statReject">3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stats-right">
+      <div class="card" style="flex-shrink:0; padding:12px 16px;">
+        <div class="card-title">上传统计</div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <span style="font-size:13px; color:#374151;">日期：</span>
+          <input type="date" class="form-input" style="width:140px;" value="2024-12-01">
+          <span style="font-size:13px; color:#374151;">~</span>
+          <input type="date" class="form-input" style="width:140px;" value="2024-12-31">
+          <span style="font-size:13px; color:#374151;">生产单号：</span>
+          <input type="text" class="form-input" placeholder="请输入生产单号" style="width:120px;">
+          <span style="font-size:13px; color:#374151;">状态：</span>
+          <select class="form-select" style="width:100px;"><option>全部</option><option>成功</option><option>异常</option></select>
+          <button class="btn btn-primary" style="height:40px; padding:0 20px; font-size:14px;">查询</button>
+        </div>
+      </div>
+      <div class="card" style="flex:1; padding:0; overflow:hidden; display:flex; flex-direction:column;">
+        <div style="flex:1; overflow-y:auto; min-height:0;">
+          <table class="data-table stats-upload-table">
+            <colgroup>
+              <col style="width:150px">
+              <col style="width:80px">
+              <col style="width:150px">
+              <col style="width:200px">
+              <col style="width:80px">
+              <col>
+            </colgroup>
+            <thead>
+              <tr>
+                <th>垛码</th>
+                <th>箱数</th>
+                <th>生产单号</th>
+                <th>上传时间</th>
+                <th>状态</th>
+                <th>异常原因</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>P20241201001</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:00:15</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
+              <tr class="row-even"><td>P20241201002</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:05:22</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
+              <tr><td>P20241201003</td><td>70</td><td>PO202412018711</td><td>2024-12-01 11:10:18</td><td><span class="badge badge-red">异常</span></td><td>盒码B302少2个瓶码</td></tr>
+              <tr class="row-even"><td>P20241201004</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:15:33</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
+              <tr><td>P20241201005</td><td>70</td><td>PO202412018712</td><td>2024-12-01 11:20:47</td><td><span class="badge badge-red">异常</span></td><td>网络超时</td></tr>
+              <tr class="row-even"><td>P20241201006</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:25:12</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
+              <tr><td>P20241201007</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:30:28</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
+              <tr class="row-even"><td>P20241201008</td><td>70</td><td>PO202412018713</td><td>2024-12-01 11:35:56</td><td><span class="badge badge-red">异常</span></td><td>箱码X008盒码B402重复</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Tab6: 码包管理 ===================== -->
+<div class="tab-content" id="tab-package">
+  <div class="package-layout">
+    <div class="toolbar">
+      <button class="btn btn-primary" style="height:40px; padding:0 20px; font-size:14px;" onclick="alert('正在从在线源拉取码包...')">在线更新</button>
+      <button class="btn btn-secondary" style="height:40px; padding:0 20px; font-size:14px;" onclick="openPackageImport()">本地导入</button>
+      <span class="ctrl-help-icon" style="margin-left:4px;" onclick="showPackageHelp()" title="码包导入说明">?</span>
+    </div>
+    <div class="filter-bar">
+      <span style="font-size:13px; color:#374151; font-weight:600;">关键词：</span>
+      <input type="text" class="form-input" placeholder="模糊匹配码包名称..." style="width:180px;">
+      <span style="font-size:13px; color:#374151; font-weight:600;">导入时间：</span>
+      <input type="date" class="form-input" style="width:130px;" value="2024-12-01">
+      <span style="color:#9CA3AF;">~</span>
+      <input type="date" class="form-input" style="width:130px;" value="2024-12-31">
+      <span style="font-size:13px; color:#374151; font-weight:600;">导入方式：</span>
+      <select class="form-select" style="width:90px;"><option>全部</option><option>在线</option><option>本地</option></select>
+      <span style="font-size:13px; color:#374151; font-weight:600;">状态：</span>
+      <select class="form-select" style="width:80px;"><option>全部</option><option>正常</option><option>已删除</option></select>
+      <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px;">搜索</button>
+      <button class="btn btn-outline" style="height:36px; padding:0 16px; font-size:13px;">重置</button>
+    </div>
+    <div class="card" style="flex:1; padding:0; overflow:hidden; display:flex; flex-direction:column;">
+      <div style="flex:1; overflow-y:auto;">
+        <table class="data-table" style="table-layout:fixed; width:100%;">
+          <colgroup>
+            <col style="width:120px;">
+            <col style="width:180px;">
+            <col style="width:160px;">
+            <col style="width:90px;">
+            <col style="width:120px;">
+            <col style="width:80px;">
+            <col style="width:120px;">
+            <col style="width:120px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="position:sticky;top:0;z-index:2;">码包类型</th>
+              <th style="position:sticky;top:0;z-index:2;">码包名称</th>
+              <th style="position:sticky;top:0;z-index:2;">导入时间</th>
+              <th style="position:sticky;top:0;z-index:2;">导入方式</th>
+              <th style="position:sticky;top:0;z-index:2;">码包数量（去重）</th>
+              <th style="position:sticky;top:0;z-index:2;">状态</th>
+              <th style="position:sticky;top:0;z-index:2;">备注</th>
+              <th style="position:sticky;top:0;z-index:2;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>盖外码小标</td><td>瓶码包01</td><td>2024-12-01 10:00:00</td><td>在线</td><td>10,000</td>
+              <td><span class="badge badge-green">正常</span></td><td>石湾批次1</td>
+              <td><button class="btn-sm btn-sm-blue" onclick="viewPackage('瓶码包01')">查看</button> <button class="btn-sm btn-sm-red" onclick="tryDeletePackage('瓶码包01')">删除</button></td>
+            </tr>
+            <tr class="row-even">
+              <td>箱外码大标</td><td>箱码包01</td><td>2024-12-01 09:00:00</td><td>本地</td><td>5,000</td>
+              <td><span class="badge badge-green">正常</span></td><td>石湾批次1</td>
+              <td><button class="btn-sm btn-sm-blue" onclick="viewPackage('箱码包01')">查看</button> <button class="btn-sm btn-sm-red" onclick="tryDeletePackage('箱码包01')">删除</button></td>
+            </tr>
+            <tr>
+              <td>盒外码中标</td><td>盒码包01</td><td>2024-11-30 15:30:00</td><td>在线</td><td>8,000</td>
+              <td><span class="badge badge-green">正常</span></td><td>昨日批次</td>
+              <td><button class="btn-sm btn-sm-blue" onclick="viewPackage('盒码包01')">查看</button> <button class="btn-sm btn-sm-red" onclick="tryDeletePackage('盒码包01')">删除</button></td>
+            </tr>
+            <tr class="row-even">
+              <td>盖外码小标</td><td>瓶码包20241130</td><td>2024-11-30 08:00:00</td><td>本地</td><td>200</td>
+              <td><span class="badge badge-gray">已删除</span></td><td>旧批次</td>
+              <td><button class="btn-sm btn-sm-blue" onclick="viewPackage('瓶码包20241130')">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:10px 16px; border-top:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between; font-size:14px; color:#374151; flex-shrink:0;">
+        <span>共 4 条</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;">上一页</button>
+          <span>第 1 页</span>
+          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;">下一页</button>
+          <select class="form-select" style="width:80px; height:32px; font-size:13px;"><option>20条</option><option>50条</option><option>100条</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Tab7: 取消关联 ===================== -->
+<div class="tab-content" id="tab-cancel">
+  <div class="cancel-layout">
+
+    <!-- 模式切换 -->
+    <div class="cancel-mode-bar" style="flex-shrink:0;">
+      <button class="cancel-mode-btn active" id="cancelSingle" onclick="switchCancelMode('single')">单码取消</button>
+      <button class="cancel-mode-btn" id="cancelBatch" onclick="switchCancelMode('batch')">多码取消</button>
+      <span class="help-icon" style="margin-left:8px;" onclick="showHelp('取消关联','单码模式：扫1个下级码（瓶/盒），子查父找上级，取消上级单元及其下全部；不支持箱码/垛码。有上级时需先逐级取消。\n多码模式：输入盒/箱/垛码加入列表，可添加多个、支持混合层级；直接指定要取消的单元，按垛→箱→盒顺序执行。\n通用：取消顺序垛→箱→盒→瓶；已上传须先取消云端再取消本地；操作不可恢复，需密码123456确认。')">?</span>
+    </div>
+
+    <!-- 主体：左侧表单 + 右侧结果 -->
+    <div class="cancel-body">
+
+      <!-- 左侧：表单区（两种模式切换） -->
+      <div class="cancel-left">
+
+        <!-- 单码取消表单 -->
+        <div class="card cancel-form active" id="cancelSingleContent" style="padding:20px;">
+          <div style="font-size:20px; font-weight:700; color:#1F2937; margin-bottom:18px;">单码取消</div>
+
+          <div>
+            <div class="cancel-field-label"><span class="req">*</span> 码（瓶/盒）</div>
+            <input type="text" class="cancel-input" id="code1" placeholder="请输入或扫描瓶码/盒码" value="20241201V010101">
+          </div>
+
+          <div>
+            <button class="btn btn-primary" style="height:48px; width:100px; font-size:16px; font-weight:700;" onclick="doRecognize()">识别</button>
+          </div>
+
+          <div class="cancel-warn">⚠ 操作不可恢复，请确认后执行。</div>
+
+          <div class="cancel-action-row">
+            <button class="btn btn-secondary" style="height:48px; width:80px; font-size:16px;" onclick="clearCancel()">清空</button>
+            <button class="btn btn-danger" style="height:48px; flex:1; font-size:16px; font-weight:700;" id="confirmCancelBtn" disabled="" onclick="openCancelConfirm('single')">确认取消关联</button>
+          </div>
+          <div id="cancelBtnHint" style="font-size:13px; color:#9CA3AF; display:none;">⚠ 有上级关联，请先从垛开始逐级解除</div>
+        </div>
+
+        <!-- 多码取消表单 -->
+        <div class="card cancel-form" id="cancelBatchContent" style="padding:20px;">
+          <div style="font-size:20px; font-weight:700; color:#1F2937; margin-bottom:18px;">多码取消</div>
+
+          <div>
+            <div class="cancel-field-label"><span class="req">*</span> 盒/箱/垛码</div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" class="cancel-input" id="batchCode" value="20241201C001" placeholder="盒码、箱码或垛码（垛码为虚拟，可从数据查询等界面复制）" style="flex:1;">
+              <button class="btn btn-primary" style="height:48px; width:80px; font-size:16px; font-weight:700;" onclick="addBatchCode()">添加</button>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:16px; font-weight:700; color:#1F2937; margin-bottom:8px;">已添加的码列表</div>
+            <div class="batch-list" id="batchCodeList">
+              <div style="color:#9CA3AF; font-size:14px; text-align:center; padding:20px 0;">暂无添加</div>
+            </div>
+          </div>
+
+          <div>
+            <button class="btn btn-primary" style="height:48px; width:100px; font-size:16px; font-weight:700;" onclick="doBatchRecognize()">识别</button>
+          </div>
+
+          <div class="cancel-warn">⚠ 操作不可恢复，请确认后执行。</div>
+
+          <div class="cancel-action-row">
+            <button class="btn btn-secondary" style="height:48px; width:80px; font-size:16px;" onclick="clearBatch()">清空</button>
+            <button class="btn btn-danger" style="height:48px; flex:1; font-size:15px; font-weight:700;" onclick="openCancelConfirm('batch')">确认取消关联</button>
+          </div>
+        </div>
+
+      </div><!-- /cancel-left -->
+
+      <!-- 右侧：识别结果（上）+ 取消结果（下）共用 -->
+      <div class="cancel-right">
+
+        <!-- 识别结果 -->
+        <div class="card" style="flex:1; display:flex; flex-direction:column; overflow:hidden; padding:0; min-height:0;">
+          <div class="log-section-header" style="border-radius:12px 12px 0 0; font-size:15px;">
+            <span>识别结果</span>
+            <span id="recognizeHint" style="font-size:12px; color:#9CA3AF; font-weight:400;">识别后将在此显示</span>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:14px;" id="recognizeResult">
+            <div style="color:#9CA3AF; font-size:15px; text-align:center; padding-top:60px;">请在左侧输入码值并点击识别</div>
+          </div>
+        </div>
+
+        <!-- 取消结果 -->
+        <div class="card" style="height:220px; display:flex; flex-direction:column; overflow:hidden; padding:0; flex-shrink:0;">
+          <div class="log-section-header" style="border-radius:12px 12px 0 0; font-size:15px;">
+            <span>取消结果</span>
+            <button style="background:none;border:none;font-size:12px;color:#9CA3AF;cursor:pointer;font-family:inherit;" onclick="document.getElementById('cancelResultLog').innerHTML='&lt;div style=\'color:#9CA3AF;font-size:14px;text-align:center;padding:20px;\'&gt;暂无取消关联记录&lt;/div&gt;'">清空记录</button>
+          </div>
+          <div class="cancel-log-body" id="cancelResultLog">
+            <div style="color:#9CA3AF; font-size:14px; text-align:center; padding:20px;">暂无取消关联记录</div>
+          </div>
+        </div>
+
+      </div><!-- /cancel-right -->
+    </div><!-- /cancel-body -->
+  </div>
+</div>
+
+<!-- ===================== Tab8: 数据上传 ===================== -->
+<div class="tab-content" id="tab-upload">
+  <div class="upload-layout">
+    <div class="upload-left">
+      <div class="card" style="flex-shrink:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" style="height:48px; font-size:15px; width:120px;" onclick="doManualUpload()">手动上传</button>
+        <span class="help-icon" style="margin-left:4px;" onclick="showHelp('手动上传','手动上传：批量上传所有未上传的垛数据。')">?</span>
+      </div>
+      <div class="card" style="flex:1; padding:0; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="log-section-header" style="border-radius:12px 12px 0 0;">
+          上传信息（最新在上）
+        </div>
+        <div class="upload-log" id="uploadLogArea">
+          <div class="ul-entry ul-green"><span class="ts">14:35:20</span>垛码 P20241201005 70箱 上传成功</div>
+          <div class="ul-entry ul-blue"><span class="ts">14:35:18</span>垛码 P20241201005 70箱 上传中...</div>
+          <div class="ul-entry ul-gray"><span class="ts">14:35:15</span>垛码 P20241201005 70箱 开始上传</div>
+          <div class="ul-entry ul-red"><span class="ts">14:30:22</span>垛码 P20241201004 70箱 上传失败，网络超时</div>
+          <div class="ul-entry ul-blue"><span class="ts">14:30:21</span>垛码 P20241201004 70箱 上传中...</div>
+          <div class="ul-entry ul-gray"><span class="ts">14:30:20</span>垛码 P20241201004 70箱 开始上传</div>
+          <div class="ul-entry ul-green"><span class="ts">14:25:10</span>垛码 P20241201003 70箱 上传成功</div>
+          <div class="ul-entry ul-blue"><span class="ts">14:25:08</span>垛码 P20241201003 70箱 上传中...</div>
+          <div class="ul-entry ul-gray"><span class="ts">14:25:05</span>垛码 P20241201003 70箱 开始上传</div>
+        </div>
+      </div>
+    </div>
+    <div class="upload-right">
+      <div class="card" style="flex-shrink:0;">
+        <div class="card-title">垛码查询与状态管理</div>
+        <input type="text" class="form-input" id="uploadQueryCode" placeholder="如：P20241201001" style="width:100%; margin-bottom:10px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-primary" style="height:48px; padding:0 16px; font-size:14px;" onclick="queryUploadStatus()">查询状态</button>
+          <button class="btn btn-outline" style="height:48px; padding:0 14px; font-size:14px;" onclick="setNotUploaded()">设为未上传</button>
+          <button class="btn btn-outline" style="height:48px; padding:0 14px; font-size:14px;" onclick="setUploaded()">设为已上传</button>
+          <span class="help-icon" style="width:22px;height:22px;font-size:13px;" onclick="showHelp('状态管理', '查询状态：查询指定垛码的上传状态详情\n设为未上传：将垛码状态重置为未上传，用于数据修复后重新补传\n设为已上传：手动标记为已上传，避免系统重复上传此垛')">?</span>
+        </div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div id="uploadQueryResult" style="color:#9CA3AF; font-size:14px; text-align:center; padding:40px 0;">请输入垛码并点击查询状态</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+
+<!-- 状态栏 -->
+<div class="status-bar">
+  <!-- <div style="display:flex; align-items:center; gap:10px;">
+    <span style="font-size:13px; color:#6B7280;">1号机数据同步：</span>
+    <span class="sync-indicator sync-ok" id="syncStatus"><span>●</span> 已同步</span>
+  </div> -->
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span id="activationStatus2" class="activation-tag" style="display:none;"><span class="activation-tag-dot"></span>授权剩余: <span id="activationDays2">0</span>天</span>
+    <span id="currentTime2">2026-03-10 15:45:33</span>
+  </div>
+</div>
+
+<!-- 未激活弹窗（样式参考P01） -->
+<div class="modal-overlay" id="unactivatedOverlay2">
+  <div class="modal-box activation-modal" style="width:480px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">软件未激活</span>
+      <button class="modal-close-btn" onclick="closeUnactivated2()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <div style="text-align:center; margin-bottom:20px;">
+        <span style="font-size:48px;">🏭</span>
+        <div style="font-size:18px; font-weight:700; color:#1F2937; margin-top:12px;">软件未激活</div>
+      </div>
+      <div style="font-size:14px; color:#374151; line-height:1.8; margin-bottom:20px;">
+        请联系米多专员获取许可证：<br>
+        · 正式许可：用于正式生产<br>
+        · 试用许可：用于产线调试（每次15天）<br>
+        <span style="color:#6B7280;">请联系米多专员或拨打 <a href="tel:15917372153" style="color:#2563EB;">15917372153</a></span>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button class="btn btn-secondary" style="height:44px; padding:0 24px; min-width:90px;" onclick="closeUnactivated2()">退出</button>
+        <button class="btn btn-primary" style="height:44px; padding:0 24px; min-width:90px;" onclick="openActivationWizard2()">激活</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 离线激活向导（样式参考P01） -->
+<div class="modal-overlay" id="activationWizardOverlay2">
+  <div class="modal-box activation-modal" style="width:520px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">离线激活 - 步骤 <span id="activationStepNum2">1</span>/2</span>
+      <button class="modal-close-btn" onclick="closeActivationWizard2()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <div style="display:flex; gap:8px; margin-bottom:24px;">
+        <span id="actStep1_2" style="flex:1; padding:8px; border-radius:8px; background:#E0E7FF; color:#3730A3; font-weight:600; text-align:center;">1. 导出设备文件</span>
+        <span id="actStep2_2" style="flex:1; padding:8px; border-radius:8px; background:#E5E7EB; color:#6B7280; text-align:center;">2. 导入许可证</span>
+      </div>
+      <div id="activationStep1Content2">
+        <div style="font-size:16px; font-weight:600; margin-bottom:12px;">导出设备请求文件</div>
+        <p style="font-size:14px; color:#6B7280; margin-bottom:16px;">将生成的文件发送给米多客服</p>
+        <div style="font-size:14px; margin-bottom:8px;">设备ID <code style="background:#F3F4F6; padding:2px 8px; border-radius:4px;">a3b2****o5p6</code></div>
+        <button class="btn btn-primary" style="margin-bottom:20px; height:44px; padding:0 24px; white-space:nowrap; min-width:220px;" onclick="doExportDevice2()">📥 导出设备请求文件</button>
+      </div>
+      <div id="activationStep2Content2" style="display:none;">
+        <div style="font-size:16px; font-weight:600; margin-bottom:12px;">导入许可证文件</div>
+        <p style="font-size:14px; color:#6B7280; margin-bottom:16px;">导入从客服处获取的许可证文件</p>
+        <div id="licenseDropZone2" style="border:2px dashed #D1D5DB; border-radius:12px; padding:32px; text-align:center; cursor:pointer; background:#F9FAFB; margin-bottom:16px;" onclick="document.getElementById('licenseFileInput2').click()">
+          <span id="licenseFileHint2">📂 点击选择或拖拽文件到此处</span><br>
+          <span style="font-size:12px; color:#9CA3AF;">支持 .lic 格式文件</span>
+        </div>
+        <input type="file" id="licenseFileInput2" accept=".lic" style="display:none;" onchange="onLicenseFileSelect2(this)">
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button class="btn btn-secondary" id="actPrevBtn2" style="display:none; height:44px; padding:0 24px; min-width:110px;" onclick="activationPrevStep2()">← 上一步</button>
+        <button class="btn btn-primary" id="actNextBtn2" style="height:44px; padding:0 24px; min-width:110px;" onclick="activationNextStep2()">下一步 →</button>
+        <button class="btn btn-primary" id="actConfirmBtn2" style="display:none; height:44px; padding:0 24px; min-width:110px;" onclick="doActivate2()">确认激活</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 激活成功（样式参考P01） -->
+<div class="modal-overlay" id="activationSuccessOverlay2">
+  <div class="modal-box activation-modal" style="width:420px;" onclick="event.stopPropagation()">
+    <div class="modal-body" style="padding:32px; text-align:center;">
+      <span style="font-size:64px;">✓</span>
+      <div style="font-size:20px; font-weight:700; color:#16A34A; margin:16px 0;">激活成功！</div>
+      <div style="font-size:14px; color:#6B7280; margin-bottom:24px;">
+        激活时间 2025-12-05<br>到期时间 2026-12-05<br>有效期 365天
+      </div>
+      <button class="btn btn-primary" style="width:100%; height:44px;" onclick="closeActivationSuccess2()">开始使用</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 弹窗区域 ==================== -->
+
+<!-- 操作帮助弹窗 -->
+<div class="modal-overlay" id="helpOverlay" onclick="if(event.target===this)closeHelpModal()">
+  <div class="modal-box" style="width:900px; height:80vh; display:flex; flex-direction:column;">
+    <div class="modal-header">
+      <span class="modal-title">📖 操作帮助</span>
+      <button class="modal-close-btn" onclick="closeHelpModal()">✕</button>
+    </div>
+    <div style="flex:1; display:flex; overflow:hidden; min-height:0;">
+      <!-- 左侧目录 -->
+      <div id="helpToc" style="width:180px; flex-shrink:0; border-right:1px solid #E5E7EB; overflow-y:auto; padding:16px 0; background:#F9FAFB;">
+        <div style="font-size:12px; color:#9CA3AF; font-weight:700; padding:0 16px 8px; letter-spacing:1px;">目录</div>
+        <div class="help-toc-item" onclick="scrollHelpTo('h-intro')">一、系统简介</div>
+        <div class="help-toc-item" onclick="scrollHelpTo('h-m1')">二、1号机操作</div>
+        <div class="help-toc-item" onclick="scrollHelpTo('h-m2')">三、2号机操作</div>
+        <div class="help-toc-item" onclick="scrollHelpTo('h-funcs')">四、各功能说明</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-manual')">↳ 手工采集</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-package')">↳ 码包管理</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-query')">↳ 数据查询</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-replace')">↳ 数据替换</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-cancel')">↳ 取消关联</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-stats')">↳ 生产统计</div>
+        <div class="help-toc-sub" onclick="scrollHelpTo('h-upload')">↳ 数据上传</div>
+        <div class="help-toc-item" onclick="scrollHelpTo('h-faq')">五、常见问题</div>
+        <div class="help-toc-item" onclick="scrollHelpTo('h-notes')">六、注意事项</div>
+      </div>
+      <!-- 右侧正文 -->
+      <div id="helpContent" style="flex:1; overflow-y:auto; padding:28px 32px; font-size:15px; line-height:1.8; color:#1F2937;">
+
+        <div class="help-section" id="h-intro">
+          <div class="help-h1">一、系统简介</div>
+          <div class="help-h2">1.1 系统组成</div>
+          <p>本系统采用<strong>四级关联模式</strong>（瓶-盒-箱-垛），由两个独立软件组成：</p>
+          <ul class="help-ul">
+            <li><strong>1号机（瓶盒关联软件）</strong>：负责瓶码和盒码的采集关联，数据实时同步至2号机</li>
+            <li><strong>2号机（盒箱垛关联软件）</strong>：负责盒箱垛关联采集、数据管理和数据上传</li>
+          </ul>
+          <div class="help-h2">1.2 包装规格</div>
+          <p style="color:#6B7280; font-size:13px;">默认值，可在系统设置中配置，勿随意修改</p>
+          <table class="help-table">
+            <thead><tr><th>层级</th><th>关系</th></tr></thead>
+            <tbody>
+              <tr><td>1盒</td><td>= 6瓶</td></tr>
+              <tr><td>1箱</td><td>= 4盒（24瓶）</td></tr>
+              <tr><td>1垛</td><td>= 70箱（280盒，1680瓶）</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help-section" id="h-m1">
+          <div class="help-h1">二、1号机操作指南（瓶盒关联软件）</div>
+          <div class="help-h2">2.1 日常操作流程</div>
+          <div class="help-step-title">步骤1：确认采集规格</div>
+          <ul class="help-ul">
+            <li>在左侧「采集规格设置」区域，确认「1盒 6瓶」设置正确（6可修改，默认6瓶）</li>
+            <li class="help-warn">⚠ 开始采集后不可修改</li>
+          </ul>
+          <div class="help-step-title">步骤2：开始采集</div>
+          <ol class="help-ol">
+            <li>点击「开始采集」按钮</li>
+            <li>系统自动检测设备状态（瓶1读码器、瓶2读码器、盒读码器）</li>
+            <li>检测通过后开始采集；按钮变为「停止采集」</li>
+          </ol>
+          <div class="help-step-title">步骤3：监控采集过程</div>
+          <ul class="help-ul">
+            <li><strong>右侧 - 数据接收区</strong>：盒码、瓶码及关联结果统一展示，时间+具体信息每行一条；绿色=关联成功，红色=关联失败或异常；黑色=正常码，红色=重码/错码（系统会标记剔除，产线正常移动，下游按箱剔除）</li>
+            <li><strong>左侧 - 单位实时统计</strong>：「合计瓶数」「当前盒数」实时更新（文字在上、数字在下）</li>
+          </ul>
+          <div class="help-step-title">步骤4：停止采集</div>
+          <ul class="help-ul"><li>点击「停止采集」按钮，未满盒的数据会保留</li></ul>
+          <div class="help-h2">2.2 设备连接状态</div>
+          <ul class="help-ul">
+            <li>右侧操作日志区域显示读码器连接状态</li>
+            <li>绿色文字：设备已连接 ✓</li>
+            <li>红色文字：设备未连接，请检查设备连接后重启</li>
+          </ul>
+          <div class="help-h2">2.3 清屏</div>
+          <ul class="help-ul">
+            <li>点击「清屏」按钮：清空数据接收区显示记录</li>
+            <li class="help-warn">⚠ 清屏不影响计数和数据库数据</li>
+          </ul>
+        </div>
+
+        <div class="help-section" id="h-m2">
+          <div class="help-h1">三、2号机操作指南（盒箱垛关联软件）</div>
+          <div class="help-h2">3.1 功能入口</div>
+          <table class="help-table">
+            <thead><tr><th>Tab 名称</th><th>功能说明</th></tr></thead>
+            <tbody>
+              <tr><td><strong>数据采集</strong></td><td>主界面，默认选中</td></tr>
+              <tr><td>手工采集</td><td>1号机相机损坏时备用</td></tr>
+              <tr><td>码包管理</td><td>导入码包数据</td></tr>
+              <tr><td>数据查询</td><td>查询码关联关系</td></tr>
+              <tr><td>数据替换</td><td>码替换操作</td></tr>
+              <tr><td>取消关联</td><td>单个或批量解除关联</td></tr>
+              <tr><td>生产统计</td><td>查看生产数据统计</td></tr>
+              <tr><td>数据上传</td><td>管理数据上传状态</td></tr>
+            </tbody>
+          </table>
+          <p>系统设置通过菜单「配置」→「系统设置」进入（弹窗形式，需要密码）。</p>
+          <div class="help-h2">3.2 数据采集主界面操作流程</div>
+          <div class="help-step-title">生产前准备：</div>
+          <ol class="help-ol">
+            <li>在左侧「当前生产信息」区域，点击「产品选择」下拉框，搜索并选择生产产品</li>
+            <li>确认生产单号（系统自动生成，可手动修改）</li>
+            <li>确认采集规格（1垛 [70]箱、1箱 [4]盒，70、4可修改）；<strong>采集开始后不可修改</strong></li>
+          </ol>
+          <div class="help-step-title">开始采集：</div>
+          <ol class="help-ol">
+            <li>点击右侧「开始采集」按钮</li>
+            <li>系统检测设备状态，检测通过后开始采集</li>
+            <li><strong>报警灯绿灯常亮</strong>，表示系统正常工作</li>
+          </ol>
+          <div class="help-step-title">监控采集过程：</div>
+          <ul class="help-ul">
+            <li><strong>中间上方 - 数据接收区</strong>（约60%高）：扫码数据和关联结果，最新在上</li>
+            <li><strong>中间中部 - 操作日志</strong>（约20%）：用户操作记录，最新在上</li>
+            <li><strong>中间下方 - 报警信息</strong>（约20%）：重码、关联失败等异常，最新在上</li>
+            <li><strong>右侧 - 单位实时统计</strong>：当前箱数、每垛箱数、当前盒数、每箱盒数、已生产垛数、总剔除数，文字在上数字在下，每项独立卡片</li>
+          </ul>
+          <div class="help-step-title">成垛与自动上传：</div>
+          <ul class="help-ul">
+            <li>箱数达到预设值时自动成垛，成垛后<strong>自动上传</strong>数据至云端</li>
+            <li>上传成功：绿灯常亮，无蜂鸣/提示音；一分钟后自动熄灭</li>
+            <li class="help-warn">上传失败：红灯常亮 + 声音提醒（需处理后手动重传）</li>
+          </ul>
+          <div class="help-h2">3.3 右侧任务控制</div>
+          <p style="margin-bottom:8px;">总剔除数显示在单位实时统计区域。按钮一行两个排列：</p>
+          <table class="help-table">
+            <thead><tr><th>按钮</th><th>功能说明</th></tr></thead>
+            <tbody>
+              <tr><td>开始/停止采集</td><td>启动或停止数据采集；停止后未满垛数据保留</td></tr>
+              <tr><td>无需采集码</td><td>当天不生产五码合一产品时开启，所有读码设备不工作</td></tr>
+              <tr><td>关闭报警</td><td>上传失败触发报警后，点击可重置报警状态（停止声光报警器、蜂鸣器）</td></tr>
+              <tr><td>强制满垛</td><td>未达到预设箱数时，强制结束当前垛，生成垛码</td></tr>
+              <tr><td>提取工单未成垛</td><td>弹窗输入/扫描垛内任一箱码，查出对应生产订单并显示，确认后回显主页面继续生产</td></tr>
+              <tr><td>收回剔除</td><td>剔除设备动作后未自动收回时，点击手动收回</td></tr>
+              <tr><td>剔除数清零</td><td>将总剔除数重置为 0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help-section" id="h-funcs">
+          <div class="help-h1">四、各功能操作说明</div>
+        </div>
+
+        <div class="help-section" id="h-manual">
+          <div class="help-h2">4.1 手工采集（1号机相机损坏时使用，仅支持瓶盒关联）</div>
+          <ol class="help-ol">
+            <li>点击「手工采集」Tab</li>
+            <li>设置采集规格（1盒 [6]瓶，6可修改）；<strong>采集开始后不可修改</strong></li>
+            <li>点击「开始采集」按钮，按钮变为「停止采集」</li>
+            <li>按左侧「开始采集提示」顺序用扫码枪扫码：先扫瓶码（足够数量后）→ 扫盒码</li>
+            <li>左侧开始采集提示区文字随进度变化，告知当前应扫瓶码或盒码（无指示灯，文字提示即可）</li>
+            <li>扫码完成后自动完成瓶盒关联，当前已读数量归零，继续下一组</li>
+          </ol>
+        </div>
+
+        <div class="help-section" id="h-package">
+          <div class="help-h2">4.2 码包管理</div>
+          <p><strong>用途</strong>：导入包材厂提供的码包文件，用于采集时比对校验（不在码包内的码会被剔除）。支持的码包类型：盖外码小标、盒外码中标、箱外码大标。码包文件都是指外码，请不要导入内码。</p>
+          <table class="help-table">
+            <thead><tr><th>操作</th><th>步骤</th></tr></thead>
+            <tbody>
+              <tr><td>启动时在线导入</td><td>软件启动时自动执行，仅拉取盖外码小标、箱外码大标，按上次拉取时间增量拉取，首次全量、后续增量</td></tr>
+              <tr><td>在线更新</td><td>点击「在线更新」→ 仅拉取瓶码（盖外码小标）、箱码（箱外码大标）两种码包；盒外码中标不参与，需本地导入</td></tr>
+              <tr><td>本地导入</td><td>点击「本地导入」→ 先选择码包类型 → 再选择 TXT 文件 → 输入密码 123456 → 确认解析入库。盒外码中标仅能本地导入；盖外码小标、箱外码大标无网络时也可本地导入</td></tr>
+              <tr><td>查看码包</td><td>点击操作列「查看」→ 弹窗显示该码包所有码，支持搜索与分页</td></tr>
+              <tr><td>删除码包</td><td>仅当该码包内无任何已关联码时允许删除；若有已关联码则禁止删除并提示。删除为逻辑删除</td></tr>
+            </tbody>
+          </table>
+          <p><strong>帮助提示</strong>：点击顶部操作区「?」图标可查看详细的码包导入说明、格式说明及删除规则。</p>
+        </div>
+
+        <div class="help-section" id="h-query">
+          <div class="help-h2">4.3 数据查询</div>
+          <p><strong>用途</strong>：查询码的关联关系，用于产品追溯。</p>
+          <p>输入码后点击「查询」或回车，查出该码所属垛的全部数据。例如输入箱码，显示该垛下所有箱（箱1、箱2…）及各自的盒、瓶。左侧表格按层级分列展示，与输入的码对应的单元格红色字体显示；点击某行，右侧展示该行的具体信息（码、采集时间、产品编号、产品名称、生产单号）。</p>
+        </div>
+
+        <div class="help-section" id="h-replace">
+          <div class="help-h2">4.4 数据替换 <span class="help-badge-warn">需要密码 123456</span></div>
+          <p><strong>用途</strong>：码损坏或码错误时，将旧码替换为新码。</p>
+          <ol class="help-ol">
+            <li>输入原码（待替换）</li>
+            <li>输入新码（替换后）</li>
+            <li>输入替换原因（可选）</li>
+            <li>点击「确认替换」→ 弹窗核对信息 → 输入密码 <strong>123456</strong> → 确认执行</li>
+          </ol>
+          <p><strong>新码要求（需同时满足）：</strong></p>
+          <ul class="help-ul">
+            <li>✅ 在导入的码包范围内</li>
+            <li>✅ 未被使用过（系统中无关联关系）</li>
+            <li>✅ 格式有效，且不能与原码相同</li>
+          </ul>
+          <p class="help-warn">⚠ 替换操作不可恢复，请务必核对无误再执行</p>
+        </div>
+
+        <div class="help-section" id="h-cancel">
+          <div class="help-h2">4.5 取消关联 <span class="help-badge-warn">需要密码 123456</span></div>
+          <p><strong>用途</strong>：解除码的关联关系（如数据错误、产品需要重新处理时）。</p>
+          <div class="help-info-box">
+            <strong>重要规则：</strong>
+            <ul class="help-ul" style="margin-top:6px;">
+              <li>必须<strong>从大到小逐级解除</strong>（垛 → 箱 → 盒 → 瓶），不可一次性解除全部</li>
+              <li>系统自动检查上级关联状态，有上级时「确认」按钮禁用，提示先解除上级</li>
+              <li>系统自动检查云端数据并先解除云端关联，确保数据一致</li>
+            </ul>
+          </div>
+          <div class="help-step-title">单码取消操作步骤：</div>
+          <ol class="help-ol">
+            <li>选择「单码取消」模式</li>
+            <li>输入或扫描1个瓶码/盒码（不支持箱码、垛码）</li>
+            <li>点击「识别」→ 右侧显示识别结果（含上级关联链路）</li>
+            <li>如有上级关联，先从垛开始逐级解除上级，再回来解除当前级</li>
+            <li>无上级关联后，点击「确认取消关联」→ 输入密码 <strong>123456</strong> → 确认执行</li>
+          </ol>
+          <div class="help-step-title">多码取消操作步骤：</div>
+          <ol class="help-ol">
+            <li>选择「多码取消」模式</li>
+            <li>逐一输入盒码/箱码/垛码 → 点击「添加」</li>
+            <li>点击「识别」→ 右侧显示所有包装单元的识别结果</li>
+            <li>处理有上级关联的单元后，点击「确认取消关联」→ 输入密码 <strong>123456</strong> → 执行</li>
+          </ol>
+          <p class="help-warn">⚠ 操作不可恢复，请确认无误后操作</p>
+        </div>
+
+        <div class="help-section" id="h-stats">
+          <div class="help-h2">4.6 生产统计</div>
+          <p><strong>用途</strong>：查看生产数据统计和各垛上传状态。</p>
+          <table class="help-table">
+            <thead><tr><th>操作</th><th>步骤</th></tr></thead>
+            <tbody>
+              <tr><td>生产统计查询</td><td>左侧选择日期范围 → 点击「查询」→ 显示垛数/箱数/盒数/剔除数</td></tr>
+              <tr><td>查看垛码列表</td><td>点击「垛数」数字 → 弹窗显示垛码列表（垛码、箱数、生产单号、关联时间），支持按垛码筛选</td></tr>
+              <tr><td>查看剔除记录</td><td>点击「剔除数」数字 → 弹窗显示剔除记录，左右分栏（分层表格+详情），支持按箱码筛选</td></tr>
+              <tr><td>上传统计查询</td><td>右侧选择日期范围和状态（全部/成功/异常）→ 点击「查询」</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help-section" id="h-upload">
+          <div class="help-h2">4.7 数据上传</div>
+          <p><strong>用途</strong>：管理上传任务和状态，处理上传异常。</p>
+          <table class="help-table">
+            <thead><tr><th>功能</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>手动上传</td><td>点击「手动上传」→ 批量上传所有未上传的垛</td></tr>
+              <tr><td>查询状态</td><td>输入垛码 → 点击「查询状态」→ 查看上传详情</td></tr>
+              <tr><td>设为未上传</td><td>输入垛码 → 点击「设为未上传」→ 确认（用于异常修复后重新补传）</td></tr>
+              <tr><td>设为已上传</td><td>输入垛码 → 点击「设为已上传」→ 确认（避免系统重复上传）</td></tr>
+            </tbody>
+          </table>
+          <p>左侧「上传信息展示区」实时显示自动上传日志：</p>
+          <ul class="help-ul">
+            <li><span style="color:#9CA3AF;">■</span> 灰色：开始上传</li>
+            <li><span style="color:#2563EB;">■</span> 蓝色：上传中</li>
+            <li><span style="color:#16A34A;">■</span> 绿色：上传成功</li>
+            <li><span style="color:#DC2626;">■</span> 红色：上传失败（含失败原因）</li>
+          </ul>
+        </div>
+
+        <div class="help-section" id="h-faq">
+          <div class="help-h1">五、常见问题 &amp; 异常处理</div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q1：1号机显示红色码，怎么处理？</div>
+            <div class="help-faq-a">红色码 = 重码（已存在）或错码（格式错误）。系统自动标记待剔除，产线正常移动，下游龙门架按箱剔除，<strong>无需手动干预</strong>。</div>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q2：设备显示未连接怎么办？</div>
+            <ol class="help-ol">
+              <li>检查读码器/相机的电源和网线是否插好</li>
+              <li>重启设备后，查看连接状态是否恢复绿色</li>
+              <li>若仍未连接，联系技术人员</li>
+            </ol>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q3：数据上传失败，红灯亮了怎么办？</div>
+            <ol class="help-ol">
+              <li>查看「数据上传」Tab 中的失败原因</li>
+              <li>根据失败原因进行数据处理或等待网络恢复</li>
+              <li>点击「关闭报警」重置报警灯和蜂鸣器</li>
+              <li>处理完成后，点击「手动上传」重新上传</li>
+            </ol>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q4：生产结束时还有尾数（未满垛），怎么处理？</div>
+            <div class="help-faq-a">
+              <strong>方式一（推荐）</strong>：点击「强制满垛」，将当前数据强制成垛并上传<br>
+              <strong>方式二</strong>：直接停止采集，不做处理。下次生产时点击「提取工单未成垛」，选择该条数据继续生产
+            </div>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q5：剔除装置剔出去后没有自动收回，怎么办？</div>
+            <div class="help-faq-a">点击右侧「收回剔除」按钮，手动触发收回指令。</div>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q6：忘记密码怎么办？</div>
+            <div class="help-faq-a">系统设置、码替换、取消关联的密码统一为：<strong style="color:#2563EB; font-size:18px;">123456</strong></div>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q7：如何知道码属于哪一层级（瓶/盒/箱/垛）？</div>
+            <div class="help-faq-a">在「数据查询」Tab 中输入码值，点击「查询」或回车，左侧表格按层级分列展示，点击某行右侧可查看该行的详细信息。</div>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q8：取消关联时提示「请先解除上级」，怎么操作？</div>
+            <ol class="help-ol">
+              <li>在「识别结果」中查看完整链路（如：垛码xxx → 箱码xxx → 盒码xxx）</li>
+              <li>先输入最顶层的垛码，执行取消关联</li>
+              <li>再输入箱码，执行取消关联</li>
+              <li>最后输入盒码，执行取消关联</li>
+              <li>每次解除都需要输入密码 123456</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="help-section" id="h-notes">
+          <div class="help-h1">六、注意事项</div>
+          <div class="help-info-box">
+            <ol class="help-ol" style="margin:0;">
+              <li><strong>密码保护</strong>：系统设置、码替换、取消关联均需要密码 <strong>123456</strong>，请妥善保管</li>
+              <li><strong>不可恢复操作</strong>：码替换、取消关联执行后<strong>无法撤销</strong>，操作前请仔细核对</li>
+              <li><strong>包装比例</strong>：不可随意修改，如需变更请联系管理员</li>
+              <li><strong>生产前检查</strong>：每次开始生产前，确认码包已导入、设备连接正常</li>
+              <li><strong>异常优先处理</strong>：发现报警信息（中间下方红色区域）应及时处理，避免影响数据准确性</li>
+            </ol>
+          </div>
+        </div>
+
+      </div><!-- /helpContent -->
+    </div>
+  </div>
+</div>
+
+<!-- 密码弹窗 -->
+<div class="modal-overlay" id="pwdOverlay" onclick="if(event.target===this)closePwd()">
+  <div class="pwd-box" onclick="event.stopPropagation()">
+    <div class="pwd-title">🔒 请输入系统密码</div>
+    <input type="password" class="pwd-input" id="pwdInput" placeholder="••••••" maxlength="12" onkeydown="if(event.key==='Enter')verifyPwd()">
+    <div class="pwd-error" id="pwdError"></div>
+    <div style="display:flex; gap:12px;">
+      <button class="btn btn-secondary" style="flex:1; height:44px; font-size:15px;" onclick="closePwd()">取消</button>
+      <button class="btn btn-primary" style="flex:1; height:44px; font-size:15px;" onclick="verifyPwd()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 许可证信息弹窗 -->
+<div class="modal-overlay" id="licenseInfoOverlay2" onclick="if(event.target===this)closeLicenseInfo2()">
+  <div class="modal-box" style="width:480px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">许可证信息</span>
+      <button class="modal-close-btn" onclick="closeLicenseInfo2()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div id="licenseStatusIcon2" style="width:64px; height:64px; margin:0 auto 12px; background:#16A34A; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; color:#fff;">✓</div>
+        <div id="licenseStatusText2" style="font-size:18px; font-weight:700; color:#16A34A;">已激活, 剩余359天</div>
+      </div>
+      <div style="font-size:14px; font-weight:600; color:#1F2937; margin-bottom:8px;">激活信息</div>
+      <div style="font-size:14px; color:#374151; line-height:2; margin-bottom:16px;">
+        激活时间：2026-02-24 18:21<br>
+        到期时间：2027-02-24<br>
+        有效期：365天
+      </div>
+      <div style="font-size:14px; font-weight:600; color:#1F2937; margin-bottom:8px;">设备信息</div>
+      <div style="font-size:14px; color:#374151; line-height:2; margin-bottom:16px;">
+        设备ID：45f704c0****4a22<br>
+        设备型号：ASUS System Product Name<br>
+        制造商：ASUS<br>
+        操作系统：Windows 10 10.0
+      </div>
+      <div style="font-size:14px; color:#6B7280; margin-bottom:20px;">请联系米多专员或拨打 <a href="tel:15917372153" style="color:#2563EB;">15917372153</a></div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button class="btn btn-secondary" style="height:44px; padding:0 24px; min-width:90px;" onclick="closeLicenseInfo2()">关闭</button>
+        <button class="btn btn-primary" style="height:44px; padding:0 24px; min-width:90px;" onclick="closeLicenseInfo2(); openActivationWizard2();">激活</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 系统设置弹窗（与P01统一：设备、连接、业务 三级结构） -->
+<div class="modal-overlay" id="sysOverlay" onclick="if(event.target===this)closeSys()">
+  <div class="modal-box" style="width:860px; max-height:680px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">系统设置（2号机）</span>
+      <button class="modal-close-btn" onclick="closeSys()">✕</button>
+    </div>
+    <div class="sys-tab-bar" id="sysTabs2">
+      <div class="sys-tab active" onclick="switchSysTab2_1(this,'st-business')">业务</div>
+      <div class="sys-tab" onclick="switchSysTab2_1(this,'st-pages')">页面配置</div>
+      <div class="sys-tab" onclick="switchSysTab2_1(this,'st-device')">设备</div>
+      <div class="sys-tab" onclick="switchSysTab2_1(this,'st-conn')">连接</div>
+    </div>
+    <div class="sys-tab-bar sys-tab-bar-sub" id="sysSubTabsDevice">
+      <div class="sys-tab active" onclick="switchSysTab2_Device(this,'st-io')">IO设备管理</div>
+      <div class="sys-tab" onclick="switchSysTab2_Device(this,'st-printer')">打印机管理</div>
+      <div class="sys-tab" onclick="switchSysTab2_Device(this,'st-alarm')">报警设置</div>
+    </div>
+    <div class="sys-tab-bar sys-tab-bar-sub" id="sysSubTabsConn">
+      <div class="sys-tab active" onclick="switchSysTab2_Conn(this,'st-db')">数据库连接</div>
+    </div>
+    <div class="sys-tab-bar sys-tab-bar-sub visible" id="sysSubTabsBusiness">
+      <div class="sys-tab active" onclick="switchSysTab2_Business(this,'st-codedigits')">码位数配置</div>
+      <div class="sys-tab" onclick="switchSysTab2_Business(this,'st-virtual')">虚拟垛标规则</div>
+      <div class="sys-tab" onclick="switchSysTab2_Business(this,'st-upload')">上传配置</div>
+    </div>
+    <div id="sysPanels2" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="sys-tab-panel active" id="st-business">
+      <div class="sys-tab-panel active" id="st-codedigits" style="flex:1; overflow-y:auto; padding:20px 24px;">
+        <div style="font-size:16px; font-weight:600; color:#1F2937; margin-bottom:16px;">码位数配置（采集时校验码位数，-1表示不校验）</div>
+        <div class="form-row"><span class="form-label code">小标位数（瓶码）</span><input type="number" class="form-input fixed-sm" value="14" placeholder="14"></div>
+        <div class="form-row"><span class="form-label code">中标位数（盒码）</span><input type="number" class="form-input fixed-sm" value="14" placeholder="14"></div>
+        <div class="form-row"><span class="form-label code">大标位数（箱码）</span><input type="number" class="form-input fixed-sm" value="-1" placeholder="-1"></div>
+        <div style="font-size:12px; color:#6B7280; margin-bottom:12px;">说明：-1 表示不校验该层级位数；采集时若实际采码位数与配置值不一致，则异常告警、关联失败。</div>
+        <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('码位数配置已保存')">保存</button>
+      </div>
+      <div class="sys-tab-panel" id="st-virtual" style="flex:1; overflow-y:auto; padding:20px 24px;">
+        <div style="font-size:16px; font-weight:600; color:#1F2937; margin-bottom:16px;">虚拟垛标规则（成垛时生成虚拟垛标，格式示例：V20260226001A12）</div>
+        <div class="form-row"><span class="form-label virtual">前缀</span><input type="text" class="form-input fixed-sm" value="V" placeholder="默认 V"></div>
+        <div class="form-row"><span class="form-label virtual">时间</span><input type="text" class="form-input fixed-sm" value="YYYYMMDD" placeholder="只读" style="background:#F3F4F6; color:#6B7280;" readonly=""></div>
+        <div class="form-row"><span class="form-label virtual">序号</span><input type="text" class="form-input fixed-sm" value="001" placeholder="只读，3位起" style="background:#F3F4F6; color:#6B7280;" readonly=""></div>
+        <div class="form-row"><span class="form-label virtual">产线号</span><input type="text" class="form-input fixed-sm" value="A" placeholder="如 A、B"></div>
+        <div class="form-row"><span class="form-label virtual">随机数</span><input type="text" class="form-input fixed-sm" value="12" placeholder="只读，2位系统自动生成" style="background:#F3F4F6; color:#6B7280;" readonly=""></div>
+        <div style="font-size:12px; color:#6B7280; margin-bottom:12px;">说明：时间、序号、随机数为生成时自动取值，不可修改；前缀、产线号可修改。随机数2位系统自动生成。</div>
+        <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('虚拟垛标规则已保存')">保存</button>
+      </div>
+      <div class="sys-tab-panel" id="st-upload" style="flex:1; overflow-y:auto; padding:20px 24px;">
+        <div style="font-size:16px; font-weight:600; color:#1F2937; margin-bottom:16px;">上传配置（成垛后自动上传至米多大数据引擎）</div>
+        <div class="form-row" style="margin-bottom:12px;"><span class="form-label" style="width:100px;">自动上传</span><div style="display:flex; align-items:center; gap:8px;"><div class="toggle-track on" id="autoUploadToggle2" onclick="toggleAutoUpload2(this)"><div class="toggle-thumb"></div></div><span id="autoUploadStatus2">开启</span></div></div>
+        <div style="font-size:13px; color:#6B7280; margin-bottom:20px;">开启时成垛后自动上传；关闭时需手动上传。</div>
+        <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('上传配置已保存')">保存</button>
+      </div>
+      </div>
+      <div class="sys-tab-panel" id="st-pages" style="padding:20px 24px;">
+        <div style="font-size:14px; color:#6B7280; margin-bottom:14px;">控制主界面 Tab 栏显示哪些页面。Switch 开启=Tab 显示，关闭=Tab 隐藏。配置保存至配置文件，重启后生效。</div>
+        <table class="page-config-table" style="margin-bottom:16px;">
+          <thead><tr><th>页面名称</th><th>功能说明</th><th style="width:80px;">显示</th></tr></thead>
+          <tbody>
+            <tr><td>数据采集（盒箱垛）</td><td>主界面，盒箱垛关联数据采集（必选不可关闭）</td><td><div class="toggle-track on disabled"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>手工采集</td><td>扫码枪手工采集，相机损坏时替代</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>数据查询</td><td>查询采集关联数据</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>数据替换</td><td>码替换操作</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>生产统计</td><td>生产统计报表</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>码包管理</td><td>码包导入与管理</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>取消关联</td><td>单个/批量取消关联</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+            <tr><td>数据上传</td><td>手动上传、上传状态查询</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
+          </tbody>
+        </table>
+        <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px; align-self:flex-start;" onclick="alert('页面配置已保存至配置文件')">保存</button>
+      </div>
+      <div class="sys-tab-panel" id="st-device">
+      <div class="sys-tab-panel active" id="st-io" style="flex:1; overflow-y:auto;">
+        <div style="margin-bottom:10px;"><button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('添加设备')">+ 添加设备</button></div>
+        <table class="device-table">
+          <thead><tr><th>设备名称</th><th>设备类型</th><th>连接地址</th><th>端口</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td>盒码相机</td><td>网络相机</td><td>192.168.1.104</td><td>3000</td><td><span class="badge badge-green">已连接</span></td><td style="display:flex;gap:6px;"><button class="btn-sm btn-sm-blue">编辑</button><button class="btn-sm btn-sm-green" onclick="alert('连接测试成功')">测试</button><button class="btn-sm btn-sm-red" onclick="alert('确认删除？')">删除</button></td></tr>
+            <tr><td>箱码相机</td><td>网络相机</td><td>192.168.1.105</td><td>3000</td><td><span class="badge badge-green">已连接</span></td><td style="display:flex;gap:6px;"><button class="btn-sm btn-sm-blue">编辑</button><button class="btn-sm btn-sm-green" onclick="alert('连接测试成功')">测试</button><button class="btn-sm btn-sm-red" onclick="alert('确认删除？')">删除</button></td></tr>
+            <tr><td>剔除装置</td><td>串口RS485</td><td>COM4</td><td>9600</td><td><span class="badge badge-green">已连接</span></td><td style="display:flex;gap:6px;"><button class="btn-sm btn-sm-blue">编辑</button><button class="btn-sm btn-sm-green" onclick="alert('连接测试成功')">测试</button><button class="btn-sm btn-sm-red" onclick="alert('确认删除？')">删除</button></td></tr>
+            <tr><td>报警灯</td><td>网络TCP/IP</td><td>192.168.1.150</td><td>5020</td><td><span class="badge badge-green">已连接</span></td><td style="display:flex;gap:6px;"><button class="btn-sm btn-sm-blue">编辑</button><button class="btn-sm btn-sm-green" onclick="alert('连接测试成功')">测试</button><button class="btn-sm btn-sm-red" onclick="alert('确认删除？')">删除</button></td></tr>
+            <tr><td>指示灯</td><td>网络TCP/IP</td><td>192.168.1.151</td><td>5020</td><td><span class="badge badge-red">未连接</span></td><td style="display:flex;gap:6px;"><button class="btn-sm btn-sm-blue">编辑</button><button class="btn-sm btn-sm-green" onclick="alert('连接测试失败：设备未响应')">测试</button><button class="btn-sm btn-sm-red" onclick="alert('确认删除？')">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sys-tab-panel" id="st-printer" style="flex:1; overflow-y:auto;">
+        <div class="form-row"><span class="form-label" style="width:120px;">打印机名称</span><input type="text" class="form-input" value="Canon LBP2900" style="flex:1;"></div>
+        <div class="form-row"><span class="form-label" style="width:120px;">打印机IP</span><input type="text" class="form-input" value="192.168.1.201" style="flex:1;"></div>
+        <div class="form-row"><span class="form-label" style="width:120px;">打印端口</span><input type="text" class="form-input" value="9100" style="flex:1;"></div>
+        <div class="form-row"><span class="form-label" style="width:120px;">纸张大小</span><select class="form-select" style="flex:1;"><option>A4</option><option>A5</option><option>自定义</option></select></div>
+        <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('打印机设置已保存')">保存</button>
+      </div>
+      <div class="sys-tab-panel" id="st-alarm" style="flex:1; overflow-y:auto;">
+        <div class="form-row" style="margin-bottom:16px;"><span class="form-label" style="width:120px;">声音报警</span><div style="display:flex; align-items:center; gap:8px;"><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div><span>开启</span></div></div>
+        <div class="form-row"><span class="form-label" style="width:120px;">报警延时(ms)</span><input type="number" class="form-input" value="500" style="flex:1;"></div>
+        <div class="form-row"><span class="form-label" style="width:120px;">报警间隔(ms)</span><input type="number" class="form-input" value="2000" style="flex:1;"></div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button class="btn btn-warning" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('测试报警已触发')">测试报警</button>
+          <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('报警设置已保存')">保存</button>
+        </div>
+      </div>
+      </div>
+      <div class="sys-tab-panel" id="st-conn">
+        <div class="sys-tab-panel active" id="st-db" style="flex:1; overflow-y:auto; padding:20px 24px;">
+          <div style="background:#FEF3C7; border:1px solid #FCD34D; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px; color:#92400E;">
+            ⚠ 2号机部署数据库，1号机通过局域网访问此库，请正确配置数据库信息
+          </div>
+          <div class="form-row"><span class="form-label db">数据库地址</span><input type="text" class="form-input fixed" value="192.168.1.200"></div>
+          <div class="form-row"><span class="form-label db">数据库端口</span><input type="number" class="form-input fixed" value="3306"></div>
+          <div class="form-row"><span class="form-label db">数据库名</span><input type="text" class="form-input fixed" value="production_db"></div>
+          <div class="form-row"><span class="form-label db">用户名</span><input type="text" class="form-input fixed" value="admin"></div>
+          <div class="form-row"><span class="form-label db">密码</span><input type="password" class="form-input fixed" value="123456"></div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-secondary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="testDbConn2()">连接测试</button>
+            <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('数据库配置已保存')">保存</button>
+            <span id="dbTestResult2" style="font-size:13px;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 确认弹窗（通用） -->
+<div class="modal-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:16px;" id="confirmTitle">确认操作</div>
+    <div style="font-size:14px; color:#374151; margin-bottom:16px; background:#F9FAFB; border-radius:8px; padding:14px; line-height:1.8;" id="confirmMsg">确认执行此操作？</div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:14px; font-weight:600; color:#DC2626; margin-bottom:6px;">* 请输入密码</div>
+      <input type="password" class="form-input" id="confirmPwd" placeholder="请输入密码" style="width:100%;">
+      <div style="color:#DC2626; font-size:13px; min-height:18px; margin-top:4px;" id="confirmPwdErr"></div>
+    </div>
+    <div style="color:#DC2626; font-size:14px; font-weight:600; margin-bottom:16px;">⚠ 此操作不可恢复，请仔细核对后确认！</div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-secondary" style="height:44px; width:80px; font-size:14px;" onclick="closeConfirm()">取消</button>
+      <button class="btn btn-danger" style="height:44px; width:120px; font-size:14px;" id="confirmOkBtn" onclick="execConfirm()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 开始采集二次确认弹窗 -->
+<div class="modal-overlay" id="startCollectConfirmOverlay" onclick="if(event.target===this)closeStartCollectConfirm()">
+  <div class="confirm-box" style="width:420px;" onclick="event.stopPropagation()">
+    <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:16px;">开始采集确认</div>
+    <div style="font-size:14px; color:#374151; margin-bottom:16px; line-height:1.8;" id="startCollectConfirmMsg">
+      <div style="margin-bottom:8px;"><strong>生产信息：</strong></div>
+      <div id="startCollectProductInfo" style="margin-bottom:12px; padding-left:12px;">产品：—，生产单：—</div>
+      <div style="margin-bottom:8px;"><strong>包装比例：</strong></div>
+      <div id="startCollectRatioInfo" style="padding-left:12px;">1垛 — 箱，1箱 — 盒</div>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-secondary" style="height:44px; width:90px; font-size:14px;" onclick="closeStartCollectConfirm()">取消</button>
+      <button class="btn btn-primary" style="height:44px; width:90px; font-size:14px;" onclick="confirmStartCollect()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 未满垛退出询问弹窗 -->
+<div class="modal-overlay" id="unfinishedExitOverlay" onclick="if(event.target===this)closeUnfinishedExit()">
+  <div class="confirm-box" style="width:420px;" onclick="event.stopPropagation()">
+    <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:16px;">退出确认</div>
+    <div style="font-size:14px; color:#374151; margin-bottom:20px; line-height:1.8;" id="unfinishedExitMsg">存在未满垛(X箱)，是否暂存？</div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-secondary" style="height:44px; width:90px; font-size:14px;" onclick="onUnfinishedExitCancel()">取消</button>
+      <button class="btn btn-outline" style="height:44px; width:90px; font-size:14px;" onclick="onUnfinishedExitForcePallet()">强制满垛</button>
+      <button class="btn btn-primary" style="height:44px; width:90px; font-size:14px;" onclick="onUnfinishedExitSave()">暂存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 码包导入弹窗 -->
+<div class="modal-overlay" id="packageImportOverlay" onclick="if(event.target===this)closePackageImport()">
+  <div class="modal-box" style="width:420px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">码包导入</span>
+      <button class="modal-close-btn" onclick="closePackageImport()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <div class="form-row" style="margin-bottom:16px;">
+        <span class="form-label" style="width:100px;">码包类型 <span style="color:#DC2626;">*</span></span>
+        <select class="form-select" id="packageImportType" style="flex:1;">
+          <option value="">请选择</option>
+          <option value="small">盖外码小标</option>
+          <option value="medium">盒外码中标</option>
+          <option value="large">箱外码大标</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:16px;">
+        <span class="form-label" style="width:100px;">选择文件</span>
+        <div style="display:flex; align-items:center; gap:8px; flex:1;">
+          <input type="file" id="packageFileInput" accept=".txt" style="display:none;" onchange="onPackageFileSelect(this)">
+          <button class="btn btn-outline" style="height:36px; padding:0 16px; font-size:13px;" onclick="document.getElementById('packageFileInput').click()">浏览...</button>
+          <span id="packageFileName" style="font-size:13px; color:#6B7280;">未选择文件</span>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:16px;">
+        <span class="form-label" style="width:100px;">密码 <span style="color:#DC2626;">*</span></span>
+        <input type="password" class="form-input" id="packageImportPwd" placeholder="请输入密码" style="flex:1;" maxlength="12">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" style="height:36px; padding:0 16px; font-size:13px;" onclick="closePackageImport()">取消</button>
+      <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px;" onclick="doPackageImport()">确认导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 码包查看弹窗 -->
+<div class="modal-overlay" id="packageOverlay" onclick="if(event.target===this)closePackage()">
+  <div class="modal-box" style="width:720px; max-height:650px; display:flex; flex-direction:column;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="packageModalTitle">查看码包</span>
+      <button class="modal-close-btn" onclick="closePackage()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px; flex:1; display:flex; flex-direction:column; min-height:0;">
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-shrink:0;">
+        <input type="text" class="form-input" id="packageCodeSearch" placeholder="请输入码值搜索..." style="flex:1;" onkeydown="if(event.key==='Enter')filterPackageCodes()">
+        <button class="btn btn-primary" style="height:40px; padding:0 16px; font-size:14px;" onclick="filterPackageCodes()">搜索</button>
+      </div>
+      <div style="flex:1; overflow-y:auto; min-height:0;">
+        <table class="data-table">
+          <colgroup><col style="width:auto"><col style="width:100px"><col style="width:180px"></colgroup>
+          <thead><tr><th>码值</th><th>关联状态</th><th>关联时间</th></tr></thead>
+          <tbody id="packageTableBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:10px 0 0; border-top:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#374151; flex-shrink:0;">
+        <span id="packageTotalInfo">共 0 条</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;" id="packagePrevBtn" onclick="packagePagePrev()">上一页</button>
+          <span id="packagePageInfo">第 1 页</span>
+          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;" id="packageNextBtn" onclick="packagePageNext()">下一页</button>
+          <select class="form-select" id="packagePageSize" style="width:80px; height:32px; font-size:13px;" onchange="filterPackageCodes()">
+            <option value="20">20条</option><option value="50">50条</option><option value="100">100条</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 剔除记录弹窗 -->
+<div class="modal-overlay" id="rejectListOverlay" onclick="if(event.target===this)closeRejectList()">
+  <div class="modal-box" style="width:1000px; min-height:500px; max-height:700px; display:flex; flex-direction:column;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">剔除记录</span>
+      <button class="modal-close-btn" onclick="closeRejectList()">✕</button>
+    </div>
+    <div style="padding:16px 24px; border-bottom:1px solid #E5E7EB; display:flex; gap:8px; align-items:center;">
+      <input type="text" class="form-input" id="rejectFilterCode" placeholder="请输入箱码" style="width:300px;">
+      <button class="btn btn-primary" style="height:40px; padding:0 16px; font-size:14px;" onclick="filterRejectList()">筛选</button>
+      <button class="btn btn-outline" style="height:40px; padding:0 16px; font-size:14px;" onclick="document.getElementById('rejectFilterCode').value=''; filterRejectList()">重置</button>
+    </div>
+    <div style="flex:1; display:flex; min-height:0; overflow:hidden;">
+      <div style="flex:2; display:flex; flex-direction:column; min-width:0; border-right:1px solid #E5E7EB;">
+        <div style="padding:12px 16px; border-bottom:1px solid #E5E7EB; font-weight:600; font-size:15px;">码关联信息（剔除记录）</div>
+        <div style="padding:8px 16px; font-size:13px; color:#6B7280;" id="rejectListCount">已查询到 3 条剔除记录</div>
+        <div style="flex:1; overflow-y:auto; min-height:0;">
+          <table class="data-table" id="rejectTable">
+            <thead><tr><th style="width:50px;">序号</th><th>第一层(瓶码)</th><th>第二层(盒码)</th><th>第三层(箱码)</th><th style="width:100px;">剔除原因</th></tr></thead>
+            <tbody id="rejectTableBody">
+              <tr class="reject-row" data-idx="0" onclick="selectRejectRow(0)"><td>1</td><td class="reject-problem">20241201V010101</td><td>20241201B0101</td><td>20241201C001</td><td>重码</td></tr>
+              <tr class="row-even reject-row" data-idx="1" onclick="selectRejectRow(1)"><td>2</td><td>20241201V010102</td><td class="reject-problem">20241201B0102</td><td>20241201C001</td><td>错码</td></tr>
+              <tr class="reject-row" data-idx="2" onclick="selectRejectRow(2)"><td>3</td><td class="reject-problem">20241201V020103</td><td>20241201B0203</td><td>20241201C002</td><td>重码</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+        <div style="padding:12px 16px; border-bottom:1px solid #E5E7EB; font-weight:600; font-size:15px;">具体信息</div>
+        <div style="flex:1; padding:16px; overflow-y:auto; font-size:14px;" id="rejectDetail">
+          <div style="color:#9CA3AF;">请点击左侧记录查看详细信息</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 垛码列表弹窗 -->
+<div class="modal-overlay" id="palletListOverlay" onclick="if(event.target===this)closePalletList()">
+  <div class="modal-box" style="width:800px; max-height:650px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">垛码列表</span>
+      <button class="modal-close-btn" onclick="closePalletList()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+        <input type="text" class="form-input" id="palletFilterCode" placeholder="请输入垛码" style="width:300px;">
+        <button class="btn btn-primary" style="height:40px; padding:0 16px; font-size:14px;" onclick="filterPalletList()">筛选</button>
+        <button class="btn btn-outline" style="height:40px; padding:0 16px; font-size:14px;" onclick="document.getElementById('palletFilterCode').value=''; filterPalletList()">重置</button>
+      </div>
+      <table class="data-table" id="palletListTable">
+        <thead><tr><th style="width:150px;">垛码</th><th style="width:80px;">箱数</th><th style="width:120px;">生产单号</th><th style="width:180px;">关联时间</th></tr></thead>
+        <tbody id="palletListBody">
+          <tr><td>P20241201010</td><td>70</td><td>PO202412018710</td><td>2024-12-01 16:30:22</td></tr>
+          <tr class="row-even"><td>P20241201009</td><td>70</td><td>PO202412018710</td><td>2024-12-01 15:55:10</td></tr>
+          <tr><td>P20241201008</td><td>70</td><td>PO202412018713</td><td>2024-12-01 15:20:45</td></tr>
+          <tr class="row-even"><td>P20241201007</td><td>70</td><td>PO202412018710</td><td>2024-12-01 14:45:33</td></tr>
+          <tr><td>P20241201006</td><td>70</td><td>PO202412018710</td><td>2024-12-01 14:10:18</td></tr>
+          <tr class="row-even"><td>P20241201005</td><td>70</td><td>PO202412018712</td><td>2024-12-01 13:35:02</td></tr>
+          <tr><td>P20241201004</td><td>70</td><td>PO202412018710</td><td>2024-12-01 13:00:55</td></tr>
+          <tr class="row-even"><td>P20241201003</td><td>70</td><td>PO202412018711</td><td>2024-12-01 12:25:40</td></tr>
+          <tr><td>P20241201002</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:50:28</td></tr>
+          <tr class="row-even"><td>P20241201001</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:15:16</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 帮助弹窗 -->
+<div class="help-popup" id="helpPopup" onclick="event.stopPropagation()"></div>
+
+<script>
+// 时钟
+function updateTime() {
+  const now = new Date();
+  const s = d => String(d).padStart(2,'0');
+  const t = `${now.getFullYear()}-${s(now.getMonth()+1)}-${s(now.getDate())} ${s(now.getHours())}:${s(now.getMinutes())}:${s(now.getSeconds())}`;
+  document.getElementById('currentTime2').textContent = t;
+}
+updateTime(); setInterval(updateTime, 1000);
+
+// ── 激活码流程（复用T1.1）──
+const ACTIVATION_CACHE_KEY = 'v12_shivan_activation_p02';
+function getActivationCache2() {
+  try {
+    const s = localStorage.getItem(ACTIVATION_CACHE_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch (_) { return null; }
+}
+function setActivationCache2(data) {
+  try { localStorage.setItem(ACTIVATION_CACHE_KEY, JSON.stringify(data)); } catch (_) {}
+}
+function initActivation2() {
+  const cache = getActivationCache2();
+  const unactivatedEl = document.getElementById('unactivatedOverlay2');
+  const statusEl = document.getElementById('activationStatus2');
+  if (cache && cache.activated && cache.remainingDays != null) {
+    unactivatedEl.classList.remove('active');
+    statusEl.style.display = '';
+    document.getElementById('activationDays2').textContent = cache.remainingDays;
+  } else {
+    unactivatedEl.classList.add('active');
+  }
+}
+function closeUnactivated2() {
+  document.getElementById('unactivatedOverlay2').classList.remove('active');
+}
+function openActivationWizard2() {
+  document.getElementById('unactivatedOverlay2').classList.remove('active');
+  document.getElementById('activationWizardOverlay2').classList.add('active');
+  document.getElementById('activationStepNum2').textContent = '1';
+  document.getElementById('activationStep1Content2').style.display = '';
+  document.getElementById('activationStep2Content2').style.display = 'none';
+  document.getElementById('actPrevBtn2').style.display = 'none';
+  document.getElementById('actNextBtn2').style.display = '';
+  document.getElementById('actConfirmBtn2').style.display = 'none';
+  document.getElementById('actStep1_2').style.background = '#E0E7FF';
+  document.getElementById('actStep1_2').style.color = '#3730A3';
+  document.getElementById('actStep2_2').style.background = '#E5E7EB';
+  document.getElementById('actStep2_2').style.color = '#6B7280';
+}
+function closeActivationWizard2() {
+  document.getElementById('activationWizardOverlay2').classList.remove('active');
+  document.getElementById('unactivatedOverlay2').classList.add('active');
+}
+function activationNextStep2() {
+  document.getElementById('activationStepNum2').textContent = '2';
+  document.getElementById('activationStep1Content2').style.display = 'none';
+  document.getElementById('activationStep2Content2').style.display = '';
+  document.getElementById('actPrevBtn2').style.display = '';
+  document.getElementById('actNextBtn2').style.display = 'none';
+  document.getElementById('actConfirmBtn2').style.display = '';
+  document.getElementById('actStep1_2').style.background = '#E5E7EB';
+  document.getElementById('actStep2_2').style.background = '#E0E7FF';
+  document.getElementById('actStep2_2').style.color = '#3730A3';
+}
+function activationPrevStep2() {
+  document.getElementById('activationStepNum2').textContent = '1';
+  document.getElementById('activationStep1Content2').style.display = '';
+  document.getElementById('activationStep2Content2').style.display = 'none';
+  document.getElementById('actPrevBtn2').style.display = 'none';
+  document.getElementById('actNextBtn2').style.display = '';
+  document.getElementById('actConfirmBtn2').style.display = 'none';
+  document.getElementById('actStep1_2').style.background = '#E0E7FF';
+  document.getElementById('actStep2_2').style.background = '#E5E7EB';
+}
+function doExportDevice2() { alert('设备请求文件已导出至桌面'); }
+function onLicenseFileSelect2(input) {
+  const f = input.files[0];
+  document.getElementById('licenseFileHint2').textContent = f ? '📄 ' + f.name + ' ✓' : '📂 点击选择或拖拽文件到此处';
+}
+function doActivate2() {
+  const f = document.getElementById('licenseFileInput2').files[0];
+  if (!f) { alert('请先选择许可证文件'); return; }
+  document.getElementById('activationWizardOverlay2').classList.remove('active');
+  document.getElementById('activationSuccessOverlay2').classList.add('active');
+}
+function closeActivationSuccess2() {
+  document.getElementById('activationSuccessOverlay2').classList.remove('active');
+  const remainingDays = 365;
+  setActivationCache2({ activated: true, expiryDate: '2026-12-05', remainingDays });
+  document.getElementById('activationStatus2').style.display = '';
+  document.getElementById('activationDays2').textContent = remainingDays;
+}
+initActivation2();
+
+// 根据URL hash自动跳转到指定Tab
+(function() {
+  const hash = window.location.hash.replace('#','');
+  if(hash && document.getElementById(hash)) {
+    switchTab(hash);
+  }
+})();
+
+// Tab切换
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  const btnId = 'tabBtn-' + tabId.replace('tab-','');
+  const btn = document.getElementById(btnId);
+  if(btn) btn.classList.add('active');
+}
+
+// 数据采集模拟
+let isCollecting = false;
+let curBoxes = 0, curCases = 0, rejectCnt = 0, palletCnt = 0;
+let simInterval2 = null;
+
+function toggleCollect() {
+  const btn = document.getElementById('collectBtn');
+  if(!isCollecting) {
+    const productSel = document.getElementById('productSelect');
+    const orderNum = document.getElementById('orderNum').value.trim();
+    if(!productSel.value) {
+      alert('请先选择生产产品后再开始采集！');
+      productSel.focus();
+      return;
+    }
+    if(!orderNum) {
+      alert('请先填写生产单号后再开始采集！');
+      document.getElementById('orderNum').focus();
+      return;
+    }
+    // 二次确认：展示生产信息和包装比例
+    const productName = productSel.options[productSel.selectedIndex].text;
+    const maxCase = parseInt(document.getElementById('casePerPallet').value) || 70;
+    const maxBox = parseInt(document.getElementById('boxPerCase').value) || 4;
+    document.getElementById('startCollectProductInfo').textContent = `产品：${productName}，生产单：${orderNum}`;
+    document.getElementById('startCollectRatioInfo').textContent = `1垛 ${maxCase} 箱，1箱 ${maxBox} 盒`;
+    document.getElementById('startCollectConfirmOverlay').classList.add('active');
+  } else {
+    isCollecting = false;
+    btn.textContent = '开始采集';
+    btn.style.background = '';
+    document.getElementById('receivingDot').style.display = 'none';
+    if(simInterval2) { clearInterval(simInterval2); simInterval2 = null; }
+    appendOpLog('停止采集');
+  }
+}
+
+function startSimulation2() {
+  let cycle = 0;
+
+  simInterval2 = setInterval(() => {
+    if(!isCollecting) return;
+    cycle++;
+    const maxBox = parseInt(document.getElementById('boxPerCase').value) || 4;
+    const maxCase = parseInt(document.getElementById('casePerPallet').value) || 70;
+    const now = new Date();
+    const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+    // 每次模拟采集 maxBox 盒（一批），然后箱数+1
+    let boxLogs = '';
+    for(let i = 0; i < maxBox; i++) {
+      const boxSeq = String(1000000 + cycle * maxBox + i).slice(1);
+      const boxCode = `20241201${boxSeq}`;
+      curBoxes++;
+      boxLogs += `<div class="log-entry le-data"><span class="ts">${ts}</span>盒箱关联 - 盒码：${boxCode} → 箱进度 ${curBoxes}/${maxBox}</div>`;
+    }
+
+    // 整箱完成
+    curBoxes = 0;
+    curCases++;
+    document.getElementById('curBoxes').textContent = curBoxes;
+    document.getElementById('curCases').textContent = curCases;
+
+    const caseCode = `20241201C${String(1000 + curCases).slice(1)}`;
+    const caseLog = `<div class="log-entry le-data"><span class="ts">${ts}</span>装箱完成 - 箱码：${caseCode} 已关联${maxBox}盒，箱数 ${curCases}/${maxCase}</div>`;
+    prependLog2('dataArea', caseLog + boxLogs);
+    appendOpLog(`箱码关联完成：${caseCode}（${curCases}/${maxCase}箱）`);
+
+    if(curCases >= maxCase) {
+      curCases = 0;
+      palletCnt++;
+      document.getElementById('curCases').textContent = 0;
+      const pcEl = document.getElementById('palletCount');
+      if(pcEl) pcEl.textContent = palletCnt;
+      const palletCode = `P20241201${String(100 + cycle).padStart(3,'0')}`;
+      prependLog2('dataArea', `<div class="log-entry le-success"><span class="ts">${ts}</span>⚡ 满垛提示 - 垛码：${palletCode} 已生成，共${maxCase}箱，正在上传...</div>`);
+      appendOpLog(`满垛 - 垛码${palletCode}，上传中`);
+
+      setTimeout(() => {
+        const ts2 = getTs();
+        prependLog2('dataArea', `<div class="log-entry le-success"><span class="ts">${ts2}</span>✓ 垛码：${palletCode} 上传成功</div>`);
+        addUploadLog(palletCode);
+      }, 3000);
+    }
+
+    if(cycle % 8 === 0) {
+      const errCode = `20241201${String(999999 - cycle).padStart(6,'0')}`;
+      prependLog2('alarmArea', `<div class="log-entry le-error"><span class="ts">${ts}</span>重码: ${errCode} - 已在码包中出现过</div>`);
+      rejectCnt++;
+      document.getElementById('rejectCount').textContent = rejectCnt;
+    }
+
+    document.getElementById('syncStatus').innerHTML = '<span>●</span> 已同步';
+    document.getElementById('syncStatus').className = 'sync-indicator sync-ok';
+  }, 3000);
+}
+
+function getTs() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
+function prependLog2(areaId, html) {
+  const area = document.getElementById(areaId);
+  area.insertAdjacentHTML('afterbegin', html);
+
+  // 为最新插入的每条新记录加入进入动画
+  const newEntries = [];
+  let node = area.firstChild;
+  while(node) {
+    if(node.nodeType === 1 && node.classList.contains('log-entry') && !node.dataset.animated) {
+      newEntries.push(node);
+    }
+    node = node.nextSibling;
+  }
+  newEntries.forEach((el, i) => {
+    el.dataset.animated = '1';
+    const delay = i * 60; // 多条时错开出现
+    if(el.classList.contains('le-success')) {
+      el.style.animationDelay = delay + 'ms';
+      el.classList.add('log-entry-success');
+    } else if(el.classList.contains('le-error')) {
+      el.style.animationDelay = delay + 'ms';
+      el.classList.add('log-entry-error');
+    } else {
+      el.style.animationDelay = delay + 'ms';
+      el.classList.add('log-entry-new');
+    }
+  });
+
+  // 标题栏短暂高亮
+  const header = area.closest('.log-section')?.querySelector('.log-section-header');
+  if(header) {
+    header.classList.remove('flash-header');
+    void header.offsetWidth; // 强制重绘
+    header.classList.add('flash-header');
+    header.addEventListener('animationend', () => header.classList.remove('flash-header'), {once:true});
+  }
+
+  // 超出200条清除旧条目
+  const entries = area.querySelectorAll('.log-entry');
+  if(entries.length > 200) entries[entries.length-1].remove();
+}
+
+function appendOpLog(msg) {
+  prependLog2('opLogArea', `<div class="log-entry le-info"><span class="ts">${getTs()}</span>${msg}</div>`);
+}
+
+function addUploadLog(palletCode) {
+  const area = document.getElementById('uploadLogArea');
+  const ts = getTs();
+  const maxCase = parseInt(document.getElementById('casePerPallet')?.value) || 70;
+  area.insertAdjacentHTML('afterbegin', `<div class="ul-entry ul-green"><span class="ts">${ts}</span>垛码 ${palletCode} ${maxCase}箱 上传成功</div>`);
+  area.insertAdjacentHTML('afterbegin', `<div class="ul-entry ul-blue"><span class="ts">${ts}</span>垛码 ${palletCode} ${maxCase}箱 上传中...</div>`);
+}
+
+function closeAlarmDC() {
+  alert('报警已关闭，声光报警器已停止');
+}
+
+function forcePallet() {
+  if(confirm('确认强制满垛？将忽略预设要求，生成虚拟垛标并重置计数。')) {
+    curCases = 0;
+    document.getElementById('curCases').textContent = 0;
+    appendOpLog('执行强制满垛操作');
+  }
+}
+
+function extractUnfinished() {
+  alert('查询未成垛数据...\n\n未成垛记录：\n1. 生产单20241130001 - 进度 45/70箱\n\n请选择后继续生产');
+}
+
+function resetReject() {
+  if(confirm('确认将总剔除数清零？')) {
+    rejectCnt = 0;
+    document.getElementById('rejectCount').textContent = 0;
+  }
+}
+
+// 产品选择
+function updateProductInfo() {
+  const sel = document.getElementById('productSelect');
+  const codeArea = document.getElementById('productCodeArea');
+  const codeDisplay = document.getElementById('productCodeDisplay');
+  const codes = {'P001':'SHW-001','P002':'SHW-002','P003':'SHW-003','P004':'SHW-004'};
+  if(sel.value) {
+    codeArea.style.display = 'block';
+    codeDisplay.textContent = codes[sel.value] || '—';
+  } else {
+    codeArea.style.display = 'none';
+  }
+}
+
+// 手工采集（仅支持瓶盒关联）
+let isManualCollecting = false;
+function toggleManualCollect() {
+  const btn = document.getElementById('manualCollectBtn');
+  const manualN = document.getElementById('manualN');
+  if(!isManualCollecting) {
+    manualN.disabled = true;
+    isManualCollecting = true;
+    btn.textContent = '停止采集';
+    btn.style.background = '#DC2626';
+  } else {
+    manualN.disabled = false;
+    isManualCollecting = false;
+    btn.textContent = '开始采集';
+    btn.style.background = '';
+  }
+}
+
+// 数据查询 / 取消关联 / 数据替换 / 码包查看 - 共用模拟数据
+// ── 模拟数据结构：垛 P20241201001 ──
+// 1垛 → 3箱(C001/C002/C003) → 每箱4盒 → 每盒6瓶，共72条瓶码
+// 演示流程：数据查询输入 P20241201001/20241201C001/20241201V010101；取消关联输入 20241201V010101+20241201V010102；数据替换原码 20241201V010101 新码 20241201V010101N
+const mockData = {
+  // ====== 垛码 ======
+  'P20241201001': {
+    level:'垛码', time:'2024-12-01 11:00:00',
+    children:['20241201C001','20241201C002','20241201C003']
+  },
+
+  // ====== 箱码 ======
+  '20241201C001': {
+    level:'箱码', time:'2024-12-01 10:58:42', parent:'P20241201001',
+    children:['20241201B0101','20241201B0102','20241201B0103','20241201B0104']
+  },
+  '20241201C002': {
+    level:'箱码', time:'2024-12-01 10:59:10', parent:'P20241201001',
+    children:['20241201B0201','20241201B0202','20241201B0203','20241201B0204']
+  },
+  '20241201C003': {
+    level:'箱码', time:'2024-12-01 10:59:38', parent:'P20241201001',
+    children:['20241201B0301','20241201B0302','20241201B0303','20241201B0304']
+  },
+
+  // ====== 盒码（箱1）======
+  '20241201B0101': {
+    level:'盒码', time:'2024-12-01 10:55:01', parent:'20241201C001',
+    children:['20241201V010101','20241201V010102','20241201V010103','20241201V010104','20241201V010105','20241201V010106']
+  },
+  '20241201B0102': {
+    level:'盒码', time:'2024-12-01 10:55:22', parent:'20241201C001',
+    children:['20241201V010201','20241201V010202','20241201V010203','20241201V010204','20241201V010205','20241201V010206']
+  },
+  '20241201B0103': {
+    level:'盒码', time:'2024-12-01 10:55:43', parent:'20241201C001',
+    children:['20241201V010301','20241201V010302','20241201V010303','20241201V010304','20241201V010305','20241201V010306']
+  },
+  '20241201B0104': {
+    level:'盒码', time:'2024-12-01 10:56:04', parent:'20241201C001',
+    children:['20241201V010401','20241201V010402','20241201V010403','20241201V010404','20241201V010405','20241201V010406']
+  },
+
+  // ====== 盒码（箱2）======
+  '20241201B0201': {
+    level:'盒码', time:'2024-12-01 10:56:30', parent:'20241201C002',
+    children:['20241201V020101','20241201V020102','20241201V020103','20241201V020104','20241201V020105','20241201V020106']
+  },
+  '20241201B0202': {
+    level:'盒码', time:'2024-12-01 10:56:51', parent:'20241201C002',
+    children:['20241201V020201','20241201V020202','20241201V020203','20241201V020204','20241201V020205','20241201V020206']
+  },
+  '20241201B0203': {
+    level:'盒码', time:'2024-12-01 10:57:12', parent:'20241201C002',
+    children:['20241201V020301','20241201V020302','20241201V020303','20241201V020304','20241201V020305','20241201V020306']
+  },
+  '20241201B0204': {
+    level:'盒码', time:'2024-12-01 10:57:33', parent:'20241201C002',
+    children:['20241201V020401','20241201V020402','20241201V020403','20241201V020404','20241201V020405','20241201V020406']
+  },
+
+  // ====== 盒码（箱3）======
+  '20241201B0301': {
+    level:'盒码', time:'2024-12-01 10:57:55', parent:'20241201C003',
+    children:['20241201V030101','20241201V030102','20241201V030103','20241201V030104','20241201V030105','20241201V030106']
+  },
+  '20241201B0302': {
+    level:'盒码', time:'2024-12-01 10:58:10', parent:'20241201C003',
+    children:['20241201V030201','20241201V030202','20241201V030203','20241201V030204','20241201V030205','20241201V030206']
+  },
+  '20241201B0303': {
+    level:'盒码', time:'2024-12-01 10:58:22', parent:'20241201C003',
+    children:['20241201V030301','20241201V030302','20241201V030303','20241201V030304','20241201V030305','20241201V030306']
+  },
+  '20241201B0304': {
+    level:'盒码', time:'2024-12-01 10:58:35', parent:'20241201C003',
+    children:['20241201V030401','20241201V030402','20241201V030403','20241201V030404','20241201V030405','20241201V030406']
+  },
+
+  // ====== 瓶码（12盒×6瓶=72个）======
+  '20241201V010101':{ level:'瓶码', time:'2024-12-01 10:54:01', parent:'20241201B0101' },
+  '20241201V010102':{ level:'瓶码', time:'2024-12-01 10:54:03', parent:'20241201B0101' },
+  '20241201V010103':{ level:'瓶码', time:'2024-12-01 10:54:05', parent:'20241201B0101' },
+  '20241201V010104':{ level:'瓶码', time:'2024-12-01 10:54:07', parent:'20241201B0101' },
+  '20241201V010105':{ level:'瓶码', time:'2024-12-01 10:54:09', parent:'20241201B0101' },
+  '20241201V010106':{ level:'瓶码', time:'2024-12-01 10:54:11', parent:'20241201B0101' },
+  '20241201V010201':{ level:'瓶码', time:'2024-12-01 10:54:22', parent:'20241201B0102' },
+  '20241201V010202':{ level:'瓶码', time:'2024-12-01 10:54:24', parent:'20241201B0102' },
+  '20241201V010203':{ level:'瓶码', time:'2024-12-01 10:54:26', parent:'20241201B0102' },
+  '20241201V010204':{ level:'瓶码', time:'2024-12-01 10:54:28', parent:'20241201B0102' },
+  '20241201V010205':{ level:'瓶码', time:'2024-12-01 10:54:30', parent:'20241201B0102' },
+  '20241201V010206':{ level:'瓶码', time:'2024-12-01 10:54:32', parent:'20241201B0102' },
+  '20241201V010301':{ level:'瓶码', time:'2024-12-01 10:54:43', parent:'20241201B0103' },
+  '20241201V010302':{ level:'瓶码', time:'2024-12-01 10:54:45', parent:'20241201B0103' },
+  '20241201V010303':{ level:'瓶码', time:'2024-12-01 10:54:47', parent:'20241201B0103' },
+  '20241201V010304':{ level:'瓶码', time:'2024-12-01 10:54:49', parent:'20241201B0103' },
+  '20241201V010305':{ level:'瓶码', time:'2024-12-01 10:54:51', parent:'20241201B0103' },
+  '20241201V010306':{ level:'瓶码', time:'2024-12-01 10:54:53', parent:'20241201B0103' },
+  '20241201V010401':{ level:'瓶码', time:'2024-12-01 10:55:04', parent:'20241201B0104' },
+  '20241201V010402':{ level:'瓶码', time:'2024-12-01 10:55:06', parent:'20241201B0104' },
+  '20241201V010403':{ level:'瓶码', time:'2024-12-01 10:55:08', parent:'20241201B0104' },
+  '20241201V010404':{ level:'瓶码', time:'2024-12-01 10:55:10', parent:'20241201B0104' },
+  '20241201V010405':{ level:'瓶码', time:'2024-12-01 10:55:12', parent:'20241201B0104' },
+  '20241201V010406':{ level:'瓶码', time:'2024-12-01 10:55:14', parent:'20241201B0104' },
+  '20241201V020101':{ level:'瓶码', time:'2024-12-01 10:56:30', parent:'20241201B0201' },
+  '20241201V020102':{ level:'瓶码', time:'2024-12-01 10:56:32', parent:'20241201B0201' },
+  '20241201V020103':{ level:'瓶码', time:'2024-12-01 10:56:34', parent:'20241201B0201' },
+  '20241201V020104':{ level:'瓶码', time:'2024-12-01 10:56:36', parent:'20241201B0201' },
+  '20241201V020105':{ level:'瓶码', time:'2024-12-01 10:56:38', parent:'20241201B0201' },
+  '20241201V020106':{ level:'瓶码', time:'2024-12-01 10:56:40', parent:'20241201B0201' },
+  '20241201V020201':{ level:'瓶码', time:'2024-12-01 10:56:51', parent:'20241201B0202' },
+  '20241201V020202':{ level:'瓶码', time:'2024-12-01 10:56:53', parent:'20241201B0202' },
+  '20241201V020203':{ level:'瓶码', time:'2024-12-01 10:56:55', parent:'20241201B0202' },
+  '20241201V020204':{ level:'瓶码', time:'2024-12-01 10:56:57', parent:'20241201B0202' },
+  '20241201V020205':{ level:'瓶码', time:'2024-12-01 10:56:59', parent:'20241201B0202' },
+  '20241201V020206':{ level:'瓶码', time:'2024-12-01 10:57:01', parent:'20241201B0202' },
+  '20241201V020301':{ level:'瓶码', time:'2024-12-01 10:57:12', parent:'20241201B0203' },
+  '20241201V020302':{ level:'瓶码', time:'2024-12-01 10:57:14', parent:'20241201B0203' },
+  '20241201V020303':{ level:'瓶码', time:'2024-12-01 10:57:16', parent:'20241201B0203' },
+  '20241201V020304':{ level:'瓶码', time:'2024-12-01 10:57:18', parent:'20241201B0203' },
+  '20241201V020305':{ level:'瓶码', time:'2024-12-01 10:57:20', parent:'20241201B0203' },
+  '20241201V020306':{ level:'瓶码', time:'2024-12-01 10:57:22', parent:'20241201B0203' },
+  '20241201V020401':{ level:'瓶码', time:'2024-12-01 10:57:33', parent:'20241201B0204' },
+  '20241201V020402':{ level:'瓶码', time:'2024-12-01 10:57:35', parent:'20241201B0204' },
+  '20241201V020403':{ level:'瓶码', time:'2024-12-01 10:57:37', parent:'20241201B0204' },
+  '20241201V020404':{ level:'瓶码', time:'2024-12-01 10:57:39', parent:'20241201B0204' },
+  '20241201V020405':{ level:'瓶码', time:'2024-12-01 10:57:41', parent:'20241201B0204' },
+  '20241201V020406':{ level:'瓶码', time:'2024-12-01 10:57:43', parent:'20241201B0204' },
+  '20241201V030101':{ level:'瓶码', time:'2024-12-01 10:57:55', parent:'20241201B0301' },
+  '20241201V030102':{ level:'瓶码', time:'2024-12-01 10:57:57', parent:'20241201B0301' },
+  '20241201V030103':{ level:'瓶码', time:'2024-12-01 10:57:59', parent:'20241201B0301' },
+  '20241201V030104':{ level:'瓶码', time:'2024-12-01 10:58:01', parent:'20241201B0301' },
+  '20241201V030105':{ level:'瓶码', time:'2024-12-01 10:58:03', parent:'20241201B0301' },
+  '20241201V030106':{ level:'瓶码', time:'2024-12-01 10:58:05', parent:'20241201B0301' },
+  '20241201V030201':{ level:'瓶码', time:'2024-12-01 10:58:10', parent:'20241201B0302' },
+  '20241201V030202':{ level:'瓶码', time:'2024-12-01 10:58:12', parent:'20241201B0302' },
+  '20241201V030203':{ level:'瓶码', time:'2024-12-01 10:58:14', parent:'20241201B0302' },
+  '20241201V030204':{ level:'瓶码', time:'2024-12-01 10:58:16', parent:'20241201B0302' },
+  '20241201V030205':{ level:'瓶码', time:'2024-12-01 10:58:18', parent:'20241201B0302' },
+  '20241201V030206':{ level:'瓶码', time:'2024-12-01 10:58:20', parent:'20241201B0302' },
+  '20241201V030301':{ level:'瓶码', time:'2024-12-01 10:58:22', parent:'20241201B0303' },
+  '20241201V030302':{ level:'瓶码', time:'2024-12-01 10:58:24', parent:'20241201B0303' },
+  '20241201V030303':{ level:'瓶码', time:'2024-12-01 10:58:26', parent:'20241201B0303' },
+  '20241201V030304':{ level:'瓶码', time:'2024-12-01 10:58:28', parent:'20241201B0303' },
+  '20241201V030305':{ level:'瓶码', time:'2024-12-01 10:58:30', parent:'20241201B0303' },
+  '20241201V030306':{ level:'瓶码', time:'2024-12-01 10:58:32', parent:'20241201B0303' },
+  '20241201V030401':{ level:'瓶码', time:'2024-12-01 10:58:35', parent:'20241201B0304' },
+  '20241201V030402':{ level:'瓶码', time:'2024-12-01 10:58:37', parent:'20241201B0304' },
+  '20241201V030403':{ level:'瓶码', time:'2024-12-01 10:58:39', parent:'20241201B0304' },
+  '20241201V030404':{ level:'瓶码', time:'2024-12-01 10:58:41', parent:'20241201B0304' },
+  '20241201V030405':{ level:'瓶码', time:'2024-12-01 10:58:43', parent:'20241201B0304' },
+  '20241201V030406':{ level:'瓶码', time:'2024-12-01 10:58:45', parent:'20241201B0304' },
+};
+
+// 构建所有完整关联链（每行：瓶码→盒码→箱码→垛码）
+function buildAllChains() {
+  const rows = [];
+  for (const code of Object.keys(mockData)) {
+    const d = mockData[code];
+    if (d.level !== '瓶码') continue;
+    const chain = { 瓶码: code, 盒码: '', 箱码: '', 垛码: '', time: d.time };
+    let cur = d.parent;
+    while (cur && mockData[cur]) {
+      const m = mockData[cur];
+      if (m.level === '盒码') chain.盒码 = cur;
+      else if (m.level === '箱码') chain.箱码 = cur;
+      else if (m.level === '垛码') chain.垛码 = cur;
+      cur = m.parent;
+    }
+    if (cur && !mockData[cur]) chain.垛码 = cur;
+    rows.push(chain);
+  }
+  return rows;
+}
+
+let queryRows = [];
+let queryInputCode = '';
+
+// 根据输入码找到所属垛码，返回该垛下的所有数据
+function getPalletForCode(code) {
+  if (mockData[code] && mockData[code].level === '垛码') return code;
+  let cur = code;
+  while (cur && mockData[cur]) {
+    const m = mockData[cur];
+    if (m.level === '垛码') return cur;
+    cur = m.parent;
+  }
+  if (cur && !mockData[cur]) return cur;
+  return null;
+}
+
+function doQuery() {
+  const code = document.getElementById('queryInput').value.trim();
+  if (!code) return;
+  document.getElementById('queryEmpty').style.display = 'none';
+  document.getElementById('querySplit').style.display = 'flex';
+
+  const allChains = buildAllChains();
+  queryInputCode = code;
+  const pallet = getPalletForCode(code);
+  queryRows = pallet ? allChains.filter(r => r.垛码 === pallet) : [];
+
+  const status = document.getElementById('queryStatus');
+  if (queryRows.length > 0) {
+    status.innerHTML = '<span style="color:#16A34A; font-weight:600;">查询成功</span>';
+  } else {
+    status.innerHTML = '<span style="color:#DC2626; font-weight:600;">未找到该码信息</span>';
+  }
+
+  document.getElementById('queryCount').textContent = queryRows.length > 0 ? `已查询到 ${queryRows.length} 条码信息` : '未找到该码信息';
+
+  const tbody = document.getElementById('queryTableBody');
+  const cellClass = (val) => (val === queryInputCode ? 'query-input-cell' : '');
+  tbody.innerHTML = queryRows.map((r, i) => {
+    return `<tr class="${i % 2 ? 'row-even' : ''}" data-row="${i}" onclick="selectQueryRow(${i})">
+      <td>${i + 1}</td>
+      <td class="${cellClass(r.瓶码)}">${r.瓶码 || '—'}</td>
+      <td class="${cellClass(r.盒码)}">${r.盒码 || '—'}</td>
+      <td class="${cellClass(r.箱码)}">${r.箱码 || '—'}</td>
+      <td class="${cellClass(r.垛码)}">${r.垛码 || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('queryDetail').innerHTML = '请点击左侧记录查看详细信息';
+  document.getElementById('queryDetail').style.color = '#9CA3AF';
+}
+
+function selectQueryRow(idx) {
+  const r = queryRows[idx];
+  if (!r) return;
+  document.querySelectorAll('#queryTableBody tr').forEach((tr, i) => {
+    tr.style.background = i === idx ? '#EFF6FF' : '';
+  });
+  document.getElementById('queryDetail').innerHTML = `
+    <div style="color:#1F2937; font-size:14px;" class="detail-section">
+      <div style="font-weight:600; margin-bottom:12px;">码详细信息</div>
+      <div style="margin-bottom:6px;">瓶码：${r.瓶码 || '—'}</div>
+      <div style="margin-bottom:6px;">盒码：${r.盒码 || '—'}</div>
+      <div style="margin-bottom:6px;">箱码：${r.箱码 || '—'}</div>
+      <div style="margin-bottom:6px;">垛码：${r.垛码 || '—'}</div>
+      <div style="margin-bottom:6px;">采集时间：${r.time || '—'}</div>
+      <div style="margin-bottom:6px;">是否关联：已关联</div>
+    </div>
+    <div style="font-weight:600; margin:16px 0 8px;">产品信息</div>
+    <div style="margin-bottom:6px;">产品编号：SP001</div>
+    <div style="margin-bottom:6px;">产品名称：商品001</div>
+    <div style="margin-bottom:6px;">生产单号：PO202602248710</div>
+  `;
+  document.getElementById('queryDetail').style.color = '#1F2937';
+}
+
+function clearQuery() {
+  document.getElementById('queryInput').value = '20241201C001';
+  document.getElementById('queryStatus').textContent = '未查询';
+  document.getElementById('querySplit').style.display = 'none';
+  document.getElementById('queryEmpty').style.display = 'flex';
+}
+
+function showQueryHelp() {
+  showHelp('查询说明',
+    '输入码后点击「查询」或回车，查出该码所属垛的全部数据。例如输入箱码，显示该垛下所有箱（箱1、箱2…）及各自的盒、瓶。左侧表格按层级分列展示，与输入的码对应的单元格红色字体显示；点击某行，右侧展示该行的具体信息（码、采集时间、产品编号、产品名称、生产单号）。'
+  );
+}
+
+// 数据替换
+function clearReplace() {
+  document.getElementById('origCode').value = '';
+  document.getElementById('newCode').value = '';
+  document.getElementById('replaceReason').value = '';
+}
+
+function openReplaceConfirm() {
+  const orig = document.getElementById('origCode').value.trim();
+  const newC = document.getElementById('newCode').value.trim();
+  if(!orig || !newC) { alert('请填写原码和新码'); return; }
+  document.getElementById('confirmTitle').textContent = '确认码替换';
+  document.getElementById('confirmMsg').innerHTML = `<strong>原码值：</strong>${orig}<br><strong>新码值：</strong>${newC}<br><strong>替换原因：</strong>${document.getElementById('replaceReason').value || '（未填写）'}`;
+  document.getElementById('confirmPwd').value = '';
+  document.getElementById('confirmPwdErr').textContent = '';
+  currentConfirmAction = () => {
+    const ts = new Date().toLocaleString('zh-CN');
+    const area = document.getElementById('replaceResultArea');
+    area.innerHTML = `<div style="border:1px solid #D1FAE5; border-radius:8px; padding:14px; margin-bottom:10px; background:#F0FDF4;">
+      <div style="color:#16A34A; font-size:16px; font-weight:700; margin-bottom:8px;">✓ 码替换成功！</div>
+      <div style="font-size:14px; color:#374151; line-height:1.8;">原码：${orig}<br>新码：${newC}<br>替换原因：${document.getElementById('replaceReason').value || '—'}<br>操作时间：${ts}</div>
+    </div>` + area.innerHTML;
+    clearReplace();
+  };
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+
+// ── 取消关联模块 ──
+let cancelMode = 'single';
+// 用于记录当前识别结果（供确认时使用）
+let cancelRecognizeInfo = null;
+
+function switchCancelMode(mode) {
+  cancelMode = mode;
+  document.getElementById('cancelSingle').classList.toggle('active', mode === 'single');
+  document.getElementById('cancelBatch').classList.toggle('active', mode === 'batch');
+  document.getElementById('cancelSingleContent').classList.toggle('active', mode === 'single');
+  document.getElementById('cancelBatchContent').classList.toggle('active', mode === 'batch');
+  // 切换时清空识别结果提示
+  resetRecognizeResult(mode === 'single' ? '请在左侧输入码值并点击识别' : '请在左侧添加盒/箱/垛码并点击识别');
+}
+
+function resetRecognizeResult(msg) {
+  document.getElementById('recognizeResult').innerHTML =
+    `<div style="color:#9CA3AF;font-size:15px;text-align:center;padding-top:60px;">${msg}</div>`;
+  document.getElementById('recognizeHint').textContent = '识别后将在此显示';
+  cancelRecognizeInfo = null;
+}
+
+// 构建单个码的完整关联链（从根到当前码）
+function buildChain(code) {
+  const chain = [];
+  const d = mockData[code];
+  if(!d) return chain;
+  let cur = code;
+  const nodes = [{ code: cur, level: d.level }];
+  let parent = d.parent;
+  while(parent && mockData[parent]) {
+    const m = mockData[parent];
+    nodes.push({ code: parent, level: m.level });
+    parent = m.parent;
+  }
+  if(parent && !mockData[parent]) nodes.push({ code: parent, level: '垛码' });
+  return nodes.reverse(); // 根 -> ... -> 当前码
+}
+
+// 统计底层瓶数（码关系数）
+function countBottleDescendants(code) {
+  const d = mockData[code];
+  if(!d) return 0;
+  if(!d.children || d.children.length === 0) return 1; // 瓶码或无子级
+  return d.children.reduce((sum, c) => sum + countBottleDescendants(c), 0);
+}
+
+// 根据 mockData 分析一个码的可解除状态
+function analyzeCancelCode(code) {
+  const d = mockData[code];
+  if(!d) return null;
+  const hasParent = !!d.parent;
+  const childCount = countBottleDescendants(code);
+  // 构建完整链路（不含当前码本身）
+  const chain = buildChain(code).filter(n => n.code !== code);
+  return { code, level: d.level, hasParent, childCount, chain };
+}
+
+function renderCancelItem(info) {
+  if(!info) return '';
+  const levelColor = { '垛码':'#7C3AED','箱码':'#C2410C','盒码':'#15803D','瓶码':'#1D4ED8' };
+  const col = levelColor[info.level] || '#374151';
+  const levelMap = { '垛码':'垛','箱码':'箱','盒码':'盒','瓶码':'瓶' };
+  if(!info.hasParent) {
+    const n = info.childCount > 0 ? info.childCount : 0;
+    return `<div class="cr-item cr-ok">
+      <span style="color:${col};font-weight:700;">${info.level} ${info.code}</span>，可取消关联，取消<b>${n}</b>个
+    </div>`;
+  } else {
+    const parentLabel = info.chain.length > 0 ? info.chain[info.chain.length-1].level : '上级';
+    const reason = `${levelMap[info.level]}已关联至${parentLabel}，请先取消上级`;
+    const chainStr = info.chain.map(n => `${n.level} ${n.code}`).join('→') + (info.chain.length ? `→${info.code}` : info.code);
+    return `<div class="cr-item cr-err">
+      <span style="color:${col};font-weight:700;">${info.level} ${info.code}</span>，不可取消关联（${reason}）
+      <div class="cr-chain">链路: ${chainStr}</div>
+    </div>`;
+  }
+}
+
+// 单码识别（子查父：扫瓶/盒找上级，取消上级单元）
+function doRecognize() {
+  const code = document.getElementById('code1').value.trim();
+  if(!code) { alert('请输入或扫描瓶码/盒码'); return; }
+
+  const d = mockData[code];
+  if(!d) {
+    document.getElementById('recognizeResult').innerHTML = `<div style="color:#DC2626;font-size:14px;padding:16px;">✗ 该码未在系统中找到，请检查码值</div>`;
+    document.getElementById('recognizeHint').textContent = '✗ 未找到';
+    document.getElementById('confirmCancelBtn').disabled = true;
+    document.getElementById('cancelBtnHint').style.display = 'none';
+    cancelRecognizeInfo = null;
+    return;
+  }
+  // 单码模式不支持箱码、垛码
+  if(d.level === '箱码' || d.level === '垛码') {
+    document.getElementById('recognizeResult').innerHTML = `<div style="color:#DC2626;font-size:14px;padding:16px;">✗ 单码模式不支持箱码、垛码。整箱/整垛取消请使用多码模式。</div>`;
+    document.getElementById('recognizeHint').textContent = '✗ 不支持';
+    document.getElementById('confirmCancelBtn').disabled = true;
+    document.getElementById('cancelBtnHint').style.display = 'none';
+    cancelRecognizeInfo = null;
+    return;
+  }
+  // 子查父：瓶码→找盒；盒码→找箱。分析上级单元
+  const parentCode = d.parent;
+  if(!parentCode) {
+    document.getElementById('recognizeResult').innerHTML = `<div style="color:#DC2626;font-size:14px;padding:16px;">✗ 该码无上级关联</div>`;
+    document.getElementById('recognizeHint').textContent = '✗ 无上级';
+    document.getElementById('confirmCancelBtn').disabled = true;
+    document.getElementById('cancelBtnHint').style.display = 'none';
+    cancelRecognizeInfo = null;
+    return;
+  }
+  const info = analyzeCancelCode(parentCode);
+  const html = renderCancelItem(info);
+  const canCancel = info && !info.hasParent;
+
+  document.getElementById('recognizeResult').innerHTML = html;
+  document.getElementById('recognizeHint').textContent =
+    canCancel ? '✓ 识别完成，可执行解除' : '⚠ 识别完成，有上级关联';
+
+  const btn = document.getElementById('confirmCancelBtn');
+  const hint = document.getElementById('cancelBtnHint');
+  btn.disabled = !canCancel;
+  hint.style.display = canCancel ? 'none' : 'block';
+  cancelRecognizeInfo = { type: 'single', items: [info] };
+}
+
+function clearCancel() {
+  document.getElementById('code1').value = '20241201V010101';
+  document.getElementById('confirmCancelBtn').disabled = true;
+  document.getElementById('cancelBtnHint').style.display = 'none';
+  resetRecognizeResult('请在左侧输入码值并点击识别');
+}
+
+// 批量码列表
+const batchCodes = [];
+function addBatchCode() {
+  const code = document.getElementById('batchCode').value.trim();
+  if(!code) return;
+  if(batchCodes.includes(code)) { alert('该码已在列表中'); return; }
+  batchCodes.push(code);
+  document.getElementById('batchCode').value = '';
+  document.getElementById('batchCode').focus();
+  renderBatchList();
+}
+
+function renderBatchList() {
+  const list = document.getElementById('batchCodeList');
+  if(batchCodes.length === 0) {
+    list.innerHTML = '<div style="color:#9CA3AF;font-size:14px;text-align:center;padding:20px;">暂无添加</div>';
+    return;
+  }
+  list.innerHTML = batchCodes.map((c, i) => {
+    const d = mockData[c];
+    const levelLabel = d ? d.level : '未知';
+    return `<div class="batch-list-item">
+      <span style="color:#374151;">${i+1}. <span style="color:#2563EB;font-weight:600;">${levelLabel}</span> ${c}</span>
+      <button class="batch-del-btn" onclick="removeBatchCode(${i})">删除</button>
+    </div>`;
+  }).join('');
+}
+
+function removeBatchCode(idx) { batchCodes.splice(idx, 1); renderBatchList(); }
+
+function clearBatch() {
+  batchCodes.length = 0;
+  renderBatchList();
+  document.getElementById('batchCode').value = '20241201C001';
+  resetRecognizeResult('请在左侧添加盒/箱/垛码并点击识别');
+  cancelRecognizeInfo = null;
+}
+
+// 批量识别
+function doBatchRecognize() {
+  if(batchCodes.length === 0) { alert('请先添加大码'); return; }
+  const infos = batchCodes.map(c => analyzeCancelCode(c) || { code: c, level:'未知', hasParent:true, childCount:0, chain:[], notFound:true });
+  let html = '';
+  let cancelableCount = 0, cancelableRelations = 0;
+
+  infos.forEach((info, i) => {
+    if(info.notFound) {
+      html += `<div class="cr-item cr-err"><span class="cr-badge cr-badge-err">未找到</span><span style="font-weight:700;">${info.code}</span> — 该码不存在</div>`;
+    } else {
+      html += renderCancelItem(info);
+      if(!info.hasParent && info.childCount > 0) {
+        cancelableCount++;
+        cancelableRelations += info.childCount;
+      }
+    }
+  });
+
+  if(cancelableCount > 0) {
+    html += `<div class="cr-summary">📊 总影响范围：<b>${cancelableCount}</b> 个可取消，涉及 <b>${cancelableRelations}</b> 个码关系</div>`;
+  } else {
+    html += `<div class="cr-summary" style="background:#FEF2F2;border-color:#FCA5A5;color:#991B1B;">⚠ 所有单元均有上级关联，请先从垛开始逐级解除</div>`;
+  }
+
+  document.getElementById('recognizeResult').innerHTML = html;
+  document.getElementById('recognizeHint').textContent = cancelableCount > 0
+    ? `✓ 识别完成，${cancelableCount}个可取消` : '⚠ 全部有上级关联';
+  cancelRecognizeInfo = { type: 'batch', items: infos, cancelableCount, cancelableRelations };
+}
+
+// 统一确认入口
+function openCancelConfirm(mode) {
+  if(mode === 'batch') {
+    if(batchCodes.length === 0) { alert('请先添加大码'); return; }
+    if(!cancelRecognizeInfo) { alert('请先点击识别'); return; }
+    const { cancelableCount, cancelableRelations } = cancelRecognizeInfo;
+    document.getElementById('confirmTitle').textContent = '取消关联确认';
+    document.getElementById('confirmMsg').innerHTML =
+      `将批量取消关联 <b>${cancelableCount}</b> 个包装单元，涉及 <b>${cancelableRelations}</b> 个码关系<br>
+       <span style="color:#DC2626;font-size:13px;">此操作不可恢复，请仔细核对后确认！</span>`;
+    currentConfirmAction = () => execCancelConfirm('batch');
+  } else {
+    if(!cancelRecognizeInfo) { alert('请先点击识别'); return; }
+    const cancelableItems = cancelRecognizeInfo.items.filter(i => !i.hasParent);
+    document.getElementById('confirmTitle').textContent = '取消关联确认';
+    const desc = cancelableItems.map(i => `${i.level} ${i.code}（解除${i.childCount}个）`).join('、');
+    document.getElementById('confirmMsg').innerHTML =
+      `确认取消关联：<b>${desc || '已识别码'}</b><br>
+       <span style="color:#DC2626;font-size:13px;">此操作不可恢复，请仔细核对后确认！</span>`;
+    currentConfirmAction = () => execCancelConfirm('single');
+  }
+  document.getElementById('confirmPwd').value = '';
+  document.getElementById('confirmPwdErr').textContent = '';
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+
+function execCancelConfirm(mode) {
+  const ts = getTs();
+  const log = document.getElementById('cancelResultLog');
+  // 清除空状态
+  const empty = log.querySelector('div[style*="暂无"]');
+  if(empty) log.innerHTML = '';
+
+  if(mode === 'single') {
+    const cancelableItems = (cancelRecognizeInfo?.items || []).filter(i => !i.hasParent);
+    // 模拟云端检查（随机已上传）
+    const uploaded = Math.random() > 0.4;
+    let logHtml = '';
+    cancelableItems.forEach(info => {
+      if(uploaded) {
+        logHtml += `<div class="cl-entry"><span class="cl-ts">${ts}</span>🌐 云端检查：${info.level} ${info.code} 已上传，正在云端解除...</div>`;
+      }
+      logHtml += `<div class="cl-entry cl-ok"><span class="cl-ts">${ts}</span>✓ ${info.level} ${info.code} 取消${info.childCount}个</div>`;
+    });
+    log.insertAdjacentHTML('afterbegin', logHtml);
+    document.getElementById('code1').value = '';
+    cancelRecognizeInfo = null;
+  } else {
+    const { items, cancelableCount, cancelableRelations } = cancelRecognizeInfo || {};
+    const cancelableItems = (items || []).filter(i => !i.hasParent);
+    const uploaded = Math.random() > 0.4;
+    let logHtml = '';
+    if(uploaded) {
+      logHtml += `<div class="cl-entry"><span class="cl-ts">${ts}</span>🌐 云端检查：${cancelableCount}个单元已上传，正在批量云端解除...</div>`;
+    }
+    cancelableItems.forEach(info => {
+      logHtml += `<div class="cl-entry cl-ok"><span class="cl-ts">${ts}</span>✓ ${info.level} ${info.code} 取消${info.childCount}个</div>`;
+    });
+    logHtml += `<div class="cl-entry cl-ok" style="font-weight:700;"><span class="cl-ts">${ts}</span>✓ 批量操作完成：${cancelableCount}个单元，共解除 ${cancelableRelations} 个码关系${uploaded?'（云端+本地）':'（本地）'}</div>`;
+    log.insertAdjacentHTML('afterbegin', logHtml);
+    clearBatch();
+  }
+}
+
+// 生产统计（基于 mockData 演示：1垛=3箱=12盒=72瓶）
+function doStatsQuery() {
+  const p = 10 + Math.floor(Math.random()*5); // 10~14垛
+  document.getElementById('statPallet').textContent = p;
+  document.getElementById('statCase').textContent = (p * 3).toLocaleString();
+  document.getElementById('statBox').textContent = (p * 12).toLocaleString();
+  document.getElementById('statReject').textContent = Math.floor(Math.random()*5+1);
+}
+
+// 垛码列表模拟数据（垛码、箱数、生产单号、关联时间）
+const mockPalletList = [
+  { 垛码:'P20241201010', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 16:30:22' },
+  { 垛码:'P20241201009', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 15:55:10' },
+  { 垛码:'P20241201008', 箱数:70, 生产单号:'PO202412018713', 关联时间:'2024-12-01 15:20:45' },
+  { 垛码:'P20241201007', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 14:45:33' },
+  { 垛码:'P20241201006', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 14:10:18' },
+  { 垛码:'P20241201005', 箱数:70, 生产单号:'PO202412018712', 关联时间:'2024-12-01 13:35:02' },
+  { 垛码:'P20241201004', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 13:00:55' },
+  { 垛码:'P20241201003', 箱数:70, 生产单号:'PO202412018711', 关联时间:'2024-12-01 12:25:40' },
+  { 垛码:'P20241201002', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 11:50:28' },
+  { 垛码:'P20241201001', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 11:15:16' }
+];
+
+function openPalletList() {
+  document.getElementById('palletListOverlay').classList.add('active');
+  filterPalletList();
+}
+function closePalletList() { document.getElementById('palletListOverlay').classList.remove('active'); }
+
+function filterPalletList() {
+  const kw = document.getElementById('palletFilterCode').value.trim().toLowerCase();
+  const filtered = kw ? mockPalletList.filter(p => (p.垛码||'').toLowerCase().includes(kw)) : mockPalletList;
+  const tbody = document.getElementById('palletListBody');
+  tbody.innerHTML = filtered.length ? filtered.map((p,i) =>
+    `<tr ${i%2?'class="row-even"':''}><td>${p.垛码}</td><td>${p.箱数}</td><td>${p.生产单号||'-'}</td><td>${p.关联时间}</td></tr>`
+  ).join('') : '<tr><td colspan="4" style="text-align:center;color:#9CA3AF;padding:40px;">无匹配数据</td></tr>';
+}
+
+// 剔除记录弹窗（模拟数据）
+const mockRejectRecords = [
+  { 瓶码:'20241201V010101', 盒码:'20241201B0101', 箱码:'20241201C001', 问题码:'20241201V010101', 原因:'重码', 时间:'2024-12-01 10:30:15', 生产单号:'PO202412018710' },
+  { 瓶码:'20241201V010102', 盒码:'20241201B0102', 箱码:'20241201C001', 问题码:'20241201B0102', 原因:'错码', 时间:'2024-12-01 10:31:22', 生产单号:'PO202412018710' },
+  { 瓶码:'20241201V020103', 盒码:'20241201B0203', 箱码:'20241201C002', 问题码:'20241201V020103', 原因:'重码', 时间:'2024-12-01 10:35:08', 生产单号:'PO202412018710' }
+];
+let filteredRejectRecords = [...mockRejectRecords];
+
+function openRejectList() { document.getElementById('rejectListOverlay').classList.add('active'); filterRejectList(); }
+function closeRejectList() { document.getElementById('rejectListOverlay').classList.remove('active'); }
+
+function filterRejectList() {
+  const kw = document.getElementById('rejectFilterCode').value.trim().toLowerCase();
+  filteredRejectRecords = kw ? mockRejectRecords.filter(r => (r.箱码||'').toLowerCase().includes(kw)) : [...mockRejectRecords];
+  const tbody = document.getElementById('rejectTableBody');
+  const getProblemClass = (r, field) => (r.问题码 === r[field] ? 'reject-problem' : '');
+  tbody.innerHTML = filteredRejectRecords.map((r,i) => {
+    const rc = i % 2 ? 'row-even' : '';
+    return `<tr class="reject-row ${rc}" data-idx="${i}" onclick="selectRejectRow(${i})">
+      <td>${i+1}</td><td class="${getProblemClass(r,'瓶码')}">${r.瓶码}</td><td class="${getProblemClass(r,'盒码')}">${r.盒码}</td><td class="${getProblemClass(r,'箱码')}">${r.箱码}</td><td>${r.原因}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('rejectListCount').textContent = `已查询到 ${filteredRejectRecords.length} 条剔除记录`;
+  document.getElementById('rejectDetail').innerHTML = '<div style="color:#9CA3AF;">请点击左侧记录查看详细信息</div>';
+}
+
+function selectRejectRow(idx) {
+  document.querySelectorAll('.reject-row').forEach((tr,i) => tr.classList.toggle('selected', i===idx));
+  const r = filteredRejectRecords[idx];
+  if(!r) return;
+  document.getElementById('rejectDetail').innerHTML = `
+    <div style="color:#1F2937; font-size:14px;">
+      <div style="font-weight:600; margin-bottom:12px;">剔除记录详情</div>
+      <div style="margin-bottom:8px;">问题码：<span style="color:#DC2626; font-weight:700;">${r.问题码}</span></div>
+      <div style="margin-bottom:8px;">箱码：${r.箱码}</div>
+      <div style="margin-bottom:8px;">剔除原因：${r.原因}</div>
+      <div style="margin-bottom:8px;">剔除时间：${r.时间}</div>
+      <div style="margin-bottom:8px;">生产单号：${r.生产单号}</div>
+    </div>`;
+}
+
+// 数据上传
+function doManualUpload() {
+  const ts = getTs();
+  const area = document.getElementById('uploadLogArea');
+  area.insertAdjacentHTML('afterbegin', `<div class="ul-entry ul-gray"><span class="ts">${ts}</span>手动上传：正在查找所有未上传的垛数据...</div>`);
+  setTimeout(() => {
+    const ts2 = getTs();
+    area.insertAdjacentHTML('afterbegin', `<div class="ul-entry ul-blue"><span class="ts">${ts2}</span>垛码 P20241201011 70箱 上传中...</div>`);
+    setTimeout(() => {
+      const ts3 = getTs();
+      area.insertAdjacentHTML('afterbegin', `<div class="ul-entry ul-green"><span class="ts">${ts3}</span>垛码 P20241201011 70箱 上传成功</div>`);
+      area.insertAdjacentHTML('afterbegin', `<div class="ul-entry ul-green"><span class="ts">${ts3}</span>手动上传完成，成功1个，失败0个</div>`);
+    }, 2000);
+  }, 1000);
+}
+
+function queryUploadStatus() {
+  const code = document.getElementById('uploadQueryCode').value.trim();
+  if(!code) { alert('请输入垛码'); return; }
+  const isKnown = ['P20241201001','P20241201002','P20241201003','P20241201004','P20241201005','P20241201006','P20241201007','P20241201008','P20241201009','P20241201010'].includes(code);
+  const statuses = ['成功','失败','未上传'];
+  const st = isKnown ? statuses[Math.floor(Math.random()*2)] : '未上传';
+  const stClass = st==='成功'?'badge-green':st==='失败'?'badge-red':'badge-gray';
+  document.getElementById('uploadQueryResult').innerHTML = `
+    <div class="upload-query-result">
+      <div class="upload-query-row"><span class="upload-query-label">垛码：</span><span style="color:#2563EB; font-size:16px; font-weight:700;">${code}</span></div>
+      <div class="upload-query-row"><span class="upload-query-label">状态：</span><span class="badge ${stClass}">${st}</span></div>
+      <div class="upload-query-row"><span class="upload-query-label">上传时间：</span><span>${st!=='未上传' ? '2024-12-01 14:35:20' : '—'}</span></div>
+      <div class="upload-query-row"><span class="upload-query-label">箱数：</span><span>70</span></div>
+      <div class="upload-query-row"><span class="upload-query-label">失败原因：</span><span>${st==='失败' ? '网络超时' : '—'}</span></div>
+    </div>
+  `;
+}
+
+function setNotUploaded() {
+  const code = document.getElementById('uploadQueryCode').value.trim();
+  if(!code) { alert('请输入垛码'); return; }
+  if(confirm(`确认将垛码 ${code} 的状态重置为未上传？`)) {
+    alert(`垛码 ${code} 已重置为未上传状态`);
+    queryUploadStatus();
+  }
+}
+
+function setUploaded() {
+  const code = document.getElementById('uploadQueryCode').value.trim();
+  if(!code) { alert('请输入垛码'); return; }
+  if(confirm(`确认将垛码 ${code} 标记为已上传？`)) {
+    alert(`垛码 ${code} 已标记为已上传状态`);
+    queryUploadStatus();
+  }
+}
+
+// 密码验证
+function openSysSettings() {
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('pwdError').textContent = '';
+  document.getElementById('pwdOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('pwdInput').focus(), 100);
+}
+
+function closePwd() { document.getElementById('pwdOverlay').classList.remove('active'); }
+
+function verifyPwd() {
+  if(document.getElementById('pwdInput').value === '123456') {
+    closePwd();
+    document.getElementById('sysOverlay').classList.add('active');
+  } else {
+    document.getElementById('pwdError').textContent = '密码错误，请重新输入';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+
+function openLicenseInfo2() {
+  const cache = getActivationCache2();
+  const statusEl = document.getElementById('licenseStatusText2');
+  const iconEl = document.getElementById('licenseStatusIcon2');
+  if (cache && cache.activated && cache.remainingDays != null) {
+    statusEl.textContent = '已激活, 剩余' + cache.remainingDays + '天';
+    statusEl.style.color = '#16A34A';
+    iconEl.style.background = '#16A34A';
+    iconEl.textContent = '✓';
+  } else {
+    statusEl.textContent = '未激活';
+    statusEl.style.color = '#DC2626';
+    iconEl.style.background = '#DC2626';
+    iconEl.textContent = '✕';
+  }
+  document.getElementById('licenseInfoOverlay2').classList.add('active');
+}
+function closeLicenseInfo2() {
+  document.getElementById('licenseInfoOverlay2').classList.remove('active');
+}
+
+function closeSys() { document.getElementById('sysOverlay').classList.remove('active'); }
+
+function switchSysTab2_1(el, tabId) {
+  document.querySelectorAll('#sysTabs2 .sys-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#sysPanels2 > .sys-tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+  const subDevice = document.getElementById('sysSubTabsDevice');
+  const subConn = document.getElementById('sysSubTabsConn');
+  const subBusiness = document.getElementById('sysSubTabsBusiness');
+  subDevice.classList.remove('visible');
+  subConn.classList.remove('visible');
+  subBusiness.classList.remove('visible');
+  if (tabId === 'st-business') {
+    subBusiness.classList.add('visible');
+    document.querySelectorAll('#sysSubTabsBusiness .sys-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#st-business > .sys-tab-panel').forEach(c => c.classList.remove('active'));
+    document.getElementById('st-codedigits').classList.add('active');
+    subBusiness.querySelector('.sys-tab').classList.add('active');
+  } else if (tabId === 'st-pages') {
+    // 页面配置无二级 Tab
+  } else if (tabId === 'st-device') {
+    subDevice.classList.add('visible');
+    document.querySelectorAll('#sysSubTabsDevice .sys-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#st-device > .sys-tab-panel').forEach(c => c.classList.remove('active'));
+    document.getElementById('st-io').classList.add('active');
+    subDevice.querySelector('.sys-tab').classList.add('active');
+  } else if (tabId === 'st-conn') {
+    subConn.classList.add('visible');
+    document.querySelectorAll('#sysSubTabsConn .sys-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#st-conn > .sys-tab-panel').forEach(c => c.classList.remove('active'));
+    document.getElementById('st-db').classList.add('active');
+    subConn.querySelector('.sys-tab').classList.add('active');
+  }
+}
+function switchSysTab2_Conn(el, tabId) {
+  document.querySelectorAll('#sysSubTabsConn .sys-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#st-conn > .sys-tab-panel').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+function switchSysTab2_Device(el, tabId) {
+  document.querySelectorAll('#sysSubTabsDevice .sys-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#st-device > .sys-tab-panel').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+function switchSysTab2_Business(el, tabId) {
+  document.querySelectorAll('#sysSubTabsBusiness .sys-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#st-business > .sys-tab-panel').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+function toggleAutoUpload2(el) {
+  el.classList.toggle('on');
+  const statusEl = document.getElementById('autoUploadStatus2');
+  if (statusEl) statusEl.textContent = el.classList.contains('on') ? '开启' : '关闭';
+}
+
+// 通用确认弹窗
+let currentConfirmAction = null;
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('active'); }
+function execConfirm() {
+  if(document.getElementById('confirmPwd').value !== '123456') {
+    document.getElementById('confirmPwdErr').textContent = '密码错误，请重新输入';
+    document.getElementById('confirmPwd').value = '';
+    return;
+  }
+  closeConfirm();
+  if(currentConfirmAction) currentConfirmAction();
+}
+
+function openPackageImport() {
+  document.getElementById('packageImportType').value = '';
+  document.getElementById('packageFileName').textContent = '未选择文件';
+  document.getElementById('packageFileInput').value = '';
+  document.getElementById('packageImportPwd').value = '';
+  document.getElementById('packageImportOverlay').classList.add('active');
+}
+function closePackageImport() { document.getElementById('packageImportOverlay').classList.remove('active'); }
+function onPackageFileSelect(el) {
+  const name = el.files.length ? el.files[0].name : '未选择文件';
+  document.getElementById('packageFileName').textContent = name;
+}
+function doPackageImport() {
+  const type = document.getElementById('packageImportType').value;
+  const file = document.getElementById('packageFileInput').files[0];
+  const pwd = document.getElementById('packageImportPwd').value;
+  if (!type) { alert('请先选择码包类型'); return; }
+  if (!file) { alert('请选择要导入的 TXT 文件'); return; }
+  if (!pwd) { alert('请输入密码'); return; }
+  if (pwd !== '123456') { alert('密码错误，请重新输入'); return; }
+  alert('导入成功，列表已刷新');
+  closePackageImport();
+}
+function showPackageHelp() {
+  showHelp('码包导入说明',
+    '码包文件都是指外码，请不要导入内码，防止码包泄露。\n\n在线更新（仅盖外码小标、箱外码大标）\n点击「在线更新」后，系统按上次拉取时间增量拉取瓶码（盖外码小标）、箱码（箱外码大标）两种码包。盒外码中标不参与在线拉取，需通过本地导入。首次拉取全量，后续拉取增量。拉取完成后列表自动刷新。\n\n启动自动导入\n软件每次启动时自动执行一次在线更新，仅拉取盖外码小标、箱外码大标，规则同上。\n\n本地导入（包材厂给的码包文件）\n盒外码中标仅能通过本地导入；盖外码小标、箱外码大标在无网络时也可本地导入。\n1. 点击「本地导入」\n2. 先选择码包类型：瓶码 / 盒码 / 箱码（三种文件格式一样，需您指定）\n3. 再选择本地 TXT 文件\n4. 输入密码 123456\n5. 确认解析入库，导入成功后列表自动刷新\n\n码包文件格式（包材厂提供的 TXT 文件）\n- 瓶码：每行一个瓶码\n- 盒码：每行一个盒码\n- 箱码：每行一个箱码\n\n删除\n只有该码包里的码都还没用过时才能删除；有已用过的码则不能删（码替换时需要校验）。删除后数据仍保留，可查记录。\n\n提醒\n生产前请确保码包已正确导入，否则采集时会报错。可通过「查看」检查码包内容。'
+  );
+}
+function tryDeletePackage(name) {
+  if (!confirm('确认删除此码包？')) return;
+  if (name === '箱码包01') {
+    alert('已删除（该码包内无已关联码，允许逻辑删除）');
+  } else {
+    alert('该码包内存在已关联码，禁止删除。删除后码替换时新码无法校验。');
+  }
+}
+let packageCodesAll = [];  // 当前码包下所有码（含关联状态、时间）
+let packageFiltered = [];
+let packagePage = 1;
+let packagePageSize = 20;
+
+function getCodeAssocInfo(code) {
+  const d = mockData[code];
+  const associated = d && d.parent;
+  return { associated, time: associated && d.time ? d.time : null };
+}
+
+function viewPackage(name) {
+  document.getElementById('packageModalTitle').textContent = `查看码包：${name}`;
+  document.getElementById('packageCodeSearch').value = '';
+  let codes = [];
+  if (name.includes('瓶') || name.includes('小标')) {
+    codes = Object.keys(mockData).filter(c => mockData[c].level === '瓶码');
+    codes = codes.concat(['20241201V010101N', '20241201V010102N', '20241201V010103N', '20241201V010104N', '20241201V010105N']);
+  } else if (name.includes('盒') || name.includes('中标')) {
+    codes = Object.keys(mockData).filter(c => mockData[c].level === '盒码');
+    codes = codes.concat(['20241201B9999', '20241201B9998', '20241201B9997']);
+  } else if (name.includes('箱') || name.includes('大标')) {
+    codes = Object.keys(mockData).filter(c => mockData[c].level === '箱码');
+    codes = codes.concat(['20241201C999', '20241201C998', '20241201C997']);
+  } else {
+    codes = Object.keys(mockData).filter(c => mockData[c].level === '瓶码').slice(0, 10)
+      .concat(Object.keys(mockData).filter(c => mockData[c].level === '盒码').slice(0, 5))
+      .concat(['20241201V010101N', '20241201B9999']);
+  }
+  packageCodesAll = codes.map(c => {
+    const info = getCodeAssocInfo(c);
+    return { code: c, associated: info.associated, time: info.time };
+  });
+  packagePage = 1;
+  packagePageSize = 20;
+  document.getElementById('packagePageSize').value = '20';
+  filterPackageCodes();
+  document.getElementById('packageOverlay').classList.add('active');
+}
+
+function filterPackageCodes() {
+  const kw = document.getElementById('packageCodeSearch').value.trim().toLowerCase();
+  packageFiltered = kw
+    ? packageCodesAll.filter(p => (p.code || '').toLowerCase().includes(kw))
+    : [...packageCodesAll];
+  packagePage = 1;
+  packagePageSize = parseInt(document.getElementById('packagePageSize').value, 10) || 20;
+  renderPackageTable();
+}
+
+function packagePagePrev() {
+  const totalPages = Math.max(1, Math.ceil(packageFiltered.length / packagePageSize));
+  if (packagePage > 1) { packagePage--; renderPackageTable(); }
+}
+
+function packagePageNext() {
+  const totalPages = Math.max(1, Math.ceil(packageFiltered.length / packagePageSize));
+  if (packagePage < totalPages) { packagePage++; renderPackageTable(); }
+}
+
+function renderPackageTable() {
+  const tbody = document.getElementById('packageTableBody');
+  const total = packageFiltered.length;
+  const totalPages = Math.max(1, Math.ceil(total / packagePageSize));
+  const start = (packagePage - 1) * packagePageSize;
+  const pageData = packageFiltered.slice(start, start + packagePageSize);
+
+  tbody.innerHTML = pageData.map((p, i) => {
+    const rc = (start + i) % 2 ? 'row-even' : '';
+    const status = p.associated ? '<span class="badge badge-green">已关联</span>' : '<span class="badge badge-gray">未关联</span>';
+    const time = p.associated && p.time ? p.time : '-';
+    return `<tr class="${rc}"><td>${p.code}</td><td>${status}</td><td>${time}</td></tr>`;
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:#9CA3AF;padding:40px;">无匹配数据</td></tr>';
+
+  document.getElementById('packageTotalInfo').textContent = `共 ${total} 条`;
+  document.getElementById('packagePageInfo').textContent = `第 ${packagePage} 页`;
+  document.getElementById('packagePrevBtn').disabled = packagePage <= 1;
+  document.getElementById('packageNextBtn').disabled = packagePage >= totalPages;
+}
+
+function closePackage() { document.getElementById('packageOverlay').classList.remove('active'); }
+
+function testDbConn2() {
+  const result = document.getElementById('dbTestResult2');
+  result.textContent = '正在连接...'; result.style.color = '#6B7280';
+  setTimeout(() => { result.textContent = '✓ 连接成功'; result.style.color = '#16A34A'; }, 1200);
+}
+
+// 帮助弹窗
+function showHelp(title, content) {
+  const popup = document.getElementById('helpPopup');
+  popup.innerHTML = `<strong style="display:block; margin-bottom:8px; color:#1F2937;">${title}</strong><div style="white-space:pre-line; font-size:13px; color:#374151; line-height:1.7;">${content}</div>`;
+  popup.style.top = '50%'; popup.style.left = '50%';
+  popup.style.transform = 'translate(-50%, -50%)';
+  popup.style.position = 'fixed';
+  popup.classList.add('show');
+  setTimeout(() => document.addEventListener('click', hideHelp, {once:true}), 100);
+}
+function hideHelp() { document.getElementById('helpPopup').classList.remove('show'); }
+
+function confirmExit() {
+  if (isCollecting) {
+    alert('请先停止采集');
+    return;
+  }
+  const maxCase = parseInt(document.getElementById('casePerPallet').value) || 70;
+  if (curCases > 0 && curCases < maxCase) {
+    document.getElementById('unfinishedExitMsg').textContent = `存在未满垛(${curCases}箱)，是否暂存？`;
+    document.getElementById('unfinishedExitOverlay').classList.add('active');
+    return;
+  }
+  if (confirm('确认退出系统？')) window.close();
+}
+function closeUnfinishedExit() { document.getElementById('unfinishedExitOverlay').classList.remove('active'); }
+
+function closeStartCollectConfirm() { document.getElementById('startCollectConfirmOverlay').classList.remove('active'); }
+function confirmStartCollect() {
+  closeStartCollectConfirm();
+  const productSel = document.getElementById('productSelect');
+  const orderNum = document.getElementById('orderNum').value.trim();
+  const productName = productSel.options[productSel.selectedIndex].text;
+  isCollecting = true;
+  const btn = document.getElementById('collectBtn');
+  btn.textContent = '停止采集';
+  btn.style.background = '#DC2626';
+  document.getElementById('receivingDot').style.display = 'inline-flex';
+  startSimulation2();
+  appendOpLog(`开始采集 - 产品：${productName}，生产单：${orderNum}`);
+}
+function onUnfinishedExitCancel() {
+  closeUnfinishedExit();
+}
+function onUnfinishedExitForcePallet() {
+  closeUnfinishedExit();
+  curCases = 0;
+  document.getElementById('curCases').textContent = 0;
+  appendOpLog('执行强制满垛操作');
+  if (confirm('确认退出系统？')) window.close();
+}
+function onUnfinishedExitSave() {
+  curCases = 0;
+  document.getElementById('curCases').textContent = 0;
+  appendOpLog('未满垛数据已暂存');
+  closeUnfinishedExit();
+  if (confirm('确认退出系统？')) window.close();
+}
+
+// ── 操作帮助弹窗 ──
+function openHelpModal() {
+  const overlay = document.getElementById('helpOverlay');
+  overlay.classList.add('active');
+  // 滚动到顶部
+  document.getElementById('helpContent').scrollTop = 0;
+  // 激活第一个目录项
+  updateHelpToc('h-intro');
+  // 监听正文滚动 → 更新目录高亮
+  document.getElementById('helpContent').addEventListener('scroll', onHelpScroll);
+}
+
+function closeHelpModal() {
+  document.getElementById('helpOverlay').classList.remove('active');
+  document.getElementById('helpContent').removeEventListener('scroll', onHelpScroll);
+}
+
+function scrollHelpTo(id) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  const content = document.getElementById('helpContent');
+  content.scrollTo({ top: el.offsetTop - 16, behavior: 'smooth' });
+  updateHelpToc(id);
+}
+
+function updateHelpToc(activeId) {
+  document.querySelectorAll('.help-toc-item, .help-toc-sub').forEach(el => {
+    el.classList.remove('active');
+  });
+  // 找到对应目录项（通过 onclick 属性匹配）
+  document.querySelectorAll('.help-toc-item, .help-toc-sub').forEach(el => {
+    if(el.getAttribute('onclick') && el.getAttribute('onclick').includes(activeId)) {
+      el.classList.add('active');
+    }
+  });
+}
+
+const helpSectionIds = ['h-intro','h-m1','h-m2','h-funcs','h-manual','h-package','h-query','h-replace','h-cancel','h-stats','h-upload','h-faq','h-notes'];
+function onHelpScroll() {
+  const content = document.getElementById('helpContent');
+  const scrollTop = content.scrollTop + 60;
+  let current = helpSectionIds[0];
+  helpSectionIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(el && el.offsetTop <= scrollTop) current = id;
+  });
+  updateHelpToc(current);
+}
+
+// ESC关闭
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') {
+    closePwd(); closeSys(); closeConfirm(); closePackage(); closePackageImport(); closePalletList();
+    closeHelpModal();
+    document.getElementById('helpPopup').classList.remove('show');
+  }
+});
+</script>
+
+
+</body></html>

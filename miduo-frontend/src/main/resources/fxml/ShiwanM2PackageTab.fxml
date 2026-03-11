@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<!-- 码包管理 Tab -->
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2PackageController"
+      styleClass="sw2-tab-content" spacing="10"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+
+    <!-- 工具栏 -->
+    <HBox styleClass="sw2-toolbar" spacing="8">
+        <Button text="在线更新" styleClass="sw2-btn-green"
+                onAction="#onOnlineUpdate"
+                minHeight="40" prefHeight="40" style="-fx-padding:0 20px;"/>
+        <Button text="本地导入" styleClass="sw2-btn-secondary"
+                onAction="#onLocalImport"
+                minHeight="40" prefHeight="40" style="-fx-padding:0 20px;"/>
+        <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
+    </HBox>
+
+    <!-- 过滤栏 -->
+    <HBox styleClass="sw2-filter-bar" spacing="10" alignment="CENTER_LEFT">
+        <Label text="关键词：" styleClass="sw2-filter-label"/>
+        <TextField fx:id="keywordField" promptText="模糊匹配码包名称..."
+                   styleClass="sw2-filter-input" prefWidth="180"/>
+        <Label text="导入时间：" styleClass="sw2-filter-label"/>
+        <DatePicker fx:id="startDatePicker" styleClass="sw2-filter-combo" prefWidth="130"/>
+        <Label text="~" style="-fx-text-fill: #9CA3AF;"/>
+        <DatePicker fx:id="endDatePicker" styleClass="sw2-filter-combo" prefWidth="130"/>
+        <Label text="导入方式：" styleClass="sw2-filter-label"/>
+        <ComboBox fx:id="importTypeCombo" styleClass="sw2-filter-combo" prefWidth="90">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="全部"/>
+                <String fx:value="在线"/>
+                <String fx:value="本地"/>
+            </FXCollections></items>
+            <value><String fx:value="全部"/></value>
+        </ComboBox>
+        <Label text="码包类型：" styleClass="sw2-filter-label"/>
+        <ComboBox fx:id="packageTypeCombo" styleClass="sw2-filter-combo" prefWidth="120">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="全部"/>
+                <String fx:value="盖外码小标"/>
+                <String fx:value="盒外码中标"/>
+                <String fx:value="箱外码大标"/>
+            </FXCollections></items>
+            <value><String fx:value="全部"/></value>
+        </ComboBox>
+        <Label text="状态：" styleClass="sw2-filter-label"/>
+        <ComboBox fx:id="statusCombo" styleClass="sw2-filter-combo" prefWidth="90">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="全部"/>
+                <String fx:value="正常"/>
+                <String fx:value="已删除"/>
+            </FXCollections></items>
+            <value><String fx:value="全部"/></value>
+        </ComboBox>
+        <Button text="搜索" styleClass="sw2-btn-primary" onAction="#onSearch"
+                minHeight="36" prefHeight="36" style="-fx-padding:0 16px;"/>
+        <Button text="重置" styleClass="sw2-btn-outline" onAction="#onReset"
+                minHeight="36" prefHeight="36" style="-fx-padding:0 16px;"/>
+    </HBox>
+
+    <!-- 表格卡片（填充剩余高度）-->
+    <VBox styleClass="sw2-table-card" VBox.vgrow="ALWAYS">
+        <TableView fx:id="packageTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+            <columns>
+                <TableColumn fx:id="colType"       text="码包类型"      prefWidth="110" minWidth="90"/>
+                <TableColumn fx:id="colName"       text="码包名称"      prefWidth="160" minWidth="120"/>
+                <TableColumn fx:id="colImportTime" text="导入时间"      prefWidth="150" minWidth="130"/>
+                <TableColumn fx:id="colImportWay"  text="导入方式"      prefWidth="80"  minWidth="70"/>
+                <TableColumn fx:id="colCount"      text="码包数量(去重)" prefWidth="120" minWidth="100"/>
+                <TableColumn fx:id="colStatus"     text="状态"          prefWidth="70"  minWidth="60"/>
+                <TableColumn fx:id="colRemark"     text="备注"          prefWidth="120" minWidth="80"/>
+                <TableColumn fx:id="colAction"     text="操作"          prefWidth="120" minWidth="100"/>
+            </columns>
+            <placeholder>
+                <Label text="暂无码包数据" style="-fx-text-fill: #9CA3AF;"/>
+            </placeholder>
+        </TableView>
+
+        <!-- 分页栏 -->
+        <HBox styleClass="sw2-pagination-bar" spacing="8" alignment="CENTER_LEFT">
+            <Label fx:id="totalLabel" text="共 0 条" styleClass="sw2-page-info"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="首页"  styleClass="sw2-page-btn" onAction="#onFirstPage"/>
+            <Button text="上一页" styleClass="sw2-page-btn" onAction="#onPrevPage"/>
+            <Label fx:id="pageLabel" text="第 1 页" styleClass="sw2-page-info"/>
+            <Button text="下一页" styleClass="sw2-page-btn" onAction="#onNextPage"/>
+            <Button text="尾页"  styleClass="sw2-page-btn" onAction="#onLastPage"/>
+            <ComboBox fx:id="pageSizeCombo" styleClass="sw2-filter-combo" prefWidth="72">
+                <items><FXCollections fx:factory="observableArrayList">
+                    <String fx:value="20条"/>
+                    <String fx:value="50条"/>
+                    <String fx:value="100条"/>
+                </FXCollections></items>
+                <value><String fx:value="20条"/></value>
+            </ComboBox>
+        </HBox>
+    </VBox>
+</VBox>

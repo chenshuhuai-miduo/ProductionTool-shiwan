@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<!-- 生产统计 Tab -->
+<HBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2StatsController"
+      styleClass="sw2-tab-content" spacing="12"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+
+    <!-- ——— 左侧（340px）生产统计查询 ——— -->
+    <VBox prefWidth="340" minWidth="300" maxWidth="360" spacing="0" styleClass="shiwan-m2-card">
+        <Label text="生产统计" styleClass="shiwan-m2-card-title"/>
+
+        <!-- 日期范围 -->
+        <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding:0 0 10px 0;">
+            <Label text="日期：" styleClass="sw2-filter-label"/>
+            <DatePicker fx:id="startDate" styleClass="sw2-filter-combo" HBox.hgrow="ALWAYS"/>
+            <Label text="~" style="-fx-text-fill:#9CA3AF;"/>
+            <DatePicker fx:id="endDate"   styleClass="sw2-filter-combo" HBox.hgrow="ALWAYS"/>
+        </HBox>
+
+        <!-- 生产单号 -->
+        <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding:0 0 12px 0;">
+            <Label text="生产单号：" styleClass="sw2-filter-label" style="-fx-min-width:60px;"/>
+            <TextField fx:id="orderNoField"
+                       promptText="请输入生产单号"
+                       styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
+        </HBox>
+
+        <!-- 查询按钮 -->
+        <Button text="查询" styleClass="sw2-btn-primary"
+                onAction="#onQuery"
+                maxWidth="Infinity"
+                minHeight="48" prefHeight="48" style="-fx-font-size:15px; -fx-padding:0;"/>
+
+        <!-- 统计卡片 2×2 -->
+        <VBox spacing="10" style="-fx-padding:16px 0 0 0;">
+            <HBox spacing="10">
+                <!-- 垛数（可点击，蓝色边框）-->
+                <VBox fx:id="palletCard" styleClass="sw2-stat-card"
+                      HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8"
+                      onMouseClicked="#onPalletCardClick">
+                    <Label text="垛数"       styleClass="sw2-stat-label"/>
+                    <Label fx:id="palletNum" text="0" styleClass="sw2-stat-num"/>
+                </VBox>
+                <!-- 箱数（普通）-->
+                <VBox styleClass="sw2-stat-card sw2-stat-card-plain"
+                      HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8">
+                    <Label text="箱数"      styleClass="sw2-stat-label"/>
+                    <Label fx:id="caseNum" text="0" styleClass="sw2-stat-num-plain"/>
+                </VBox>
+            </HBox>
+            <HBox spacing="10">
+                <!-- 盒数（普通）-->
+                <VBox styleClass="sw2-stat-card sw2-stat-card-plain"
+                      HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8">
+                    <Label text="盒数"     styleClass="sw2-stat-label"/>
+                    <Label fx:id="boxNum" text="0" styleClass="sw2-stat-num-plain"/>
+                </VBox>
+                <!-- 剔除数（可点击，红色边框）-->
+                <VBox fx:id="rejectCard" styleClass="sw2-stat-card sw2-stat-card-reject"
+                      HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8"
+                      onMouseClicked="#onRejectCardClick">
+                    <Label text="剔除数"      styleClass="sw2-stat-label"/>
+                    <Label fx:id="rejectNum" text="0" styleClass="sw2-stat-num-reject"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <!-- ——— 右侧（flex）上传统计 ——— -->
+    <VBox HBox.hgrow="ALWAYS" spacing="10">
+
+        <!-- 上传统计查询 -->
+        <VBox styleClass="shiwan-m2-card" spacing="10">
+            <Label text="上传统计" styleClass="shiwan-m2-card-title"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="日期：" styleClass="sw2-filter-label"/>
+                <DatePicker fx:id="uploadStartDate" styleClass="sw2-filter-combo" prefWidth="130"/>
+                <Label text="~" style="-fx-text-fill:#9CA3AF;"/>
+                <DatePicker fx:id="uploadEndDate"   styleClass="sw2-filter-combo" prefWidth="130"/>
+                <Label text="生产单号：" styleClass="sw2-filter-label"/>
+                <TextField fx:id="uploadOrderField" promptText="请输入生产单号"
+                           styleClass="sw2-filter-input" prefWidth="120"/>
+                <Label text="状态：" styleClass="sw2-filter-label"/>
+                <ComboBox fx:id="uploadStatusCombo" styleClass="sw2-filter-combo" prefWidth="90">
+                    <items><FXCollections fx:factory="observableArrayList">
+                        <String fx:value="全部"/>
+                        <String fx:value="成功"/>
+                        <String fx:value="异常"/>
+                    </FXCollections></items>
+                    <value><String fx:value="全部"/></value>
+                </ComboBox>
+                <Button text="查询" styleClass="sw2-btn-primary"
+                        onAction="#onUploadQuery"
+                        minHeight="40" prefHeight="40" style="-fx-padding:0 20px;"/>
+            </HBox>
+        </VBox>
+
+        <!-- 上传统计表格 -->
+        <VBox styleClass="sw2-table-card" VBox.vgrow="ALWAYS">
+            <TableView fx:id="uploadTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+                <columns>
+                    <TableColumn fx:id="upColPallet"  text="垛码"     prefWidth="150" minWidth="120"/>
+                    <TableColumn fx:id="upColCases"   text="箱数"     prefWidth="70"  minWidth="60"/>
+                    <TableColumn fx:id="upColOrder"   text="生产单号"  prefWidth="150" minWidth="120"/>
+                    <TableColumn fx:id="upColTime"    text="上传时间"  prefWidth="160" minWidth="140"/>
+                    <TableColumn fx:id="upColStatus"  text="状态"     prefWidth="80"  minWidth="70"/>
+                    <TableColumn fx:id="upColReason"  text="异常原因"  prefWidth="160" minWidth="100"/>
+                </columns>
+                <placeholder>
+                    <Label text="暂无上传记录" style="-fx-text-fill:#9CA3AF;"/>
+                </placeholder>
+            </TableView>
+        </VBox>
+    </VBox>
+</HBox>

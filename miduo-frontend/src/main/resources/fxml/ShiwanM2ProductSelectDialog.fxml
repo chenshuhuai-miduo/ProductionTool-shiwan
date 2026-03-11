@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2ProductSelectDialogController"
+      spacing="12" prefWidth="560" prefHeight="420"
+      styleClass="dialog-pane"
+      stylesheets="@/css/base-styles.css">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <Label text="选择产品" styleClass="dialog-title"/>
+    <Separator/>
+
+    <!-- 搜索 -->
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <TextField fx:id="keywordField" promptText="请输入产品名称或编号" HBox.hgrow="ALWAYS" prefWidth="280"/>
+        <Button text="搜索" onAction="#onSearch" styleClass="primary-button"/>
+    </HBox>
+
+    <!-- 表格 -->
+    <TableView fx:id="productTable" VBox.vgrow="ALWAYS" styleClass="data-table" prefHeight="220">
+        <columns>
+            <TableColumn fx:id="nameColumn" text="产品名称" prefWidth="260"/>
+            <TableColumn fx:id="pronumberColumn" text="产品编号" prefWidth="220"/>
+        </columns>
+        <placeholder>
+            <Label text="暂无数据，请点击搜索"/>
+        </placeholder>
+    </TableView>
+
+    <!-- 分页 -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label fx:id="totalLabel" text="共 0 条"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="上一页" onAction="#onPrevPage" styleClass="secondary-button"/>
+        <Label fx:id="pageInfoLabel" text="第 1 页"/>
+        <Button text="下一页" onAction="#onNextPage" styleClass="secondary-button"/>
+    </HBox>
+
+    <Separator/>
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="取消" onAction="#onCancel" styleClass="secondary-button"/>
+        <Button text="确认" onAction="#onConfirm" styleClass="primary-button"/>
+    </HBox>
+</VBox>

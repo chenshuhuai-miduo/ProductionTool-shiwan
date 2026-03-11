@@ -37,7 +37,7 @@
         <guava.version>31.1-jre</guava.version>
     </properties>
     
-    <!-- 子模块定义 -->
+    <!-- 子模块定义：核心层 + 变体层 -->
     <modules>
         <module>miduo-common</module>
         <module>miduo-entity</module>
@@ -47,6 +47,8 @@
         <module>miduo-controller</module>
         <module>miduo-frontend</module>
         <module>miduo-bootstrap</module>
+        <module>miduo-variant-zhimeizhai</module>
+        <module>miduo-variant-shiwan</module>
     </modules>
     
     <!-- 依赖管理：统一版本控制 -->
@@ -95,6 +97,16 @@
             <dependency>
                 <groupId>com.miduo.cloud</groupId>
                 <artifactId>miduo-frontend</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.miduo.cloud</groupId>
+                <artifactId>miduo-variant-zhimeizhai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.miduo.cloud</groupId>
+                <artifactId>miduo-variant-shiwan</artifactId>
                 <version>${project.version}</version>
             </dependency>
             

@@ -1,0 +1,50 @@
+{
+  "systemSettingsPassword" : "123456",
+  "codeDigits" : {
+    "smallCodeDigits" : 14,
+    "mediumCodeDigits" : 14,
+    "largeCodeDigits" : -1
+  },
+  "palletRule" : {
+    "prefix" : "V",
+    "lineCode" : "A"
+  },
+  "upload" : {
+    "autoUpload" : true
+  },
+  "pageVisible" : {
+    "dataCollection" : true,
+    "manual" : false,
+    "query" : false,
+    "replace" : false,
+    "stats" : false,
+    "package" : false,
+    "cancel" : false,
+    "upload" : false
+  },
+  "pageTabOrder" : [ "dataCollection" ],
+  "dbConnection" : {
+    "host" : "localhost",
+    "port" : "3306",
+    "database" : "mysql",
+    "username" : "root",
+    "password" : "123456"
+  },
+  "printer" : {
+    "printerName" : "Canon LBP2900",
+    "printerIp" : "192.168.1.201",
+    "printerPort" : "9100",
+    "paperSize" : "A4"
+  },
+  "alarm" : {
+    "soundAlarmEnabled" : true,
+    "alarmDelayMs" : 100,
+    "alarmIntervalMs" : 2000
+  },
+  "api" : {
+    "baseUrl" : "https://openapi.weixin12315.com",
+    "syncCodeAndVirtualRelationPath" : "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation",
+    "getSyncResultPath" : "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult",
+    "codePackageQueryCompletedPath" : "/api/v1/code/package/query-completed"
+  }
+}

@@ -1,0 +1,1243 @@
+/* ============================================================
+   石湾2号机（盒箱垛关联软件）主界面专属样式
+   依赖 base-styles.css 提供的基础 CSS 变量
+   ============================================================ */
+
+/* ---------- 根背景 ---------- */
+.shiwan-m2-root {
+    -fx-background-color: #E9EEF5;
+}
+
+/* ============================================================
+   TabPane - 仿 HTML 自定义 Tab 栏风格
+   ============================================================ */
+.shiwan-m2-tab-pane {
+    -fx-background-color: #E9EEF5;
+    -fx-tab-min-height: 36px;
+    -fx-tab-max-height: 36px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* Tab 头部区域 */
+.shiwan-m2-tab-pane > .tab-header-area {
+    -fx-background-color: #E6ECF5;
+    -fx-border-color: transparent transparent #d0d0d0 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 4px 8px 0 8px;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-height: 44px;
+}
+
+.shiwan-m2-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+.shiwan-m2-tab-pane > .tab-header-area > .headers-region {
+    -fx-spacing: 6px;
+}
+
+/* 普通 Tab */
+.shiwan-m2-tab-pane .tab {
+    -fx-background-color: #D7DEE9;
+    -fx-background-radius: 6px 6px 0 0;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 4px 14px;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.shiwan-m2-tab-pane .tab:hover {
+    -fx-background-color: #C4CFE0;
+}
+
+/* 激活 Tab */
+.shiwan-m2-tab-pane .tab:selected {
+    -fx-background-color: #2563EB;
+    -fx-background-insets: 0;
+}
+
+.shiwan-m2-tab-pane .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.shiwan-m2-tab-pane .tab > .tab-container > .tab-label {
+    -fx-text-fill: #374151;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+/* Tab 内容区 */
+.shiwan-m2-tab-pane > .tab-content-area {
+    -fx-background-color: #E9EEF5;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+}
+
+/* 去除 Modena 主题下 selected tab 的 focus bar */
+.shiwan-m2-tab-pane .tab:selected .focus-indicator {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+/* ============================================================
+   内容体布局
+   ============================================================ */
+.shiwan-m2-content-body {
+    -fx-background-color: #E9EEF5;
+    -fx-padding: 12px;
+    -fx-spacing: 12px;
+    -fx-fill-height: true;
+}
+
+/* ============================================================
+   通用卡片
+   ============================================================ */
+.shiwan-m2-card {
+    -fx-background-color: white;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px 16px;
+}
+
+/* 卡片标题（带下边框） */
+.shiwan-m2-card-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 8px 0;
+    -fx-max-width: Infinity;
+}
+
+/* ============================================================
+   左侧面板 - 当前生产信息
+   ============================================================ */
+.shiwan-m2-form-label-small {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6B7280;
+}
+
+.shiwan-m2-product-combo {
+    -fx-font-size: 14px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-width: Infinity;
+    -fx-cursor: hand;
+}
+
+.shiwan-m2-product-combo:focused {
+    -fx-border-color: #2563EB;
+}
+
+.shiwan-m2-product-code-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.shiwan-m2-order-input {
+    -fx-font-size: 18px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-padding: 0 12px;
+    -fx-max-width: Infinity;
+}
+
+.shiwan-m2-order-input:focused {
+    -fx-border-color: #2563EB;
+    -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.1), 4, 0, 0, 0);
+}
+
+/* 采集规格标签 */
+.shiwan-m2-spec-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: #374151;
+    -fx-min-width: 32px;
+}
+
+/* 采集规格输入框（每垛箱数/每箱盒数） */
+.shiwan-m2-spec-input {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+    -fx-alignment: center;
+    -fx-background-color: #FAFAFA;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-pref-width: 80px;
+    -fx-min-width: 70px;
+    -fx-max-width: 80px;
+    -fx-pref-height: 56px;
+    -fx-min-height: 56px;
+    -fx-max-height: 56px;
+}
+
+.shiwan-m2-spec-input:hover {
+    -fx-border-color: #93C5FD;
+}
+
+.shiwan-m2-spec-input:focused {
+    -fx-border-color: #2563EB;
+    -fx-background-color: #EFF6FF;
+}
+
+.shiwan-m2-section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+}
+
+/* ============================================================
+   实时上传数据区 - ListView 条目
+   ============================================================ */
+.shiwan-m2-upload-list {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 4px 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.shiwan-m2-upload-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 3px 0;
+    -fx-border-width: 0;
+}
+
+.shiwan-m2-upload-list .list-cell:selected {
+    -fx-background-color: transparent;
+}
+
+/* 上传条目卡片 */
+.shiwan-m2-upload-item {
+    -fx-background-color: #EFF6FF;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 12px;
+    -fx-spacing: 4px;
+}
+
+.shiwan-m2-upload-pallet-code {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4B5563;
+}
+
+.shiwan-m2-upload-box-count {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6B7280;
+}
+
+/* 上传状态标签 */
+.shiwan-m2-badge-pending {
+    -fx-background-color: #EEF5FF;
+    -fx-border-color: #2563EB;
+    -fx-border-width: 1px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 3px 10px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2563EB;
+}
+
+.shiwan-m2-badge-done {
+    -fx-background-color: #ECFDF5;
+    -fx-border-color: #059669;
+    -fx-border-width: 1px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 3px 10px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #059669;
+}
+
+/* ============================================================
+   中间三栏 SplitPane
+   ============================================================ */
+.shiwan-m2-split-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-box-border: 0;
+}
+
+.shiwan-m2-split-pane > .split-pane-divider {
+    -fx-background-color: #E9EEF5;
+    -fx-padding: 5px 0;
+}
+
+.shiwan-m2-split-pane > .split-pane-divider:hover {
+    -fx-background-color: #D0D7E2;
+}
+
+/* ---------- 日志区卡片 ---------- */
+.shiwan-m2-area-card {
+    -fx-background-color: white;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 0;
+}
+
+/* 日志区头部 */
+.shiwan-m2-area-header-bar {
+    -fx-background-color: #F8FBFF;
+    -fx-border-color: transparent transparent #D7E7FF transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 8px 14px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-max-height: 36px;
+    -fx-background-radius: 12px 12px 0 0;
+    -fx-spacing: 8px;
+}
+
+.shiwan-m2-area-header-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.shiwan-m2-area-header-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: #9CA3AF;
+}
+
+/* ---------- 日志 ListView ---------- */
+.shiwan-m2-log-list {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 6px 8px;
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.shiwan-m2-log-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.shiwan-m2-log-list .list-cell:selected {
+    -fx-background-color: derive(#2563EB, 85%);
+}
+
+.shiwan-m2-log-list .list-cell:hover {
+    -fx-background-color: #F3F4F6;
+}
+
+/* 日志条目标签 */
+.log-cell-label {
+    -fx-wrap-text: true;
+    -fx-padding: 3px 8px 3px 10px;
+    -fx-background-radius: 0 4px 4px 0;
+    -fx-font-size: 14px;
+    -fx-max-width: Infinity;
+}
+
+/* 数据 - 黑字灰边 */
+.log-cell-data {
+    -fx-text-fill: #1F2937;
+    -fx-border-color: transparent transparent transparent #D1D5DB;
+    -fx-border-width: 0 0 0 3px;
+    -fx-background-color: transparent;
+}
+
+/* 成功 - 绿字绿边 */
+.log-cell-success {
+    -fx-text-fill: #16A34A;
+    -fx-border-color: transparent transparent transparent #16A34A;
+    -fx-border-width: 0 0 0 3px;
+    -fx-background-color: #F0FDF4;
+    -fx-font-weight: bold;
+}
+
+/* 警告 - 黄字黄边 */
+.log-cell-warn {
+    -fx-text-fill: #92400E;
+    -fx-border-color: transparent transparent transparent #F59E0B;
+    -fx-border-width: 0 0 0 3px;
+    -fx-background-color: #FFFBEB;
+}
+
+/* 错误/报警 - 红字红边 */
+.log-cell-error {
+    -fx-text-fill: #DC2626;
+    -fx-border-color: transparent transparent transparent #DC2626;
+    -fx-border-width: 0 0 0 3px;
+    -fx-background-color: #FEF2F2;
+    -fx-font-weight: bold;
+}
+
+/* 操作日志 - 信息类 */
+.log-cell-info {
+    -fx-text-fill: #374151;
+    -fx-border-color: transparent transparent transparent #9CA3AF;
+    -fx-border-width: 0 0 0 3px;
+    -fx-background-color: #F9FAFB;
+}
+
+/* ============================================================
+   右侧面板 - 单位实时统计
+   ============================================================ */
+.shiwan-m2-stat-card {
+    -fx-background-color: white;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-padding: 12px;
+    -fx-alignment: center;
+    -fx-spacing: 6px;
+    -fx-min-height: 80px;
+}
+
+.shiwan-m2-stat-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.shiwan-m2-stat-num-red {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #DC2626;
+    -fx-line-spacing: 0;
+}
+
+.shiwan-m2-stat-num-blue {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2563EB;
+    -fx-line-spacing: 0;
+}
+
+.shiwan-m2-stat-num-dark {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+    -fx-line-spacing: 0;
+}
+
+/* 已生产垛数 / 总剔除数 横向统计行 */
+.shiwan-m2-stats-line {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 6px 4px;
+    -fx-min-height: 34px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 8px;
+}
+
+.shiwan-m2-stats-line:last-child {
+    -fx-border-width: 0;
+}
+
+.shiwan-m2-stats-line-label {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4B5563;
+}
+
+.shiwan-m2-stats-line-val {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+}
+
+/* 总剔除数 - 大红字 */
+.shiwan-m2-reject-count {
+    -fx-font-size: 38px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #DC2626;
+    -fx-line-spacing: 0;
+}
+
+/* ============================================================
+   右侧面板 - 任务控制按钮
+   ============================================================ */
+.shiwan-m2-help-btn {
+    -fx-background-color: #F3F4F6;
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 50%;
+    -fx-border-color: #9CA3AF;
+    -fx-border-width: 1px;
+    -fx-border-radius: 50%;
+    -fx-min-width: 20px;
+    -fx-max-width: 20px;
+    -fx-min-height: 20px;
+    -fx-max-height: 20px;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-effect: null;
+}
+
+.shiwan-m2-help-btn:hover {
+    -fx-text-fill: #374151;
+    -fx-border-color: #374151;
+    -fx-background-color: #E5E7EB;
+}
+
+/* 通用控制按钮基础 */
+.shiwan-m2-ctrl-btn {
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+/* 蓝色实心（开始采集、提取工单未成垛） */
+.shiwan-m2-ctrl-btn-primary {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+    -fx-border-width: 0;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m2-ctrl-btn-primary:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.shiwan-m2-ctrl-btn-primary:pressed {
+    -fx-background-color: derive(#2563EB, -15%);
+}
+
+/* 停止采集状态 */
+.shiwan-m2-ctrl-btn-primary.running {
+    -fx-background-color: #DC2626;
+}
+
+.shiwan-m2-ctrl-btn-primary.running:hover {
+    -fx-background-color: #b91c1c;
+}
+
+/* 蓝色描边（无需采集码、收回剔除） */
+.shiwan-m2-ctrl-btn-outline-blue {
+    -fx-background-color: white;
+    -fx-text-fill: #2563EB;
+    -fx-border-color: #2563EB;
+    -fx-border-width: 2px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m2-ctrl-btn-outline-blue:hover {
+    -fx-background-color: #EFF6FF;
+}
+
+/* 红色实心（关闭报警） */
+.shiwan-m2-ctrl-btn-red {
+    -fx-background-color: #DC2626;
+    -fx-text-fill: white;
+    -fx-border-width: 0;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m2-ctrl-btn-red:hover {
+    -fx-background-color: #b91c1c;
+}
+
+/* 绿色实心（强制满垛） */
+.shiwan-m2-ctrl-btn-green {
+    -fx-background-color: #059669;
+    -fx-text-fill: white;
+    -fx-border-width: 0;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m2-ctrl-btn-green:hover {
+    -fx-background-color: #047857;
+}
+
+/* 红色描边（剔除数清零） */
+.shiwan-m2-ctrl-btn-outline-red {
+    -fx-background-color: white;
+    -fx-text-fill: #DC2626;
+    -fx-border-color: #DC2626;
+    -fx-border-width: 2px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.shiwan-m2-ctrl-btn-outline-red:hover {
+    -fx-background-color: #FEF2F2;
+}
+
+/* ============================================================
+   状态栏扩展
+   ============================================================ */
+.shiwan-m2-activation-badge {
+    -fx-background-color: #DCFCE7;
+    -fx-border-color: #86EFAC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-padding: 3px 12px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #16A34A;
+    -fx-font-weight: bold;
+}
+
+.shiwan-m2-running-label {
+    -fx-text-fill: #16A34A;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* ============================================================
+   占位符页面
+   ============================================================ */
+.shiwan-m2-placeholder {
+    -fx-background-color: #E9EEF5;
+    -fx-alignment: center;
+    -fx-spacing: 12px;
+}
+
+.shiwan-m2-placeholder-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #9CA3AF;
+}
+
+.shiwan-m2-placeholder-desc {
+    -fx-font-size: 14px;
+    -fx-text-fill: #D1D5DB;
+}
+
+/* ============================================================
+   Tab 页面共享样式  (前缀 sw2-)
+   ============================================================ */
+
+/* Tab 内容区背景+内边距 */
+.sw2-tab-content {
+    -fx-background-color: #E9EEF5;
+    -fx-padding: 12px;
+    -fx-spacing: 10px;
+}
+
+/* ---- 工具栏 ---- */
+.sw2-toolbar {
+    -fx-background-color: transparent;
+    -fx-spacing: 8px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0;
+}
+
+/* ---- 过滤栏 ---- */
+.sw2-filter-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 14px;
+    -fx-spacing: 10px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sw2-filter-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.sw2-filter-input {
+    -fx-font-size: 13px;
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-padding: 0 10px;
+}
+
+.sw2-filter-combo {
+    -fx-font-size: 13px;
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+}
+
+/* ---- 表格卡片 ---- */
+.sw2-table-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-padding: 0;
+}
+
+/* ---- TableView ---- */
+.sw2-table {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.sw2-table .column-header {
+    -fx-background-color: #F3F4F6;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 0 0 2px 0;
+    -fx-size: 40px;
+}
+
+.sw2-table .column-header .label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+    -fx-padding: 10px 12px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sw2-table .column-header-background {
+    -fx-background-color: #F3F4F6;
+}
+
+.sw2-table .table-cell {
+    -fx-font-size: 13px;
+    -fx-text-fill: #374151;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 12px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sw2-table .table-row-cell:odd {
+    -fx-background-color: white;
+}
+
+.sw2-table .table-row-cell:even {
+    -fx-background-color: #FAFAFA;
+}
+
+.sw2-table .table-row-cell:selected {
+    -fx-background-color: #EFF6FF;
+}
+
+.sw2-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: #1F2937;
+}
+
+.sw2-table .table-row-cell:hover {
+    -fx-background-color: #F9FAFB;
+}
+
+/* ---- 分页栏 ---- */
+.sw2-pagination-bar {
+    -fx-background-color: white;
+    -fx-border-color: #E5E7EB transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 8px 16px;
+    -fx-spacing: 8px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sw2-page-info {
+    -fx-font-size: 14px;
+    -fx-text-fill: #374151;
+}
+
+.sw2-page-btn {
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #374151;
+    -fx-min-height: 32px;
+    -fx-padding: 0 12px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.sw2-page-btn:hover { -fx-background-color: #F3F4F6; }
+
+/* ---- 小操作按钮（表格内查看/删除）---- */
+.sw2-btn-sm-blue {
+    -fx-background-color: #EFF6FF;
+    -fx-text-fill: #2563EB;
+    -fx-border-width: 0;
+    -fx-background-radius: 4px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 3px 10px;
+    -fx-min-height: 28px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+.sw2-btn-sm-blue:hover { -fx-background-color: #DBEAFE; }
+
+.sw2-btn-sm-red {
+    -fx-background-color: #FEF2F2;
+    -fx-text-fill: #DC2626;
+    -fx-border-width: 0;
+    -fx-background-radius: 4px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 3px 10px;
+    -fx-min-height: 28px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+.sw2-btn-sm-red:hover { -fx-background-color: #FEE2E2; }
+
+/* ---- 状态徽标 ---- */
+.sw2-badge-green { -fx-background-color: #D1FAE5; -fx-text-fill: #065F46; -fx-background-radius: 20px; -fx-padding: 2px 10px; -fx-font-size: 12px; -fx-font-weight: bold; }
+.sw2-badge-red   { -fx-background-color: #FEE2E2; -fx-text-fill: #991B1B; -fx-background-radius: 20px; -fx-padding: 2px 10px; -fx-font-size: 12px; -fx-font-weight: bold; }
+.sw2-badge-gray  { -fx-background-color: #F3F4F6; -fx-text-fill: #6B7280; -fx-background-radius: 20px; -fx-padding: 2px 10px; -fx-font-size: 12px; -fx-font-weight: bold; }
+.sw2-badge-blue  { -fx-background-color: #DBEAFE; -fx-text-fill: #1E40AF; -fx-background-radius: 20px; -fx-padding: 2px 10px; -fx-font-size: 12px; -fx-font-weight: bold; }
+.sw2-badge-orange{ -fx-background-color: #FEF3C7; -fx-text-fill: #92400E; -fx-background-radius: 20px; -fx-padding: 2px 10px; -fx-font-size: 12px; -fx-font-weight: bold; }
+
+/* ---- 通用按钮（Tab 区域用）---- */
+.sw2-btn-primary  { -fx-background-color: #2563EB; -fx-text-fill: white; -fx-border-width: 0; -fx-background-radius: 6px; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-effect: null; }
+.sw2-btn-primary:hover  { -fx-background-color: #1d4ed8; }
+
+.sw2-btn-secondary { -fx-background-color: #6B7280; -fx-text-fill: white; -fx-border-width: 0; -fx-background-radius: 6px; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-effect: null; }
+.sw2-btn-secondary:hover { -fx-background-color: #4B5563; }
+
+.sw2-btn-danger   { -fx-background-color: #DC2626; -fx-text-fill: white; -fx-border-width: 0; -fx-background-radius: 6px; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-effect: null; }
+.sw2-btn-danger:hover   { -fx-background-color: #b91c1c; }
+
+.sw2-btn-outline  { -fx-background-color: white; -fx-text-fill: #374151; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-font-size: 14px; -fx-cursor: hand; -fx-effect: null; }
+.sw2-btn-outline:hover  { -fx-background-color: #F3F4F6; }
+
+.sw2-btn-green    { -fx-background-color: #059669; -fx-text-fill: white; -fx-border-width: 0; -fx-background-radius: 6px; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-effect: null; }
+.sw2-btn-green:hover    { -fx-background-color: #047857; }
+
+/* ---- 生产统计 Stat 卡片 ---- */
+.sw2-stat-card {
+    -fx-background-color: #F9FAFB;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #2563EB;
+    -fx-border-width: 2px;
+    -fx-padding: 12px;
+    -fx-alignment: center;
+    -fx-spacing: 8px;
+    -fx-cursor: hand;
+    -fx-min-height: 100px;
+}
+.sw2-stat-card:hover { -fx-background-color: #EFF6FF; }
+
+.sw2-stat-card-plain { -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-cursor: default; }
+.sw2-stat-card-plain:hover { -fx-background-color: #F9FAFB; }
+
+.sw2-stat-card-reject { -fx-border-color: #EF4444; -fx-border-width: 2px; -fx-cursor: hand; }
+.sw2-stat-card-reject:hover { -fx-background-color: #FEF2F2; }
+
+.sw2-stat-num        { -fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #2563EB; -fx-underline: true; }
+.sw2-stat-num-plain  { -fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #1F2937; }
+.sw2-stat-num-reject { -fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #EF4444; -fx-underline: true; }
+.sw2-stat-label      { -fx-font-size: 16px; -fx-text-fill: #6B7280; }
+
+/* ---- 手工采集 提示区 ---- */
+.sw2-prompt-main       { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #374151; }
+.sw2-prompt-code-active{ -fx-font-size: 44px; -fx-font-weight: bold; -fx-text-fill: #2563EB; }
+.sw2-prompt-code-wait  { -fx-font-size: 44px; -fx-font-weight: bold; -fx-text-fill: #D1D5DB; }
+.sw2-prompt-divider    { -fx-font-size: 32px; -fx-text-fill: #9CA3AF; }
+
+/* ---- 手工采集 统计 ---- */
+.sw2-manual-stat-num   { -fx-font-size: 44px; -fx-font-weight: bold; }
+.sw2-manual-total-num  { -fx-font-size: 48px; -fx-font-weight: bold; -fx-text-fill: #1F2937; }
+
+/* ---- 查询栏 ---- */
+.sw2-query-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-padding: 12px 16px;
+    -fx-spacing: 10px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sw2-query-input {
+    -fx-font-size: 14px;
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-padding: 0 12px;
+}
+
+.sw2-query-status-ok    { -fx-text-fill: #16A34A; -fx-font-size: 13px; -fx-font-weight: bold; }
+.sw2-query-status-err   { -fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-weight: bold; }
+.sw2-query-status-idle  { -fx-text-fill: #6B7280; -fx-font-size: 13px; }
+
+/* ---- 数据查询 结果面板 ---- */
+.sw2-result-panel {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: #D9E1EC;
+    -fx-border-width: 1px;
+    -fx-padding: 0;
+}
+
+.sw2-result-header {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 12px 16px;
+    -fx-max-width: Infinity;
+}
+
+.sw2-code-type-pallet { -fx-background-color: #7C3AED; -fx-text-fill: white; -fx-background-radius: 4px; -fx-padding: 2px 8px; -fx-font-weight: bold; -fx-font-size: 13px; }
+.sw2-code-type-case   { -fx-background-color: #D97706; -fx-text-fill: white; -fx-background-radius: 4px; -fx-padding: 2px 8px; -fx-font-weight: bold; -fx-font-size: 13px; }
+.sw2-code-type-box    { -fx-background-color: #2563EB; -fx-text-fill: white; -fx-background-radius: 4px; -fx-padding: 2px 8px; -fx-font-weight: bold; -fx-font-size: 13px; }
+.sw2-code-type-bottle { -fx-background-color: #059669; -fx-text-fill: white; -fx-background-radius: 4px; -fx-padding: 2px 8px; -fx-font-weight: bold; -fx-font-size: 13px; }
+.sw2-chain-arrow      { -fx-font-size: 18px; -fx-text-fill: #9CA3AF; }
+.sw2-code-value-label { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151; }
+
+/* ---- 数据替换 ---- */
+.sw2-replace-result-ok {
+    -fx-background-color: #F0FDF4;
+    -fx-border-color: #86EFAC;
+    -fx-border-width: 1px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 12px 14px;
+    -fx-spacing: 6px;
+}
+
+.sw2-replace-result-err {
+    -fx-background-color: #FEF2F2;
+    -fx-border-color: #FCA5A5;
+    -fx-border-width: 1px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 12px 14px;
+    -fx-spacing: 6px;
+}
+
+.sw2-warn-label {
+    -fx-background-color: #FEF2F2;
+    -fx-border-color: #FCA5A5;
+    -fx-border-width: 1px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 10px 14px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #DC2626;
+    -fx-wrap-text: true;
+}
+
+/* ---- 取消关联 模式切换 ---- */
+.sw2-mode-btn {
+    -fx-background-color: white;
+    -fx-text-fill: #374151;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-min-height: 44px;
+    -fx-min-width: 120px;
+    -fx-padding: 9px 28px;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.sw2-mode-btn-left  { -fx-background-radius: 6px 0 0 6px; -fx-border-radius: 6px 0 0 6px; }
+.sw2-mode-btn-right { -fx-background-radius: 0 6px 6px 0; -fx-border-radius: 0 6px 6px 0; }
+
+.sw2-mode-btn-active {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+    -fx-border-color: #2563EB;
+}
+
+.sw2-cancel-input {
+    -fx-font-size: 16px;
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 0 14px;
+    -fx-min-height: 48px;
+    -fx-max-width: Infinity;
+}
+.sw2-cancel-input:focused { -fx-border-color: #2563EB; }
+
+.sw2-warn-box {
+    -fx-background-color: #FEF2F2;
+    -fx-border-color: #FCA5A5;
+    -fx-border-width: 1px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 10px 14px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #DC2626;
+    -fx-wrap-text: true;
+}
+
+/* ---- 识别结果 ---- */
+.sw2-identify-ok  { -fx-background-color: #F0FDF4; -fx-border-color: #86EFAC; -fx-border-width: 0 0 0 4px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10px 12px; -fx-spacing: 4px; }
+.sw2-identify-err { -fx-background-color: #FEF2F2; -fx-border-color: #FCA5A5; -fx-border-width: 0 0 0 4px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10px 12px; -fx-spacing: 4px; }
+
+.sw2-identify-title-ok  { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #15803D; }
+.sw2-identify-title-err { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #DC2626; }
+.sw2-identify-hint      { -fx-font-size: 13px; -fx-text-fill: #DC2626; }
+.sw2-identify-chain     { -fx-font-size: 13px; -fx-text-fill: #6B7280; }
+
+.sw2-cancel-log-ok   { -fx-font-size: 14px; -fx-text-fill: #15803D; }
+.sw2-cancel-log-fail { -fx-font-size: 14px; -fx-text-fill: #DC2626; }
+
+/* ---- 批量码列表 ---- */
+.sw2-batch-list { -fx-background-color: #F9FAFB; -fx-border-color: #E5E7EB; -fx-border-width: 1px; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; }
+.sw2-batch-list .list-cell { -fx-background-color: transparent; -fx-padding: 7px 12px; -fx-font-size: 14px; -fx-text-fill: #374151; -fx-border-color: transparent transparent #E5E7EB transparent; -fx-border-width: 0 0 1px 0; }
+
+/* ---- 数据上传 日志颜色 ---- */
+.sw2-ul-gray  { -fx-font-size: 14px; -fx-text-fill: #9CA3AF; }
+.sw2-ul-blue  { -fx-font-size: 14px; -fx-text-fill: #2563EB; }
+.sw2-ul-green { -fx-font-size: 14px; -fx-text-fill: #16A34A; -fx-font-weight: bold; }
+.sw2-ul-red   { -fx-font-size: 14px; -fx-text-fill: #DC2626; -fx-font-weight: bold; }
+
+/* ---- 上传查询结果 ---- */
+.sw2-upload-query-label { -fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-min-width: 80px; }
+.sw2-upload-query-value { -fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-weight: bold; }
+
+/* ---- form 字段标签 ---- */
+.sw2-section-title { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1F2937; }
+.sw2-field-label   { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151; }
+.sw2-field-input   { -fx-font-size: 14px; -fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-min-height: 40px; -fx-padding: 0 12px; -fx-max-width: Infinity; }
+.sw2-field-input:focused { -fx-border-color: #2563EB; }
+.sw2-field-textarea { -fx-font-size: 14px; -fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 8px 12px; -fx-max-width: Infinity; }
+.sw2-field-textarea:focused { -fx-border-color: #2563EB; }
+.sw2-required { -fx-text-fill: #DC2626; }
+
+/* ============================================================
+   系统设置弹窗 - 一级 TabPane
+   ============================================================ */
+.sw2-settings-tab-pane {
+    -fx-background-color: white;
+    -fx-tab-min-height: 40px;
+    -fx-tab-max-height: 40px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-tab-pane > .tab-header-area {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 0 0;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-height: 44px;
+}
+
+.sw2-settings-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.sw2-settings-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0;
+    -fx-padding: 8px 18px;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-tab-pane .tab > .tab-container > .tab-label {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 14px;
+    -fx-font-family: "Microsoft YaHei";
+}
+
+.sw2-settings-tab-pane .tab:hover > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+}
+
+.sw2-settings-tab-pane .tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #2563EB transparent;
+    -fx-border-width: 0 0 3px 0;
+}
+
+.sw2-settings-tab-pane .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+    -fx-font-weight: bold;
+}
+
+.sw2-settings-tab-pane > .tab-content-area {
+    -fx-background-color: white;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+/* ============================================================
+   系统设置弹窗 - 二级 TabPane（业务/设备/连接 的子TabPane）
+   ============================================================ */
+.sw2-settings-inner-tab-pane {
+    -fx-background-color: white;
+    -fx-tab-min-height: 36px;
+    -fx-tab-max-height: 36px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-inner-tab-pane > .tab-header-area {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0 0 0 24px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+}
+
+.sw2-settings-inner-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.sw2-settings-inner-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 6px 14px;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-settings-inner-tab-pane .tab > .tab-container > .tab-label {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 13px;
+    -fx-font-family: "Microsoft YaHei";
+}
+
+.sw2-settings-inner-tab-pane .tab:hover > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+}
+
+.sw2-settings-inner-tab-pane .tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #2563EB transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.sw2-settings-inner-tab-pane .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: #2563EB;
+    -fx-font-weight: bold;
+}
+
+.sw2-settings-inner-tab-pane > .tab-content-area {
+    -fx-background-color: white;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+/* ============================================================
+   ToggleButton 开关样式（通用）
+   ============================================================ */
+.sw2-toggle-switch {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-background-radius: 6px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.sw2-toggle-switch:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.sw2-toggle-disabled {
+    -fx-opacity: 0.6;
+    -fx-cursor: default;
+}
+

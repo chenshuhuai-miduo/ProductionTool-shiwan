@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- 数据上传 Tab -->
+<HBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2UploadController"
+      styleClass="sw2-tab-content" spacing="12"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+
+    <!-- ——— 左侧（40%）——— -->
+    <VBox HBox.hgrow="ALWAYS" spacing="12">
+
+        <!-- 手动上传按钮 -->
+        <HBox styleClass="shiwan-m2-card" spacing="10" alignment="CENTER_LEFT">
+            <Button text="手动上传" styleClass="sw2-btn-primary"
+                    onAction="#onManualUpload"
+                    minHeight="48" prefHeight="48"
+                    style="-fx-min-width:120px; -fx-font-size:15px;"/>
+            <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
+        </HBox>
+
+        <!-- 上传信息日志 -->
+        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0" style="-fx-padding:0;">
+            <HBox styleClass="shiwan-m2-area-header-bar">
+                <Label text="上传信息（最新在上）" styleClass="shiwan-m2-area-header-label"/>
+            </HBox>
+            <ListView fx:id="uploadLogList" VBox.vgrow="ALWAYS"
+                      style="-fx-background-color:white; -fx-border-width:0; -fx-padding:6px 8px;
+                             -fx-focus-color:transparent; -fx-faint-focus-color:transparent;">
+                <placeholder>
+                    <Label text="暂无上传记录" style="-fx-text-fill:#9CA3AF;"/>
+                </placeholder>
+            </ListView>
+        </VBox>
+    </VBox>
+
+    <!-- ——— 右侧（40%）——— -->
+    <VBox HBox.hgrow="ALWAYS" spacing="12">
+
+        <!-- 查询与状态管理 -->
+        <VBox styleClass="shiwan-m2-card" spacing="12">
+            <Label text="垛码查询与状态管理" styleClass="shiwan-m2-card-title"/>
+            <TextField fx:id="palletCodeField"
+                       promptText="如：P20241201001"
+                       styleClass="sw2-field-input"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Button text="查询状态" styleClass="sw2-btn-primary"
+                        onAction="#onQueryStatus"
+                        minHeight="48" prefHeight="48" style="-fx-padding:0 16px; -fx-font-size:14px;"/>
+                <Button text="设为未上传" styleClass="sw2-btn-outline"
+                        onAction="#onSetNotUploaded"
+                        minHeight="48" prefHeight="48" style="-fx-padding:0 14px; -fx-font-size:14px;"/>
+                <Button text="设为已上传" styleClass="sw2-btn-outline"
+                        onAction="#onSetUploaded"
+                        minHeight="48" prefHeight="48" style="-fx-padding:0 14px; -fx-font-size:14px;"/>
+                <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onStatusHelp"/>
+            </HBox>
+        </VBox>
+
+        <!-- 查询结果 -->
+        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="8">
+            <Label fx:id="queryResultLabel"
+                   text="请输入垛码并点击查询状态"
+                   style="-fx-text-fill:#9CA3AF; -fx-font-size:14px;"
+                   alignment="CENTER" maxWidth="Infinity"
+                   managed="true" visible="true"/>
+
+            <!-- 详细结果（查询到数据后显示）-->
+            <VBox fx:id="resultDetailPane" spacing="12" visible="false" managed="false">
+                <!-- 垛码 -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="垛码：" styleClass="sw2-upload-query-label"/>
+                    <Label fx:id="resultPalletCode" text="" styleClass="sw2-code-value-label"
+                           style="-fx-text-fill:#2563EB; -fx-font-size:16px;"/>
+                </HBox>
+                <!-- 状态 -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="状态：" styleClass="sw2-upload-query-label"/>
+                    <Label fx:id="resultStatus" text="" styleClass="sw2-badge-green"/>
+                </HBox>
+                <!-- 上传时间 -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="上传时间：" styleClass="sw2-upload-query-label"/>
+                    <Label fx:id="resultUploadTime" text="-" styleClass="sw2-upload-query-value"/>
+                </HBox>
+                <!-- 箱数 -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="箱数：" styleClass="sw2-upload-query-label"/>
+                    <Label fx:id="resultBoxCount" text="-" styleClass="sw2-upload-query-value"/>
+                </HBox>
+                <!-- 失败原因 -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="失败原因：" styleClass="sw2-upload-query-label"/>
+                    <Label fx:id="resultFailReason" text="-" styleClass="sw2-upload-query-value"
+                           wrapText="true" HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </VBox>
+</HBox>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- 取消关联 Tab -->
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2CancelController"
+      styleClass="sw2-tab-content" spacing="10"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+
+    <!-- 模式切换栏 -->
+    <HBox spacing="0" alignment="CENTER_LEFT">
+        <Button fx:id="singleModeBtn" text="单码取消"
+                styleClass="sw2-mode-btn sw2-mode-btn-left sw2-mode-btn-active"
+                onAction="#onSingleMode"/>
+        <Button fx:id="batchModeBtn" text="多码取消"
+                styleClass="sw2-mode-btn sw2-mode-btn-right"
+                onAction="#onBatchMode"/>
+        <Button text="?" styleClass="shiwan-m2-help-btn"
+                style="-fx-margin-left:8px;"
+                onAction="#onHelp"/>
+    </HBox>
+
+    <!-- 主体：左侧表单 + 右侧结果 -->
+    <HBox spacing="12" VBox.vgrow="ALWAYS">
+
+        <!-- 左侧表单（StackPane 切换单码/多码）-->
+        <StackPane prefWidth="480" minWidth="440" maxWidth="520">
+
+            <!-- 单码取消 -->
+            <VBox fx:id="singlePane" styleClass="shiwan-m2-card" spacing="16">
+                <Label text="单码取消" styleClass="sw2-section-title"/>
+
+                <VBox spacing="6">
+                    <HBox spacing="4" alignment="CENTER_LEFT">
+                        <Label text="* " styleClass="sw2-required" style="-fx-font-weight:bold;"/>
+                        <Label text="码（瓶/盒）" styleClass="sw2-field-label"/>
+                    </HBox>
+                    <TextField fx:id="singleCodeField"
+                               promptText="请输入或扫描瓶码/盒码"
+                               styleClass="sw2-cancel-input"/>
+                </VBox>
+
+                <Button text="识别" styleClass="sw2-btn-primary"
+                        onAction="#onSingleRecognize"
+                        minHeight="48" prefHeight="48"
+                        style="-fx-min-width:100px; -fx-font-size:16px; -fx-font-weight:bold;"/>
+
+                <Label text="⚠ 操作不可恢复，请确认后执行。"
+                       styleClass="sw2-warn-box" maxWidth="Infinity" wrapText="true"/>
+
+                <HBox spacing="12">
+                    <Button text="清空" styleClass="sw2-btn-secondary"
+                            onAction="#onSingleClear"
+                            minHeight="48" prefHeight="48"
+                            style="-fx-min-width:80px; -fx-font-size:16px;"/>
+                    <Button fx:id="singleConfirmBtn" text="确认取消关联"
+                            styleClass="sw2-btn-danger"
+                            onAction="#onSingleConfirm"
+                            HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                            minHeight="48" prefHeight="48"
+                            style="-fx-font-size:16px; -fx-font-weight:bold;"
+                            disable="true"/>
+                </HBox>
+
+                <Label fx:id="singleHintLabel" text=""
+                       style="-fx-font-size:13px; -fx-text-fill:#9CA3AF;"
+                       visible="false" managed="false" wrapText="true"/>
+            </VBox>
+
+            <!-- 多码取消 -->
+            <VBox fx:id="batchPane" styleClass="shiwan-m2-card" spacing="16"
+                  visible="false" managed="false">
+                <Label text="多码取消" styleClass="sw2-section-title"/>
+
+                <VBox spacing="6">
+                    <HBox spacing="4" alignment="CENTER_LEFT">
+                        <Label text="* " styleClass="sw2-required" style="-fx-font-weight:bold;"/>
+                        <Label text="盒/箱/垛码" styleClass="sw2-field-label"/>
+                    </HBox>
+                    <HBox spacing="8">
+                        <TextField fx:id="batchCodeField"
+                                   promptText="盒码、箱码或垛码"
+                                   styleClass="sw2-cancel-input"
+                                   HBox.hgrow="ALWAYS"/>
+                        <Button text="添加" styleClass="sw2-btn-primary"
+                                onAction="#onAddBatchCode"
+                                minHeight="48" prefHeight="48"
+                                style="-fx-min-width:80px; -fx-font-size:16px; -fx-font-weight:bold;"/>
+                    </HBox>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="已添加的码列表" styleClass="sw2-field-label"
+                           style="-fx-font-size:16px; -fx-font-weight:bold;"/>
+                    <ListView fx:id="batchCodeList" styleClass="sw2-batch-list"
+                              prefHeight="160" minHeight="120"/>
+                </VBox>
+
+                <Button text="识别" styleClass="sw2-btn-primary"
+                        onAction="#onBatchRecognize"
+                        minHeight="48" prefHeight="48"
+                        style="-fx-min-width:100px; -fx-font-size:16px; -fx-font-weight:bold;"/>
+
+                <Label text="⚠ 操作不可恢复，请确认后执行。"
+                       styleClass="sw2-warn-box" maxWidth="Infinity" wrapText="true"/>
+
+                <HBox spacing="12">
+                    <Button text="清空" styleClass="sw2-btn-secondary"
+                            onAction="#onBatchClear"
+                            minHeight="48" prefHeight="48"
+                            style="-fx-min-width:80px; -fx-font-size:16px;"/>
+                    <Button text="确认取消关联" styleClass="sw2-btn-danger"
+                            onAction="#onBatchConfirm"
+                            HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                            minHeight="48" prefHeight="48"
+                            style="-fx-font-size:15px; -fx-font-weight:bold;"/>
+                </HBox>
+            </VBox>
+        </StackPane>
+
+        <!-- 右侧：识别结果（上）+ 取消结果（下）-->
+        <VBox HBox.hgrow="ALWAYS" spacing="12">
+
+            <!-- 识别结果 -->
+            <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0" style="-fx-padding:0;">
+                <HBox styleClass="shiwan-m2-area-header-bar">
+                    <Label text="识别结果" styleClass="shiwan-m2-area-header-label"/>
+                    <Label fx:id="recognizeHint" text="识别后将在此显示"
+                           styleClass="shiwan-m2-area-header-hint"/>
+                </HBox>
+                <ScrollPane fx:id="recognizeScrollPane" VBox.vgrow="ALWAYS" fitToWidth="true"
+                            style="-fx-background-color: white; -fx-background: white; -fx-border-width:0; -fx-padding:14px;">
+                    <VBox fx:id="recognizeContainer" spacing="10">
+                        <Label fx:id="recognizeEmptyLabel"
+                               text="请在左侧输入码值并点击识别"
+                               style="-fx-text-fill:#9CA3AF; -fx-font-size:15px; -fx-padding:40px 0;"
+                               alignment="CENTER" maxWidth="Infinity"/>
+                    </VBox>
+                </ScrollPane>
+            </VBox>
+
+            <!-- 取消结果 -->
+            <VBox styleClass="shiwan-m2-card" prefHeight="220" minHeight="180" spacing="0">
+                <HBox styleClass="shiwan-m2-area-header-bar">
+                    <Label text="取消结果" styleClass="shiwan-m2-area-header-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="清空记录" styleClass="sw2-btn-outline"
+                            onAction="#onClearCancelLog"
+                            minHeight="28" prefHeight="28"
+                            style="-fx-font-size:12px; -fx-padding:0 10px;"/>
+                </HBox>
+                <ListView fx:id="cancelResultList" VBox.vgrow="ALWAYS"
+                          style="-fx-background-color:white; -fx-border-width:0; -fx-padding:8px;
+                                 -fx-focus-color:transparent; -fx-faint-focus-color:transparent;">
+                    <placeholder>
+                        <Label text="暂无取消关联记录" style="-fx-text-fill:#9CA3AF;"/>
+                    </placeholder>
+                </ListView>
+            </VBox>
+        </VBox>
+    </HBox>
+</VBox>

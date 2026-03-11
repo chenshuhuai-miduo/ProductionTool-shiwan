@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- 手工采集 Tab -->
+<HBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2ManualController"
+      styleClass="sw2-tab-content" spacing="12"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+
+    <!-- ——— 左侧（380px）——— -->
+    <VBox prefWidth="380" minWidth="380" maxWidth="380" spacing="12">
+
+        <!-- 采集规格设置 -->
+        <VBox styleClass="shiwan-m2-card" spacing="10">
+            <Label text="采集规格设置" styleClass="shiwan-m2-card-title"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="1盒" styleClass="shiwan-m2-spec-label"/>
+                <TextField fx:id="bottlesPerBoxField" text="6"
+                           styleClass="shiwan-m2-spec-input"/>
+                <Label text="瓶" styleClass="shiwan-m2-spec-label"/>
+            </HBox>
+        </VBox>
+
+        <!-- 开始采集提示（填充剩余空间）-->
+        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0">
+            <Label text="开始采集提示" styleClass="shiwan-m2-card-title"/>
+            <!-- 提示区居中 -->
+            <VBox VBox.vgrow="ALWAYS" alignment="CENTER" spacing="16">
+                <Label text="当前应扫" styleClass="sw2-prompt-main"/>
+                <HBox alignment="CENTER" spacing="12">
+                    <Label fx:id="promptCode1" text="瓶码" styleClass="sw2-prompt-code-active"/>
+                    <Label text="/" styleClass="sw2-prompt-divider"/>
+                    <Label fx:id="promptCode2" text="盒码" styleClass="sw2-prompt-code-wait"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </VBox>
+
+    <!-- ——— 中间（flex）——— -->
+    <SplitPane orientation="VERTICAL" dividerPositions="0.67"
+               HBox.hgrow="ALWAYS" styleClass="shiwan-m2-split-pane">
+
+        <!-- 数据接收区 -->
+        <VBox styleClass="shiwan-m2-area-card">
+            <HBox styleClass="shiwan-m2-area-header-bar">
+                <Label text="数据接收区" styleClass="shiwan-m2-area-header-label"/>
+                <Label text="（最新在上）" styleClass="shiwan-m2-area-header-hint"/>
+            </HBox>
+            <ListView fx:id="dataLogList" VBox.vgrow="ALWAYS" styleClass="shiwan-m2-log-list"/>
+        </VBox>
+
+        <!-- 操作日志 -->
+        <VBox styleClass="shiwan-m2-area-card">
+            <HBox styleClass="shiwan-m2-area-header-bar">
+                <Label text="操作日志" styleClass="shiwan-m2-area-header-label"/>
+                <Label text="（最新在上）" styleClass="shiwan-m2-area-header-hint"/>
+            </HBox>
+            <ListView fx:id="opLogList" VBox.vgrow="ALWAYS" styleClass="shiwan-m2-log-list"/>
+        </VBox>
+    </SplitPane>
+
+    <!-- ——— 右侧（380px）——— -->
+    <VBox prefWidth="380" minWidth="380" maxWidth="380" spacing="12">
+
+        <!-- 单位实时统计 -->
+        <VBox styleClass="shiwan-m2-card" spacing="12">
+            <Label text="单位实时统计" styleClass="shiwan-m2-card-title"/>
+            <HBox spacing="8">
+                <VBox styleClass="shiwan-m2-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="6">
+                    <Label text="当前已读" styleClass="shiwan-m2-stat-label"/>
+                    <Label fx:id="currentCountLabel" text="0"
+                           styleClass="sw2-manual-stat-num shiwan-m2-stat-num-red"/>
+                </VBox>
+                <VBox styleClass="shiwan-m2-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="6">
+                    <Label text="每盒瓶数" styleClass="shiwan-m2-stat-label"/>
+                    <Label fx:id="perBoxCountLabel" text="6"
+                           styleClass="sw2-manual-stat-num shiwan-m2-stat-num-blue"/>
+                </VBox>
+            </HBox>
+            <!-- 生产总数 -->
+            <Separator/>
+            <VBox spacing="4">
+                <Label text="生产总数" styleClass="shiwan-m2-stat-label"/>
+                <Label fx:id="totalCountLabel" text="0" styleClass="sw2-manual-total-num"/>
+            </VBox>
+        </VBox>
+
+        <!-- 任务控制 -->
+        <VBox styleClass="shiwan-m2-card" spacing="12">
+            <Label text="任务控制" styleClass="shiwan-m2-card-title"/>
+            <HBox spacing="10">
+                <Button fx:id="startBtn" text="开始采集"
+                        styleClass="sw2-btn-primary"
+                        onAction="#onToggleCapture"
+                        HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                        minHeight="48" prefHeight="48" style="-fx-font-size:16px;"/>
+                <Button text="清零"
+                        styleClass="sw2-btn-secondary"
+                        onAction="#onReset"
+                        HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                        minHeight="48" prefHeight="48" style="-fx-font-size:16px;"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</HBox>

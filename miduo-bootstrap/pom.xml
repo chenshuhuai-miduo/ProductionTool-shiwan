@@ -36,6 +36,12 @@
             <artifactId>miduo-frontend</artifactId>
         </dependency>
         
+        <!-- 默认打包致美斋版本（变体模块） -->
+        <dependency>
+            <groupId>com.miduo.cloud</groupId>
+            <artifactId>miduo-variant-zhimeizhai</artifactId>
+        </dependency>
+        
         <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -124,6 +130,117 @@
             </plugin>
         </plugins>
     </build>
-    
+
+    <!-- 按软件版本构建：-Pvariant-zhimeizhai / -Pvariant-shiwan-m1 / -Pvariant-shiwan-m2 -->
+    <profiles>
+        <profile>
+            <id>variant-zhimeizhai</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.miduo.cloud</groupId>
+                    <artifactId>miduo-variant-zhimeizhai</artifactId>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>repackage-launcher</id>
+                                <configuration>
+                                    <mainClass>com.miduo.cloud.variant.zhimeizhai.ZhimeizhaiLauncher</mainClass>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>com.miduo.cloud.variant.zhimeizhai.ZhimeizhaiLauncher</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>variant-shiwan-m1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.miduo.cloud</groupId>
+                    <artifactId>miduo-variant-shiwan</artifactId>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>repackage-launcher</id>
+                                <configuration>
+                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM1Launcher</mainClass>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM1Launcher</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>variant-shiwan-m2</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.miduo.cloud</groupId>
+                    <artifactId>miduo-variant-shiwan</artifactId>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>repackage-launcher</id>
+                                <configuration>
+                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM2Launcher</mainClass>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM2Launcher</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
 

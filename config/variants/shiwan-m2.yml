@@ -1,0 +1,11 @@
+# config/variants/shiwan-m2.yml
+# 石湾2号机（盒箱垛关联软件）
+
+app:
+  name: 赋码采集关联系统-石湾2号机
+
+build:
+  variant: shiwan
+  machine: 2
+
+features: {}
