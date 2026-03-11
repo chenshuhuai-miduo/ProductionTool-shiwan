@@ -1,0 +1,176 @@
+package com.miduo.cloud.frontend.controller;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.common.dto.PageOutput;
+import com.miduo.cloud.entity.dto.codepackage.CodePackageViewCodeVO;
+import com.miduo.cloud.frontend.util.HttpUtil;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
+
+/**
+ * 码包查看弹窗控制器
+ */
+public class ShiwanM2PackageViewCodesDialogController {
+
+    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    @FXML private Label titleLabel;
+    @FXML private TextField keywordField;
+    @FXML private TableView<ViewCodeRow> codeTable;
+    @FXML private TableColumn<ViewCodeRow, String> codeValueColumn;
+    @FXML private TableColumn<ViewCodeRow, String> associatedStatusColumn;
+    @FXML private TableColumn<ViewCodeRow, String> associatedTimeColumn;
+    @FXML private Label totalLabel;
+    @FXML private Label pageLabel;
+    @FXML private ComboBox<String> pageSizeCombo;
+
+    private final ObservableList<ViewCodeRow> rows = FXCollections.observableArrayList();
+
+    private Long importId;
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private int pageSize = 20;
+
+    @FXML
+    public void initialize() {
+        codeValueColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().codeValue));
+        associatedStatusColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().associatedStatus));
+        associatedTimeColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().associatedTime));
+        codeTable.setItems(rows);
+        pageSizeCombo.setValue("20条");
+        pageSizeCombo.setOnAction(event -> {
+            pageSize = resolvePageSize(pageSizeCombo.getValue());
+            currentPage = 1;
+            loadData();
+        });
+    }
+
+    public void setContext(Long importId, String packageName) {
+        this.importId = importId;
+        titleLabel.setText("查看码包: " + packageName);
+        currentPage = 1;
+        loadData();
+    }
+
+    @FXML
+    private void onSearch() {
+        currentPage = 1;
+        loadData();
+    }
+
+    @FXML
+    private void onPrevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            loadData();
+        }
+    }
+
+    @FXML
+    private void onNextPage() {
+        if (currentPage < totalPages) {
+            currentPage++;
+            loadData();
+        }
+    }
+
+    @FXML
+    private void onClose() {
+        getStage().close();
+    }
+
+    private void loadData() {
+        if (importId == null) {
+            return;
+        }
+        String keyword = keywordField.getText() == null ? "" : keywordField.getText().trim();
+        new Thread(() -> {
+            try {
+                StringBuilder urlBuilder = new StringBuilder("/api/code-package/")
+                        .append(importId)
+                        .append("/codes?pageNum=").append(currentPage)
+                        .append("&pageSize=").append(pageSize);
+                if (!keyword.isEmpty()) {
+                    urlBuilder.append("&keyword=")
+                            .append(URLEncoder.encode(keyword, StandardCharsets.UTF_8.toString()));
+                }
+                String responseJson = HttpUtil.doGet(urlBuilder.toString());
+                ApiResult<PageOutput<CodePackageViewCodeVO>> result = HttpUtil.parseJson(
+                        responseJson, new TypeReference<ApiResult<PageOutput<CodePackageViewCodeVO>>>() {});
+
+                Platform.runLater(() -> {
+                    if (result == null || result.getCode() != 200 || result.getData() == null) {
+                        rows.clear();
+                        totalLabel.setText("共 0 条");
+                        pageLabel.setText("第 1 / 1 页");
+                        if (result != null && result.getMessage() != null) {
+                            showAlert("查询失败", result.getMessage());
+                        }
+                        return;
+                    }
+                    PageOutput<CodePackageViewCodeVO> pageOutput = result.getData();
+                    rows.setAll(pageOutput.getRecords() == null ? FXCollections.observableArrayList()
+                            : pageOutput.getRecords().stream().map(ViewCodeRow::fromVO).collect(Collectors.toList()));
+                    currentPage = pageOutput.getCurrent() == null ? 1 : pageOutput.getCurrent().intValue();
+                    totalPages = pageOutput.getPages() == null || pageOutput.getPages() <= 0 ? 1 : pageOutput.getPages().intValue();
+                    totalLabel.setText("共 " + (pageOutput.getTotal() == null ? 0 : pageOutput.getTotal()) + " 条");
+                    pageLabel.setText("第 " + currentPage + " / " + totalPages + " 页");
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showAlert("查询异常", e.getMessage()));
+            }
+        }, "package-view-codes").start();
+    }
+
+    private int resolvePageSize(String value) {
+        if ("50条".equals(value)) {
+            return 50;
+        }
+        if ("100条".equals(value)) {
+            return 100;
+        }
+        return 20;
+    }
+
+    private Stage getStage() {
+        return (Stage) titleLabel.getScene().getWindow();
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public static class ViewCodeRow {
+        private String codeValue;
+        private String associatedStatus;
+        private String associatedTime;
+
+        public static ViewCodeRow fromVO(CodePackageViewCodeVO vo) {
+            ViewCodeRow row = new ViewCodeRow();
+            row.codeValue = vo.getCodeValue() == null ? "" : vo.getCodeValue();
+            row.associatedStatus = Boolean.TRUE.equals(vo.getAssociated()) ? "已关联" : "未关联";
+            row.associatedTime = vo.getAssociatedAt() == null ? "-" : DT_FMT.format(vo.getAssociatedAt());
+            return row;
+        }
+    }
+}

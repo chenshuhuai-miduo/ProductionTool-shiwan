@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2PackageImportDialogController"
+      spacing="12" prefWidth="520" prefHeight="260"
+      styleClass="sw2-tab-content"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <HBox alignment="CENTER_LEFT">
+        <Label text="码包导入" styleClass="sw2-section-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+    <GridPane hgap="10" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints minWidth="90" prefWidth="90"/>
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <Label text="码包类型*" styleClass="sw2-field-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="packageTypeCombo" styleClass="sw2-field-input" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="选择文件*" styleClass="sw2-field-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <HBox spacing="8" alignment="CENTER_LEFT" GridPane.rowIndex="1" GridPane.columnIndex="1">
+            <TextField fx:id="selectedFileField" styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
+            <Button text="浏览..." onAction="#onBrowseFile" styleClass="sw2-btn-outline"/>
+        </HBox>
+
+        <Label text="密码*" styleClass="sw2-field-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <PasswordField fx:id="passwordField" promptText="请输入密码" styleClass="sw2-field-input"
+                       GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <Label fx:id="tipsLabel" style="-fx-text-fill:#DC2626; -fx-font-size:13px;"/>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="取消" styleClass="sw2-btn-outline" onAction="#onCancel"/>
+        <Button text="确认导入" styleClass="sw2-btn-primary" onAction="#onConfirmImport"/>
+    </HBox>
+</VBox>
