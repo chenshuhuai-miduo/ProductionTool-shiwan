@@ -1,13 +1,20 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -21,6 +28,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.Modality;
 
 import java.io.IOException;
 import java.net.URL;
@@ -62,13 +70,13 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private ToggleButton pageUploadToggle;
 
     // ==================== 设备 - IO设备管理 ====================
-    @FXML private TableView<IoDeviceRow> ioDeviceTable;
-    @FXML private TableColumn<IoDeviceRow, String> deviceNameCol;
-    @FXML private TableColumn<IoDeviceRow, String> deviceTypeCol;
-    @FXML private TableColumn<IoDeviceRow, String> deviceAddrCol;
-    @FXML private TableColumn<IoDeviceRow, String> devicePortCol;
-    @FXML private TableColumn<IoDeviceRow, String> deviceStatusCol;
-    @FXML private TableColumn<IoDeviceRow, String> deviceActionCol;
+    @FXML private TableView<IoDeviceDTO> ioDeviceTable;
+    @FXML private TableColumn<IoDeviceDTO, String> deviceNameCol;
+    @FXML private TableColumn<IoDeviceDTO, String> deviceTypeCol;
+    @FXML private TableColumn<IoDeviceDTO, String> deviceAddrCol;
+    @FXML private TableColumn<IoDeviceDTO, String> devicePortCol;
+    @FXML private TableColumn<IoDeviceDTO, String> deviceStatusCol;
+    @FXML private TableColumn<IoDeviceDTO, String> deviceActionCol;
 
     // ==================== 设备 - 打印机管理 ====================
     @FXML private TextField printerNameField;
@@ -98,30 +106,12 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private PasswordField m1DbPasswordField;
     @FXML private Label m1DbTestResultLabel;
 
+    // ==================== 连接 - 后端服务地址 ====================
+    @FXML private TextField backendBaseUrlField;
+    @FXML private Label backendBaseUrlResultLabel;
+
     // ==================== 数据模型 ====================
-
-    /** IO 设备行数据模型 */
-    public static class IoDeviceRow {
-        private final String name;
-        private final String type;
-        private final String address;
-        private final String port;
-        private final String status;
-
-        public IoDeviceRow(String name, String type, String address, String port, String status) {
-            this.name    = name;
-            this.type    = type;
-            this.address = address;
-            this.port    = port;
-            this.status  = status;
-        }
-
-        public String getName()    { return name; }
-        public String getType()    { return type; }
-        public String getAddress() { return address; }
-        public String getPort()    { return port; }
-        public String getStatus()  { return status; }
-    }
+    private final ObservableList<IoDeviceDTO> ioDeviceList = FXCollections.observableArrayList();
 
     // ==================== 初始化 ====================
 
@@ -130,6 +120,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         setupToggleStyles();
         setupIoDeviceTable();
         loadSettingsIntoUI();
+        loadIoDevices();
     }
 
     /** 从配置加载到界面 */
@@ -175,6 +166,10 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             m1DbUserField.setText(s.getM1DbConnection().getUsername() != null ? s.getM1DbConnection().getUsername() : "");
             m1DbPasswordField.setText(s.getM1DbConnection().getPassword() != null ? s.getM1DbConnection().getPassword() : "");
         }
+        if (s.getApi() != null && backendBaseUrlField != null) {
+            String url = s.getApi().getBackendBaseUrl();
+            backendBaseUrlField.setText(url != null && !url.isEmpty() ? url : "http://localhost:8080");
+        }
         if (s.getPrinter() != null) {
             printerNameField.setText(s.getPrinter().getPrinterName() != null ? s.getPrinter().getPrinterName() : "");
             printerIpField.setText(s.getPrinter().getPrinterIp() != null ? s.getPrinter().getPrinterIp() : "");
@@ -219,15 +214,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
     }
 
-    /** 初始化 IO 设备列表示例数据 */
+    /** 初始化 IO 设备列表 */
     private void setupIoDeviceTable() {
-        deviceNameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        deviceTypeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
+        deviceNameCol.setCellValueFactory(new PropertyValueFactory<>("deviceName"));
+        deviceTypeCol.setCellValueFactory(new PropertyValueFactory<>("deviceCategory"));
         deviceAddrCol.setCellValueFactory(new PropertyValueFactory<>("address"));
         devicePortCol.setCellValueFactory(new PropertyValueFactory<>("port"));
 
         // 状态列：带颜色的徽标
-        deviceStatusCol.setCellFactory(col -> new TableCell<IoDeviceRow, String>() {
+        deviceStatusCol.setCellFactory(col -> new TableCell<IoDeviceDTO, String>() {
             private final Label badge = new Label();
             {
                 setGraphic(badge);
@@ -252,10 +247,10 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 }
             }
         });
-        deviceStatusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        deviceStatusCol.setCellValueFactory(new PropertyValueFactory<>("statusText"));
 
         // 操作列：编辑/测试/删除按钮
-        deviceActionCol.setCellFactory(col -> new TableCell<IoDeviceRow, String>() {
+        deviceActionCol.setCellFactory(col -> new TableCell<IoDeviceDTO, String>() {
             private final Button editBtn   = new Button("编辑");
             private final Button testBtn   = new Button("测试");
             private final Button deleteBtn = new Button("删除");
@@ -291,15 +286,35 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             }
         });
 
-        // 加载示例数据
-        ObservableList<IoDeviceRow> data = FXCollections.observableArrayList(
-            new IoDeviceRow("盒码相机",  "网络相机",   "192.168.1.104", "3000", "已连接"),
-            new IoDeviceRow("箱码相机",  "网络相机",   "192.168.1.105", "3000", "已连接"),
-            new IoDeviceRow("剔除装置",  "串口RS485",  "COM4",          "9600", "已连接"),
-            new IoDeviceRow("报警灯",    "网络TCP/IP", "192.168.1.150", "5020", "已连接"),
-            new IoDeviceRow("指示灯",    "网络TCP/IP", "192.168.1.151", "5020", "未连接")
-        );
-        ioDeviceTable.setItems(data);
+        ioDeviceTable.setItems(ioDeviceList);
+    }
+
+    /**
+     * 从后端加载 IO 设备列表
+     */
+    private void loadIoDevices() {
+        new Thread(() -> {
+            try {
+                String responseJson = HttpUtil.doGet("/api/device/list");
+                ApiResult<java.util.List<IoDeviceDTO>> result = HttpUtil.parseJson(
+                    responseJson, new TypeReference<ApiResult<java.util.List<IoDeviceDTO>>>() {});
+                Platform.runLater(() -> {
+                    ioDeviceList.clear();
+                    if (result != null && result.getCode() == 200 && result.getData() != null) {
+                        for (IoDeviceDTO d : result.getData()) {
+                            if (d.getStatusText() == null || d.getStatusText().trim().isEmpty()) {
+                                d.setStatusText("未连接");
+                            }
+                        }
+                        ioDeviceList.addAll(result.getData());
+                    } else if (result != null) {
+                        showError("加载失败", result.getMessage() != null ? result.getMessage() : "获取设备列表失败");
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("加载失败", "获取设备列表异常：" + e.getMessage()));
+            }
+        }).start();
     }
 
     // ==================== 业务 Tab 事件处理 ====================
@@ -403,39 +418,156 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @FXML
     private void onAddIoDevice() {
-        showInfo("添加设备", "添加设备功能请联系技术人员配置。\n\n（此功能依赖硬件设备管理模块，在正式部署时对接）");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/IoDeviceDialog.fxml"));
+            Parent root = loader.load();
+            IoDeviceDialogController dialogController = loader.getController();
+            dialogController.setEditMode(false);
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("添加IO设备");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(ioDeviceTable.getScene().getWindow());
+            dialogStage.setScene(new Scene(root));
+            dialogStage.showAndWait();
+
+            if (dialogController.isConfirmed()) {
+                IoDeviceDTO device = new IoDeviceDTO();
+                device.setDeviceName(dialogController.getDeviceName());
+                device.setId(device.getDeviceName());
+                device.setDeviceCategory(dialogController.getDeviceCategory());
+                device.setConnectionType(dialogController.getConnectionType());
+                device.setProtocolType(dialogController.getProtocolType());
+                device.setAddress(dialogController.getIp());
+                device.setPort(dialogController.getPort());
+                device.setTimeout(Integer.parseInt(dialogController.getTimeout()));
+                device.setRetryCount(Integer.parseInt(dialogController.getRetry()));
+                device.setEnabled(dialogController.isEnabled());
+                device.setDescription(dialogController.getDescription());
+
+                new Thread(() -> {
+                    try {
+                        String resp = HttpUtil.doPost("/api/device/add", device);
+                        ApiResult<String> result = HttpUtil.parseJson(resp, new TypeReference<ApiResult<String>>() {});
+                        Platform.runLater(() -> {
+                            if (result.getCode() == 200) {
+                                showSuccess("添加设备", "IO设备添加成功");
+                                loadIoDevices();
+                            } else {
+                                showError("添加失败", result.getMessage());
+                            }
+                        });
+                    } catch (Exception e) {
+                        Platform.runLater(() -> showError("添加失败", "调用接口异常：" + e.getMessage()));
+                    }
+                }).start();
+            }
+        } catch (Exception e) {
+            showError("打开失败", "无法打开设备对话框：" + e.getMessage());
+        }
     }
 
     @FXML
     private void onTestAllDevices() {
-        showInfo("测试所有设备", "正在测试所有设备连接状态...\n\n测试完成后，状态列将自动更新。\n（功能依赖实际设备，当前为演示模式）");
+        showInfo("测试所有设备", "已向所有设备发送测试请求（演示提示）。\n当前列表设备数：" + ioDeviceList.size());
     }
 
     private void onEditDevice(int index) {
-        if (index < 0 || index >= ioDeviceTable.getItems().size()) return;
-        IoDeviceRow row = ioDeviceTable.getItems().get(index);
-        showInfo("编辑设备", "设备：" + row.getName() + "\n地址：" + row.getAddress() + ":" + row.getPort()
-            + "\n\n（完整编辑界面将在后续版本中实现）");
+        if (index < 0 || index >= ioDeviceList.size()) return;
+        IoDeviceDTO current = ioDeviceList.get(index);
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/IoDeviceDialog.fxml"));
+            Parent root = loader.load();
+            IoDeviceDialogController dialogController = loader.getController();
+            dialogController.setEditMode(true);
+            dialogController.fillDeviceData(
+                current.getDeviceName(),
+                current.getDeviceCategory(),
+                current.getConnectionType(),
+                current.getProtocolType(),
+                current.getAddress(),
+                current.getPort(),
+                String.valueOf(current.getTimeout()),
+                String.valueOf(current.getRetryCount()),
+                current.getEnabled() != null ? current.getEnabled() : true,
+                current.getDescription()
+            );
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("编辑IO设备");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(ioDeviceTable.getScene().getWindow());
+            dialogStage.setScene(new Scene(root));
+            dialogStage.showAndWait();
+
+            if (dialogController.isConfirmed()) {
+                IoDeviceDTO updated = new IoDeviceDTO();
+                updated.setId(current.getId() != null ? current.getId() : current.getDeviceName());
+                updated.setDeviceName(dialogController.getDeviceName());
+                updated.setDeviceCategory(dialogController.getDeviceCategory());
+                updated.setConnectionType(dialogController.getConnectionType());
+                updated.setProtocolType(dialogController.getProtocolType());
+                updated.setAddress(dialogController.getIp());
+                updated.setPort(dialogController.getPort());
+                updated.setTimeout(Integer.parseInt(dialogController.getTimeout()));
+                updated.setRetryCount(Integer.parseInt(dialogController.getRetry()));
+                updated.setEnabled(dialogController.isEnabled());
+                updated.setDescription(dialogController.getDescription());
+
+                new Thread(() -> {
+                    try {
+                        String resp = HttpUtil.doPut("/api/device/update", updated);
+                        ApiResult<Boolean> result = HttpUtil.parseJson(resp, new TypeReference<ApiResult<Boolean>>() {});
+                        Platform.runLater(() -> {
+                            if (result.getCode() == 200) {
+                                showSuccess("编辑设备", "IO设备更新成功");
+                                loadIoDevices();
+                            } else {
+                                showError("更新失败", result.getMessage());
+                            }
+                        });
+                    } catch (Exception e) {
+                        Platform.runLater(() -> showError("更新失败", "调用接口异常：" + e.getMessage()));
+                    }
+                }).start();
+            }
+        } catch (Exception e) {
+            showError("打开失败", "无法打开设备对话框：" + e.getMessage());
+        }
     }
 
     private void onTestDevice(int index) {
-        if (index < 0 || index >= ioDeviceTable.getItems().size()) return;
-        IoDeviceRow row = ioDeviceTable.getItems().get(index);
-        showInfo("连接测试", "正在测试设备：" + row.getName() + "\n地址：" + row.getAddress() + ":" + row.getPort()
-            + "\n\n" + ("已连接".equals(row.getStatus()) ? "✅ 连接测试成功" : "❌ 连接测试失败：设备未响应"));
+        if (index < 0 || index >= ioDeviceList.size()) return;
+        IoDeviceDTO device = ioDeviceList.get(index);
+        showInfo("连接测试", "正在测试设备：" + device.getDeviceName() + "\n地址：" + device.getAddress() + ":" + device.getPort()
+            + "\n\n（演示提示，具体连接测试逻辑依赖设备接入模块）");
     }
 
     private void onDeleteDevice(int index) {
-        if (index < 0 || index >= ioDeviceTable.getItems().size()) return;
-        IoDeviceRow row = ioDeviceTable.getItems().get(index);
+        if (index < 0 || index >= ioDeviceList.size()) return;
+        IoDeviceDTO device = ioDeviceList.get(index);
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("删除设备");
-        confirm.setHeaderText("确认删除设备「" + row.getName() + "」？");
+        confirm.setHeaderText("确认删除设备「" + device.getDeviceName() + "」？");
         confirm.setContentText("删除后不可恢复，需重新添加。");
         confirm.showAndWait().ifPresent(bt -> {
             if (bt == javafx.scene.control.ButtonType.OK) {
-                ioDeviceTable.getItems().remove(index);
-                showSuccess("删除设备", "设备「" + row.getName() + "」已删除。");
+                new Thread(() -> {
+                    try {
+                        String resp = HttpUtil.doDelete("/api/device/delete/" + (device.getId() != null ? device.getId() : device.getDeviceName()));
+                        ApiResult<Boolean> result = HttpUtil.parseJson(resp, new TypeReference<ApiResult<Boolean>>() {});
+                        Platform.runLater(() -> {
+                            if (result.getCode() == 200) {
+                                showSuccess("删除设备", "设备已删除");
+                                loadIoDevices();
+                            } else {
+                                showError("删除失败", result.getMessage());
+                            }
+                        });
+                    } catch (Exception e) {
+                        Platform.runLater(() -> showError("删除失败", "调用接口异常：" + e.getMessage()));
+                    }
+                }).start();
             }
         });
     }
@@ -605,6 +737,30 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getM1DbConnection().setPassword(pwd != null ? pwd : "");
         saveSettings(s);
         showSuccess("1号机连接", "1号机数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name + " 表：" + (tableName.isEmpty() ? "T_Code" : tableName));
+    }
+
+    @FXML
+    private void onSaveBackendBaseUrl() {
+        if (backendBaseUrlField == null) return;
+        String url = backendBaseUrlField.getText().trim();
+        if (url.isEmpty()) {
+            if (backendBaseUrlResultLabel != null) {
+                backendBaseUrlResultLabel.setText("❌ 请填写后端 API 地址");
+                backendBaseUrlResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            }
+            return;
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url;
+        url = url.replaceAll("/+$", "");
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getApi() == null) s.setApi(new ShiwanM2Settings.ApiConfig());
+        s.getApi().setBackendBaseUrl(url);
+        saveSettings(s);
+        HttpUtil.setBaseUrl(url);
+        if (backendBaseUrlResultLabel != null) {
+            backendBaseUrlResultLabel.setText("✅ 已保存，当前请求将发往：" + url);
+            backendBaseUrlResultLabel.setStyle("-fx-text-fill: #059669; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+        }
     }
 
     // ==================== 关闭 ====================

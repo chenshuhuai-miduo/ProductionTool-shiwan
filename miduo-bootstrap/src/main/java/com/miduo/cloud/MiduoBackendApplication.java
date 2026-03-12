@@ -31,6 +31,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 })
 @MapperScan({
     "com.miduo.cloud.infrastructure.mapper",
+    "com.miduo.cloud.infrastructure.persistence.mybatis.mapper",
     "com.miduo.cloud.variant.zhimeizhai.persistence.mybatis.mapper"
 })
 public class MiduoBackendApplication {

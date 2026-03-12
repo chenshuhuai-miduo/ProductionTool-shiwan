@@ -2,6 +2,7 @@ package com.miduo.cloud.frontend.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -199,6 +200,7 @@ public class ShiwanM2Settings {
     // ---------- 嵌套配置类 ----------
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CodeDigitsConfig {
         private int smallCodeDigits = 14;
         private int mediumCodeDigits = 14;
@@ -213,6 +215,7 @@ public class ShiwanM2Settings {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PalletRuleConfig {
         private String prefix = "V";
         private String lineCode = "A";
@@ -224,6 +227,7 @@ public class ShiwanM2Settings {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class UploadConfig {
         private boolean autoUpload = true;
 
@@ -232,6 +236,7 @@ public class ShiwanM2Settings {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DbConnectionConfig {
         private String host = "127.0.0.1";
         private String port = "3306";
@@ -253,6 +258,7 @@ public class ShiwanM2Settings {
 
     /** 1 号机 SQL Server 连接配置（T_Code 表同步） */
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class M1DbConnectionConfig {
         private String host = "192.168.1.100";
         private String port = "1433";
@@ -276,6 +282,7 @@ public class ShiwanM2Settings {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PrinterConfig {
         private String printerName = "Canon LBP2900";
         private String printerIp = "192.168.1.201";
@@ -293,6 +300,7 @@ public class ShiwanM2Settings {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AlarmConfig {
         private boolean soundAlarmEnabled = true;
         private int alarmDelayMs = 500;
@@ -307,9 +315,14 @@ public class ShiwanM2Settings {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ApiConfig {
         private String baseUrl = "https://openapi.weixin12315.com";
-        private String appKey;
+        /** 本地后端 REST API 地址（前端调用 /api/shiwan-m2/* 等接口的根地址，默认 8080 端口） */
+        private String backendBaseUrl = "http://localhost:8080";
+        /** JSON 中的 key 为 appId，与后端 ShiwanM2SettingsDto 保持一致 */
+        @JsonProperty("appId")
+        private String appId;
         private String appSecret;
         private String syncCodeAndVirtualRelationPath = "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation";
         private String getSyncResultPath = "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult";
@@ -318,8 +331,10 @@ public class ShiwanM2Settings {
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
-        public String getAppKey() { return appKey; }
-        public void setAppKey(String appKey) { this.appKey = appKey; }
+        public String getBackendBaseUrl() { return backendBaseUrl; }
+        public void setBackendBaseUrl(String backendBaseUrl) { this.backendBaseUrl = backendBaseUrl; }
+        public String getAppId() { return appId; }
+        public void setAppId(String appId) { this.appId = appId; }
         public String getAppSecret() { return appSecret; }
         public void setAppSecret(String appSecret) { this.appSecret = appSecret; }
         public String getSyncCodeAndVirtualRelationPath() { return syncCodeAndVirtualRelationPath; }

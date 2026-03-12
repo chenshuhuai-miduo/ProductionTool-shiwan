@@ -10,6 +10,8 @@ import com.miduo.cloud.frontend.service.LicenseValidationService;
 import com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator;
 import com.miduo.cloud.frontend.util.OperateLogBatchManager;
 import com.miduo.cloud.frontend.util.StageIconUtil;
+import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.entity.enums.LicenseStatusEnum;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -34,6 +36,11 @@ public class ShiwanM2FrontendApplication extends Application {
         System.out.println("========================================");
 
         OperateLogBatchManager.getInstance().start();
+
+        // 从系统配置读取后端 API 地址（默认 http://localhost:8080），前端请求都发往该地址
+        String backendUrl = ShiwanM2SettingsStore.getBackendBaseUrl();
+        HttpUtil.setBaseUrl(backendUrl);
+        System.out.println("  后端 API 地址: " + backendUrl + "（可在系统设置中修改「后端服务地址」）");
 
         if (!performLicenseValidation()) {
             System.err.println("✗ 许可证验证失败，应用程序退出");

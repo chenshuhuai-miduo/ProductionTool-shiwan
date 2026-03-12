@@ -45,6 +45,7 @@ public final class ShiwanM2SettingsStore {
             ensureDefaults(s);
             return s;
         } catch (IOException e) {
+            System.err.println("[ShiwanM2SettingsStore] 解析配置文件失败，使用默认值：" + e.getMessage());
             return new ShiwanM2Settings();
         }
     }
@@ -91,6 +92,15 @@ public final class ShiwanM2SettingsStore {
     public static String getApiBaseUrl() {
         ShiwanM2Settings.ApiConfig api = get().getApi();
         return api != null && api.getBaseUrl() != null ? api.getBaseUrl() : "https://openapi.weixin12315.com";
+    }
+
+    /** 供前端 HttpUtil 使用：获取本地后端 REST API 根地址（如 http://localhost:8080）。 */
+    public static String getBackendBaseUrl() {
+        ShiwanM2Settings.ApiConfig api = get().getApi();
+        String url = api != null && api.getBackendBaseUrl() != null ? api.getBackendBaseUrl().trim() : null;
+        if (url == null || url.isEmpty()) return "http://localhost:8080";
+        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url;
+        return url.replaceAll("/+$", "");
     }
 
     /** 确保嵌套对象与页面配置默认值存在 */

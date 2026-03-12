@@ -1,9 +1,9 @@
 {
   "systemSettingsPassword" : "123456",
   "codeDigits" : {
-    "smallCodeDigits" : 16,
-    "mediumCodeDigits" : 12,
-    "largeCodeDigits" : 8
+    "smallCodeDigits" : 14,
+    "mediumCodeDigits" : 14,
+    "largeCodeDigits" : -1
   },
   "palletRule" : {
     "prefix" : "V",
@@ -24,19 +24,19 @@
   },
   "pageTabOrder" : [ "dataCollection", "manual", "query", "replace", "stats", "package", "cancel", "upload" ],
   "dbConnection" : {
-    "host" : "localhost",
+    "host" : "127.0.0.1",
     "port" : "3306",
     "database" : "shiwanTest",
     "username" : "root",
     "password" : "123456"
   },
   "m1DbConnection" : {
-    "host" : "192.168.5.117",
+    "host" : "192.168.1.100",
     "port" : "1433",
-    "database" : "TkCode",
+    "database" : "",
     "tableName" : "T_Code",
     "username" : "sa",
-    "password" : "www123456"
+    "password" : ""
   },
   "printer" : {
     "printerName" : "Canon LBP2900",
@@ -46,18 +46,16 @@
   },
   "alarm" : {
     "soundAlarmEnabled" : true,
-    "alarmDelayMs" : 100,
+    "alarmDelayMs" : 500,
     "alarmIntervalMs" : 2000
   },
   "api" : {
-    "baseUrl" : "https://openapi.t.miduonet.com",
+    "baseUrl" : "https://openapi.weixin12315.com",
     "backendBaseUrl" : "http://localhost:8080",
-    "appSecret" : "4jiKog0cFCrzzqhxny5RzkZpf9kgA83S",
     "syncCodeAndVirtualRelationPath" : "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation",
     "getSyncResultPath" : "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult",
     "codePackageQueryCompletedPath" : "/api/v1/code/package/query-completed",
-    "productsListPath" : "/api/sign/md.shop.products/v1/list",
-    "appId" : "VrDiiCwOzGCbtrwhUqW51yA9"
+    "productsListPath" : "/api/sign/md.shop.products/v1/list"
   },
   "boxesPerPallet" : 70,
   "boxesPerCase" : 4

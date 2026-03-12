@@ -2,6 +2,7 @@ package com.miduo.cloud.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 /**
  * 石湾 2 号机系统设置 JSON 的 DTO（后端读取 shiwan-m2-settings.json 用）。
@@ -15,6 +16,8 @@ public class ShiwanM2SettingsDto {
     private M1DbConnection m1DbConnection;
     private Long lastSyncedM1SerialNo;
     private PalletRule palletRule;
+    /** 接口配置：baseUrl、appId、appSecret、productsListPath 等（与前端 api 同结构） */
+    private Api api;
 
     public DbConnection getDbConnection() { return dbConnection; }
     public void setDbConnection(DbConnection dbConnection) { this.dbConnection = dbConnection; }
@@ -24,6 +27,8 @@ public class ShiwanM2SettingsDto {
     public void setLastSyncedM1SerialNo(Long lastSyncedM1SerialNo) { this.lastSyncedM1SerialNo = lastSyncedM1SerialNo; }
     public PalletRule getPalletRule() { return palletRule; }
     public void setPalletRule(PalletRule palletRule) { this.palletRule = palletRule; }
+    public Api getApi() { return api; }
+    public void setApi(Api api) { this.api = api; }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -77,5 +82,41 @@ public class ShiwanM2SettingsDto {
         public void setPrefix(String prefix) { this.prefix = prefix; }
         public String getLineCode() { return lineCode; }
         public void setLineCode(String lineCode) { this.lineCode = lineCode; }
+    }
+
+    /** 接口配置（后端读 shiwan-m2-settings.json 中的 api 节点，用于产品同步等） */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Api {
+        private String baseUrl;
+        private String backendBaseUrl;
+        @JsonAlias("app_id")
+        private String appId;
+        private String appKey;  // 与前端兼容，部分配置写 appKey
+        @JsonAlias({"app_secret", "appSecert"})
+        private String appSecret;
+        private String syncCodeAndVirtualRelationPath;
+        private String getSyncResultPath;
+        private String productsListPath;
+
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getBackendBaseUrl() { return backendBaseUrl; }
+        public void setBackendBaseUrl(String backendBaseUrl) { this.backendBaseUrl = backendBaseUrl; }
+        /** 优先返回 appId，否则 appKey（与前端配置兼容） */
+        public String getAppId() { return appId != null && !appId.isEmpty() ? appId : appKey; }
+        public void setAppId(String appId) { this.appId = appId; }
+        public String getAppKey() { return appKey; }
+        public void setAppKey(String appKey) { this.appKey = appKey; }
+        public String getAppSecret() { return appSecret; }
+        public void setAppSecret(String appSecret) { this.appSecret = appSecret; }
+        public String getSyncCodeAndVirtualRelationPath() { return syncCodeAndVirtualRelationPath; }
+        public void setSyncCodeAndVirtualRelationPath(String syncCodeAndVirtualRelationPath) {
+            this.syncCodeAndVirtualRelationPath = syncCodeAndVirtualRelationPath;
+        }
+        public String getGetSyncResultPath() { return getSyncResultPath; }
+        public void setGetSyncResultPath(String getSyncResultPath) { this.getSyncResultPath = getSyncResultPath; }
+        public String getProductsListPath() { return productsListPath; }
+        public void setProductsListPath(String productsListPath) { this.productsListPath = productsListPath; }
     }
 }

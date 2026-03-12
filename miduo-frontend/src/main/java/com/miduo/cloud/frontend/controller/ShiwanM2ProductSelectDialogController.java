@@ -45,8 +45,10 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     }
 
     private void loadPage(int page) {
-        currentPage = page;
-        String url = "/api/shiwan-m2/products?page=" + page + "&pagesize=" + PAGE_SIZE;
+        // 前端弹窗改用已存在的搜索接口：/api/shiwan-m2/products/search
+        // 搜索接口仅支持 keyword 与 size，返回 List，无分页信息
+        currentPage = 1;
+        String url = "/api/shiwan-m2/products/search?size=" + PAGE_SIZE;
         if (keyword != null && !keyword.isEmpty()) {
             try {
                 url += "&keyword=" + java.net.URLEncoder.encode(keyword, "UTF-8");
@@ -63,17 +65,22 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
                     return;
                 }
                 JsonNode data = root.get("data");
-                int total = data.has("total") ? data.get("total").asInt() : 0;
                 java.util.List<Map<String, String>> list = new java.util.ArrayList<>();
-                if (data.has("list") && data.get("list").isArray()) {
-                    for (JsonNode item : data.get("list")) {
+                if (data.isArray()) {
+                    for (JsonNode item : data) {
                         Map<String, String> row = new HashMap<>();
-                        row.put("name", item.has("name") ? item.get("name").asText() : "");
-                        row.put("pronumber", item.has("pronumber") ? item.get("pronumber").asText() : "");
+                        // 兼容后端 ProductInfoPO 字段：productName / productNo
+                        row.put("name", item.has("productName") ? item.get("productName").asText() : "");
+                        row.put("pronumber", item.has("productNo") ? item.get("productNo").asText() : "");
                         list.add(row);
                     }
+                } else if (data.isObject()) {
+                    Map<String, String> row = new HashMap<>();
+                    row.put("name", data.has("productName") ? data.get("productName").asText() : "");
+                    row.put("pronumber", data.has("productNo") ? data.get("productNo").asText() : "");
+                    list.add(row);
                 }
-                Platform.runLater(() -> updateTable(list, total));
+                Platform.runLater(() -> updateTable(list, list.size()));
             } catch (Exception e) {
                 Platform.runLater(() -> updateTable(java.util.Collections.emptyList(), 0));
             }
@@ -85,7 +92,8 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
         productTable.getItems().clear();
         productTable.getItems().addAll(list);
         totalLabel.setText("共 " + total + " 条");
-        int totalPages = total <= 0 ? 1 : (total + PAGE_SIZE - 1) / PAGE_SIZE;
+        // 搜索接口不分页，这里固定单页展示
+        int totalPages = 1;
         pageInfoLabel.setText("第 " + currentPage + " / " + totalPages + " 页");
     }
 

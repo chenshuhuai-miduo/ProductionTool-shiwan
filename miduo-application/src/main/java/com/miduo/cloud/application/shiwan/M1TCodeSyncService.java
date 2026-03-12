@@ -22,6 +22,7 @@ import java.util.Map;
  * 每 1 秒执行一次：从 1 号机 SQL Server 读取 SerialNo &gt; lastSynced 且 Status=0 的记录，
  * 插入 2 号机 MySQL CodeRelationUpload，OrderNo/ProductNO 取当前 2 号机生产订单号与产品编码，AddTime 取当前时间。
  * 启用条件：shiwan.m2.m1-sync.enabled=true
+ * 运行时控制：调用 startSync()/stopSync() 动态开启/关闭每次执行逻辑。
  */
 @Service
 @ConditionalOnProperty(name = "shiwan.m2.m1-sync.enabled", havingValue = "true")
@@ -31,14 +32,36 @@ public class M1TCodeSyncService {
     private static final String JTDS_DRIVER = "net.sourceforge.jtds.jdbc.Driver";
     private static final String JTDS_URL_TEMPLATE = "jdbc:jtds:sqlserver://%s:%s/%s;loginTimeout=3;socketTimeout=3000";
 
+    /** 运行时开关：只有 true 时才执行同步逻辑 */
+    private volatile boolean syncActive = false;
+
     private final JdbcTemplate jdbcTemplate;
 
     public M1TCodeSyncService(DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
+    /** 前端开始采集后调用：激活同步 */
+    public void startSync() {
+        syncActive = true;
+        log.info("1号机 T_Code 同步已启动");
+    }
+
+    /** 前端停止采集后调用：暂停同步 */
+    public void stopSync() {
+        syncActive = false;
+        log.info("1号机 T_Code 同步已停止");
+    }
+
+    public boolean isSyncActive() {
+        return syncActive;
+    }
+
     @Scheduled(fixedRate = 1000)
     public void sync() {
+        if (!syncActive) {
+            return;
+        }
         ShiwanM2SettingsDto config = ShiwanM2SettingsFileLoader.load();
         if (config == null || config.getM1DbConnection() == null) {
             return;
@@ -100,16 +123,25 @@ public class M1TCodeSyncService {
         String tagNo = "M1-SYNC";
         for (TCodeRow row : rows) {
             try {
-                jdbcTemplate.update(
+                // 仅当本订单下该盒码+瓶码组合尚不存在时插入，避免与盒采集相机场景重复（盒码由 1 号机同步后，盒采集相机只校验不落库）
+                int updated = jdbcTemplate.update(
                         "INSERT INTO CodeRelationUpload (" +
                                 "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
                                 "DxCode, SalesCode, VirtualSerialNumber, IsVirtual, ProductNO, OrderNo, Status, TagNo, Qty, Type, " +
                                 "WarehouseNo, BatchNo, AddTime, ErrCount, Msg, IsUpload, IsDel, TeamName) " +
-                                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                "SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? " +
+                                "FROM DUAL " +
+                                "WHERE NOT EXISTS (" +
+                                "SELECT 1 FROM CodeRelationUpload " +
+                                "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0)",
                         empty, empty, row.boxCode, row.bagCode,
                         empty, empty, empty, 0, productNo, orderNo, 0, tagNo, 0, 1,
-                        empty, empty, now, 0, empty, 1, 0, empty
+                        empty, empty, now, 0, empty, 1, 0, empty,
+                        row.boxCode, row.bagCode
                 );
+                if (updated == 0 && log.isTraceEnabled()) {
+                    log.trace("1号机 T_Code 同步跳过重复: OrderNo={} MediumSerialNumber={} SmallSerialNumber={}", orderNo, row.boxCode, row.bagCode);
+                }
             } catch (Exception e) {
                 log.warn("1号机 T_Code 同步写入 CodeRelationUpload 失败 SerialNo={}: {}", row.serialNo, e.getMessage());
             }

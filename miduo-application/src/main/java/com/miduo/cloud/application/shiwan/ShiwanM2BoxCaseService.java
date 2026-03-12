@@ -132,6 +132,211 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
+     * 接收盒码时校验：CodeRelationUpload 中该 MediumSerialNumber 对应 exactly requiredRows 条，
+     * 且 SmallSerialNumber 互不相同，且 BigSerialNumber 均为空，则视为正确可用的盒码（不落库，由调用方放入内存队列）。
+     */
+    public ApiResult<Void> validateBoxCodeForReceive(String orderNo, String productNo, String boxCode, int requiredRows) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return ApiResult.error(400, "订单号不能为空");
+        }
+        if (productNo == null) productNo = "";
+        if (boxCode == null || (boxCode = boxCode.trim()).isEmpty()) {
+            return ApiResult.error(400, "盒码不能为空");
+        }
+        try {
+            Map<String, Object> task = getCurrentTaskByOrderNo(orderNo);
+            if (task == null) {
+                return ApiResult.error(400, "未找到进行中的任务或订单号不匹配");
+            }
+            String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
+            if (useProductNo == null) useProductNo = "";
+            Integer total = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 " +
+                            "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                    Integer.class, boxCode);
+            if (total == null || total != requiredRows) {
+                return ApiResult.error(400, "盒码对应条数不符（需" + requiredRows + "条）：" + boxCode + "，当前" + (total != null ? total : 0) + "条");
+            }
+            return ApiResult.success("盒码校验通过", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResult.error("盒码校验失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
+    }
+
+    /**
+     * 箱码与内存队列中的 N 个盒码关联：将 CodeRelationUpload 中 MediumSerialNumber 属于 boxCodes 且 BigSerialNumber 为空的记录更新 BigSerialNumber = caseCode。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResult<Map<String, Object>> associateCaseCodeWithBoxCodes(String orderNo, String productNo,
+                                                                        String caseCode, List<String> boxCodes, int boxesPerPallet) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return ApiResult.error(400, "订单号不能为空");
+        }
+        if (productNo == null) productNo = "";
+        if (caseCode == null || (caseCode = caseCode.trim()).isEmpty()) {
+            return ApiResult.error(400, "箱码不能为空");
+        }
+        if (boxCodes == null || boxCodes.isEmpty()) {
+            return ApiResult.error(400, "盒码列表不能为空");
+        }
+        try {
+            Map<String, Object> task = getCurrentTaskByOrderNo(orderNo);
+            if (task == null) {
+                return ApiResult.error(400, "未找到进行中的任务或订单号不匹配");
+            }
+            String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
+            if (useProductNo == null) useProductNo = "";
+            if (!isCodeInPackage(caseCode, 3)) {
+                return ApiResult.error(400, "箱码不在大标码包内：" + caseCode);
+            }
+            if (isCaseCodeAlreadyUsed(orderNo, caseCode)) {
+                return ApiResult.error(400, "箱码已使用（重码）：" + caseCode);
+            }
+            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            List<Object> args = new ArrayList<>();
+            args.add(caseCode);
+            args.add(orderNo.trim());
+            args.add(useProductNo);
+            args.addAll(boxCodes);
+            int updated = jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET BigSerialNumber = ? WHERE OrderNo = ? AND IsDel = 0 AND (ProductNO IS NULL OR ProductNO = '' OR ProductNO = ?) " +
+                            "AND MediumSerialNumber IN (" + placeholders + ") AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                    args.toArray());
+            if (updated <= 0) {
+                return ApiResult.error(400, "未找到可关联的盒码记录，箱码：" + caseCode);
+            }
+            int currentCaseCount = countCurrentCasesInPallet(orderNo);
+            boolean fullPallet = currentCaseCount >= boxesPerPallet;
+            String palletCode = null;
+            if (fullPallet) {
+                palletCode = completeCurrentPallet(orderNo, boxesPerPallet);
+                currentCaseCount = 0;
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("success", true);
+            data.put("caseCode", caseCode);
+            data.put("boxCodes", boxCodes);
+            data.put("currentCaseCount", currentCaseCount);
+            data.put("boxesPerPallet", boxesPerPallet);
+            data.put("fullPallet", fullPallet);
+            if (fullPallet && palletCode != null) data.put("palletCode", palletCode);
+            return ApiResult.success("盒箱关联成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResult.error("盒箱关联失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
+    }
+
+    /** 当前订单下未关联箱码的盒码条数（BigSerialNumber 为空） */
+    public int getUnassociatedBoxCount(String orderNo, String productNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return 0;
+        try {
+            if (productNo != null && !productNo.isEmpty()) {
+                Integer n = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 AND (ProductNO IS NULL OR ProductNO = '' OR ProductNO = ?) " +
+                                "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                        Integer.class, orderNo.trim(), productNo);
+                return n != null ? n : 0;
+            } else {
+                Integer n = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 " +
+                                "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                        Integer.class, orderNo.trim());
+                return n != null ? n : 0;
+            }
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 收到箱码时触发关联：查当前未关联的前 N 条盒码，若够 N 条则更新 BigSerialNumber 并成垛逻辑；不足则返回 PENDING 供调用方将箱码存入待处理列表。
+     * @return 成功时 code=200；不足 N 条时 code=202、message 含 PENDING，调用方应将箱码存入内存待处理列表。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResult<Map<String, Object>> associateCaseCodeWithPendingBoxes(String orderNo, String productNo,
+                                                                            String caseCode, int boxesPerCase, int boxesPerPallet) {
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            return ApiResult.error(400, "订单号不能为空");
+        }
+        if (productNo == null) productNo = "";
+        if (caseCode == null || (caseCode = caseCode.trim()).isEmpty()) {
+            return ApiResult.error(400, "箱码不能为空");
+        }
+        try {
+            Map<String, Object> task = getCurrentTaskByOrderNo(orderNo);
+            if (task == null) {
+                return ApiResult.error(400, "未找到进行中的任务或订单号不匹配");
+            }
+            String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
+            if (useProductNo == null) useProductNo = "";
+            if (!isCodeInPackage(caseCode, 3)) {
+                return ApiResult.error(400, "箱码不在大标码包内：" + caseCode);
+            }
+            if (isCaseCodeAlreadyUsed(orderNo, caseCode)) {
+                return ApiResult.error(400, "箱码已使用（重码）：" + caseCode);
+            }
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT ID FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 AND (ProductNO IS NULL OR ProductNO = '' OR ProductNO = ?) " +
+                            "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') ORDER BY ID ASC LIMIT " + boxesPerCase,
+                    orderNo.trim(), useProductNo);
+            if (rows == null || rows.size() < boxesPerCase) {
+                ApiResult<Map<String, Object>> pendingResult = new ApiResult<>();
+                pendingResult.setCode(202);
+                pendingResult.setMessage("未关联盒码不足" + boxesPerCase + "条，请将箱码存入待处理列表");
+                Map<String, Object> pending = new HashMap<>();
+                pending.put("pending", true);
+                pending.put("unassociatedCount", rows != null ? rows.size() : 0);
+                pendingResult.setData(pending);
+                return pendingResult;
+            }
+            List<Long> ids = new ArrayList<>();
+            for (Map<String, Object> row : rows) {
+                Object id = row.get("ID");
+                if (id instanceof Number) ids.add(((Number) id).longValue());
+            }
+            if (ids.size() < boxesPerCase) {
+                ApiResult<Map<String, Object>> pendingResult = new ApiResult<>();
+                pendingResult.setCode(202);
+                pendingResult.setMessage("未关联盒码不足" + boxesPerCase + "条");
+                Map<String, Object> pending = new HashMap<>();
+                pending.put("pending", true);
+                pending.put("unassociatedCount", ids.size());
+                pendingResult.setData(pending);
+                return pendingResult;
+            }
+            String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+            List<Object> args = new ArrayList<>();
+            args.add(caseCode);
+            args.add(orderNo.trim());
+            args.addAll(ids);
+            jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET BigSerialNumber = ? WHERE OrderNo = ? AND IsDel = 0 AND ID IN (" + placeholders + ")",
+                    args.toArray());
+            int currentCaseCount = countCurrentCasesInPallet(orderNo);
+            boolean fullPallet = currentCaseCount >= boxesPerPallet;
+            String palletCode = null;
+            if (fullPallet) {
+                palletCode = completeCurrentPallet(orderNo, boxesPerPallet);
+                currentCaseCount = 0;
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("success", true);
+            data.put("caseCode", caseCode);
+            data.put("currentCaseCount", currentCaseCount);
+            data.put("boxesPerCase", boxesPerCase);
+            data.put("boxesPerPallet", boxesPerPallet);
+            data.put("fullPallet", fullPallet);
+            if (fullPallet && palletCode != null) data.put("palletCode", palletCode);
+            return ApiResult.success("盒箱关联成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResult.error("盒箱关联失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
+    }
+
+    /**
      * 强制满垛：将当前未成垛的箱绑定到新虚拟垛标，重置当前垛计数。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -218,14 +423,16 @@ public class ShiwanM2BoxCaseService {
 
     private boolean isCaseCodeAlreadyUsed(String orderNo, String caseCode) {
         Long c = jdbcTemplate.queryForObject(
-                "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 AND BigSerialNumber = ?",
-                Long.class, orderNo.trim(), caseCode);
+                "SELECT COUNT(1) FROM CodeRelationUpload WHERE BigSerialNumber = ? AND IsDel = 0",
+                Long.class, caseCode);
         return c != null && c > 0;
     }
 
+    /** 盒码已使用：仅当表中存在该盒码且已被箱码关联（BigSerialNumber 有值）时才算已使用 */
     private boolean isBoxCodeAlreadyUsed(String orderNo, String boxCode) {
         Long c = jdbcTemplate.queryForObject(
-                "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 AND MediumSerialNumber = ?",
+                "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 " +
+                        "AND BigSerialNumber != ''",
                 Long.class, orderNo.trim(), boxCode);
         return c != null && c > 0;
     }

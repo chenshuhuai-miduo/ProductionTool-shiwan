@@ -2,6 +2,7 @@ package com.miduo.cloud.application.device;
 
 import com.miduo.cloud.common.util.IniFileUtil;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -16,8 +17,13 @@ import java.util.Map;
 @Service
 public class DeviceApplicationService {
 
-    // INI文件路径（项目根目录下）
-    private static final String INI_FILE_PATH = "io_devices.ini";
+    /**
+     * INI 文件路径（可通过配置覆盖）
+     * - 默认：io_devices.ini（致美斋、通用环境）
+     * - 石湾2号机：application-shiwan-m2.properties 中覆盖为 io_devices_shiwan_m2.ini
+     */
+    @Value("${io.device.ini:io_devices.ini}")
+    private String iniFilePath;
 
     /**
      * 获取所有设备
@@ -26,10 +32,10 @@ public class DeviceApplicationService {
         List<IoDeviceDTO> devices = new ArrayList<>();
         
         // 读取所有节（每个节代表一个设备）
-        List<String> sections = IniFileUtil.readSections(INI_FILE_PATH);
+        List<String> sections = IniFileUtil.readSections(iniFilePath);
         
         for (String section : sections) {
-            Map<String, String> properties = IniFileUtil.readSection(INI_FILE_PATH, section);
+            Map<String, String> properties = IniFileUtil.readSection(iniFilePath, section);
             IoDeviceDTO device = mapToDevice(section, properties);
             devices.add(device);
         }
@@ -45,7 +51,7 @@ public class DeviceApplicationService {
             return null;
         }
         
-        Map<String, String> properties = IniFileUtil.readSection(INI_FILE_PATH, id);
+        Map<String, String> properties = IniFileUtil.readSection(iniFilePath, id);
         
         if (properties.isEmpty()) {
             return null;
@@ -73,7 +79,7 @@ public class DeviceApplicationService {
         Map<String, String> properties = mapToProperties(device);
         
         // 写入INI文件
-        IniFileUtil.writeSection(INI_FILE_PATH, device.getDeviceName(), properties);
+        IniFileUtil.writeSection(iniFilePath, device.getDeviceName(), properties);
         
         return device.getDeviceName();
     }
@@ -102,14 +108,14 @@ public class DeviceApplicationService {
             }
             
             // 删除旧节
-            IniFileUtil.deleteSection(INI_FILE_PATH, device.getId());
+            IniFileUtil.deleteSection(iniFilePath, device.getId());
         }
         
         // 构建键值对
         Map<String, String> properties = mapToProperties(device);
         
         // 写入INI文件
-        IniFileUtil.writeSection(INI_FILE_PATH, device.getDeviceName(), properties);
+        IniFileUtil.writeSection(iniFilePath, device.getDeviceName(), properties);
         
         return true;
     }
@@ -130,7 +136,7 @@ public class DeviceApplicationService {
         }
         
         // 删除INI文件中的节
-        IniFileUtil.deleteSection(INI_FILE_PATH, id);
+        IniFileUtil.deleteSection(iniFilePath, id);
         
         return true;
     }
@@ -195,35 +201,33 @@ public class DeviceApplicationService {
     
     /**
      * 将设备类别文本转换为代码
-     * 码校验->1, 箱码采集->2, 托盘码关联->3, 箱码关联->4, 报警器->5, 剔除设备->6, 扫码枪->7
+     * 瓶码采集->1, 盒码采集->2, 箱码采集->3, 报警器->4, 剔除装置->5, 扫码枪->6
      */
     private String convertCategoryTextToCode(String categoryText) {
         if (categoryText == null) return "";
         switch (categoryText) {
-            case "码校验": return "1";
-            case "箱码采集": return "2";
-            case "托盘码关联": return "3";
-            case "箱码关联": return "4";
-            case "报警器": return "5";
-            case "剔除设备": return "6";
-            case "扫码枪": return "7";
+            case "瓶码采集": return "1";
+            case "盒码采集": return "2";
+            case "箱码采集": return "3";
+            case "报警器": return "4";
+            case "剔除装置": return "5";
+            case "扫码枪": return "6";
             default: return "";
         }
     }
     
     /**
-     * 将设备类别代码转换为文本
-     * 1->码校验, 2->箱码采集, 3->托盘码关联, 4->箱码关联, 5->报警器, 6->剔除设备, 7->扫码枪
+     * 将设备类别代码转换为文本（2号机：瓶码采集、盒码采集、箱码采集、报警器、剔除装置、扫码枪）
      */
     private String convertCategoryCodeToText(String categoryCode) {
         if (categoryCode == null || categoryCode.trim().isEmpty()) return "";
         switch (categoryCode.trim()) {
-            case "1": return "码校验";
-            case "2": return "箱码采集";
-            case "3": return "托盘码关联";
-            case "4": return "箱码关联";
-            case "5": return "报警器";
-            case "6": return "剔除设备";
+            case "1": return "瓶码采集";
+            case "2": return "盒码采集";
+            case "3": return "箱码采集";
+            case "4": return "报警器";
+            case "5": return "剔除装置";
+            case "6": return "扫码枪";
             case "7": return "扫码枪";
             default: return "";
         }

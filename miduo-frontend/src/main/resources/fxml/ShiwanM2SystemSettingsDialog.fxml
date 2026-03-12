@@ -743,6 +743,42 @@
                     </ScrollPane>
                 </Tab>
 
+                <!-- 后端服务地址（前端请求 API 的根地址，默认 8080 端口） -->
+                <Tab text="后端服务地址">
+                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
+                            <Label text="后端服务地址"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+
+                            <Label text="本机前端通过该地址访问后端 REST API（如 /api/shiwan-m2/*）。须先启动后端服务（Spring Boot，默认端口 8080），此处填后端地址。数据库端口 3306 由后端在「数据库连接」中配置，前端不直连数据库。"
+                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="后端 API 地址" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="backendBaseUrlField"
+                                           text="http://localhost:8080"
+                                           HBox.hgrow="ALWAYS" maxWidth="400"
+                                           styleClass="sw2-field-input"
+                                           promptText="如 http://localhost:8080 或 http://192.168.1.100:8080"/>
+                            </HBox>
+
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button text="保 存"
+                                        styleClass="sw2-btn-primary"
+                                        minWidth="80" minHeight="36"
+                                        onAction="#onSaveBackendBaseUrl"/>
+                                <Label fx:id="backendBaseUrlResultLabel"
+                                       text=""
+                                       style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+                        </VBox>
+                    </ScrollPane>
+                </Tab>
+
             </TabPane>
         </Tab>
 

@@ -48,13 +48,10 @@ public class ShiwanM2SettingsController {
             return ApiResult.error("MySQL 驱动未加载，请确认依赖已引入");
         }
         try (java.sql.Connection conn = DriverManager.getConnection(url, username.trim(), password)) {
-            if (conn.isValid(3)) {
-                return ApiResult.success("连接成功", true);
-            }
+            return ApiResult.success("连接成功", true);
         } catch (Exception e) {
             return ApiResult.error("连接失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
-        return ApiResult.error("连接失败");
     }
 
     /**
@@ -81,13 +78,10 @@ public class ShiwanM2SettingsController {
             return ApiResult.error("SQL Server 驱动(jTDS)未加载，请确认已引入 jtds 依赖");
         }
         try (java.sql.Connection conn = DriverManager.getConnection(url, username.trim(), password)) {
-            if (conn.isValid(3)) {
-                return ApiResult.success("连接成功", true);
-            }
+            return ApiResult.success("连接成功", true);
         } catch (Exception e) {
             return ApiResult.error("连接失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
-        return ApiResult.error("连接失败");
     }
 
     /**
@@ -117,12 +111,9 @@ public class ShiwanM2SettingsController {
             return ApiResult.error("SQL Server 驱动(jTDS)未加载，请确认已引入 jtds 依赖");
         }
         try (java.sql.Connection conn = DriverManager.getConnection(url, username.trim(), password)) {
-            if (conn.isValid(3)) {
-                return ApiResult.success("1 号机连接正常", true);
-            }
+            return ApiResult.success("1 号机连接正常", true);
         } catch (Exception e) {
             return ApiResult.error("1 号机连接失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
-        return ApiResult.error("1 号机连接失败");
     }
 }

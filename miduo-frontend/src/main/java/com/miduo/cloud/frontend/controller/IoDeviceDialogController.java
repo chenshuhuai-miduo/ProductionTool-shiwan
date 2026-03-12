@@ -43,14 +43,13 @@ public class IoDeviceDialogController {
     public void initialize() {
         System.out.println("IO设备对话框初始化...");
 
-        // 初始化设备类别下拉框
+        // 初始化设备类别下拉框（2号机：瓶码采集、盒码采集、箱码采集、报警器、剔除装置、扫码枪）
         deviceCategoryComboBox.getItems().addAll(
-            "码校验",
+            "瓶码采集",
+            "盒码采集",
             "箱码采集",
-            "托盘码关联",
-            "箱码关联",
             "报警器",
-            "剔除设备",
+            "剔除装置",
             "扫码枪"
         );
         deviceCategoryComboBox.getSelectionModel().selectFirst();

@@ -10,12 +10,15 @@ import org.apache.ibatis.logging.stdout.StdOutImpl;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,6 +32,9 @@ import java.time.LocalDateTime;
  */
 @Configuration
 public class MyBatisConfig {
+
+    @Autowired
+    private Environment environment;
 
     /**
      * 配置 SqlSessionFactory，注册自定义类型处理器
@@ -71,8 +77,11 @@ public class MyBatisConfig {
         
         // MyBatis-Plus 插件
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        // 使用 SQL Server 2005 分页插件（兼容旧版 SQL Server，使用 ROW_NUMBER() 方式）
-        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.SQL_SERVER2005);
+        // 石湾 2 号机使用 MySQL；其他（致美斋等）使用 SQL Server 2005
+        DbType dbType = Arrays.stream(environment.getActiveProfiles()).anyMatch("shiwan-m2"::equals)
+            ? DbType.MYSQL
+            : DbType.SQL_SERVER2005;
+        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(dbType);
         // 设置最大单页限制数量，默认 500 条，为了支持 Bloom Filter 初始化大批量加载，提升到 200000 条
         paginationInterceptor.setMaxLimit(200000L);
         interceptor.addInnerInterceptor(paginationInterceptor);

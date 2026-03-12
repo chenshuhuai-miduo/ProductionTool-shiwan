@@ -37,16 +37,22 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * 石湾2号机（盒箱垛关联软件）主界面控制器
@@ -67,7 +73,7 @@ public class ShiwanM2MainController implements Initializable {
     // --- 左侧面板 ---
 
     /** 产品选择下拉框 */
-    @FXML private ComboBox<String> productComboBox;
+    @FXML private ComboBox<ProductItem> productComboBox;
 
     /** 产品编号行（选中产品后显示） */
     @FXML private HBox productCodeRow;
@@ -140,10 +146,15 @@ public class ShiwanM2MainController implements Initializable {
     private static final DateTimeFormatter TIME_FMT     = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd  HH:mm:ss");
 
-    private final ObservableList<LogEntry>  dataLogItems  = FXCollections.observableArrayList();
-    private final ObservableList<LogEntry>  opLogItems    = FXCollections.observableArrayList();
-    private final ObservableList<LogEntry>  alarmLogItems = FXCollections.observableArrayList();
-    private final ObservableList<UploadItem> uploadItems  = FXCollections.observableArrayList();
+    private final ObservableList<LogEntry>  dataLogItems   = FXCollections.observableArrayList();
+    private final ObservableList<LogEntry>  opLogItems     = FXCollections.observableArrayList();
+    private final ObservableList<LogEntry>  alarmLogItems  = FXCollections.observableArrayList();
+    private final ObservableList<UploadItem> uploadItems   = FXCollections.observableArrayList();
+    private final ObservableList<ProductItem> productItems = FXCollections.observableArrayList();
+
+    private final ExecutorService productExecutor = Executors.newSingleThreadExecutor();
+    /** 为 true 时屏蔽编辑框文字变化触发的搜索（程序设值时用） */
+    private volatile boolean suppressProductSearch = false;
 
     private boolean isRunning   = false;
     private int currentCases    = 0;
@@ -153,6 +164,12 @@ public class ShiwanM2MainController implements Initializable {
 
     private Timeline clockTimeline;
     private Timeline statsRefreshTimeline;
+    /** 采集事件轮询 Timeline（每 1 秒触发一次调度，HTTP 调用在后台线程执行） */
+    private Timeline captureEventsTimeline;
+    /** 上次已处理的事件 seq，用于增量拉取 */
+    private long lastCaptureEventSeq = 0;
+    /** 防止采集事件并发拉取 */
+    private final AtomicBoolean processingCaptureEvents = new AtomicBoolean(false);
 
     // ==================== 初始化 ====================
 
@@ -200,14 +217,73 @@ public class ShiwanM2MainController implements Initializable {
         return -1;
     }
 
-    /** 初始化产品下拉框示例数据 */
+    /** 初始化产品下拉框：可输入搜索、滚动、高度增加 */
     private void setupProductComboBox() {
-        productComboBox.getItems().addAll(
-                "石湾酒 52度 500ml",
-                "石湾酒 38度 500ml",
-                "石湾酒 42度 250ml",
-                "石湾酒 52度 250ml"
-        );
+        productComboBox.setItems(productItems);
+        productComboBox.setEditable(true);
+        productComboBox.setVisibleRowCount(12); // 增高一些
+
+        productComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ProductItem item) {
+                return item != null ? item.getDisplay() : "";
+            }
+
+            @Override
+            public ProductItem fromString(String string) {
+                // 仅在下拉选中“有名字”的项或弹窗选择时改值；失焦时编辑框为空或未匹配则保持当前选中
+                if (string == null || string.trim().isEmpty()) {
+                    return productComboBox.getValue();
+                }
+                ProductItem match = productItems.stream()
+                        .filter(p -> (p.getDisplay() != null && p.getDisplay().equals(string))
+                                || (p.getName() != null && p.getName().equals(string)))
+                        .findFirst()
+                        .orElse(null);
+                return match != null ? match : productComboBox.getValue();
+            }
+        });
+
+        productComboBox.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(ProductItem item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getDisplay());
+                }
+            }
+        });
+
+        // 输入联想：监听编辑框文字，触发模糊搜索
+        // suppressProductSearch 为 true 时是程序设值，不触发搜索
+        productComboBox.getEditor().textProperty().addListener((obs, oldV, newV) -> {
+            if (!suppressProductSearch) {
+                productExecutor.submit(() -> fetchProducts(newV, 20));
+            }
+        });
+
+        // 选中后回填产品编号，并同步编辑框文字
+        productComboBox.valueProperty().addListener((obs, ov, nv) -> {
+            if (nv != null) {
+                if (nv.getNo() != null) {
+                    productCodeLabel.setText(nv.getNo());
+                }
+                // 用标志位屏蔽编辑框文字变化触发的搜索
+                suppressProductSearch = true;
+                productComboBox.getEditor().setText(nv.getDisplay());
+                Platform.runLater(() -> suppressProductSearch = false);
+            } else {
+                productComboBox.getEditor().clear();
+            }
+        });
+
+        // 启动时先同步一次再加载
+        productExecutor.submit(() -> {
+            syncProducts();
+            fetchProducts("", 50);
+        });
     }
 
     /** 配置所有 ListView 的 CellFactory */
@@ -284,10 +360,17 @@ public class ShiwanM2MainController implements Initializable {
             String orderNo = orderNumField.getText() != null ? orderNumField.getText().trim() : "";
             if (result.get().getText().equals("强制满垛")) {
                 forceFullPalletBackend(orderNo, currentCases);
+                doExit();
+                return;
             } else if (result.get().getText().equals("暂存退出")) {
-                markUnfinished(orderNo);
+                markUnfinishedAndExit(orderNo);
+                return;
             }
         }
+        doExit();
+    }
+
+    private void doExit() {
         if (clockTimeline != null) clockTimeline.stop();
         Platform.exit();
     }
@@ -425,11 +508,12 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onProductSelect() {
-        String selected = productComboBox.getValue();
-        if (selected != null && !selected.isEmpty()) {
+        ProductItem selected = productComboBox.getValue();
+        if (selected != null) {
             productCodeRow.setVisible(true);
             productCodeRow.setManaged(true);
-            addOpLog(LocalDateTime.now().format(TIME_FMT) + "  产品已选择：" + selected, LogType.INFO);
+            productCodeLabel.setText(selected.getNo());
+            addOpLog(LocalDateTime.now().format(TIME_FMT) + "  产品已选择：" + selected.getDisplay(), LogType.INFO);
         }
     }
 
@@ -449,7 +533,14 @@ public class ShiwanM2MainController implements Initializable {
             if (selected != null) {
                 String name = selected.get("name");
                 String pronumber = selected.get("pronumber");
-                if (name != null) productComboBox.setValue(name);
+                if (name != null) {
+                    ProductItem item = productItems.stream()
+                            .filter(p -> name.equals(p.getName())
+                                    || (pronumber != null && pronumber.equals(p.getNo())))
+                            .findFirst()
+                            .orElse(new ProductItem(name, pronumber, ""));
+                    productComboBox.setValue(item);
+                }
                 if (pronumber != null) productCodeLabel.setText(pronumber);
                 productCodeRow.setVisible(true);
                 productCodeRow.setManaged(true);
@@ -460,23 +551,26 @@ public class ShiwanM2MainController implements Initializable {
         }
     }
 
-    /** 启动时检查是否存在未成垛数据，若有则弹窗提示 */
+    /** 启动时检查是否存在未成垛数据，若有则弹窗提示（异步 HTTP） */
     private void checkUnfinishedOnStartup() {
-        try {
-            String json = HttpUtil.doGet("/api/shiwan-m2/current-task/unfinished");
-            JsonNode root = JSON.readTree(json);
-            if (root == null || root.get("code").asInt() != 200 || !root.has("data")) return;
-            JsonNode list = root.get("data");
-            if (list == null || !list.isArray() || list.size() == 0) return;
-            JsonNode first = list.get(0);
-            String orderNo = first.has("OrderNo") ? first.get("OrderNo").asText() : (first.has("orderNo") ? first.get("orderNo").asText() : "");
-            long currentCaseCount = first.has("currentCaseCount") ? first.get("currentCaseCount").asLong() : (first.has("currentcasecount") ? first.get("currentcasecount").asLong() : 0);
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("未成垛数据恢复");
-            alert.setHeaderText("检测到上次退出软件时有未满垛数据，默认继续使用该垛数据继续采集。");
-            alert.setContentText("订单号：" + orderNo + "\n未成垛箱数：" + currentCaseCount + " 箱");
-            alert.showAndWait();
-        } catch (Exception ignored) {}
+        HttpUtil.asyncGet("/api/shiwan-m2/current-task/unfinished", json -> {
+            try {
+                JsonNode root = JSON.readTree(json);
+                if (root == null || root.get("code").asInt() != 200 || !root.has("data")) return;
+                JsonNode list = root.get("data");
+                if (list == null || !list.isArray() || list.size() == 0) return;
+                JsonNode first = list.get(0);
+                String orderNo = first.has("OrderNo") ? first.get("OrderNo").asText()
+                        : (first.has("orderNo") ? first.get("orderNo").asText() : "");
+                long currentCaseCount = first.has("currentCaseCount") ? first.get("currentCaseCount").asLong()
+                        : (first.has("currentcasecount") ? first.get("currentcasecount").asLong() : 0);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("未成垛数据恢复");
+                alert.setHeaderText("检测到上次退出软件时有未满垛数据，默认继续使用该垛数据继续采集。");
+                alert.setContentText("订单号：" + orderNo + "\n未成垛箱数：" + currentCaseCount + " 箱");
+                alert.showAndWait();
+            } catch (Exception ignored) {}
+        }, null);
     }
 
     /** 从本地配置加载采集规格并回显 */
@@ -505,25 +599,38 @@ public class ShiwanM2MainController implements Initializable {
         }
     }
 
+    /**
+     * 开始采集入口（FX 线程）。
+     * 快速 UI 校验和规格弹窗在 FX 线程完成；所有 I/O（HTTP 检查、任务启动）
+     * 提交到 productExecutor 后台线程，避免阻塞 FX/UI 线程。
+     */
     private void startCapture() {
-        String product = productComboBox.getValue();
+        // === 快速 FX 线程校验（无 I/O）===
+        ProductItem productItem = productComboBox.getValue();
+        String product = null;
+        if (productItem != null) {
+            String name = productItem.getName();
+            String no   = productItem.getNo();
+            product = (name != null && !name.isEmpty()) ? name : no;
+        }
         if (product == null || product.isEmpty()) {
             showWarn("请先选择产品", "开始采集前需要选择生产产品。");
             return;
         }
-        String orderNo = orderNumField.getText() != null ? orderNumField.getText().trim() : "";
+        final String orderNo = orderNumField.getText() != null ? orderNumField.getText().trim() : "";
         if (orderNo.isEmpty()) {
             showWarn("请输入生产单号", "开始采集前需要填写生产单号。");
             return;
         }
-        String productNo = productCodeLabel.getText() != null ? productCodeLabel.getText().trim() : "";
+        final String productNo = productItem != null ? productItem.getNo()
+                : (productCodeLabel.getText() != null ? productCodeLabel.getText().trim() : "");
         if (productNo.isEmpty()) {
             showWarn("产品编号为空", "请通过「选择」按钮重新选择产品以带出产品编号。");
             return;
         }
 
-        int m = 70;
-        int n = 4;
+        // === 规格解析（FX 线程，无 I/O）===
+        int m = 70, n = 4;
         try {
             String ms = casesPerPalletField.getText();
             String ns = boxesPerCaseField.getText();
@@ -531,20 +638,19 @@ public class ShiwanM2MainController implements Initializable {
             if (ns != null && !ns.trim().isEmpty()) n = Integer.parseInt(ns.trim());
         } catch (NumberFormatException ignored) {}
 
-        // 采集规格持久化变更提示
+        // 采集规格持久化变更提示（FX 线程，Alert 弹窗）
         ShiwanM2Settings settings = ShiwanM2SettingsStore.get();
         int savedM = settings != null && settings.getBoxesPerPallet() != null ? settings.getBoxesPerPallet() : m;
-        int savedN = settings != null && settings.getBoxesPerCase() != null ? settings.getBoxesPerCase() : n;
+        int savedN = settings != null && settings.getBoxesPerCase()   != null ? settings.getBoxesPerCase()   : n;
         if (m != savedM || n != savedN) {
             Alert specAlert = new Alert(Alert.AlertType.CONFIRMATION);
             specAlert.setTitle("采集规格变更确认");
             specAlert.setHeaderText("检测到已保存的采集规格与当前输入不一致");
-            specAlert.setContentText("已保存：1垛 " + savedM + " 箱 / 1箱 " + savedN + " 盒\n当前：1垛 " + m + " 箱 / 1箱 " + n + " 盒\n是否覆盖保存为当前规格？");
+            specAlert.setContentText("已保存：1垛 " + savedM + " 箱 / 1箱 " + savedN + " 盒\n"
+                    + "当前：1垛 " + m + " 箱 / 1箱 " + n + " 盒\n是否覆盖保存为当前规格？");
             Optional<ButtonType> specResult = specAlert.showAndWait();
             if (specResult.isEmpty() || specResult.get() != ButtonType.OK) {
-                // 使用已保存规格继续
-                m = savedM;
-                n = savedN;
+                m = savedM; n = savedN;
                 casesPerPalletField.setText(String.valueOf(m));
                 boxesPerCaseField.setText(String.valueOf(n));
             } else {
@@ -552,63 +658,158 @@ public class ShiwanM2MainController implements Initializable {
             }
         }
 
+        // === 切换按钮为"检查中..."，后台执行所有 I/O 检查 ===
+        final int mFinal = m, nFinal = n;
+        final String productFinal = product;
+        startCaptureBtn.setDisable(true);
+        startCaptureBtn.setText("检查中...");
+
+        productExecutor.submit(() -> runPreCaptureChecks(orderNo, productNo, productFinal, mFinal, nFinal));
+    }
+
+    /**
+     * 在后台线程执行所有开始采集前的 I/O 检查。
+     * 任何门禁不通过时用 Platform.runLater 恢复按钮并弹窗。
+     * 全部通过后回到 FX 线程显示确认弹窗。
+     */
+    private void runPreCaptureChecks(String orderNo, String productNo, String product, int m, int n) {
         // 门禁1：码包检查
         try {
-            String codePackageJson = HttpUtil.doGet("/api/shiwan-m2/code-package/check");
-            JsonNode cp = JSON.readTree(codePackageJson);
-            if (cp != null && cp.has("code") && cp.get("code").asInt() != 200) {
-                showWarn("码包门禁未通过", cp.has("message") ? cp.get("message").asText() : "请先导入小标、中标、大标码包。");
-                return;
-            }
-            if (cp != null && cp.has("data") && cp.get("data").has("passed") && !cp.get("data").get("passed").asBoolean()) {
-                showWarn("码包门禁未通过", cp.has("message") ? cp.get("message").asText() : "请先导入小标、中标、大标码包。");
+            String json = HttpUtil.doGet("/api/shiwan-m2/code-package/check");
+            JsonNode cp = JSON.readTree(json);
+            boolean cpFail = (cp != null && cp.has("code") && cp.get("code").asInt() != 200)
+                    || (cp != null && cp.has("data") && cp.get("data").has("passed")
+                        && !cp.get("data").get("passed").asBoolean());
+            if (cpFail) {
+                String msg = cp.has("message") ? cp.get("message").asText() : "请先导入小标、中标、大标码包。";
+                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("码包门禁未通过", msg); });
                 return;
             }
         } catch (Exception e) {
-            showWarn("码包门禁检查失败", e.getMessage());
+            Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("码包门禁检查失败", e.getMessage()); });
             return;
         }
 
         // 门禁2：1号机连接检查
         try {
-            String m1Json = HttpUtil.doGet("/api/shiwan-m2/settings/check-m1-connection");
-            JsonNode m1 = JSON.readTree(m1Json);
+            String json = HttpUtil.doGet("/api/shiwan-m2/settings/check-m1-connection");
+            JsonNode m1 = JSON.readTree(json);
             if (m1 == null || !m1.has("code") || m1.get("code").asInt() != 200) {
-                showWarn("1号机连接未通过", m1 != null && m1.has("message") ? m1.get("message").asText() : "请在系统设置中配置并确保1号机 SQL Server 可连接。");
+                String msg = m1 != null && m1.has("message") ? m1.get("message").asText()
+                        : "请在系统设置中配置并确保1号机 SQL Server 可连接。";
+                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("1号机连接未通过", msg); });
                 return;
             }
         } catch (Exception e) {
-            showWarn("1号机连接检查失败", e.getMessage());
+            Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("1号机连接检查失败", e.getMessage()); });
             return;
         }
 
+        // 门禁3：2号机本机数据库可访问
+        try {
+            ShiwanM2Settings s = ShiwanM2SettingsStore.load();
+            ShiwanM2Settings.DbConnectionConfig db = s != null ? s.getDbConnection() : null;
+            if (db == null || db.getHost() == null || db.getHost().isEmpty()
+                    || db.getDatabase() == null || db.getDatabase().isEmpty()
+                    || db.getUsername() == null || db.getUsername().isEmpty()) {
+                Platform.runLater(() -> { resetStartCaptureBtn();
+                    showWarn("数据库未配置", "请在系统设置→连接→数据库连接中填写2号机本机库信息。"); });
+                return;
+            }
+            String dbBody = String.format(
+                    "{\"host\":\"%s\",\"port\":\"%s\",\"database\":\"%s\",\"username\":\"%s\",\"password\":\"%s\"}",
+                    escapeJson(db.getHost()), escapeJson(db.getPort() != null ? db.getPort() : "3306"),
+                    escapeJson(db.getDatabase()), escapeJson(db.getUsername()),
+                    escapeJson(db.getPassword() != null ? db.getPassword() : ""));
+            String dbJson = HttpUtil.doPost("/api/shiwan-m2/settings/test-db-connection", dbBody);
+            JsonNode dbTest = JSON.readTree(dbJson);
+            if (dbTest == null || !dbTest.has("code") || dbTest.get("code").asInt() != 200) {
+                String msg = dbTest != null && dbTest.has("message") ? dbTest.get("message").asText()
+                        : "请在系统设置中配置并确保2号机本机数据库可访问。";
+                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("数据库连接未通过", msg); });
+                return;
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("数据库连接检查失败", e.getMessage()); });
+            return;
+        }
+
+        // 门禁4：必选设备检查
+        try {
+            String devJson = HttpUtil.doGet("/api/shiwan-m2/device/check-required");
+            JsonNode dev = JSON.readTree(devJson);
+            if (dev != null && dev.has("data") && dev.get("data").has("passed")
+                    && !dev.get("data").get("passed").asBoolean()) {
+                StringBuilder sb = new StringBuilder("设备未就绪，无法开始采集：\n\n");
+                if (dev.get("data").has("failedChecks") && dev.get("data").get("failedChecks").isArray()) {
+                    dev.get("data").get("failedChecks").forEach(item ->
+                            sb.append("• ").append(item.asText()).append("\n"));
+                }
+                sb.append("\n请在「系统设置→设备→IO设备管理」中配置并连接上述设备。");
+                final String devMsg = sb.toString();
+                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("设备未连接", devMsg); });
+                return;
+            }
+        } catch (Exception e) {
+            Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("设备检查失败", e.getMessage()); });
+            return;
+        }
+
+        // 全部通过 → 回到 FX 线程显示确认弹窗
+        Platform.runLater(() -> showConfirmAndStartCapture(orderNo, productNo, product, m, n));
+    }
+
+    /** 恢复开始采集按钮到可点击状态（FX 线程）。 */
+    private void resetStartCaptureBtn() {
+        startCaptureBtn.setDisable(false);
+        startCaptureBtn.setText("开始采集");
+    }
+
+    /**
+     * 所有门禁通过后在 FX 线程显示最终确认弹窗，确认后提交任务启动到后台线程。
+     */
+    private void showConfirmAndStartCapture(String orderNo, String productNo, String product, int m, int n) {
+        resetStartCaptureBtn();
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("开始采集确认");
         confirm.setHeaderText("确认开始生产？");
-        confirm.setContentText(
-                "产品：" + product + "\n" +
-                "生产单号：" + orderNo + "\n" +
-                "1垛 " + m + " 箱  |  1箱 " + n + " 盒"
-        );
+        confirm.setContentText("产品：" + product + "\n生产单号：" + orderNo
+                + "\n1垛 " + m + " 箱  |  1箱 " + n + " 盒");
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) return;
 
-        // 调用后端写当前任务并开始采集
-        try {
-            String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\",\"productNo\":\"" + escapeJson(productNo) + "\",\"productName\":\"" + escapeJson(product) + "\",\"boxesPerPallet\":" + m + ",\"boxesPerCase\":" + n + "}";
-            String startJson = HttpUtil.doPost("/api/shiwan-m2/current-task/start", body);
-            JsonNode start = JSON.readTree(startJson);
-            if (start == null || !start.has("code") || start.get("code").asInt() != 200) {
-                showWarn("开始采集失败", start != null && start.has("message") ? start.get("message").asText() : "后端返回异常");
+        startCaptureBtn.setDisable(true);
+        startCaptureBtn.setText("启动中...");
+
+        // 后台提交任务启动
+        productExecutor.submit(() -> {
+            try {
+                String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\",\"productNo\":\""
+                        + escapeJson(productNo) + "\",\"productName\":\"" + escapeJson(product)
+                        + "\",\"boxesPerPallet\":" + m + ",\"boxesPerCase\":" + n + "}";
+                String json = HttpUtil.doPost("/api/shiwan-m2/current-task/start", body);
+                JsonNode start = JSON.readTree(json);
+                if (start == null || !start.has("code") || start.get("code").asInt() != 200) {
+                    String msg = start != null && start.has("message") ? start.get("message").asText() : "后端返回异常";
+                    Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("开始采集失败", msg); });
+                    return;
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("开始采集失败", e.getMessage()); });
                 return;
             }
-        } catch (Exception e) {
-            showWarn("开始采集失败", e.getMessage());
-            return;
-        }
+            // 任务启动成功 → 回 FX 线程更新 UI 并启动采集
+            Platform.runLater(() -> finishStartCapture(orderNo, productNo, product, m, n));
+        });
+    }
 
+    /**
+     * 任务后端启动成功后在 FX 线程执行：更新 UI 状态、启动 M1 同步、启动 TCP 采集。
+     */
+    private void finishStartCapture(String orderNo, String productNo, String product, int m, int n) {
         persistSpec(m, n);
         isRunning = true;
+        startCaptureBtn.setDisable(false);
         startCaptureBtn.setText("停止采集");
         startCaptureBtn.getStyleClass().add("running");
         casesPerPalletField.setEditable(false);
@@ -626,11 +827,281 @@ public class ShiwanM2MainController implements Initializable {
         addDataLog(now + "  设备初始化完成，开始接收数据", LogType.SUCCESS);
         refreshProducedPalletCount(orderNo);
         refreshRejectCount(orderNo);
+
+        // 启动 1号机 T_Code 轮询同步（后台线程，不阻塞 UI）
+        startM1Sync();
+        // 启动 TCP 相机采集（n=每箱盒数, m=每垛箱数）
+        startTcpCapture(orderNo, productNo, n, m);
     }
 
     private static String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
+    }
+
+    // ================================================================
+    //  TCP 相机采集：启停 + 事件轮询
+    // ================================================================
+
+    /**
+     * 启动 TCP 相机采集。HTTP 调用在后台线程执行，避免阻塞 FX 线程。
+     * Timeline 事件轮询在 HTTP 响应返回后才启动。
+     */
+    private void startTcpCapture(String orderNo, String productNo, int boxesPerCase, int boxesPerPallet) {
+        lastCaptureEventSeq = 0;
+        processingCaptureEvents.set(false);
+        stopCaptureEventsTimeline();
+
+        final String body = String.format(
+                "{\"orderNo\":\"%s\",\"productNo\":\"%s\",\"boxesPerCase\":%d,\"boxesPerPallet\":%d}",
+                escapeJson(orderNo), escapeJson(productNo), boxesPerCase, boxesPerPallet);
+
+        productExecutor.submit(() -> {
+            String logMsg;
+            LogType logType;
+            try {
+                String resp = HttpUtil.doPost("/api/shiwan-m2/capture/start", body);
+                JsonNode node = JSON.readTree(resp);
+                if (node != null && node.has("code") && node.get("code").asInt() == 200) {
+                    logMsg = LocalDateTime.now().format(TIME_FMT) + "  TCP相机采集已启动";
+                    logType = LogType.INFO;
+                } else {
+                    String errMsg = node != null && node.has("message") ? node.get("message").asText() : "未知错误";
+                    logMsg = LocalDateTime.now().format(TIME_FMT) + "  TCP相机采集启动失败：" + errMsg;
+                    logType = LogType.WARN;
+                }
+            } catch (Exception e) {
+                logMsg = LocalDateTime.now().format(TIME_FMT) + "  TCP相机采集启动异常：" + e.getMessage();
+                logType = LogType.WARN;
+            }
+            final String finalMsg = logMsg;
+            final LogType finalType = logType;
+            Platform.runLater(() -> {
+                addOpLog(finalMsg, finalType);
+                // 在 FX 线程上启动事件轮询 Timeline
+                captureEventsTimeline = new Timeline(new KeyFrame(Duration.seconds(1),
+                        ev -> scheduleCaptureEventsRefresh()));
+                captureEventsTimeline.setCycleCount(Animation.INDEFINITE);
+                captureEventsTimeline.play();
+            });
+        });
+    }
+
+    /** 停止 TCP 相机采集并关闭事件轮询。 */
+    private void stopTcpCapture() {
+        stopCaptureEventsTimeline();
+        productExecutor.submit(() -> {
+            try { HttpUtil.doPost("/api/shiwan-m2/capture/stop", ""); }
+            catch (Exception ignored) {}
+        });
+    }
+
+    private void stopCaptureEventsTimeline() {
+        if (captureEventsTimeline != null) {
+            captureEventsTimeline.stop();
+            captureEventsTimeline = null;
+        }
+    }
+
+    /**
+     * 由 Timeline 每秒触发（FX 线程），将实际 HTTP 调用提交到后台线程执行，
+     * 避免阻塞 FX 线程造成 UI 卡顿。使用 AtomicBoolean 防止并发拉取。
+     */
+    private void scheduleCaptureEventsRefresh() {
+        if (!processingCaptureEvents.compareAndSet(false, true)) return;
+        final long seqSnapshot = lastCaptureEventSeq;
+        productExecutor.submit(() -> {
+            try {
+                String resp = HttpUtil.doGet("/api/shiwan-m2/capture/events?lastSeq=" + seqSnapshot);
+                JsonNode root = JSON.readTree(resp);
+                if (root == null || !root.has("code") || root.get("code").asInt() != 200) return;
+                JsonNode dataArr = root.get("data");
+                if (dataArr == null || !dataArr.isArray() || dataArr.size() == 0) return;
+                Platform.runLater(() -> processCaptureEventsData(dataArr));
+            } catch (Exception ignored) {
+            } finally {
+                processingCaptureEvents.set(false);
+            }
+        });
+    }
+
+    /**
+     * 在 FX 线程上处理从后端拉取的采集事件，更新数据日志和 UI 计数。
+     */
+    private void processCaptureEventsData(JsonNode dataArr) {
+        int bpc = parseSpecValue(boxesPerCaseField.getText(), 4);
+        int cpp = parseSpecValue(casesPerPalletField.getText(), 70);
+        String orderNo = orderNumField.getText() != null ? orderNumField.getText().trim() : "";
+
+        for (JsonNode evt : dataArr) {
+            long   seq  = evt.has("seq")     ? evt.get("seq").asLong()   : 0;
+            String type = evt.has("type")    ? evt.get("type").asText()  : "";
+            String msg  = evt.has("message") ? evt.get("message").asText(): "";
+            String time = evt.has("time")    ? evt.get("time").asText()  : LocalDateTime.now().format(TIME_FMT);
+            JsonNode evtData = evt.get("data");
+
+            if (seq > lastCaptureEventSeq) lastCaptureEventSeq = seq;
+
+            switch (type) {
+                case "BOX_CODE":
+                    currentBoxes++;
+                    curBoxesLabel.setText(String.valueOf(currentBoxes));
+                    addDataLog(time + "  收到盒码: " + getEvtText(evtData, "boxCodes", msg), LogType.DATA);
+                    break;
+
+                case "CASE_CODE":
+                    addDataLog(time + "  收到箱码: " + msg.replace("收到箱码: ", ""), LogType.DATA);
+                    break;
+
+                case "ASSOCIATED": {
+                    String caseCode = evtData != null && evtData.has("caseCode") ? evtData.get("caseCode").asText() : "";
+                    int    cases    = evtData != null && evtData.has("currentCaseCount")
+                            ? evtData.get("currentCaseCount").asInt() : (currentCases + 1);
+                    boolean fullPallet = evtData != null && evtData.path("fullPallet").asBoolean(false);
+                    String  palletCode = evtData != null && evtData.has("palletCode") ? evtData.get("palletCode").asText() : null;
+
+                    if (evtData != null && evtData.has("boxCodes") && evtData.get("boxCodes").isArray()) {
+                        List<String> bcs = new ArrayList<>();
+                        evtData.get("boxCodes").forEach(b -> bcs.add(b.asText()));
+                        for (String bc : bcs) {
+                            addDataLog(time + "  盒箱关联 - 盒码：" + bc + " → 箱码：" + caseCode, LogType.DATA);
+                        }
+                    }
+                    addDataLog(time + "  装箱完成 - 箱码：" + caseCode + " 已关联 " + bpc + " 盒", LogType.SUCCESS);
+
+                    currentBoxes = 0;
+                    currentCases = cases;
+                    curBoxesLabel.setText("0");
+                    curCasesLabel.setText(String.valueOf(currentCases));
+
+                    if (fullPallet) {
+                        palletCount++;
+                        palletCountLabel.setText(String.valueOf(palletCount));
+                        String pc = palletCode != null ? palletCode : ("P" + orderNo + String.format("%03d", palletCount));
+                        addDataLog(time + "  满垛完成 - 垛码：" + pc + " 共 " + cpp + " 箱，正在上传...", LogType.SUCCESS);
+                        addOpLog(time + "  满垛完成，已生产垛数：" + palletCount, LogType.INFO);
+                        uploadItems.add(0, new UploadItem("垛 " + pc, cpp + "箱", UploadStatus.PENDING));
+                        currentCases = 0;
+                        curCasesLabel.setText("0");
+                    }
+                    break;
+                }
+
+                case "ASSOC_FAIL": {
+                    String reason = evtData != null && evtData.has("reason") ? evtData.get("reason").asText() : msg;
+                    addAlarmLog(time + "  关联失败：" + reason, LogType.ERROR);
+                    break;
+                }
+
+                case "BOX_CONNECTED":
+                    addOpLog(time + "  " + msg, LogType.SUCCESS);
+                    break;
+                case "CASE_CONNECTED":
+                    addOpLog(time + "  " + msg, LogType.SUCCESS);
+                    break;
+                case "BOX_DISCONNECTED":
+                case "CASE_DISCONNECTED":
+                    addAlarmLog(time + "  " + msg, LogType.WARN);
+                    break;
+                case "BOX_ERROR":
+                case "CASE_ERROR":
+                    addAlarmLog(time + "  " + msg, LogType.ERROR);
+                    break;
+                case "STARTED":
+                case "STOPPED":
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    /** 从事件 data 中安全提取文本值，fallback 到 defaultVal。 */
+    private static String getEvtText(JsonNode data, String field, String defaultVal) {
+        if (data == null || !data.has(field)) return defaultVal;
+        JsonNode v = data.get(field);
+        if (v.isArray()) {
+            List<String> list = new ArrayList<>();
+            v.forEach(n -> list.add(n.asText()));
+            return String.join(", ", list);
+        }
+        return v.asText(defaultVal);
+    }
+
+    /** 通知后端启动 1 号机 T_Code 同步（后台线程执行，不阻塞 UI） */
+    private void startM1Sync() {
+        productExecutor.submit(() -> {
+            try {
+                String resp = HttpUtil.doPost("/api/shiwan-m2/m1-sync/start", "");
+                JsonNode n = JSON.readTree(resp);
+                if (n != null && n.has("code") && n.get("code").asInt() == 200) {
+                    Platform.runLater(() -> addOpLog(
+                            LocalDateTime.now().format(TIME_FMT) + "  1号机数据同步已启动", LogType.INFO));
+                } else {
+                    String msg = n != null && n.has("message") ? n.get("message").asText() : "未知错误";
+                    Platform.runLater(() -> addOpLog(
+                            LocalDateTime.now().format(TIME_FMT) + "  1号机数据同步启动失败：" + msg, LogType.WARN));
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> addOpLog(
+                        LocalDateTime.now().format(TIME_FMT) + "  1号机数据同步启动异常：" + e.getMessage(), LogType.WARN));
+            }
+        });
+    }
+
+    /** 通知后端停止 1 号机 T_Code 同步（后台线程执行，不阻塞 UI） */
+    private void stopM1Sync() {
+        productExecutor.submit(() -> {
+            try {
+                HttpUtil.doPost("/api/shiwan-m2/m1-sync/stop", "");
+            } catch (Exception ignored) {}
+        });
+    }
+
+    /** 同步产品到本地（后台线程调用） */
+    private void syncProducts() {
+        try {
+            String resp = HttpUtil.doPost("/api/shiwan-m2/products/sync", "");
+            JsonNode n = JSON.readTree(resp);
+            if (n == null || !n.has("code") || n.get("code").asInt() != 200) {
+                System.out.println("[产品同步] 失败：" + (n != null && n.has("message") ? n.get("message").asText() : "未知错误"));
+            }
+        } catch (Exception e) {
+            System.out.println("[产品同步] 异常：" + e.getMessage());
+        }
+    }
+
+    /** 模糊搜索产品并刷新下拉（后台线程调用） */
+    private void fetchProducts(String keyword, int size) {
+        try {
+            StringBuilder url = new StringBuilder("/api/shiwan-m2/products/search?size=").append(size);
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                url.append("&keyword=").append(URLEncoder.encode(keyword.trim(), "UTF-8"));
+            }
+            String resp = HttpUtil.doGet(url.toString());
+            JsonNode n = JSON.readTree(resp);
+            if (n == null || !n.has("code") || n.get("code").asInt() != 200) return;
+            JsonNode data = n.get("data");
+            if (data == null || !data.isArray()) return;
+            List<ProductItem> list = new ArrayList<>();
+            for (JsonNode item : data) {
+                String name = item.has("productName") ? item.get("productName").asText() : "";
+                String no   = item.has("productNo") ? item.get("productNo").asText() : "";
+                String spec = item.has("spec") ? item.get("spec").asText() : "";
+                if (no == null || no.isEmpty()) continue;
+                list.add(new ProductItem(name, no, spec));
+            }
+            Platform.runLater(() -> {
+                // 刷新条目前记住当前选中，防止 setAll 因引用变化清空 value
+                ProductItem currentValue = productComboBox.getValue();
+                suppressProductSearch = true;
+                productItems.setAll(list);
+                if (currentValue != null && productComboBox.getValue() == null) {
+                    productComboBox.setValue(currentValue);
+                }
+                suppressProductSearch = false;
+            });
+        } catch (Exception ignored) {}
     }
 
     private void persistSpec(int m, int n) {
@@ -660,6 +1131,12 @@ public class ShiwanM2MainController implements Initializable {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  停止采集，未满垛数据已保留（" + currentCases + "箱）", LogType.INFO);
         stopStatsRefresh();
+
+        // 停止 1 号机 T_Code 轮询同步
+        stopM1Sync();
+
+        // 停止 TCP 相机采集
+        stopTcpCapture();
     }
 
     @FXML
@@ -696,77 +1173,100 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     private void forceFullPalletBackend(String orderNo, int currentCaseCount) {
-        try {
-            String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\",\"currentCaseCount\":" + currentCaseCount + "}";
-            String json = HttpUtil.doPost("/api/shiwan-m2/box-case/force-full-pallet", body);
-            JsonNode root = JSON.readTree(json);
-            if (root == null || !root.has("code") || root.get("code").asInt() != 200) {
-                showWarn("强制满垛失败", root != null && root.has("message") ? root.get("message").asText() : "后端返回异常");
+        String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\",\"currentCaseCount\":" + currentCaseCount + "}";
+        HttpUtil.asyncPost("/api/shiwan-m2/box-case/force-full-pallet", body, json -> {
+            try {
+                JsonNode root = JSON.readTree(json);
+                if (root == null || !root.has("code") || root.get("code").asInt() != 200) {
+                    showWarn("强制满垛失败", root != null && root.has("message") ? root.get("message").asText() : "后端返回异常");
+                    return;
+                }
+                JsonNode data = root.get("data");
+                String palletCode = data != null && data.has("palletCode") ? data.get("palletCode").asText() : null;
+                if (palletCode == null) {
+                    fetchNextVirtualSerialNumberAsync(code -> finishForcePallet(code, currentCaseCount));
+                } else {
+                    finishForcePallet(palletCode, currentCaseCount);
+                }
+            } catch (Exception e) {
+                showWarn("强制满垛失败", e.getMessage());
+            }
+        }, e -> showWarn("强制满垛失败", e.getMessage()));
+    }
+
+    /** 强制满垛后端成功后更新 UI（FX 线程回调） */
+    private void finishForcePallet(String palletCode, int caseCount) {
+        palletCount++;
+        palletCountLabel.setText(String.valueOf(palletCount));
+        String now = LocalDateTime.now().format(TIME_FMT);
+        addDataLog(now + "  强制满垛 - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱", LogType.SUCCESS);
+        addOpLog(now + "  强制满垛操作完成，已生产垛数：" + palletCount, LogType.INFO);
+        uploadItems.add(0, new UploadItem("垛 " + palletCode, caseCount + "箱", UploadStatus.PENDING));
+        currentCases = 0;
+        currentBoxes = 0;
+        curCasesLabel.setText("0");
+        curBoxesLabel.setText("0");
+        refreshProducedPalletCount(orderNumField.getText());
+    }
+
+    /** 暂存未成垛数据并退出（异步 HTTP，回调里再 Platform.exit） */
+    private void markUnfinishedAndExit(String orderNo) {
+        String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\"}";
+        HttpUtil.asyncPost("/api/shiwan-m2/current-task/mark-unfinished", body, json -> {
+            try {
+                JsonNode root = JSON.readTree(json);
+                if (root == null || !root.has("code") || root.get("code").asInt() != 200) {
+                    showWarn("暂存失败", root != null && root.has("message") ? root.get("message").asText() : "后端返回异常");
+                    return;
+                }
+            } catch (Exception e) {
+                showWarn("暂存失败", e.getMessage());
                 return;
             }
-            JsonNode data = root.get("data");
-            String palletCode = data != null && data.has("palletCode") ? data.get("palletCode").asText() : fetchNextVirtualSerialNumber();
-            palletCount++;
-            palletCountLabel.setText(String.valueOf(palletCount));
-
-            String now = LocalDateTime.now().format(TIME_FMT);
-            addDataLog(now + "  强制满垛 - 垛码：" + palletCode + " 已生成，共" + currentCaseCount + "箱", LogType.SUCCESS);
-            addOpLog(now + "  强制满垛操作完成，已生产垛数：" + palletCount, LogType.INFO);
-            uploadItems.add(0, new UploadItem("垛 " + palletCode, currentCaseCount + "箱", UploadStatus.PENDING));
-
-            currentCases = 0;
-            currentBoxes = 0;
-            curCasesLabel.setText("0");
-            curBoxesLabel.setText("0");
-            refreshProducedPalletCount(orderNumField.getText());
-        } catch (Exception e) {
-            showWarn("强制满垛失败", e.getMessage());
-        }
-    }
-
-    private void markUnfinished(String orderNo) {
-        try {
-            String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\"}";
-            String json = HttpUtil.doPost("/api/shiwan-m2/current-task/mark-unfinished", body);
-            JsonNode root = JSON.readTree(json);
-            if (root == null || !root.has("code") || root.get("code").asInt() != 200) {
-                showWarn("暂存失败", root != null && root.has("message") ? root.get("message").asText() : "后端返回异常");
-            }
             stopStatsRefresh();
-        } catch (Exception e) {
+            doExit();
+        }, e -> {
             showWarn("暂存失败", e.getMessage());
-        }
+        });
     }
 
-    /** 刷新已生产垛数 */
+    /** 刷新已生产垛数（异步：HTTP 在后台线程，UI 更新回 FX 线程） */
     private void refreshProducedPalletCount(String orderNo) {
         if (orderNo == null || orderNo.isEmpty()) return;
         try {
-            String json = HttpUtil.doGet("/api/shiwan-m2/stats/produced-pallet-count?orderNo=" + java.net.URLEncoder.encode(orderNo, "UTF-8"));
-            JsonNode root = JSON.readTree(json);
-            if (root != null && root.has("code") && root.get("code").asInt() == 200 && root.has("data")) {
-                int count = root.get("data").asInt();
-                palletCount = count;
-                palletCountLabel.setText(String.valueOf(count));
-            }
+            String encodedOrder = java.net.URLEncoder.encode(orderNo, "UTF-8");
+            HttpUtil.asyncGet("/api/shiwan-m2/stats/produced-pallet-count?orderNo=" + encodedOrder, json -> {
+                try {
+                    JsonNode root = JSON.readTree(json);
+                    if (root != null && root.has("code") && root.get("code").asInt() == 200 && root.has("data")) {
+                        int count = root.get("data").asInt();
+                        palletCount = count;
+                        palletCountLabel.setText(String.valueOf(count));
+                    }
+                } catch (Exception ignored) {}
+            }, null);
         } catch (Exception ignored) {}
     }
 
-    /** 刷新总剔除数 */
+    /** 刷新总剔除数（异步：HTTP 在后台线程，UI 更新回 FX 线程） */
     private void refreshRejectCount(String orderNo) {
         if (orderNo == null || orderNo.isEmpty()) return;
         try {
-            String json = HttpUtil.doGet("/api/shiwan-m2/stats/reject-count?orderNo=" + java.net.URLEncoder.encode(orderNo, "UTF-8"));
-            JsonNode root = JSON.readTree(json);
-            if (root != null && root.has("code") && root.get("code").asInt() == 200 && root.has("data")) {
-                int count = root.get("data").asInt();
-                totalRejectCount = count;
-                rejectCountLabel.setText(String.valueOf(count));
-            }
+            String encodedOrder = java.net.URLEncoder.encode(orderNo, "UTF-8");
+            HttpUtil.asyncGet("/api/shiwan-m2/stats/reject-count?orderNo=" + encodedOrder, json -> {
+                try {
+                    JsonNode root = JSON.readTree(json);
+                    if (root != null && root.has("code") && root.get("code").asInt() == 200 && root.has("data")) {
+                        int count = root.get("data").asInt();
+                        totalRejectCount = count;
+                        rejectCountLabel.setText(String.valueOf(count));
+                    }
+                } catch (Exception ignored) {}
+            }, null);
         } catch (Exception ignored) {}
     }
 
-    /** 开始定时刷新统计（垛数/剔除数） */
+    /** 开始定时刷新统计（垛数/剔除数）—— Timeline 仅做调度，HTTP 在后台执行 */
     private void startStatsRefresh(String orderNo) {
         stopStatsRefresh();
         if (orderNo == null || orderNo.isEmpty()) return;
@@ -879,38 +1379,41 @@ public class ShiwanM2MainController implements Initializable {
         palletCount++;
         palletCountLabel.setText(String.valueOf(palletCount));
 
-        String palletCode = fetchNextVirtualSerialNumber();
-        if (palletCode == null) {
-            palletCode = "P" + orderNumField.getText() + String.format("%03d", palletCount);
-        }
-        int cpp = parseSpecValue(casesPerPalletField.getText(), 70);
+        fetchNextVirtualSerialNumberAsync(palletCode -> {
+            if (palletCode == null || palletCode.isEmpty()) {
+                palletCode = "P" + orderNumField.getText() + String.format("%03d", palletCount);
+            }
+            int cpp = parseSpecValue(casesPerPalletField.getText(), 70);
 
-        String now = LocalDateTime.now().format(TIME_FMT);
-        addDataLog(now + "  满垛提示 - 垛码：" + palletCode + " 已生成，共" + cpp + "箱，正在上传...", LogType.SUCCESS);
-        addOpLog(now + "  满垛完成，已生产垛数：" + palletCount, LogType.INFO);
+            String now = LocalDateTime.now().format(TIME_FMT);
+            addDataLog(now + "  满垛提示 - 垛码：" + palletCode + " 已生成，共" + cpp + "箱，正在上传...", LogType.SUCCESS);
+            addOpLog(now + "  满垛完成，已生产垛数：" + palletCount, LogType.INFO);
 
-        uploadItems.add(0, new UploadItem("垛 " + palletCode, cpp + "箱", UploadStatus.PENDING));
+            uploadItems.add(0, new UploadItem("垛 " + palletCode, cpp + "箱", UploadStatus.PENDING));
 
-        currentCases = 0;
-        currentBoxes = 0;
-        curCasesLabel.setText("0");
-        curBoxesLabel.setText("0");
+            currentCases = 0;
+            currentBoxes = 0;
+            curCasesLabel.setText("0");
+            curBoxesLabel.setText("0");
+        });
     }
 
     /**
-     * 从后端获取下一个虚拟垛标（VirtualPalletSequence + 系统设置前缀/产线号）。
-     * 失败时返回 null，调用方可用本地 fallback。
+     * 异步获取下一个虚拟垛标，结果通过 callback 返回到 FX 线程。
+     * 失败时 callback 收到 "V-" + timestamp 的 fallback 值。
      */
-    private String fetchNextVirtualSerialNumber() {
-        try {
-            String response = HttpUtil.doGet("/api/shiwan-m2/pallet/next-virtual-serial-number");
-            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
-            if (node.has("code") && node.get("code").asInt(500) == 200 && node.has("data") && !node.get("data").isNull()) {
-                return node.get("data").asText();
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
+    private void fetchNextVirtualSerialNumberAsync(Consumer<String> callback) {
+        HttpUtil.asyncGet("/api/shiwan-m2/pallet/next-virtual-serial-number", json -> {
+            try {
+                JsonNode node = JSON.readTree(json);
+                if (node.has("code") && node.get("code").asInt(500) == 200
+                        && node.has("data") && !node.get("data").isNull()) {
+                    callback.accept(node.get("data").asText());
+                    return;
+                }
+            } catch (Exception ignored) {}
+            callback.accept("V-" + System.currentTimeMillis());
+        }, e -> callback.accept("V-" + System.currentTimeMillis()));
     }
 
     // ==================== 日志管理 ====================
@@ -1139,6 +1642,36 @@ public class ShiwanM2MainController implements Initializable {
 
             setGraphic(root);
             setText(null);
+        }
+    }
+
+    /**
+     * 前端产品模型（下拉选择）
+     */
+    public static class ProductItem {
+        private final String name;
+        private final String no;
+        private final String spec;
+
+        public ProductItem(String name, String no, String spec) {
+            this.name = name;
+            this.no = no;
+            this.spec = spec;
+        }
+
+        public String getName() { return name; }
+        public String getNo()   { return no; }
+        public String getSpec() { return spec; }
+
+        public String getDisplay() {
+            String left = name != null ? name : "";
+            String right = (no != null && !no.isEmpty()) ? ("（" + no + "）") : "";
+            return left + right;
+        }
+
+        @Override
+        public String toString() {
+            return getDisplay();
         }
     }
 }

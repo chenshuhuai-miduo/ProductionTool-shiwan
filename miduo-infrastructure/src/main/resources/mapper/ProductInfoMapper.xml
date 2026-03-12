@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miduo.cloud.infrastructure.mapper.ProductInfoMapper">
+
+    <!--
+        批量 upsert：依赖 ProductNo 列上的 UNIQUE KEY。
+        命中唯一键（同 ProductNo）时，额外校验 ProductId 是否也相同（NULL 安全比较 <=>）：
+          - ProductId 也相同 → 更新 ProductName / Barcode / Spec / UpdatedAt
+          - ProductId 不同  → 所有可变字段保持原值不变（相当于跳过此条）
+        全新 ProductNo → 直接插入，不触发 ON DUPLICATE KEY UPDATE。
+        CreatedAt 始终不覆盖。
+    -->
+    <insert id="batchUpsert">
+        INSERT INTO ProductInfo
+            (ProductId, ProductName, ProductNo, Barcode, Spec, CreatedAt, UpdatedAt)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.productId}, #{item.productName}, #{item.productNo},
+             #{item.barcode}, #{item.spec}, #{item.createdAt}, #{item.updatedAt})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            ProductName = IF(ProductId &lt;=&gt; VALUES(ProductId), VALUES(ProductName), ProductName),
+            Barcode     = IF(ProductId &lt;=&gt; VALUES(ProductId), VALUES(Barcode),     Barcode),
+            Spec        = IF(ProductId &lt;=&gt; VALUES(ProductId), VALUES(Spec),        Spec),
+            UpdatedAt   = IF(ProductId &lt;=&gt; VALUES(ProductId), VALUES(UpdatedAt),   UpdatedAt)
+    </insert>
+
+</mapper>

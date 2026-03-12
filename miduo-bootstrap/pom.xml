@@ -222,7 +222,7 @@
                             <execution>
                                 <id>repackage-launcher</id>
                                 <configuration>
-                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM2Launcher</mainClass>
+                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM2ApplicationLauncher</mainClass>
                                 </configuration>
                             </execution>
                         </executions>
@@ -233,7 +233,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM2Launcher</mainClass>
+                                    <mainClass>com.miduo.cloud.variant.shiwan.ShiwanM2ApplicationLauncher</mainClass>
                                 </manifest>
                             </archive>
                         </configuration>
