@@ -202,7 +202,10 @@ public class ShiwanM2MainController implements Initializable {
         setupInitialLogs();
         initActivationStatus();
         applyPageConfig();
-        Platform.runLater(() -> checkUnfinishedOnStartup());
+        Platform.runLater(() -> {
+            checkDbConnectionOnStartup();
+            checkUnfinishedOnStartup();
+        });
         loadSpecFromSettings();
     }
 
@@ -343,12 +346,36 @@ public class ShiwanM2MainController implements Initializable {
     /** 写入初始欢迎日志 */
     private void setupInitialLogs() {
         String now = LocalDateTime.now().format(TIME_FMT);
-        addOpLog(now + "  系统启动完成", LogType.INFO);
-        addOpLog(now + "  等待设备连接...", LogType.INFO);
+        addOpLog(now + "  系统启动完成，正在初始化...", LogType.INFO);
 
         // 示例上传数据
         uploadItems.add(new UploadItem("垛 P20241201001", "70箱", UploadStatus.PENDING));
         uploadItems.add(new UploadItem("垛 P20241201002", "70箱", UploadStatus.DONE));
+    }
+
+    /** 主界面打开后异步检测本机数据库连接，结果写入操作日志 */
+    private void checkDbConnectionOnStartup() {
+        String now = LocalDateTime.now().format(TIME_FMT);
+        addOpLog(now + "  正在检测本机数据库连接...", LogType.INFO);
+        HttpUtil.asyncGet("/api/shiwan-m2/settings/check-db-connection", json -> {
+            try {
+                JsonNode root = JSON.readTree(json);
+                String time = LocalDateTime.now().format(TIME_FMT);
+                if (root != null && root.has("code") && root.get("code").asInt() == 200) {
+                    String msg = root.has("message") ? root.get("message").asText() : "连接正常";
+                    addOpLog(time + "  数据库连接成功：" + msg, LogType.SUCCESS);
+                } else {
+                    String msg = root != null && root.has("message") ? root.get("message").asText() : "未知错误";
+                    addOpLog(time + "  数据库连接失败：" + msg, LogType.ERROR);
+                }
+            } catch (Exception e) {
+                String time = LocalDateTime.now().format(TIME_FMT);
+                addOpLog(time + "  数据库连接检测异常：" + e.getMessage(), LogType.ERROR);
+            }
+        }, e -> {
+            String time = LocalDateTime.now().format(TIME_FMT);
+            addOpLog(time + "  数据库连接检测失败：" + (e != null ? e.getMessage() : "网络错误"), LogType.ERROR);
+        });
     }
 
     /** 初始化激活状态显示 */

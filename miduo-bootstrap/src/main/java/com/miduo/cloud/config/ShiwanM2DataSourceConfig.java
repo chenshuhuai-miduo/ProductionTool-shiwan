@@ -52,6 +52,9 @@ public class ShiwanM2DataSourceConfig {
         config.setConnectionTestQuery("SELECT 1");
         config.setMaximumPoolSize(20);
         config.setMinimumIdle(5);
+        // 启动时不强制建立连接：-1 表示连接失败时不抛出异常，连接池后台持续重试
+        // 主界面打开后由前端主动触发 check-db-connection 端点，将结果显示在操作日志中
+        config.setInitializationFailTimeout(-1);
         return new HikariDataSource(config);
     }
 }

@@ -85,6 +85,39 @@ public class ShiwanM2SettingsController {
     }
 
     /**
+     * 主界面启动后调用：根据已保存的配置检测 2 号机本机 MySQL 是否可连接。
+     * GET /api/shiwan-m2/settings/check-db-connection
+     * 返回 200 表示连接成功，其他表示失败，供前端写入操作日志。
+     */
+    @GetMapping("/check-db-connection")
+    public ApiResult<Boolean> checkDbConnection() {
+        ShiwanM2SettingsDto config = ShiwanM2SettingsFileLoader.load();
+        if (config == null || config.getDbConnection() == null) {
+            return ApiResult.error(400, "未配置本机数据库连接，请在系统设置中填写数据库信息");
+        }
+        ShiwanM2SettingsDto.DbConnection db = config.getDbConnection();
+        String host = db.getHost() != null ? db.getHost().trim() : "";
+        String port = db.getPort() != null && !db.getPort().isEmpty() ? db.getPort().trim() : "3306";
+        String database = db.getDatabase() != null ? db.getDatabase().trim() : "";
+        String username = db.getUsername() != null ? db.getUsername().trim() : "";
+        String password = db.getPassword() != null ? db.getPassword() : "";
+        if (host.isEmpty() || database.isEmpty() || username.isEmpty()) {
+            return ApiResult.error(400, "本机数据库配置不完整，请填写 host、database、username");
+        }
+        String url = String.format(JDBC_URL_TEMPLATE, host, port, database);
+        try {
+            Class.forName(MYSQL_DRIVER);
+        } catch (ClassNotFoundException e) {
+            return ApiResult.error("MySQL 驱动未加载，请确认依赖已引入");
+        }
+        try (java.sql.Connection conn = DriverManager.getConnection(url, username, password)) {
+            return ApiResult.success("本机数据库连接正常（" + host + ":" + port + "/" + database + "）", true);
+        } catch (Exception e) {
+            return ApiResult.error("本机数据库连接失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
+    }
+
+    /**
      * 门禁用：根据已保存的配置检测 1 号机 SQL Server 是否可连接。
      * GET /api/shiwan-m2/settings/check-m1-connection
      * 读取 shiwan-m2-settings.json 中的 m1DbConnection，用与 test-m1-db-connection 相同的 JDBC 逻辑检测。
