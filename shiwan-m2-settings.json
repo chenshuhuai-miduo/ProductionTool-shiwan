@@ -31,12 +31,12 @@
     "password" : "123456"
   },
   "m1DbConnection" : {
-    "host" : "192.168.5.117",
+    "host" : "192.168.0.9",
     "port" : "1433",
     "database" : "TkCode",
     "tableName" : "T_Code",
     "username" : "sa",
-    "password" : "www123456"
+    "password" : "123456"
   },
   "printer" : {
     "printerName" : "Canon LBP2900",

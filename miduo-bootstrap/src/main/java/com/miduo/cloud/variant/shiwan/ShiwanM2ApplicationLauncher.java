@@ -4,6 +4,7 @@ import com.miduo.cloud.ShiwanM2BackendApplication;
 import com.miduo.cloud.config.GlobalExceptionHandler;
 import com.miduo.cloud.frontend.ShiwanM2FrontendApplication;
 import com.miduo.cloud.frontend.util.FileLogManager;
+import com.miduo.cloud.frontend.util.LogRedirector;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -165,6 +166,7 @@ public class ShiwanM2ApplicationLauncher {
         try {
             GlobalExceptionHandler.install();
             FileLogManager.getInstance().start();
+            LogRedirector.install();
             FileLogManager.getInstance().logInfo("系统启动", "石湾2号机（后端+前端）正在启动...");
             FileLogManager.getInstance().logInfo("系统启动", "Java版本: " + System.getProperty("java.version"));
             FileLogManager.getInstance().logInfo("系统启动", "操作系统: " + System.getProperty("os.name") + " " + System.getProperty("os.version"));

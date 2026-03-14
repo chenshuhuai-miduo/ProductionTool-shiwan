@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.concurrent.BlockingQueue;
@@ -20,6 +21,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class FileLogManager {
     
     private static final FileLogManager INSTANCE = new FileLogManager();
+    // 保留原始控制台流，避免与 LogRedirector 相互递归
+    private static final PrintStream ORIGINAL_OUT = System.out;
+    private static final PrintStream ORIGINAL_ERR = System.err;
     
     /**
      * 异步日志队列
@@ -90,7 +94,7 @@ public class FileLogManager {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                System.err.println("[日志系统] 写入日志失败: " + e.getMessage());
+                ORIGINAL_ERR.println("[日志系统] 写入日志失败: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -126,7 +130,7 @@ public class FileLogManager {
             }
             
         } catch (IOException e) {
-            System.err.println("[日志系统] 无法写入日志文件: " + e.getMessage());
+            ORIGINAL_ERR.println("[日志系统] 无法写入日志文件: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -141,12 +145,12 @@ public class FileLogManager {
             entry.getModule());
         
         if (entry.getLevel() == LogLevel.ERROR) {
-            System.err.println(prefix + entry.getMessage());
+            ORIGINAL_ERR.println(prefix + entry.getMessage());
             if (entry.getException() != null) {
-                System.err.println(entry.getException());
+                ORIGINAL_ERR.println(entry.getException());
             }
         } else {
-            System.out.println(prefix + entry.getMessage());
+            ORIGINAL_OUT.println(prefix + entry.getMessage());
         }
     }
     
@@ -157,7 +161,7 @@ public class FileLogManager {
         if (LogConfig.isAsyncEnabled()) {
             // 异步写入
             if (!logQueue.offer(entry)) {
-                System.err.println("[日志系统] 日志队列已满，丢弃日志: " + entry.getMessage());
+                ORIGINAL_ERR.println("[日志系统] 日志队列已满，丢弃日志: " + entry.getMessage());
             }
         } else {
             // 同步写入

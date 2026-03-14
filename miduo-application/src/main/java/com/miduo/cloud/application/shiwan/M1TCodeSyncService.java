@@ -6,6 +6,7 @@ import com.miduo.cloud.common.config.ShiwanM2SettingsFileLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 1 号机 T_Code 表定时同步到 2 号机 CodeRelationUpload。
@@ -31,9 +33,13 @@ public class M1TCodeSyncService {
     private static final Logger log = LoggerFactory.getLogger(M1TCodeSyncService.class);
     private static final String JTDS_DRIVER = "net.sourceforge.jtds.jdbc.Driver";
     private static final String JTDS_URL_TEMPLATE = "jdbc:jtds:sqlserver://%s:%s/%s;loginTimeout=3;socketTimeout=3000";
+    /** 每轮最多同步记录数，避免单次任务占用连接过久。 */
+    private static final int MAX_ROWS_PER_SYNC = 300;
 
     /** 运行时开关：只有 true 时才执行同步逻辑 */
     private volatile boolean syncActive = false;
+    /** 防重入：上一轮未完成时跳过下一轮触发。 */
+    private final AtomicBoolean syncRunning = new AtomicBoolean(false);
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -57,11 +63,18 @@ public class M1TCodeSyncService {
         return syncActive;
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedDelay = 1000)
     public void sync() {
         if (!syncActive) {
             return;
         }
+        if (!syncRunning.compareAndSet(false, true)) {
+            if (log.isDebugEnabled()) {
+                log.debug("1号机 T_Code 同步: 上一轮仍在执行，跳过本轮触发");
+            }
+            return;
+        }
+        try {
         ShiwanM2SettingsDto config = ShiwanM2SettingsFileLoader.load();
         if (config == null || config.getM1DbConnection() == null) {
             return;
@@ -96,7 +109,8 @@ public class M1TCodeSyncService {
         List<TCodeRow> rows = new ArrayList<>();
         long maxSerialNo = lastSynced;
         try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
-            String sql = "SELECT SerialNo, BagCode, BoxCode FROM " + tableName + " WHERE SerialNo > ? AND (Status = 0 OR Status = '0') ORDER BY SerialNo ASC";
+            String sql = "SELECT TOP " + MAX_ROWS_PER_SYNC + " SerialNo, BagCode, BoxCode FROM " + tableName
+                    + " WHERE SerialNo > ? AND (Status = 0 OR Status = '0') ORDER BY SerialNo ASC";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setLong(1, lastSynced);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -121,35 +135,75 @@ public class M1TCodeSyncService {
         LocalDateTime now = LocalDateTime.now();
         String empty = "";
         String tagNo = "M1-SYNC";
-        for (TCodeRow row : rows) {
-            try {
-                // 仅当本订单下该盒码+瓶码组合尚不存在时插入，避免与盒采集相机场景重复（盒码由 1 号机同步后，盒采集相机只校验不落库）
-                int updated = jdbcTemplate.update(
-                        "INSERT INTO CodeRelationUpload (" +
-                                "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
-                                "DxCode, SalesCode, VirtualSerialNumber, IsVirtual, ProductNO, OrderNo, Status, TagNo, Qty, Type, " +
-                                "WarehouseNo, BatchNo, AddTime, ErrCount, Msg, IsUpload, IsDel, TeamName) " +
-                                "SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? " +
-                                "FROM DUAL " +
-                                "WHERE NOT EXISTS (" +
-                                "SELECT 1 FROM CodeRelationUpload " +
-                                "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0)",
-                        empty, empty, row.boxCode, row.bagCode,
-                        empty, empty, empty, 0, productNo, orderNo, 0, tagNo, 0, 1,
-                        empty, empty, now, 0, empty, 1, 0, empty,
-                        row.boxCode, row.bagCode
-                );
-                if (updated == 0 && log.isTraceEnabled()) {
-                    log.trace("1号机 T_Code 同步跳过重复: OrderNo={} MediumSerialNumber={} SmallSerialNumber={}", orderNo, row.boxCode, row.bagCode);
+        String insertSql =
+                "INSERT INTO CodeRelationUpload (" +
+                        "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
+                        "DxCode, SalesCode, VirtualSerialNumber, IsVirtual, ProductNO, OrderNo, Status, TagNo, Qty, Type, " +
+                        "WarehouseNo, BatchNo, AddTime, ErrCount, Msg, IsUpload, IsDel, TeamName) " +
+                        "SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? " +
+                        "FROM DUAL " +
+                        "WHERE NOT EXISTS (" +
+                        "SELECT 1 FROM CodeRelationUpload " +
+                        "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0)";
+        try {
+            jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement ps, int i) throws SQLException {
+                    TCodeRow row = rows.get(i);
+                    ps.setString(1, empty);
+                    ps.setString(2, empty);
+                    ps.setString(3, row.boxCode);
+                    ps.setString(4, row.bagCode);
+                    ps.setString(5, empty);
+                    ps.setString(6, empty);
+                    ps.setString(7, empty);
+                    ps.setInt(8, 0);
+                    ps.setString(9, productNo);
+                    ps.setString(10, orderNo);
+                    ps.setInt(11, 0);
+                    ps.setString(12, tagNo);
+                    ps.setInt(13, 0);
+                    ps.setInt(14, 1);
+                    ps.setString(15, empty);
+                    ps.setString(16, empty);
+                    ps.setObject(17, now);
+                    ps.setInt(18, 0);
+                    ps.setString(19, empty);
+                    ps.setInt(20, 1);
+                    ps.setInt(21, 0);
+                    ps.setString(22, empty);
+                    ps.setString(23, row.boxCode);
+                    ps.setString(24, row.bagCode);
                 }
-            } catch (Exception e) {
-                log.warn("1号机 T_Code 同步写入 CodeRelationUpload 失败 SerialNo={}: {}", row.serialNo, e.getMessage());
+
+                @Override
+                public int getBatchSize() {
+                    return rows.size();
+                }
+            });
+        } catch (Exception e) {
+            log.warn("1号机 T_Code 批量写入失败，回退逐条写入: {}", e.getMessage());
+            for (TCodeRow row : rows) {
+                try {
+                    jdbcTemplate.update(
+                            insertSql,
+                            empty, empty, row.boxCode, row.bagCode,
+                            empty, empty, empty, 0, productNo, orderNo, 0, tagNo, 0, 1,
+                            empty, empty, now, 0, empty, 1, 0, empty,
+                            row.boxCode, row.bagCode
+                    );
+                } catch (Exception ex) {
+                    log.warn("1号机 T_Code 同步写入 CodeRelationUpload 失败 SerialNo={}: {}", row.serialNo, ex.getMessage());
+                }
             }
         }
 
         M1SyncCursorStore.saveLastSyncedSerialNo(maxSerialNo);
         if (log.isDebugEnabled() && !rows.isEmpty()) {
-            log.debug("1号机 T_Code 同步: 写入 {} 条, lastSyncedSerialNo={}", rows.size(), maxSerialNo);
+            log.debug("1号机 T_Code 同步: 读取 {} 条(单批上限 {}), lastSyncedSerialNo={}", rows.size(), MAX_ROWS_PER_SYNC, maxSerialNo);
+        }
+        } finally {
+            syncRunning.set(false);
         }
     }
 

@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 
 import javax.sql.DataSource;
 
@@ -24,23 +25,30 @@ public class ShiwanM2DataSourceConfig {
 
     @Bean
     @Primary
-    public DataSource shiwanM2DataSource() {
+    public DataSource shiwanM2DataSource(Environment env) {
         ShiwanM2SettingsDto dto = ShiwanM2SettingsFileLoader.load();
-        if (dto == null || dto.getDbConnection() == null) {
-            throw new IllegalStateException("shiwan.m2.datasource.enabled=true 但未找到或无法解析 shiwan-m2-settings.json 中的 dbConnection 配置");
-        }
-        ShiwanM2SettingsDto.DbConnection c = dto.getDbConnection();
-        String host = c.getHost() != null ? c.getHost().trim() : "127.0.0.1";
-        String port = c.getPort() != null ? c.getPort().trim() : "3306";
-        String database = c.getDatabase() != null ? c.getDatabase().trim() : "";
-        String username = c.getUsername() != null ? c.getUsername().trim() : "root";
-        String password = c.getPassword() != null ? c.getPassword() : "";
-
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(String.format(JDBC_URL_TEMPLATE, host, port, database));
-        config.setUsername(username);
-        config.setPassword(password);
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        if (dto != null && dto.getDbConnection() != null) {
+            ShiwanM2SettingsDto.DbConnection c = dto.getDbConnection();
+            String host = c.getHost() != null ? c.getHost().trim() : "127.0.0.1";
+            String port = c.getPort() != null ? c.getPort().trim() : "3306";
+            String database = c.getDatabase() != null ? c.getDatabase().trim() : "";
+            String username = c.getUsername() != null ? c.getUsername().trim() : "root";
+            String password = c.getPassword() != null ? c.getPassword() : "";
+
+            config.setJdbcUrl(String.format(JDBC_URL_TEMPLATE, host, port, database));
+            config.setUsername(username);
+            config.setPassword(password);
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        } else {
+            // 配置文件缺失或无 dbConnection 时，回退到 spring.datasource.*，避免启动阶段硬失败
+            config.setJdbcUrl(env.getProperty(
+                    "spring.datasource.url",
+                    "jdbc:mysql://127.0.0.1:3306/mysql?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8"));
+            config.setUsername(env.getProperty("spring.datasource.username", "root"));
+            config.setPassword(env.getProperty("spring.datasource.password", ""));
+            config.setDriverClassName(env.getProperty("spring.datasource.driver-class-name", "com.mysql.cj.jdbc.Driver"));
+        }
         config.setConnectionTestQuery("SELECT 1");
         config.setMaximumPoolSize(20);
         config.setMinimumIdle(5);

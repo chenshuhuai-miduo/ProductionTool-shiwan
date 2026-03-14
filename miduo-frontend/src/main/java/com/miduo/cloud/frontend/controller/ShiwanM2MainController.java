@@ -26,8 +26,12 @@ import javafx.scene.control.TextInputDialog;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -43,10 +47,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
@@ -145,6 +152,14 @@ public class ShiwanM2MainController implements Initializable {
     private static final int MAX_LOG_ENTRIES       = 1000;
     private static final DateTimeFormatter TIME_FMT     = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd  HH:mm:ss");
+    /** 设备类别代码：报警器 */
+    private static final int CATEGORY_ALARM_DEVICE = 5;
+    /** 设备类别代码：剔除装置 */
+    private static final int CATEGORY_REJECT_DEVICE = 6;
+    /** 报警器停止报警指令（参照致美斋） */
+    private static final String CMD_ALARM_STOP = "01";
+    /** 剔除装置收回指令（参照致美斋放行/复位指令） */
+    private static final String CMD_REJECT_RETRACT = "01";
 
     private final ObservableList<LogEntry>  dataLogItems   = FXCollections.observableArrayList();
     private final ObservableList<LogEntry>  opLogItems     = FXCollections.observableArrayList();
@@ -691,19 +706,19 @@ public class ShiwanM2MainController implements Initializable {
         }
 
         // 门禁2：1号机连接检查
-        try {
-            String json = HttpUtil.doGet("/api/shiwan-m2/settings/check-m1-connection");
-            JsonNode m1 = JSON.readTree(json);
-            if (m1 == null || !m1.has("code") || m1.get("code").asInt() != 200) {
-                String msg = m1 != null && m1.has("message") ? m1.get("message").asText()
-                        : "请在系统设置中配置并确保1号机 SQL Server 可连接。";
-                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("1号机连接未通过", msg); });
-                return;
-            }
-        } catch (Exception e) {
-            Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("1号机连接检查失败", e.getMessage()); });
-            return;
-        }
+//        try {
+//            String json = HttpUtil.doGet("/api/shiwan-m2/settings/check-m1-connection");
+//            JsonNode m1 = JSON.readTree(json);
+//            if (m1 == null || !m1.has("code") || m1.get("code").asInt() != 200) {
+//                String msg = m1 != null && m1.has("message") ? m1.get("message").asText()
+//                        : "请在系统设置中配置并确保1号机 SQL Server 可连接。";
+//                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("1号机连接未通过", msg); });
+//                return;
+//            }
+//        } catch (Exception e) {
+//            Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("1号机连接检查失败", e.getMessage()); });
+//            return;
+//        }
 
         // 门禁3：2号机本机数据库可访问
         try {
@@ -736,7 +751,12 @@ public class ShiwanM2MainController implements Initializable {
 
         // 门禁4：必选设备检查
         try {
-            String devJson = HttpUtil.doGet("/api/shiwan-m2/device/check-required");
+            String deviceConnectionsJson = buildDeviceConnectionsJsonEncoded();
+            String devUrl = "/api/shiwan-m2/device/check-required";
+            if (deviceConnectionsJson != null && !deviceConnectionsJson.isEmpty()) {
+                devUrl += "?deviceConnectionsJson=" + deviceConnectionsJson;
+            }
+            String devJson = HttpUtil.doGet(devUrl);
             JsonNode dev = JSON.readTree(devJson);
             if (dev != null && dev.has("data") && dev.get("data").has("passed")
                     && !dev.get("data").get("passed").asBoolean()) {
@@ -757,6 +777,35 @@ public class ShiwanM2MainController implements Initializable {
 
         // 全部通过 → 回到 FX 线程显示确认弹窗
         Platform.runLater(() -> showConfirmAndStartCapture(orderNo, productNo, product, m, n));
+    }
+
+    /**
+     * 组装设备连接状态JSON并URL编码（与致美斋启用任务校验策略一致）。
+     * 格式示例：{"设备ID1":true,"设备ID2":false}
+     */
+    private String buildDeviceConnectionsJsonEncoded() {
+        try {
+            Map<String, Boolean> deviceConnections = new HashMap<>();
+            String deviceResponseJson = HttpUtil.doGet("/api/device/list");
+            ApiResult<List<IoDeviceDTO>> deviceResult = HttpUtil.parseJson(
+                    deviceResponseJson,
+                    new TypeReference<ApiResult<List<IoDeviceDTO>>>() {}
+            );
+            if (deviceResult != null && deviceResult.getCode() == 200 && deviceResult.getData() != null) {
+                for (IoDeviceDTO device : deviceResult.getData()) {
+                    boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
+                    deviceConnections.put(device.getId(), isConnected);
+                }
+            }
+            if (deviceConnections.isEmpty()) {
+                return null;
+            }
+            String rawJson = JSON.writeValueAsString(deviceConnections);
+            return URLEncoder.encode(rawJson, StandardCharsets.UTF_8.name());
+        } catch (Exception e) {
+            System.err.println("[开始采集-设备校验] 组装设备连接状态失败: " + e.getMessage());
+            return null;
+        }
     }
 
     /** 恢复开始采集按钮到可点击状态（FX 线程）。 */
@@ -943,10 +992,26 @@ public class ShiwanM2MainController implements Initializable {
             if (seq > lastCaptureEventSeq) lastCaptureEventSeq = seq;
 
             switch (type) {
+                case "BOX_RECV":
+                    addDataLog(time + "  " + msg, LogType.DATA);
+                    break;
+
+                case "CASE_RECV":
+                    addDataLog(time + "  " + msg, LogType.DATA);
+                    break;
+
                 case "BOX_CODE":
                     currentBoxes++;
                     curBoxesLabel.setText(String.valueOf(currentBoxes));
-                    addDataLog(time + "  收到盒码: " + getEvtText(evtData, "boxCodes", msg), LogType.DATA);
+                    addDataLog(time + "  " + msg, LogType.SUCCESS);
+                    break;
+
+                case "BOX_FAIL":
+                    addDataLog(time + "  " + msg, LogType.ERROR);
+                    break;
+
+                case "CASE_PENDING":
+                    addDataLog(time + "  " + msg, LogType.WARN);
                     break;
 
                 case "CASE_CODE":
@@ -1153,7 +1218,16 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onCloseAlarm() {
-        addOpLog(LocalDateTime.now().format(TIME_FMT) + "  报警已关闭（声光报警器已重置）", LogType.INFO);
+        boolean sent = DeviceConnectionManager.getInstance()
+                .sendToDeviceByCategory(CATEGORY_ALARM_DEVICE, CMD_ALARM_STOP);
+        String now = LocalDateTime.now().format(TIME_FMT);
+        if (sent) {
+            addOpLog(now + "  [报警器] 已发送停止报警指令: " + CMD_ALARM_STOP, LogType.INFO);
+            showInfo("关闭报警", "已通过串口向报警器发送停止报警指令。");
+        } else {
+            addAlarmLog(now + "  [报警器] 停止报警指令发送失败或设备未连接", LogType.WARN);
+            showWarn("关闭报警失败", "发送停止报警指令失败，请检查报警灯串口连接状态。");
+        }
     }
 
     @FXML
@@ -1295,11 +1369,20 @@ public class ShiwanM2MainController implements Initializable {
     private void onRetractReject() {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("收回剔除");
-        confirm.setHeaderText("确认向PLC发送收回指令？");
-        confirm.setContentText("将向剔除设备发送收回动作指令。");
+        confirm.setHeaderText("确认向剔除装置发送收回指令？");
+        confirm.setContentText("将通过串口向剔除装置发送收回动作指令。");
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            addOpLog(LocalDateTime.now().format(TIME_FMT) + "  已发送收回指令到PLC", LogType.INFO);
+            boolean sent = DeviceConnectionManager.getInstance()
+                    .sendToDeviceByCategory(CATEGORY_REJECT_DEVICE, CMD_REJECT_RETRACT);
+            String now = LocalDateTime.now().format(TIME_FMT);
+            if (sent) {
+                addOpLog(now + "  [剔除装置] 已发送收回指令: " + CMD_REJECT_RETRACT, LogType.INFO);
+                showInfo("收回剔除", "已通过串口向剔除装置发送收回指令。");
+            } else {
+                addAlarmLog(now + "  [剔除装置] 收回指令发送失败或设备未连接", LogType.WARN);
+                showWarn("收回剔除失败", "发送收回指令失败，请检查剔除装置串口连接状态。");
+            }
         }
     }
 

@@ -36,7 +36,7 @@ public class ShiwanM2TcpCaptureService {
     private static final String BOX_CATEGORY  = "盒码采集";
     /** 箱码采集相机的 deviceCategory 文本（INI 中存为数字 3） */
     private static final String CASE_CATEGORY = "箱码采集";
-    /** 每个盒码在 CodeRelationUpload 中需满足的条数（对应 SmallSerialNumber 互不相同的 6 条且 BigSerialNumber 为空） */
+    /** 每个盒码在 CodeRelationUpload 中需满足的条数 */
     private static final int REQUIRED_ROWS_PER_BOX = 6;
     /** 事件队列最大容量 */
     private static final int MAX_EVENTS = 1000;
@@ -269,30 +269,40 @@ public class ShiwanM2TcpCaptureService {
     }
 
     /**
-     * 盒码收到：校验表中该 MediumSerialNumber 对应 6 条、SmallSerialNumber 互异、BigSerialNumber 均为空，通过则显示「成功采集到盒码：XXXX」并放入内存队列；
-     * 箱码收到：从内存队列取 N 个盒码，够则更新表中这些盒码的 BigSerialNumber 并从未关联队列中删去这 N 条，不足则箱码入待处理列表。
+     * 盒码收到：按 ";" 分隔提取每个盒码，逐一校验后放入内存队列；
+     * 箱码收到：从内存队列取 N（boxesPerCase）个盒码做关联，不足则箱码入待处理列表。
      */
-    private void onCodeReceived(String code, boolean isBoxCamera) {
+    private void onCodeReceived(String rawCode, boolean isBoxCamera) {
         if (isBoxCamera) {
-            ApiResult<Void> res = boxCaseService.validateBoxCodeForReceive(currentOrderNo, currentProductNo, code, REQUIRED_ROWS_PER_BOX);
-            if (res != null && res.getCode() != null && res.getCode() == 200) {
-                boxCodeQueue.offer(code);
-                addEvent("BOX_CODE", "成功采集到盒码：" + code, null);
-                log.debug("[盒码] {} 校验通过，已入队列，队列长={}", code, boxCodeQueue.size());
-                tryConsumePendingCaseCode();
-            } else {
-                String errMsg = res != null ? res.getMessage() : "服务返回null";
-                addEvent("BOX_FAIL", "盒码校验未通过: " + code + " " + errMsg, null);
-                log.warn("[盒码] {} 校验失败: {}", code, errMsg);
+            String[] parts = rawCode.split(";");
+            for (String part : parts) {
+                String code = part.trim();
+                if (code.isEmpty()) continue;
+                addEvent("BOX_RECV", "[盒码相机] 接收数据：" + code, null);
+                ApiResult<Void> res = boxCaseService.validateBoxCodeForReceive(
+                        currentOrderNo, currentProductNo, code, REQUIRED_ROWS_PER_BOX);
+                if (res != null && res.getCode() != null && res.getCode() == 200) {
+                    boxCodeQueue.offer(code);
+                    addEvent("BOX_CODE", "盒码采集成功：" + code + "（队列=" + boxCodeQueue.size() + "）", null);
+                    log.debug("[盒码] {} 校验通过，已入队列，队列长={}", code, boxCodeQueue.size());
+                    tryConsumePendingCaseCode();
+                } else {
+                    String errMsg = res != null ? res.getMessage() : "服务返回null";
+                    addEvent("BOX_FAIL", "盒码采集失败：" + code + "，原因：" + errMsg, null);
+                    log.warn("[盒码] {} 校验失败: {}", code, errMsg);
+                }
             }
         } else {
+            String code = rawCode.trim();
+            if (code.isEmpty()) return;
+            addEvent("CASE_RECV", "[箱码相机] 接收数据：" + code, null);
             List<String> polled = new ArrayList<>(boxesPerCase);
             for (int i = 0; i < boxesPerCase; i++) {
                 String b = boxCodeQueue.poll();
                 if (b == null) {
                     polled.forEach(boxCodeQueue::offer);
                     pendingCaseCodes.offer(code);
-                    addEvent("CASE_PENDING", "收到箱码: " + code + "，内存队列中盒码不足" + boxesPerCase + "条，已存入待处理列表", null);
+                    addEvent("CASE_PENDING", "箱码待处理：" + code + "，队列中盒码不足" + boxesPerCase + "条", null);
                     log.debug("[箱码] {} 已入待处理列表", code);
                     return;
                 }
@@ -303,7 +313,7 @@ public class ShiwanM2TcpCaptureService {
             if (res == null || res.getCode() == null || res.getCode() != 200) {
                 polled.forEach(boxCodeQueue::offer);
                 String errMsg = res != null ? res.getMessage() : "服务返回null";
-                addEvent("ASSOC_FAIL", "关联失败 箱码:" + code + " " + errMsg, buildFailData(polled, code, errMsg));
+                addEvent("ASSOC_FAIL", "关联失败 箱码:" + code + "，原因：" + errMsg, buildFailData(polled, code, errMsg));
                 log.warn("箱码关联失败 caseCode={} boxCodes={} err={}", code, polled, errMsg);
                 return;
             }
