@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 1 号机 T_Code 表定时同步到 2 号机 CodeRelationUpload。
- * 每 1 秒执行一次：从 1 号机 SQL Server 读取 SerialNo &gt; lastSynced 且 Status=0 的记录，
+ * 每 3 秒执行一次：从 1 号机 SQL Server 读取 SerialNo &gt; lastSynced 且 Status=0 的记录，
  * 插入 2 号机 MySQL CodeRelationUpload，OrderNo/ProductNO 取当前 2 号机生产订单号与产品编码，AddTime 取当前时间。
  * 启用条件：shiwan.m2.m1-sync.enabled=true
  * 运行时控制：调用 startSync()/stopSync() 动态开启/关闭每次执行逻辑。
@@ -63,7 +63,7 @@ public class M1TCodeSyncService {
         return syncActive;
     }
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 3000)
     public void sync() {
         if (!syncActive) {
             return;
