@@ -1,4 +1,6 @@
-<html lang="zh-CN"><head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1366">
 <title>盒箱垛关联采集系统 - 2号机</title>
@@ -1207,13 +1209,10 @@ body {
       <div class="card product-select-area">
         <div class="card-title">当前生产信息</div>
         <div style="font-size:13px; color:#6B7280; margin-bottom:4px;">选择产品</div>
-        <select class="product-dropdown" id="productSelect" onchange="updateProductInfo()" style="width:100%">
-          <option value="">-- 点击选择产品 --</option>
-          <option value="P001">石湾酒 52度 500ml</option>
-          <option value="P002">石湾酒 38度 500ml</option>
-          <option value="P003">石湾酒 42度 250ml</option>
-          <option value="P004">石湾酒 52度 250ml</option>
-        </select>
+        <div onclick="openProductModal()" style="display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 12px;border:1px solid #D1D5DB;border-radius:8px;background:#F9FAFB;cursor:pointer;font-size:15px;color:#374151;" id="productDisplayBox">
+          <span id="productDisplayName" style="color:#9CA3AF;">-- 点击选择产品 --</span>
+          <span style="color:#6B7280;font-size:12px;">▼</span>
+        </div>
         <div id="productCodeArea" style="display:none; margin-top:8px;" class="product-code-row">
           <span class="product-info">产品编号</span>
           <span class="product-num" id="productCodeDisplay">—</span>
@@ -1227,12 +1226,12 @@ body {
           <div style="display:flex; flex-direction:column; gap:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:16px;">1垛</span>
-              <input type="number" id="casePerPallet" value="70" min="1" class="qty-input" title="每垛箱数" style="width:70px; height:44px; font-size:26px;" oninput="document.getElementById('dispCasePerPallet').textContent=this.value||'70'">
+              <input type="number" id="casePerPallet" value="70" min="1" max="999" step="1" class="qty-input" title="每垛箱数" style="width:90px; height:44px; font-size:26px;" oninput="validateQtyInput(this,'dispCasePerPallet',70)">
               <span style="font-size:16px;">箱</span>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:16px;">1箱</span>
-              <input type="number" id="boxPerCase" value="4" min="1" class="qty-input" title="每箱盒数" style="width:70px; height:44px; font-size:26px;" oninput="document.getElementById('dispBoxPerCase').textContent=this.value||'4'">
+              <input type="number" id="boxPerCase" value="4" min="1" max="999" step="1" class="qty-input" title="每箱盒数" style="width:90px; height:44px; font-size:26px;" oninput="validateQtyInput(this,'dispBoxPerCase',4)">
               <span style="font-size:16px;">盒</span>
             </div>
           </div>
@@ -1379,7 +1378,7 @@ body {
         <div class="card-title">采集规格设置</div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:16px;">1盒</span>
-          <input type="number" id="manualN" value="6" min="1" max="24" class="qty-input" style="width:70px; height:44px; font-size:26px;" oninput="var e=document.getElementById('manualPerCount');if(e)e.textContent=this.value||'6'">
+          <input type="number" id="manualN" value="6" min="1" max="999" step="1" class="qty-input" style="width:90px; height:44px; font-size:26px;" oninput="validateQtyInput(this,'manualPerCount',6)">
           <span style="font-size:16px;">瓶</span>
         </div>
       </div>
@@ -1592,18 +1591,10 @@ body {
                 <th>异常原因</th>
               </tr>
             </thead>
-            <tbody>
-              <tr><td>P20241201001</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:00:15</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
-              <tr class="row-even"><td>P20241201002</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:05:22</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
-              <tr><td>P20241201003</td><td>70</td><td>PO202412018711</td><td>2024-12-01 11:10:18</td><td><span class="badge badge-red">异常</span></td><td>盒码B302少2个瓶码</td></tr>
-              <tr class="row-even"><td>P20241201004</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:15:33</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
-              <tr><td>P20241201005</td><td>70</td><td>PO202412018712</td><td>2024-12-01 11:20:47</td><td><span class="badge badge-red">异常</span></td><td>网络超时</td></tr>
-              <tr class="row-even"><td>P20241201006</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:25:12</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
-              <tr><td>P20241201007</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:30:28</td><td><span class="badge badge-green">成功</span></td><td>-</td></tr>
-              <tr class="row-even"><td>P20241201008</td><td>70</td><td>PO202412018713</td><td>2024-12-01 11:35:56</td><td><span class="badge badge-red">异常</span></td><td>箱码X008盒码B402重复</td></tr>
-            </tbody>
+            <tbody id="uploadStatBody"></tbody>
           </table>
         </div>
+        <div style="border-top:1px solid #E5E7EB;" id="uploadStatPagination"></div>
       </div>
     </div>
   </div>
@@ -1727,7 +1718,7 @@ body {
 
           <div class="cancel-action-row">
             <button class="btn btn-secondary" style="height:48px; width:80px; font-size:16px;" onclick="clearCancel()">清空</button>
-            <button class="btn btn-danger" style="height:48px; flex:1; font-size:16px; font-weight:700;" id="confirmCancelBtn" disabled="" onclick="openCancelConfirm('single')">确认取消关联</button>
+            <button class="btn btn-danger" style="height:48px; flex:1; font-size:16px; font-weight:700;" id="confirmCancelBtn" disabled onclick="openCancelConfirm('single')">确认取消关联</button>
           </div>
           <div id="cancelBtnHint" style="font-size:13px; color:#9CA3AF; display:none;">⚠ 有上级关联，请先从垛开始逐级解除</div>
         </div>
@@ -1783,7 +1774,7 @@ body {
         <div class="card" style="height:220px; display:flex; flex-direction:column; overflow:hidden; padding:0; flex-shrink:0;">
           <div class="log-section-header" style="border-radius:12px 12px 0 0; font-size:15px;">
             <span>取消结果</span>
-            <button style="background:none;border:none;font-size:12px;color:#9CA3AF;cursor:pointer;font-family:inherit;" onclick="document.getElementById('cancelResultLog').innerHTML='&lt;div style=\'color:#9CA3AF;font-size:14px;text-align:center;padding:20px;\'&gt;暂无取消关联记录&lt;/div&gt;'">清空记录</button>
+            <button style="background:none;border:none;font-size:12px;color:#9CA3AF;cursor:pointer;font-family:inherit;" onclick="document.getElementById('cancelResultLog').innerHTML='<div style=\'color:#9CA3AF;font-size:14px;text-align:center;padding:20px;\'>暂无取消关联记录</div>'">清空记录</button>
           </div>
           <div class="cancel-log-body" id="cancelResultLog">
             <div style="color:#9CA3AF; font-size:14px; text-align:center; padding:20px;">暂无取消关联记录</div>
@@ -1848,7 +1839,7 @@ body {
   </div> -->
   <div style="display:flex; align-items:center; gap:12px;">
     <span id="activationStatus2" class="activation-tag" style="display:none;"><span class="activation-tag-dot"></span>授权剩余: <span id="activationDays2">0</span>天</span>
-    <span id="currentTime2">2026-03-10 15:45:33</span>
+    <span id="currentTime2">2024-12-01 10:30:00</span>
   </div>
 </div>
 
@@ -2349,10 +2340,10 @@ body {
       <div class="sys-tab-panel" id="st-virtual" style="flex:1; overflow-y:auto; padding:20px 24px;">
         <div style="font-size:16px; font-weight:600; color:#1F2937; margin-bottom:16px;">虚拟垛标规则（成垛时生成虚拟垛标，格式示例：V20260226001A12）</div>
         <div class="form-row"><span class="form-label virtual">前缀</span><input type="text" class="form-input fixed-sm" value="V" placeholder="默认 V"></div>
-        <div class="form-row"><span class="form-label virtual">时间</span><input type="text" class="form-input fixed-sm" value="YYYYMMDD" placeholder="只读" style="background:#F3F4F6; color:#6B7280;" readonly=""></div>
-        <div class="form-row"><span class="form-label virtual">序号</span><input type="text" class="form-input fixed-sm" value="001" placeholder="只读，3位起" style="background:#F3F4F6; color:#6B7280;" readonly=""></div>
+        <div class="form-row"><span class="form-label virtual">时间</span><input type="text" class="form-input fixed-sm" value="YYYYMMDD" placeholder="只读" style="background:#F3F4F6; color:#6B7280;" readonly></div>
+        <div class="form-row"><span class="form-label virtual">序号</span><input type="text" class="form-input fixed-sm" value="001" placeholder="只读，3位起" style="background:#F3F4F6; color:#6B7280;" readonly></div>
         <div class="form-row"><span class="form-label virtual">产线号</span><input type="text" class="form-input fixed-sm" value="A" placeholder="如 A、B"></div>
-        <div class="form-row"><span class="form-label virtual">随机数</span><input type="text" class="form-input fixed-sm" value="12" placeholder="只读，2位系统自动生成" style="background:#F3F4F6; color:#6B7280;" readonly=""></div>
+        <div class="form-row"><span class="form-label virtual">随机数</span><input type="text" class="form-input fixed-sm" value="12" placeholder="只读，2位系统自动生成" style="background:#F3F4F6; color:#6B7280;" readonly></div>
         <div style="font-size:12px; color:#6B7280; margin-bottom:12px;">说明：时间、序号、随机数为生成时自动取值，不可修改；前缀、产线号可修改。随机数2位系统自动生成。</div>
         <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px;" onclick="alert('虚拟垛标规则已保存')">保存</button>
       </div>
@@ -2456,7 +2447,8 @@ body {
     <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:16px;">开始采集确认</div>
     <div style="font-size:14px; color:#374151; margin-bottom:16px; line-height:1.8;" id="startCollectConfirmMsg">
       <div style="margin-bottom:8px;"><strong>生产信息：</strong></div>
-      <div id="startCollectProductInfo" style="margin-bottom:12px; padding-left:12px;">产品：—，生产单：—</div>
+      <div id="startCollectProductInfo" style="margin-bottom:4px; padding-left:12px;">产品：—</div>
+      <div id="startCollectOrderInfo" style="margin-bottom:12px; padding-left:12px;">生产单：—</div>
       <div style="margin-bottom:8px;"><strong>包装比例：</strong></div>
       <div id="startCollectRatioInfo" style="padding-left:12px;">1垛 — 箱，1箱 — 盒</div>
     </div>
@@ -2489,7 +2481,7 @@ body {
     </div>
     <div class="modal-body" style="padding:20px;">
       <div class="form-row" style="margin-bottom:16px;">
-        <span class="form-label" style="width:100px;">码包类型 <span style="color:#DC2626;">*</span></span>
+        <span class="form-label" style="width:100px;"><span style="color:#DC2626;">*</span> 码包类型</span>
         <select class="form-select" id="packageImportType" style="flex:1;">
           <option value="">请选择</option>
           <option value="small">盖外码小标</option>
@@ -2506,7 +2498,7 @@ body {
         </div>
       </div>
       <div class="form-row" style="margin-bottom:16px;">
-        <span class="form-label" style="width:100px;">密码 <span style="color:#DC2626;">*</span></span>
+        <span class="form-label" style="width:100px;"><span style="color:#DC2626;">*</span> 密码</span>
         <input type="password" class="form-input" id="packageImportPwd" placeholder="请输入密码" style="flex:1;" maxlength="12">
       </div>
     </div>
@@ -2551,9 +2543,84 @@ body {
   </div>
 </div>
 
+<!-- 提取工单未成垛弹窗 -->
+<div class="modal-overlay" id="extractUnfinishedOverlay" onclick="if(event.target===this)closeExtractUnfinished()">
+  <div onclick="event.stopPropagation()" style="width:560px;background:#fff;border-radius:12px;border:1px solid #D9E1EC;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- 标题栏 -->
+    <div style="height:56px;background:#F5F7FA;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
+      <span style="font-size:18px;font-weight:600;color:#1F2937;">提取工单未成垛</span>
+      <button onclick="closeExtractUnfinished()" style="border:none;background:none;font-size:20px;color:#6B7280;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <!-- 内容区 -->
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+      <!-- 说明 -->
+      <div style="font-size:14px;color:#6B7280;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px 16px;">
+        请输入或扫描未完成垛中的任意一个<strong>箱码</strong>，系统将查出对应的生产订单数据。
+      </div>
+      <!-- 输入框 -->
+      <div>
+        <div style="font-size:14px;font-weight:600;color:#374151;margin-bottom:8px;">箱码</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="extractBoxCodeInput" placeholder="请输入或扫码箱码" autofocus
+            style="flex:1;height:40px;padding:0 12px;border:1px solid #D1D5DB;border-radius:8px;font-size:15px;outline:none;"
+            onkeydown="if(event.key==='Enter')queryUnfinishedByBox()">
+          <button onclick="queryUnfinishedByBox()" style="height:40px;padding:0 20px;background:#2563EB;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">查询</button>
+        </div>
+      </div>
+      <!-- 查询结果区 -->
+      <div id="extractUnfinishedResult" style="display:none;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;">
+        <div style="background:#F9FAFB;padding:10px 16px;font-size:14px;font-weight:600;color:#374151;border-bottom:1px solid #E5E7EB;">查询结果</div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:#1F2937;" id="extractUnfinishedInfo"></div>
+      </div>
+      <!-- 未找到提示 -->
+      <div id="extractUnfinishedEmpty" style="display:none;text-align:center;color:#EF4444;font-size:14px;padding:8px 0;">
+        未找到对应的未成垛记录，请确认箱码是否正确。
+      </div>
+    </div>
+    <!-- 底部按钮 -->
+    <div style="height:72px;background:#F9FAFB;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
+      <button onclick="closeExtractUnfinished()" style="height:40px;width:90px;background:#F3F4F6;border:none;border-radius:8px;font-size:16px;font-weight:600;color:#374151;cursor:pointer;">取消</button>
+      <button id="extractConfirmBtn" onclick="confirmExtractUnfinished()" disabled style="height:40px;width:90px;background:#D1D5DB;border:none;border-radius:8px;font-size:16px;font-weight:600;color:#fff;cursor:not-allowed;">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 产品选择弹窗 -->
+<div class="modal-overlay" id="productModalOverlay" onclick="if(event.target===this)closeProductModal()">
+  <div onclick="event.stopPropagation()" style="width:800px;max-height:600px;background:#fff;border-radius:12px;border:1px solid #D9E1EC;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- 标题栏 -->
+    <div style="height:56px;background:#F5F7FA;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;padding:0 24px;">
+      <span style="font-size:18px;font-weight:600;color:#1F2937;">选择产品</span>
+    </div>
+    <!-- 内容区 -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:16px;padding:24px;min-height:0;overflow:hidden;">
+      <!-- 搜索栏 -->
+      <div style="display:flex;gap:12px;align-items:center;">
+        <input type="text" id="productSearchInput" placeholder="请输入产品名称或编号" style="flex:1;height:40px;padding:0 12px;border:1px solid #D1D5DB;border-radius:8px;background:#F9FAFB;font-size:16px;outline:none;" onkeydown="if(event.key==='Enter')searchProducts()">
+        <button onclick="searchProducts()" style="height:40px;width:80px;background:#2563EB;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">搜索</button>
+      </div>
+      <!-- 表格 -->
+      <div style="flex:1;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
+        <div style="display:flex;align-items:center;height:48px;padding:0 16px;gap:16px;background:#F9FAFB;border-bottom:1px solid #E5E7EB;">
+          <span style="flex:1;font-size:16px;font-weight:600;color:#374151;">产品名称</span>
+          <span style="width:160px;font-size:16px;font-weight:600;color:#374151;">产品编号</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;" id="productTableBody"></div>
+      </div>
+      <!-- 分页 -->
+      <div id="productModalPagination"></div>
+    </div>
+    <!-- 底部按钮 -->
+    <div style="height:72px;background:#F9FAFB;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
+      <button onclick="closeProductModal()" style="height:40px;width:90px;background:#F3F4F6;border:none;border-radius:8px;font-size:16px;font-weight:600;color:#374151;cursor:pointer;">取消</button>
+      <button onclick="confirmProductSelect()" style="height:40px;width:90px;background:#2563EB;border:none;border-radius:8px;font-size:16px;font-weight:600;color:#fff;cursor:pointer;">确认</button>
+    </div>
+  </div>
+</div>
+
 <!-- 剔除记录弹窗 -->
 <div class="modal-overlay" id="rejectListOverlay" onclick="if(event.target===this)closeRejectList()">
-  <div class="modal-box" style="width:1000px; min-height:500px; max-height:700px; display:flex; flex-direction:column;" onclick="event.stopPropagation()">
+  <div class="modal-box" style="width:1000px; min-height:500px; max-height:720px; display:flex; flex-direction:column;" onclick="event.stopPropagation()">
     <div class="modal-header">
       <span class="modal-title">剔除记录</span>
       <button class="modal-close-btn" onclick="closeRejectList()">✕</button>
@@ -2570,18 +2637,15 @@ body {
         <div style="flex:1; overflow-y:auto; min-height:0;">
           <table class="data-table" id="rejectTable">
             <thead><tr><th style="width:50px;">序号</th><th>第一层(瓶码)</th><th>第二层(盒码)</th><th>第三层(箱码)</th><th style="width:100px;">剔除原因</th></tr></thead>
-            <tbody id="rejectTableBody">
-              <tr class="reject-row" data-idx="0" onclick="selectRejectRow(0)"><td>1</td><td class="reject-problem">20241201V010101</td><td>20241201B0101</td><td>20241201C001</td><td>重码</td></tr>
-              <tr class="row-even reject-row" data-idx="1" onclick="selectRejectRow(1)"><td>2</td><td>20241201V010102</td><td class="reject-problem">20241201B0102</td><td>20241201C001</td><td>错码</td></tr>
-              <tr class="reject-row" data-idx="2" onclick="selectRejectRow(2)"><td>3</td><td class="reject-problem">20241201V020103</td><td>20241201B0203</td><td>20241201C002</td><td>重码</td></tr>
-            </tbody>
+            <tbody id="rejectTableBody"></tbody>
           </table>
         </div>
+        <div style="padding:10px 16px; border-top:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; font-size:13px;" id="rejectPagination"></div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
         <div style="padding:12px 16px; border-bottom:1px solid #E5E7EB; font-weight:600; font-size:15px;">具体信息</div>
-        <div style="flex:1; padding:16px; overflow-y:auto; font-size:14px;" id="rejectDetail">
-          <div style="color:#9CA3AF;">请点击左侧记录查看详细信息</div>
+        <div style="flex:1; padding:20px 16px; overflow-y:auto; font-size:14px;" id="rejectDetail">
+          <div style="color:#9CA3AF; text-align:center; margin-top:40px;">请点击左侧记录查看详细信息</div>
         </div>
       </div>
     </div>
@@ -2590,33 +2654,23 @@ body {
 
 <!-- 垛码列表弹窗 -->
 <div class="modal-overlay" id="palletListOverlay" onclick="if(event.target===this)closePalletList()">
-  <div class="modal-box" style="width:800px; max-height:650px;" onclick="event.stopPropagation()">
+  <div class="modal-box" style="width:800px; max-height:680px; display:flex; flex-direction:column;" onclick="event.stopPropagation()">
     <div class="modal-header">
       <span class="modal-title">垛码列表</span>
       <button class="modal-close-btn" onclick="closePalletList()">✕</button>
     </div>
-    <div class="modal-body" style="padding:16px;">
-      <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
-        <input type="text" class="form-input" id="palletFilterCode" placeholder="请输入垛码" style="width:300px;">
-        <button class="btn btn-primary" style="height:40px; padding:0 16px; font-size:14px;" onclick="filterPalletList()">筛选</button>
-        <button class="btn btn-outline" style="height:40px; padding:0 16px; font-size:14px;" onclick="document.getElementById('palletFilterCode').value=''; filterPalletList()">重置</button>
-      </div>
+    <div style="padding:16px 16px 10px; display:flex; gap:8px; align-items:center; border-bottom:1px solid #E5E7EB;">
+      <input type="text" class="form-input" id="palletFilterCode" placeholder="请输入垛码" style="width:300px;">
+      <button class="btn btn-primary" style="height:40px; padding:0 16px; font-size:14px;" onclick="filterPalletList()">筛选</button>
+      <button class="btn btn-outline" style="height:40px; padding:0 16px; font-size:14px;" onclick="document.getElementById('palletFilterCode').value=''; filterPalletList()">重置</button>
+    </div>
+    <div style="flex:1; overflow-y:auto; min-height:0;">
       <table class="data-table" id="palletListTable">
-        <thead><tr><th style="width:150px;">垛码</th><th style="width:80px;">箱数</th><th style="width:120px;">生产单号</th><th style="width:180px;">关联时间</th></tr></thead>
-        <tbody id="palletListBody">
-          <tr><td>P20241201010</td><td>70</td><td>PO202412018710</td><td>2024-12-01 16:30:22</td></tr>
-          <tr class="row-even"><td>P20241201009</td><td>70</td><td>PO202412018710</td><td>2024-12-01 15:55:10</td></tr>
-          <tr><td>P20241201008</td><td>70</td><td>PO202412018713</td><td>2024-12-01 15:20:45</td></tr>
-          <tr class="row-even"><td>P20241201007</td><td>70</td><td>PO202412018710</td><td>2024-12-01 14:45:33</td></tr>
-          <tr><td>P20241201006</td><td>70</td><td>PO202412018710</td><td>2024-12-01 14:10:18</td></tr>
-          <tr class="row-even"><td>P20241201005</td><td>70</td><td>PO202412018712</td><td>2024-12-01 13:35:02</td></tr>
-          <tr><td>P20241201004</td><td>70</td><td>PO202412018710</td><td>2024-12-01 13:00:55</td></tr>
-          <tr class="row-even"><td>P20241201003</td><td>70</td><td>PO202412018711</td><td>2024-12-01 12:25:40</td></tr>
-          <tr><td>P20241201002</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:50:28</td></tr>
-          <tr class="row-even"><td>P20241201001</td><td>70</td><td>PO202412018710</td><td>2024-12-01 11:15:16</td></tr>
-        </tbody>
+        <thead><tr><th style="width:150px;">垛码</th><th style="width:80px;">箱数</th><th style="width:150px;">生产单号</th><th>关联时间</th></tr></thead>
+        <tbody id="palletListBody"></tbody>
       </table>
     </div>
+    <div style="padding:10px 16px; border-top:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; font-size:13px;" id="palletPagination"></div>
   </div>
 </div>
 
@@ -2741,14 +2795,28 @@ let isCollecting = false;
 let curBoxes = 0, curCases = 0, rejectCnt = 0, palletCnt = 0;
 let simInterval2 = null;
 
+function validateQtyInput(el, dispId, defaultVal) {
+  // 只保留整数部分，拒绝小数点
+  let raw = el.value.replace(/[^0-9]/g, '');
+  if(raw === '') { el.value = ''; }
+  else {
+    let num = parseInt(raw, 10);
+    if(num < 1) num = 1;
+    if(num > 999) num = 999;
+    el.value = num;
+    raw = String(num);
+  }
+  const disp = document.getElementById(dispId);
+  if(disp) disp.textContent = raw || String(defaultVal);
+}
+
 function toggleCollect() {
   const btn = document.getElementById('collectBtn');
   if(!isCollecting) {
-    const productSel = document.getElementById('productSelect');
     const orderNum = document.getElementById('orderNum').value.trim();
-    if(!productSel.value) {
+    if(!productPage.selected) {
       alert('请先选择生产产品后再开始采集！');
-      productSel.focus();
+      openProductModal();
       return;
     }
     if(!orderNum) {
@@ -2756,11 +2824,27 @@ function toggleCollect() {
       document.getElementById('orderNum').focus();
       return;
     }
+    // 采集规格校验：不能为空、仅整数、范围 1～999
+    const caseInput = document.getElementById('casePerPallet');
+    const boxInput  = document.getElementById('boxPerCase');
+    const caseVal = caseInput.value.trim();
+    const boxVal  = boxInput.value.trim();
+    if(!caseVal || !/^\d+$/.test(caseVal) || parseInt(caseVal) < 1 || parseInt(caseVal) > 999) {
+      alert('每垛箱数须为 1～999 的整数，请重新输入！');
+      caseInput.focus();
+      return;
+    }
+    if(!boxVal || !/^\d+$/.test(boxVal) || parseInt(boxVal) < 1 || parseInt(boxVal) > 999) {
+      alert('每箱盒数须为 1～999 的整数，请重新输入！');
+      boxInput.focus();
+      return;
+    }
     // 二次确认：展示生产信息和包装比例
-    const productName = productSel.options[productSel.selectedIndex].text;
-    const maxCase = parseInt(document.getElementById('casePerPallet').value) || 70;
-    const maxBox = parseInt(document.getElementById('boxPerCase').value) || 4;
-    document.getElementById('startCollectProductInfo').textContent = `产品：${productName}，生产单：${orderNum}`;
+    const productName = productPage.selected.name;
+    const maxCase = parseInt(caseVal);
+    const maxBox  = parseInt(boxVal);
+    document.getElementById('startCollectProductInfo').textContent = `产品：${productName}`;
+    document.getElementById('startCollectOrderInfo').textContent = `生产单：${orderNum}`;
     document.getElementById('startCollectRatioInfo').textContent = `1垛 ${maxCase} 箱，1箱 ${maxBox} 盒`;
     document.getElementById('startCollectConfirmOverlay').classList.add('active');
   } else {
@@ -2904,8 +2988,68 @@ function forcePallet() {
   }
 }
 
+// 提取工单未成垛
+const mockUnfinishedPallets = [
+  { boxCodes:['20241130C001','20241130C002','20241130C003'], product:'石湾头曲 52度 500ml', productCode:'SW-52-500', orderNo:'20241130001', doneBoxes:45, totalBoxes:70, lastTime:'2024-11-30 17:42:18' },
+  { boxCodes:['20241129C010','20241129C011'], product:'石湾头曲 38度 500ml', productCode:'SW-38-500', orderNo:'20241129002', doneBoxes:30, totalBoxes:70, lastTime:'2024-11-29 16:55:04' }
+];
+let extractFoundRecord = null;
+
 function extractUnfinished() {
-  alert('查询未成垛数据...\n\n未成垛记录：\n1. 生产单20241130001 - 进度 45/70箱\n\n请选择后继续生产');
+  extractFoundRecord = null;
+  document.getElementById('extractBoxCodeInput').value = '';
+  document.getElementById('extractUnfinishedResult').style.display = 'none';
+  document.getElementById('extractUnfinishedEmpty').style.display = 'none';
+  const btn = document.getElementById('extractConfirmBtn');
+  btn.disabled = true; btn.style.background='#D1D5DB'; btn.style.cursor='not-allowed';
+  document.getElementById('extractUnfinishedOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('extractBoxCodeInput').focus(), 100);
+}
+
+function closeExtractUnfinished() {
+  document.getElementById('extractUnfinishedOverlay').classList.remove('active');
+}
+
+function queryUnfinishedByBox() {
+  const code = document.getElementById('extractBoxCodeInput').value.trim();
+  if(!code) { document.getElementById('extractBoxCodeInput').focus(); return; }
+  const found = mockUnfinishedPallets.find(r => r.boxCodes.some(c => c.toLowerCase() === code.toLowerCase()));
+  document.getElementById('extractUnfinishedResult').style.display = 'none';
+  document.getElementById('extractUnfinishedEmpty').style.display = 'none';
+  const btn = document.getElementById('extractConfirmBtn');
+  if(found) {
+    extractFoundRecord = found;
+    document.getElementById('extractUnfinishedInfo').innerHTML = `
+      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">产品名称</span><span style="font-weight:600;">${found.product}</span></div>
+      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">产品编号</span><span>${found.productCode}</span></div>
+      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">生产单号</span><span>${found.orderNo}</span></div>
+      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">已完成箱数</span><span style="color:#2563EB;font-weight:600;">${found.doneBoxes} / ${found.totalBoxes} 箱</span></div>
+      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">最后采集</span><span>${found.lastTime}</span></div>`;
+    document.getElementById('extractUnfinishedResult').style.display = 'block';
+    btn.disabled = false; btn.style.background='#2563EB'; btn.style.cursor='pointer';
+  } else {
+    extractFoundRecord = null;
+    document.getElementById('extractUnfinishedEmpty').style.display = 'block';
+    btn.disabled = true; btn.style.background='#D1D5DB'; btn.style.cursor='not-allowed';
+  }
+}
+
+function confirmExtractUnfinished() {
+  if(!extractFoundRecord) return;
+  const r = extractFoundRecord;
+  // 回显到主页面
+  document.getElementById('productDisplayName').textContent = r.product;
+  document.getElementById('productDisplayName').style.color = '#1F2937';
+  document.getElementById('productCodeArea').style.display = 'block';
+  document.getElementById('productCodeDisplay').textContent = r.productCode;
+  document.getElementById('orderNum').value = r.orderNo;
+  closeExtractUnfinished();
+  // 操作日志提示
+  const logArea = document.getElementById('opLogArea');
+  if(logArea) {
+    const ts = new Date().toLocaleString('zh-CN',{hour12:false}).replace(/\//g,'-');
+    logArea.insertAdjacentHTML('afterbegin',`<div class="log-entry log-info"><span class="log-ts">${ts}</span>已提取未成垛：生产单 ${r.orderNo}，已完成 ${r.doneBoxes}/${r.totalBoxes} 箱，继续生产</div>`);
+  }
 }
 
 function resetReject() {
@@ -2915,18 +3059,73 @@ function resetReject() {
   }
 }
 
-// 产品选择
-function updateProductInfo() {
-  const sel = document.getElementById('productSelect');
-  const codeArea = document.getElementById('productCodeArea');
-  const codeDisplay = document.getElementById('productCodeDisplay');
-  const codes = {'P001':'SHW-001','P002':'SHW-002','P003':'SHW-003','P004':'SHW-004'};
-  if(sel.value) {
-    codeArea.style.display = 'block';
-    codeDisplay.textContent = codes[sel.value] || '—';
-  } else {
-    codeArea.style.display = 'none';
-  }
+// 产品选择弹窗
+const mockProducts = [
+  { id:'P001', name:'石湾头曲 52度 500ml', code:'SW-52-500' },
+  { id:'P002', name:'石湾头曲 38度 500ml', code:'SW-38-500' },
+  { id:'P003', name:'石湾头曲 42度 250ml', code:'SW-42-250' },
+  { id:'P004', name:'石湾头曲 52度 250ml', code:'SW-52-250' },
+  { id:'P005', name:'石湾玉冰烧 29度 500ml', code:'SW-YBS-500' },
+  { id:'P006', name:'石湾玉冰烧 29度 250ml', code:'SW-YBS-250' },
+  { id:'P007', name:'石湾豉香 33度 500ml', code:'SW-CX-500' },
+  { id:'P008', name:'石湾特醇 46度 500ml', code:'SW-TC-500' }
+];
+const productPage = { cur:1, size:20, data:[], selected:null };
+
+function openProductModal() {
+  productPage.data = [...mockProducts];
+  productPage.cur = 1;
+  productPage.selected = null;
+  document.getElementById('productSearchInput').value = '';
+  document.getElementById('productModalOverlay').classList.add('active');
+  renderProductTable();
+}
+
+function closeProductModal() {
+  document.getElementById('productModalOverlay').classList.remove('active');
+}
+
+function searchProducts() {
+  const kw = document.getElementById('productSearchInput').value.trim().toLowerCase();
+  productPage.data = kw ? mockProducts.filter(p => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw)) : [...mockProducts];
+  productPage.cur = 1;
+  productPage.selected = null;
+  renderProductTable();
+}
+
+function renderProductTable() {
+  const { cur, size, data, selected } = productPage;
+  const totalPages = Math.max(1, Math.ceil(data.length / size));
+  productPage.cur = Math.max(1, Math.min(cur, totalPages));
+  const slice = data.slice((productPage.cur-1)*size, productPage.cur*size);
+  const container = document.getElementById('productTableBody');
+  container.innerHTML = slice.length ? slice.map((p, i) => {
+    const isSelected = selected && selected.id === p.id;
+    const bg = isSelected ? '#EFF6FF' : (i%2===0 ? '#fff' : '#fff');
+    const borderColor = isSelected ? '#BFDBFE' : '#F3F4F6';
+    const nameStyle = isSelected ? 'color:#1F2937;font-weight:600;' : 'color:#1F2937;';
+    const codeStyle = isSelected ? 'color:#2563EB;font-weight:600;' : 'color:#6B7280;';
+    return `<div onclick="selectProductRow('${p.id}')" style="display:flex;align-items:center;height:48px;padding:0 16px;gap:16px;background:${bg};border-bottom:1px solid ${borderColor};cursor:pointer;">
+      <span style="flex:1;font-size:16px;${nameStyle}">${p.name}</span>
+      <span style="width:160px;font-size:16px;${codeStyle}">${p.code}</span>
+    </div>`;
+  }).join('') : '<div style="text-align:center;color:#9CA3AF;padding:40px;font-size:15px;">无匹配产品</div>';
+  renderPageBar('productModalPagination', productPage, renderProductTable);
+}
+
+function selectProductRow(id) {
+  productPage.selected = mockProducts.find(p => p.id === id) || null;
+  renderProductTable();
+}
+
+function confirmProductSelect() {
+  const p = productPage.selected;
+  if(!p) { alert('请先选择一个产品'); return; }
+  document.getElementById('productDisplayName').textContent = p.name;
+  document.getElementById('productDisplayName').style.color = '#1F2937';
+  document.getElementById('productCodeArea').style.display = 'block';
+  document.getElementById('productCodeDisplay').textContent = p.code;
+  closeProductModal();
 }
 
 // 手工采集（仅支持瓶盒关联）
@@ -2935,6 +3134,12 @@ function toggleManualCollect() {
   const btn = document.getElementById('manualCollectBtn');
   const manualN = document.getElementById('manualN');
   if(!isManualCollecting) {
+    const nVal = manualN.value.trim();
+    if(!nVal || !/^\d+$/.test(nVal) || parseInt(nVal) < 1 || parseInt(nVal) > 999) {
+      alert('每盒瓶数须为 1～999 的整数，请重新输入！');
+      manualN.focus();
+      return;
+    }
     manualN.disabled = true;
     isManualCollecting = true;
     btn.textContent = '停止采集';
@@ -3514,7 +3719,7 @@ function doStatsQuery() {
   document.getElementById('statReject').textContent = Math.floor(Math.random()*5+1);
 }
 
-// 垛码列表模拟数据（垛码、箱数、生产单号、关联时间）
+// 垛码列表模拟数据
 const mockPalletList = [
   { 垛码:'P20241201010', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 16:30:22' },
   { 垛码:'P20241201009', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 15:55:10' },
@@ -3527,8 +3732,10 @@ const mockPalletList = [
   { 垛码:'P20241201002', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 11:50:28' },
   { 垛码:'P20241201001', 箱数:70, 生产单号:'PO202412018710', 关联时间:'2024-12-01 11:15:16' }
 ];
+const palletPage = { cur:1, size:20, data:[] };
 
 function openPalletList() {
+  palletPage.cur = 1; palletPage.size = 20;
   document.getElementById('palletListOverlay').classList.add('active');
   filterPalletList();
 }
@@ -3536,53 +3743,182 @@ function closePalletList() { document.getElementById('palletListOverlay').classL
 
 function filterPalletList() {
   const kw = document.getElementById('palletFilterCode').value.trim().toLowerCase();
-  const filtered = kw ? mockPalletList.filter(p => (p.垛码||'').toLowerCase().includes(kw)) : mockPalletList;
-  const tbody = document.getElementById('palletListBody');
-  tbody.innerHTML = filtered.length ? filtered.map((p,i) =>
-    `<tr ${i%2?'class="row-even"':''}><td>${p.垛码}</td><td>${p.箱数}</td><td>${p.生产单号||'-'}</td><td>${p.关联时间}</td></tr>`
-  ).join('') : '<tr><td colspan="4" style="text-align:center;color:#9CA3AF;padding:40px;">无匹配数据</td></tr>';
+  palletPage.data = kw ? mockPalletList.filter(p => (p.垛码||'').toLowerCase().includes(kw)) : [...mockPalletList];
+  palletPage.cur = 1;
+  renderPalletPage();
 }
 
-// 剔除记录弹窗（模拟数据）
+function renderPalletPage() {
+  const { cur, size, data } = palletPage;
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  const page = Math.min(cur, totalPages);
+  palletPage.cur = page;
+  const slice = data.slice((page-1)*size, page*size);
+  const tbody = document.getElementById('palletListBody');
+  tbody.innerHTML = slice.length ? slice.map((p,i) =>
+    `<tr ${i%2?'class="row-even"':''}><td>${p.垛码}</td><td>${p.箱数}</td><td>${p.生产单号||'-'}</td><td>${p.关联时间}</td></tr>`
+  ).join('') : '<tr><td colspan="4" style="text-align:center;color:#9CA3AF;padding:40px;">无匹配数据</td></tr>';
+  renderPageBar('palletPagination', palletPage, renderPalletPage);
+}
+
+// 剔除记录模拟数据
 const mockRejectRecords = [
-  { 瓶码:'20241201V010101', 盒码:'20241201B0101', 箱码:'20241201C001', 问题码:'20241201V010101', 原因:'重码', 时间:'2024-12-01 10:30:15', 生产单号:'PO202412018710' },
-  { 瓶码:'20241201V010102', 盒码:'20241201B0102', 箱码:'20241201C001', 问题码:'20241201B0102', 原因:'错码', 时间:'2024-12-01 10:31:22', 生产单号:'PO202412018710' },
-  { 瓶码:'20241201V020103', 盒码:'20241201B0203', 箱码:'20241201C002', 问题码:'20241201V020103', 原因:'重码', 时间:'2024-12-01 10:35:08', 生产单号:'PO202412018710' }
+  { 瓶码:'20241201V010101', 盒码:'20241201B0101', 箱码:'20241201C001', 问题码:'20241201V010101', 原因:'重码', 时间:'2024-12-01 10:30:15', 产品编号:'SW-52-500', 产品名称:'石湾头曲52度500ml', 生产单号:'PO202412018710' },
+  { 瓶码:'20241201V010102', 盒码:'20241201B0102', 箱码:'20241201C001', 问题码:'20241201B0102', 原因:'错码', 时间:'2024-12-01 10:31:22', 产品编号:'SW-52-500', 产品名称:'石湾头曲52度500ml', 生产单号:'PO202412018710' },
+  { 瓶码:'20241201V020103', 盒码:'20241201B0203', 箱码:'20241201C002', 问题码:'20241201V020103', 原因:'重码', 时间:'2024-12-01 10:35:08', 产品编号:'SW-52-500', 产品名称:'石湾头曲52度500ml', 生产单号:'PO202412018710' }
 ];
 let filteredRejectRecords = [...mockRejectRecords];
+const rejectPage = { cur:1, size:20, data:[] };
 
-function openRejectList() { document.getElementById('rejectListOverlay').classList.add('active'); filterRejectList(); }
+function openRejectList() {
+  rejectPage.cur = 1; rejectPage.size = 20;
+  document.getElementById('rejectListOverlay').classList.add('active');
+  filterRejectList();
+}
 function closeRejectList() { document.getElementById('rejectListOverlay').classList.remove('active'); }
 
 function filterRejectList() {
   const kw = document.getElementById('rejectFilterCode').value.trim().toLowerCase();
   filteredRejectRecords = kw ? mockRejectRecords.filter(r => (r.箱码||'').toLowerCase().includes(kw)) : [...mockRejectRecords];
-  const tbody = document.getElementById('rejectTableBody');
-  const getProblemClass = (r, field) => (r.问题码 === r[field] ? 'reject-problem' : '');
-  tbody.innerHTML = filteredRejectRecords.map((r,i) => {
-    const rc = i % 2 ? 'row-even' : '';
-    return `<tr class="reject-row ${rc}" data-idx="${i}" onclick="selectRejectRow(${i})">
-      <td>${i+1}</td><td class="${getProblemClass(r,'瓶码')}">${r.瓶码}</td><td class="${getProblemClass(r,'盒码')}">${r.盒码}</td><td class="${getProblemClass(r,'箱码')}">${r.箱码}</td><td>${r.原因}</td>
-    </tr>`;
-  }).join('');
+  rejectPage.data = filteredRejectRecords;
+  rejectPage.cur = 1;
   document.getElementById('rejectListCount').textContent = `已查询到 ${filteredRejectRecords.length} 条剔除记录`;
   document.getElementById('rejectDetail').innerHTML = '<div style="color:#9CA3AF;">请点击左侧记录查看详细信息</div>';
+  renderRejectPage();
+}
+
+function renderRejectPage() {
+  const { cur, size, data } = rejectPage;
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  const page = Math.min(cur, totalPages);
+  rejectPage.cur = page;
+  const slice = data.slice((page-1)*size, page*size);
+  const getProblemClass = (r, field) => (r.问题码 === r[field] ? 'reject-problem' : '');
+  const tbody = document.getElementById('rejectTableBody');
+  tbody.innerHTML = slice.length ? slice.map((r,i) => {
+    const rc = i % 2 ? 'row-even' : '';
+    const globalIdx = (page-1)*size + i;
+    return `<tr class="reject-row ${rc}" data-idx="${globalIdx}" onclick="selectRejectRow(${globalIdx})">
+      <td>${globalIdx+1}</td><td class="${getProblemClass(r,'瓶码')}">${r.瓶码}</td><td class="${getProblemClass(r,'盒码')}">${r.盒码}</td><td class="${getProblemClass(r,'箱码')}">${r.箱码}</td><td>${r.原因}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9CA3AF;padding:40px;">无匹配数据</td></tr>';
+  renderPageBar('rejectPagination', rejectPage, renderRejectPage);
 }
 
 function selectRejectRow(idx) {
-  document.querySelectorAll('.reject-row').forEach((tr,i) => tr.classList.toggle('selected', i===idx));
+  document.querySelectorAll('.reject-row').forEach(tr => tr.classList.toggle('selected', +tr.dataset.idx === idx));
   const r = filteredRejectRecords[idx];
   if(!r) return;
   document.getElementById('rejectDetail').innerHTML = `
     <div style="color:#1F2937; font-size:14px;">
-      <div style="font-weight:600; margin-bottom:12px;">剔除记录详情</div>
-      <div style="margin-bottom:8px;">问题码：<span style="color:#DC2626; font-weight:700;">${r.问题码}</span></div>
-      <div style="margin-bottom:8px;">箱码：${r.箱码}</div>
-      <div style="margin-bottom:8px;">剔除原因：${r.原因}</div>
-      <div style="margin-bottom:8px;">剔除时间：${r.时间}</div>
-      <div style="margin-bottom:8px;">生产单号：${r.生产单号}</div>
+      <div style="font-weight:600; margin-bottom:10px;">剔除信息</div>
+      <div style="margin-bottom:6px;">问题码：<span style="color:#DC2626; font-weight:700;">${r.问题码}</span></div>
+      <div style="margin-bottom:6px;">箱码：${r.箱码}</div>
+      <div style="margin-bottom:6px;">剔除原因：${r.原因}</div>
+      <div style="margin-bottom:6px;">剔除时间：${r.时间}</div>
+    </div>
+    <div style="font-weight:600; margin:14px 0 8px; color:#1F2937; font-size:14px; border-top:1px solid #F3F4F6; padding-top:12px;">产品信息</div>
+    <div style="color:#1F2937; font-size:14px;">
+      <div style="margin-bottom:6px;">产品编号：${r.产品编号}</div>
+      <div style="margin-bottom:6px;">产品名称：${r.产品名称}</div>
+      <div style="margin-bottom:6px;">生产单号：${r.生产单号}</div>
     </div>`;
 }
+
+// 通用分页组件（统一样式）
+function renderPageBar(containerId, state, renderFn) {
+  const total = state.data.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.size));
+  state.cur = Math.max(1, Math.min(state.cur, totalPages));
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container._renderFn = renderFn;
+  container._state = state;
+  const navBtn = (label, action, disabled) =>
+    `<button onclick="${action}" ${disabled?'disabled':''} style="height:32px;padding:0 12px;font-size:13px;border:1px solid ${disabled?'#E5E7EB':'#2563EB'};border-radius:4px;cursor:${disabled?'default':'pointer'};background:#fff;color:${disabled?'#D1D5DB':'#2563EB'};white-space:nowrap;">${label}</button>`;
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap;">
+      <span style="color:#374151;font-size:13px;white-space:nowrap;">共 ${total} 条</span>
+      <span style="color:#374151;font-size:13px;white-space:nowrap;margin-left:8px;">每页显示：</span>
+      <select onchange="changePageSize('${containerId}',+this.value)" style="height:32px;padding:0 6px;font-size:13px;border:1px solid #D1D5DB;border-radius:4px;cursor:pointer;">
+        ${[10,20,50,100].map(s=>`<option value="${s}" ${state.size===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        ${navBtn('首页',`jumpToPage('${containerId}',1)`, state.cur<=1)}
+        ${navBtn('上一页',`changePage('${containerId}',-1)`, state.cur<=1)}
+        <span style="font-size:13px;color:#374151;white-space:nowrap;">第</span>
+        <input type="number" min="1" max="${totalPages}" value="${state.cur}" onchange="jumpToPage('${containerId}',+this.value)" style="width:44px;height:32px;text-align:center;border:1px solid #D1D5DB;border-radius:4px;font-size:13px;padding:0 4px;">
+        <span style="font-size:13px;color:#374151;white-space:nowrap;">页</span>
+        ${navBtn('下一页',`changePage('${containerId}',1)`, state.cur>=totalPages)}
+        ${navBtn('最后页',`jumpToPage('${containerId}',${totalPages})`, state.cur>=totalPages)}
+        <span style="font-size:13px;font-weight:600;color:#374151;white-space:nowrap;margin-left:4px;">${state.cur} / ${totalPages}</span>
+      </div>
+    </div>`;
+}
+
+function changePage(containerId, delta) {
+  const container = document.getElementById(containerId);
+  if(!container || !container._state) return;
+  const state = container._state;
+  const totalPages = Math.max(1, Math.ceil(state.data.length / state.size));
+  state.cur = Math.max(1, Math.min(totalPages, state.cur + delta));
+  container._renderFn();
+}
+
+function changePageSize(containerId, size) {
+  const container = document.getElementById(containerId);
+  if(!container || !container._state) return;
+  container._state.size = +size;
+  container._state.cur = 1;
+  container._renderFn();
+}
+
+function jumpToPage(containerId, page) {
+  const container = document.getElementById(containerId);
+  if(!container || !container._state) return;
+  const state = container._state;
+  const totalPages = Math.max(1, Math.ceil(state.data.length / state.size));
+  state.cur = Math.max(1, Math.min(totalPages, +page || 1));
+  container._renderFn();
+}
+
+// 上传统计模拟数据
+const mockUploadStat = [
+  { 垛码:'P20241201001', 箱数:70, 生产单号:'PO202412018710', 时间:'2024-12-01 11:00:15', 状态:'成功', 原因:'-' },
+  { 垛码:'P20241201002', 箱数:70, 生产单号:'PO202412018710', 时间:'2024-12-01 11:05:22', 状态:'成功', 原因:'-' },
+  { 垛码:'P20241201003', 箱数:70, 生产单号:'PO202412018711', 时间:'2024-12-01 11:10:18', 状态:'异常', 原因:'盒码B302少2个瓶码' },
+  { 垛码:'P20241201004', 箱数:70, 生产单号:'PO202412018710', 时间:'2024-12-01 11:15:33', 状态:'成功', 原因:'-' },
+  { 垛码:'P20241201005', 箱数:70, 生产单号:'PO202412018712', 时间:'2024-12-01 11:20:47', 状态:'异常', 原因:'网络超时' },
+  { 垛码:'P20241201006', 箱数:70, 生产单号:'PO202412018710', 时间:'2024-12-01 11:25:12', 状态:'成功', 原因:'-' },
+  { 垛码:'P20241201007', 箱数:70, 生产单号:'PO202412018710', 时间:'2024-12-01 11:30:28', 状态:'成功', 原因:'-' },
+  { 垛码:'P20241201008', 箱数:70, 生产单号:'PO202412018713', 时间:'2024-12-01 11:35:56', 状态:'异常', 原因:'箱码X008盒码B402重复' }
+];
+const uploadStatPage = { cur:1, size:20, data:[] };
+
+function initUploadStat() {
+  uploadStatPage.data = [...mockUploadStat];
+  uploadStatPage.cur = 1;
+  renderUploadStatPage();
+}
+
+function renderUploadStatPage() {
+  const { cur, size, data } = uploadStatPage;
+  const totalPages = Math.max(1, Math.ceil(data.length / size));
+  uploadStatPage.cur = Math.max(1, Math.min(cur, totalPages));
+  const slice = data.slice((uploadStatPage.cur-1)*size, uploadStatPage.cur*size);
+  const tbody = document.getElementById('uploadStatBody');
+  if(!tbody) return;
+  tbody.innerHTML = slice.length ? slice.map((r,i) => {
+    const badgeCls = r.状态==='成功'?'badge-green':'badge-red';
+    return `<tr ${i%2?'class="row-even"':''}><td>${r.垛码}</td><td>${r.箱数}</td><td>${r.生产单号}</td><td>${r.时间}</td><td><span class="badge ${badgeCls}">${r.状态}</span></td><td>${r.原因}</td></tr>`;
+  }).join('') : '<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:40px;">暂无数据</td></tr>';
+  renderPageBar('uploadStatPagination', uploadStatPage, renderUploadStatPage);
+}
+
+// 页面加载后初始化上传统计
+document.addEventListener('DOMContentLoaded', () => { initUploadStat(); });
 
 // 数据上传
 function doManualUpload() {
@@ -3991,6 +4327,5 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
-
-
-</body></html>
+</body>
+</html>
