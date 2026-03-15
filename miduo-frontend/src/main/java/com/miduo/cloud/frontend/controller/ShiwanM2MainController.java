@@ -138,8 +138,12 @@ public class ShiwanM2MainController implements Initializable {
 
     // --- 状态栏 ---
 
-    /** 激活状态标签 */
-    @FXML private Label activationStatusLabel;
+    /** 许可证状态容器 */
+    @FXML private HBox licenseStatusBox;
+    /** 许可证状态圆点 */
+    @FXML private Region licenseStatusDot;
+    /** 许可证状态文本 */
+    @FXML private Label licenseStatusLabel;
 
     /** 采集运行状态标签 */
     @FXML private Label runningStatusLabel;
@@ -238,8 +242,7 @@ public class ShiwanM2MainController implements Initializable {
     /** 初始化产品下拉框：可输入搜索、滚动、高度增加 */
     private void setupProductComboBox() {
         productComboBox.setItems(productItems);
-        productComboBox.setEditable(true);
-        productComboBox.setVisibleRowCount(12); // 增高一些
+        productComboBox.setEditable(false);
 
         productComboBox.setConverter(new StringConverter<>() {
             @Override
@@ -250,50 +253,22 @@ public class ShiwanM2MainController implements Initializable {
             @Override
             public ProductItem fromString(String string) {
                 // 仅在下拉选中“有名字”的项或弹窗选择时改值；失焦时编辑框为空或未匹配则保持当前选中
-                if (string == null || string.trim().isEmpty()) {
-                    return productComboBox.getValue();
-                }
-                ProductItem match = productItems.stream()
-                        .filter(p -> (p.getDisplay() != null && p.getDisplay().equals(string))
-                                || (p.getName() != null && p.getName().equals(string)))
-                        .findFirst()
-                        .orElse(null);
-                return match != null ? match : productComboBox.getValue();
+                return null;
             }
         });
 
-        productComboBox.setCellFactory(cb -> new ListCell<>() {
-            @Override
-            protected void updateItem(ProductItem item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.getDisplay());
-                }
-            }
+        // 拦截下拉展开，改为弹出产品选择弹窗
+        productComboBox.setOnShowing(e -> {
+            Platform.runLater(() -> {
+                productComboBox.hide();
+                onOpenProductSelectDialog();
+            });
         });
 
-        // 输入联想：监听编辑框文字，触发模糊搜索
-        // suppressProductSearch 为 true 时是程序设值，不触发搜索
-        productComboBox.getEditor().textProperty().addListener((obs, oldV, newV) -> {
-            if (!suppressProductSearch) {
-                productExecutor.submit(() -> fetchProducts(newV, 20));
-            }
-        });
-
-        // 选中后回填产品编号，并同步编辑框文字
+        // 选中后同步产品编号
         productComboBox.valueProperty().addListener((obs, ov, nv) -> {
-            if (nv != null) {
-                if (nv.getNo() != null) {
-                    productCodeLabel.setText(nv.getNo());
-                }
-                // 用标志位屏蔽编辑框文字变化触发的搜索
-                suppressProductSearch = true;
-                productComboBox.getEditor().setText(nv.getDisplay());
-                Platform.runLater(() -> suppressProductSearch = false);
-            } else {
-                productComboBox.getEditor().clear();
+            if (nv != null && nv.getNo() != null) {
+                productCodeLabel.setText(nv.getNo());
             }
         });
 
@@ -319,8 +294,11 @@ public class ShiwanM2MainController implements Initializable {
         uploadDataList.setCellFactory(lv -> new UploadItemCell());
     }
 
-    /** 监听采集规格输入框变化，同步到统计卡片 */
+    /** 监听采集规格输入框变化，同步到统计卡片；限制仅数字输入 1-999 */
     private void setupSpecListeners() {
+        applyNumericFilter(casesPerPalletField, 1, 999);
+        applyNumericFilter(boxesPerCaseField, 1, 999);
+
         casesPerPalletField.textProperty().addListener((obs, old, val) -> {
             if (val != null && !val.trim().isEmpty()) {
                 casesPerPalletDisplayLabel.setText(val.trim());
@@ -331,6 +309,18 @@ public class ShiwanM2MainController implements Initializable {
                 boxesPerCaseDisplayLabel.setText(val.trim());
             }
         });
+    }
+
+    /** 为输入框添加数字过滤器，限制范围 min-max */
+    private void applyNumericFilter(TextField field, int min, int max) {
+        field.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty()) return change;
+            if (!newText.matches("\\d{1,3}")) return null;
+            int value = Integer.parseInt(newText);
+            if (value < 0 || value > max) return null;
+            return change;
+        }));
     }
 
     /** 启动实时时钟 */
@@ -378,9 +368,112 @@ public class ShiwanM2MainController implements Initializable {
         });
     }
 
-    /** 初始化激活状态显示 */
+    /** 初始化并更新许可证状态显示 */
     private void initActivationStatus() {
-        activationStatusLabel.setText("● 已激活");
+        updateLicenseStatus();
+    }
+
+    /** 点击许可证状态标签，打开许可证信息弹窗 */
+    @FXML
+    private void onLicenseStatusClick(javafx.scene.input.MouseEvent event) {
+        try {
+            LicenseInfoController.showLicenseInfo();
+            updateLicenseStatus();
+        } catch (Exception e) {
+            showInfo("打开许可证信息失败", e.getMessage());
+        }
+    }
+
+    /** 从许可证服务读取状态并更新状态栏 UI */
+    private void updateLicenseStatus() {
+        try {
+            com.miduo.cloud.frontend.service.DeviceInfoService deviceInfoService =
+                new com.miduo.cloud.frontend.service.DeviceInfoService();
+            com.miduo.cloud.frontend.service.LicenseService licenseService =
+                new com.miduo.cloud.frontend.service.LicenseService(
+                    new com.miduo.cloud.frontend.service.LicenseValidationService());
+            licenseService.init();
+
+            String currentDeviceId = com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator
+                .generateDeviceId(deviceInfoService.getDeviceInfo());
+
+            com.miduo.cloud.entity.enums.LicenseStatusEnum status =
+                licenseService.getCurrentLicenseStatus(currentDeviceId);
+            com.miduo.cloud.frontend.service.LicenseService.LicenseInfo licenseInfo =
+                licenseService.getLicenseInfo(currentDeviceId);
+            long remainingDays = licenseInfo.getRemainingDays();
+
+            String statusType;
+            String statusText;
+            String tooltipText;
+            String expiredDay = licenseInfo.getExpireDate() != null
+                ? licenseInfo.getExpireDate().toString() : "未知";
+
+            switch (status) {
+                case ACTIVATED:
+                    if (remainingDays > 30) {
+                        statusType = "normal";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay;
+                    } else if (remainingDays >= 7) {
+                        statusType = "warning";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠即将到期，请尽快续期";
+                    } else if (remainingDays > 0) {
+                        statusType = "urgent";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                    } else {
+                        statusType = "urgent";
+                        statusText = "授权剩余: 不足1天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                    }
+                    break;
+                case TRIAL_ACTIVE:
+                    statusType = "trial";
+                    statusText = remainingDays > 0
+                        ? "试用剩余: " + remainingDays + "天"
+                        : "试用剩余: 不足1天";
+                    tooltipText = "试用模式\n到期: " + expiredDay + "\n💡 点击激活正式版";
+                    break;
+                case TRIAL_EXPIRED:
+                    statusType = "expired";
+                    statusText = "试用已过期";
+                    tooltipText = "试用期已结束\n必须激活才能使用";
+                    break;
+                case EXPIRED:
+                    statusType = "expired";
+                    statusText = "已过期";
+                    tooltipText = "过期时间：" + expiredDay + "\n❌已过期，必须续期";
+                    break;
+                case UNACTIVATED:
+                default:
+                    statusType = "expired";
+                    statusText = "未激活";
+                    tooltipText = "软件未激活\n💡 点击进行激活";
+                    break;
+            }
+
+            Platform.runLater(() -> {
+                licenseStatusBox.getStyleClass().removeAll(
+                    "license-normal", "license-warning", "license-urgent",
+                    "license-expired", "license-trial");
+                licenseStatusBox.getStyleClass().add("license-" + statusType);
+                licenseStatusLabel.setText(statusText);
+                javafx.scene.control.Tooltip tooltip = new javafx.scene.control.Tooltip(tooltipText);
+                tooltip.setShowDelay(javafx.util.Duration.millis(200));
+                javafx.scene.control.Tooltip.install(licenseStatusBox, tooltip);
+            });
+
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                licenseStatusBox.getStyleClass().removeAll(
+                    "license-normal", "license-warning", "license-urgent",
+                    "license-expired", "license-trial");
+                licenseStatusBox.getStyleClass().add("license-expired");
+                licenseStatusLabel.setText("状态未知");
+            });
+        }
     }
 
     // ==================== 菜单事件处理 ====================
@@ -481,7 +574,11 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onLicenseInfo() {
-        showInfo("许可证信息", "当前许可证状态：已激活\n到期日期：长期有效");
+        try {
+            LicenseInfoController.showLicenseInfo();
+        } catch (Exception e) {
+            showInfo("打开许可证信息失败", e.getMessage());
+        }
     }
 
     @FXML
@@ -543,7 +640,7 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onAbout() {
-        showInfo("关于系统", "盒箱垛关联采集系统 v1.2\n石湾产线 2号机\n版权所有 © 米多科技");
+        showInfo("关于系统", "米多赋码采集关联系统 v1.2\n关联模式：盒箱垛关联\n部署站点：石湾产线\n版权所有 © 米多科技");
     }
 
     // ==================== 产品选择 ====================

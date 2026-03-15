@@ -10,7 +10,7 @@
             fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2MainController"
             prefWidth="1366" prefHeight="768"
             styleClass="shiwan-m2-root"
-            stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+            stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css,@../css/status-styles.css">
 
     <!-- ====================================================
          顶部菜单栏
@@ -65,15 +65,12 @@
                                 <Label text="当前生产信息" styleClass="shiwan-m2-card-title"/>
 
                                 <!-- 选择产品 -->
-                                <Label text="选择产品" styleClass="shiwan-m2-form-label-small"/>
-                                <HBox spacing="8" alignment="CENTER_LEFT">
-                                    <ComboBox fx:id="productComboBox"
-                                              promptText="-- 点击选择产品 --"
-                                              styleClass="shiwan-m2-product-combo"
-                                              HBox.hgrow="ALWAYS"
-                                              onAction="#onProductSelect"/>
-                                    <Button text="选择" onAction="#onOpenProductSelectDialog" styleClass="primary-button"/>
-                                </HBox>
+                                <Label text="产品选择" styleClass="shiwan-m2-form-label-small"/>
+                                <ComboBox fx:id="productComboBox"
+                                          promptText="点击选择产品"
+                                          styleClass="shiwan-m2-product-combo"
+                                          maxWidth="Infinity"
+                                          onAction="#onProductSelect"/>
 
                                 <!-- 产品编号（初始隐藏，选中后显示） -->
                                 <HBox fx:id="productCodeRow" spacing="8" alignment="CENTER_LEFT"
@@ -84,13 +81,15 @@
                                 </HBox>
 
                                 <!-- 生产单号 -->
-                                <VBox spacing="4">
-                                    <Label text="生产单号" styleClass="shiwan-m2-form-label-small"/>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <Label text="生产单号" styleClass="shiwan-m2-form-label-small"
+                                           minWidth="68"/>
                                     <TextField fx:id="orderNumField"
                                                text="20241201001"
                                                styleClass="shiwan-m2-order-input"
-                                               maxWidth="Infinity"/>
-                                </VBox>
+                                               prefHeight="40" minHeight="40" maxHeight="40"
+                                               HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                                </HBox>
 
                                 <!-- 分割线 + 采集规格设置 -->
                                 <Separator/>
@@ -124,14 +123,11 @@
                             </VBox>
                         </VBox>
 
-                        <!-- ——— 中间面板：三区 SplitPane（60%:20%:20%）——— -->
-                        <SplitPane orientation="VERTICAL"
-                                   dividerPositions="0.6, 0.8"
-                                   HBox.hgrow="ALWAYS"
-                                   styleClass="shiwan-m2-split-pane">
+                        <!-- ——— 中间面板：三区垂直布局 ——— -->
+                        <VBox spacing="12" HBox.hgrow="ALWAYS">
 
-                            <!-- 数据接收区（60%）-->
-                            <VBox styleClass="shiwan-m2-area-card">
+                            <!-- 数据接收区（占大部分高度）-->
+                            <VBox styleClass="shiwan-m2-area-card" VBox.vgrow="ALWAYS">
                                 <HBox styleClass="shiwan-m2-area-header-bar">
                                     <Label text="数据接收区" styleClass="shiwan-m2-area-header-label"/>
                                     <Label text="（最新在上）" styleClass="shiwan-m2-area-header-hint"/>
@@ -141,8 +137,8 @@
                                           styleClass="shiwan-m2-log-list"/>
                             </VBox>
 
-                            <!-- 操作日志（20%）-->
-                            <VBox styleClass="shiwan-m2-area-card">
+                            <!-- 操作日志 -->
+                            <VBox styleClass="shiwan-m2-area-card" prefHeight="150" minHeight="120">
                                 <HBox styleClass="shiwan-m2-area-header-bar">
                                     <Label text="操作日志" styleClass="shiwan-m2-area-header-label"/>
                                     <Label text="（最新在上）" styleClass="shiwan-m2-area-header-hint"/>
@@ -152,8 +148,8 @@
                                           styleClass="shiwan-m2-log-list"/>
                             </VBox>
 
-                            <!-- 报警信息（20%）-->
-                            <VBox styleClass="shiwan-m2-area-card">
+                            <!-- 报警信息 -->
+                            <VBox styleClass="shiwan-m2-area-card" prefHeight="120" minHeight="100">
                                 <HBox styleClass="shiwan-m2-area-header-bar">
                                     <Label text="报警信息" styleClass="shiwan-m2-area-header-label"/>
                                     <Label text="（最新在上）" styleClass="shiwan-m2-area-header-hint"/>
@@ -162,17 +158,17 @@
                                           VBox.vgrow="ALWAYS"
                                           styleClass="shiwan-m2-log-list"/>
                             </VBox>
-                        </SplitPane>
+                        </VBox>
 
                         <!-- ——— 右侧面板（336px）——— -->
                         <VBox prefWidth="336" minWidth="336" maxWidth="336" spacing="12">
 
-                            <!-- 单位实时统计（填充剩余高度）-->
-                            <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="8">
+                            <!-- 单位实时统计 -->
+                            <VBox styleClass="shiwan-m2-card" spacing="8">
                                 <Label text="单位实时统计" styleClass="shiwan-m2-card-title"/>
 
                                 <!-- 第1行：当前箱数 | 每垛箱数 -->
-                                <HBox spacing="8" VBox.vgrow="ALWAYS">
+                                <HBox spacing="8" prefHeight="115" maxHeight="115">
                                     <VBox styleClass="shiwan-m2-stat-card"
                                           HBox.hgrow="ALWAYS" alignment="CENTER" spacing="6">
                                         <Label text="当前箱数" styleClass="shiwan-m2-stat-label"/>
@@ -188,7 +184,7 @@
                                 </HBox>
 
                                 <!-- 第2行：当前盒数 | 每箱盒数 -->
-                                <HBox spacing="8" VBox.vgrow="ALWAYS">
+                                <HBox spacing="8" prefHeight="115" maxHeight="115">
                                     <VBox styleClass="shiwan-m2-stat-card"
                                           HBox.hgrow="ALWAYS" alignment="CENTER" spacing="6">
                                         <Label text="当前盒数" styleClass="shiwan-m2-stat-label"/>
@@ -213,7 +209,7 @@
                                 </HBox>
 
                                 <!-- 总剔除数 -->
-                                <HBox alignment="CENTER_LEFT" spacing="8">
+                                <HBox styleClass="shiwan-m2-stats-line" alignment="CENTER_LEFT">
                                     <Label text="总剔除数"
                                            styleClass="shiwan-m2-stats-line-label"
                                            HBox.hgrow="ALWAYS"/>
@@ -222,62 +218,62 @@
                                 </HBox>
                             </VBox>
 
-                            <!-- 任务控制 -->
-                            <VBox styleClass="shiwan-m2-card" spacing="12">
+                            <!-- 任务控制（填充剩余高度）-->
+                            <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="12">
 
                                 <!-- 标题行 + 问号帮助图标 -->
-                                <HBox spacing="6" alignment="CENTER_LEFT">
+                                <HBox spacing="20" alignment="CENTER_LEFT">
                                     <Label text="任务控制" styleClass="shiwan-m2-card-title"
-                                           style="-fx-border-width: 0; -fx-padding: 0;"
-                                           HBox.hgrow="ALWAYS"/>
+                                           style="-fx-border-width: 0; -fx-padding: 0;"/>
                                     <Button text="?" styleClass="shiwan-m2-help-btn"
                                             onAction="#onTaskHelp"/>
                                 </HBox>
 
-                                <!-- 第1行：开始采集 | 无需采集码 -->
-                                <HBox spacing="12">
+                                <GridPane hgap="12" vgap="14">
+                                    <columnConstraints>
+                                        <ColumnConstraints percentWidth="50"/>
+                                        <ColumnConstraints percentWidth="50"/>
+                                    </columnConstraints>
+
                                     <Button fx:id="startCaptureBtn" text="开始采集"
                                             styleClass="shiwan-m2-ctrl-btn-primary"
                                             onAction="#onToggleCapture"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="0" GridPane.rowIndex="0"/>
                                     <Button text="无需采集码"
                                             styleClass="shiwan-m2-ctrl-btn-outline-blue"
                                             onAction="#onNoCodeNeeded"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                                </HBox>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
-                                <!-- 第2行：关闭报警 | 强制满垛 -->
-                                <HBox spacing="12">
                                     <Button text="关闭报警"
                                             styleClass="shiwan-m2-ctrl-btn-red"
                                             onAction="#onCloseAlarm"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                                     <Button text="强制满垛"
                                             styleClass="shiwan-m2-ctrl-btn-green"
                                             onAction="#onForcePallet"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                                </HBox>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
-                                <!-- 第3行：提取工单未成垛 | 收回剔除 -->
-                                <HBox spacing="12">
                                     <Button text="提取工单未成垛"
                                             styleClass="shiwan-m2-ctrl-btn-primary"
                                             onAction="#onExtractUnfinished"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="0" GridPane.rowIndex="2"/>
                                     <Button text="收回剔除"
                                             styleClass="shiwan-m2-ctrl-btn-outline-blue"
                                             onAction="#onRetractReject"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                                </HBox>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
-                                <!-- 第4行：剔除数清零（单独，左半） -->
-                                <HBox spacing="12">
                                     <Button text="剔除数清零"
                                             styleClass="shiwan-m2-ctrl-btn-outline-red"
                                             onAction="#onResetRejectCount"
-                                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                                    <Region HBox.hgrow="ALWAYS"/>
-                                </HBox>
+                                            maxWidth="Infinity"
+                                            GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                                </GridPane>
                             </VBox>
                         </VBox>
                     </HBox>
@@ -329,23 +325,25 @@
         <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="12">
             <padding><Insets top="0" bottom="0" left="16" right="16"/></padding>
 
-            <!-- 激活状态 -->
-            <Label fx:id="activationStatusLabel"
-                   text="● 已激活"
-                   styleClass="shiwan-m2-activation-badge"/>
+            <!-- 关联模式 · 品牌站点 -->
+            <Label text="盒箱垛关联 · 石湾"
+                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280;"/>
+
+            <!-- 弹性空白 -->
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <!-- 许可证状态 -->
+            <HBox fx:id="licenseStatusBox" styleClass="license-status-box" alignment="CENTER" spacing="5"
+                  onMouseClicked="#onLicenseStatusClick">
+                <Region fx:id="licenseStatusDot" styleClass="license-status-dot"/>
+                <Label fx:id="licenseStatusLabel" text="许可证：未激活" styleClass="license-status-text"/>
+            </HBox>
 
             <!-- 运行状态 -->
             <Label fx:id="runningStatusLabel"
                    text="待机"
                    styleClass="shiwan-m2-running-label"
                    visible="false" managed="false"/>
-
-            <!-- 弹性空白 -->
-            <Region HBox.hgrow="ALWAYS"/>
-
-            <!-- 系统名称 -->
-            <Label text="盒箱垛关联采集系统 - 石湾2号机"
-                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280;"/>
 
             <!-- 当前时间 -->
             <Label fx:id="currentTimeLabel"

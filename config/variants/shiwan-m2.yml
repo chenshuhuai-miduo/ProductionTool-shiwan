@@ -2,7 +2,7 @@
 # 石湾2号机（盒箱垛关联软件）
 
 app:
-  name: 赋码采集关联系统-石湾2号机
+  name: 米多赋码采集关联系统
 
 build:
   variant: shiwan

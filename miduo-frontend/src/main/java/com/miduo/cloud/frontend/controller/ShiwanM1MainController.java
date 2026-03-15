@@ -18,6 +18,7 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.util.Duration;
 
 import java.net.URL;
@@ -57,8 +58,12 @@ public class ShiwanM1MainController implements Initializable {
     /** 右侧分隔面板 */
     @FXML private SplitPane rightSplitPane;
 
-    /** 状态栏：授权剩余天数标签 */
-    @FXML private Label activationStatusLabel;
+    /** 许可证状态容器 */
+    @FXML private HBox licenseStatusBox;
+    /** 许可证状态圆点 */
+    @FXML private Region licenseStatusDot;
+    /** 许可证状态文本 */
+    @FXML private Label licenseStatusLabel;
 
     /** 状态栏：采集中运行指示标签 */
     @FXML private Label runningStatusLabel;
@@ -116,11 +121,112 @@ public class ShiwanM1MainController implements Initializable {
         addOpLog("系统启动完成，等待设备连接...", LogType.NORMAL);
     }
 
-    /** 从许可证服务读取激活状态并更新状态栏 */
+    /** 初始化并更新许可证状态显示 */
     private void initActivationStatus() {
-        // 此处可对接 LicenseService 获取剩余天数；暂设为隐藏
-        activationStatusLabel.setVisible(false);
-        activationStatusLabel.setManaged(false);
+        updateLicenseStatus();
+    }
+
+    /** 点击许可证状态标签，打开许可证信息弹窗 */
+    @FXML
+    private void onLicenseStatusClick(javafx.scene.input.MouseEvent event) {
+        try {
+            LicenseInfoController.showLicenseInfo();
+            updateLicenseStatus();
+        } catch (Exception e) {
+            showErrorAlert("打开许可证信息失败", e.getMessage());
+        }
+    }
+
+    /** 从许可证服务读取状态并更新状态栏 UI */
+    private void updateLicenseStatus() {
+        try {
+            com.miduo.cloud.frontend.service.DeviceInfoService deviceInfoService =
+                new com.miduo.cloud.frontend.service.DeviceInfoService();
+            com.miduo.cloud.frontend.service.LicenseService licenseService =
+                new com.miduo.cloud.frontend.service.LicenseService(
+                    new com.miduo.cloud.frontend.service.LicenseValidationService());
+            licenseService.init();
+
+            String currentDeviceId = com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator
+                .generateDeviceId(deviceInfoService.getDeviceInfo());
+
+            com.miduo.cloud.entity.enums.LicenseStatusEnum status =
+                licenseService.getCurrentLicenseStatus(currentDeviceId);
+            com.miduo.cloud.frontend.service.LicenseService.LicenseInfo licenseInfo =
+                licenseService.getLicenseInfo(currentDeviceId);
+            long remainingDays = licenseInfo.getRemainingDays();
+
+            String statusType;
+            String statusText;
+            String tooltipText;
+            String expiredDay = licenseInfo.getExpireDate() != null
+                ? licenseInfo.getExpireDate().toString() : "未知";
+
+            switch (status) {
+                case ACTIVATED:
+                    if (remainingDays > 30) {
+                        statusType = "normal";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay;
+                    } else if (remainingDays >= 7) {
+                        statusType = "warning";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠即将到期，请尽快续期";
+                    } else if (remainingDays > 0) {
+                        statusType = "urgent";
+                        statusText = "授权剩余: " + remainingDays + "天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                    } else {
+                        statusType = "urgent";
+                        statusText = "授权剩余: 不足1天";
+                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                    }
+                    break;
+                case TRIAL_ACTIVE:
+                    statusType = "trial";
+                    statusText = remainingDays > 0
+                        ? "试用剩余: " + remainingDays + "天"
+                        : "试用剩余: 不足1天";
+                    tooltipText = "试用模式\n到期: " + expiredDay + "\n💡 点击激活正式版";
+                    break;
+                case TRIAL_EXPIRED:
+                    statusType = "expired";
+                    statusText = "试用已过期";
+                    tooltipText = "试用期已结束\n必须激活才能使用";
+                    break;
+                case EXPIRED:
+                    statusType = "expired";
+                    statusText = "已过期";
+                    tooltipText = "过期时间：" + expiredDay + "\n❌已过期，必须续期";
+                    break;
+                case UNACTIVATED:
+                default:
+                    statusType = "expired";
+                    statusText = "未激活";
+                    tooltipText = "软件未激活\n💡 点击进行激活";
+                    break;
+            }
+
+            Platform.runLater(() -> {
+                licenseStatusBox.getStyleClass().removeAll(
+                    "license-normal", "license-warning", "license-urgent",
+                    "license-expired", "license-trial");
+                licenseStatusBox.getStyleClass().add("license-" + statusType);
+                licenseStatusLabel.setText(statusText);
+                javafx.scene.control.Tooltip tooltip = new javafx.scene.control.Tooltip(tooltipText);
+                tooltip.setShowDelay(javafx.util.Duration.millis(200));
+                javafx.scene.control.Tooltip.install(licenseStatusBox, tooltip);
+            });
+
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                licenseStatusBox.getStyleClass().removeAll(
+                    "license-normal", "license-warning", "license-urgent",
+                    "license-expired", "license-trial");
+                licenseStatusBox.getStyleClass().add("license-expired");
+                licenseStatusLabel.setText("状态未知");
+            });
+        }
     }
 
     // ==================== 菜单事件 ====================
@@ -135,7 +241,7 @@ public class ShiwanM1MainController implements Initializable {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("退出确认");
         confirm.setHeaderText(null);
-        confirm.setContentText("确认退出瓶盒关联采集系统？");
+        confirm.setContentText("确认退出米多赋码采集关联系统？");
         confirm.showAndWait().ifPresent(bt -> {
             if (bt == javafx.scene.control.ButtonType.OK) {
                 stopClock();
@@ -179,7 +285,7 @@ public class ShiwanM1MainController implements Initializable {
     private void onHelp() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("操作帮助");
-        alert.setHeaderText("石湾1号机（瓶盒关联软件）操作说明");
+        alert.setHeaderText("瓶盒关联模式 操作说明");
         alert.setContentText(
             "【日常操作流程】\n\n" +
             "1. 确认采集规格：左侧「采集规格设置」中确认「1盒 X瓶」。\n" +
@@ -199,11 +305,11 @@ public class ShiwanM1MainController implements Initializable {
     private void onAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("关于系统");
-        alert.setHeaderText("瓶盒关联采集系统 v1.2");
+        alert.setHeaderText("米多赋码采集关联系统 v1.2");
         alert.setContentText(
-            "石湾产线 1号机\n" +
-            "功能：瓶盒关联数据采集\n\n" +
-            "米多赋码采集关联系统\n" +
+            "关联模式：瓶盒关联\n" +
+            "部署站点：石湾产线\n\n" +
+            "版权所有 © 米多科技\n" +
             "技术支持：15917372153"
         );
         alert.showAndWait();

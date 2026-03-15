@@ -10,6 +10,7 @@ import com.miduo.cloud.frontend.service.LicenseService;
 import com.miduo.cloud.frontend.service.LicenseValidationService;
 import com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator;
 import com.miduo.cloud.frontend.util.OperateLogBatchManager;
+import com.miduo.cloud.frontend.util.CssHotReloader;
 import com.miduo.cloud.frontend.util.StageIconUtil;
 import com.miduo.cloud.entity.enums.LicenseStatusEnum;
 import javafx.application.Application;
@@ -30,6 +31,8 @@ import javafx.stage.Stage;
  */
 public class ShiwanM1FrontendApplication extends Application {
 
+    private CssHotReloader cssHotReloader;
+
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("========================================");
@@ -49,14 +52,19 @@ public class ShiwanM1FrontendApplication extends Application {
                 getClass().getResource("/fxml/ShiwanM1MainWindow.fxml"));
             Parent root = loader.load();
 
-            Scene scene = new Scene(root, 1366, 768);
+            Scene scene = new Scene(root, 1400, 900);
 
-            primaryStage.setTitle("瓶盒关联采集系统 - 石湾1号机");
+            primaryStage.setTitle("米多赋码采集关联系统");
             primaryStage.setScene(scene);
             primaryStage.setResizable(true);
             primaryStage.setMaximized(false);
 
             StageIconUtil.setStageIcon(primaryStage);
+
+            if (CssHotReloader.isDevMode()) {
+                cssHotReloader = new CssHotReloader(scene, "/fxml/ShiwanM1MainWindow.fxml");
+                cssHotReloader.start();
+            }
 
             // 点 X 最小化而非退出（工控机常驻程序）
             primaryStage.setOnCloseRequest(event -> {
@@ -66,7 +74,7 @@ public class ShiwanM1FrontendApplication extends Application {
 
             primaryStage.show();
 
-            System.out.println("✓ 石湾1号机界面启动成功！窗口大小: 1366x768");
+            System.out.println("✓ 石湾 1 号机界面启动成功！窗口大小：1400x900");
 
         } catch (Exception e) {
             System.err.println("✗ 启动失败！" + e.getMessage());
@@ -77,6 +85,9 @@ public class ShiwanM1FrontendApplication extends Application {
 
     @Override
     public void stop() throws Exception {
+        if (cssHotReloader != null) {
+            cssHotReloader.stop();
+        }
         OperateLogBatchManager.getInstance().stop();
         super.stop();
         System.out.println("✓ 石湾1号机应用已安全退出");

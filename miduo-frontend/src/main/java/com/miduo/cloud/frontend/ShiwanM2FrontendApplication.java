@@ -9,6 +9,7 @@ import com.miduo.cloud.frontend.service.LicenseService;
 import com.miduo.cloud.frontend.service.LicenseValidationService;
 import com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator;
 import com.miduo.cloud.frontend.util.OperateLogBatchManager;
+import com.miduo.cloud.frontend.util.CssHotReloader;
 import com.miduo.cloud.frontend.util.StageIconUtil;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
@@ -29,6 +30,9 @@ import javafx.stage.Stage;
  * </p>
  */
 public class ShiwanM2FrontendApplication extends Application {
+
+    private CssHotReloader cssHotReloader;
+
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("========================================");
@@ -53,14 +57,19 @@ public class ShiwanM2FrontendApplication extends Application {
                 getClass().getResource("/fxml/ShiwanM2MainWindow.fxml"));
             Parent root = loader.load();
 
-            Scene scene = new Scene(root, 1366, 768);
+            Scene scene = new Scene(root, 1400, 900);
 
-            primaryStage.setTitle("盒箱垛关联采集系统 - 石湾2号机");
+            primaryStage.setTitle("米多赋码采集关联系统");
             primaryStage.setScene(scene);
             primaryStage.setResizable(true);
             primaryStage.setMaximized(false);
 
             StageIconUtil.setStageIcon(primaryStage);
+
+            if (CssHotReloader.isDevMode()) {
+                cssHotReloader = new CssHotReloader(scene, "/fxml/ShiwanM2MainWindow.fxml");
+                cssHotReloader.start();
+            }
 
             // 点 X 最小化而非退出（工控机常驻程序）
             primaryStage.setOnCloseRequest(event -> {
@@ -70,7 +79,7 @@ public class ShiwanM2FrontendApplication extends Application {
 
             primaryStage.show();
 
-            System.out.println("✓ 石湾2号机界面启动成功！窗口大小: 1366x768");
+            System.out.println("✓ 石湾 2 号机界面启动成功！窗口大小：1400x900");
 
         } catch (Exception e) {
             System.err.println("✗ 启动失败！" + e.getMessage());
@@ -81,6 +90,9 @@ public class ShiwanM2FrontendApplication extends Application {
 
     @Override
     public void stop() throws Exception {
+        if (cssHotReloader != null) {
+            cssHotReloader.stop();
+        }
         OperateLogBatchManager.getInstance().stop();
         super.stop();
         System.out.println("✓ 石湾2号机应用已安全退出");

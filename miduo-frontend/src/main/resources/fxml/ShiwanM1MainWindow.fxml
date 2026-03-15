@@ -14,7 +14,7 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.miduo.cloud.frontend.controller.ShiwanM1MainController"
             styleClass="shiwan-m1-root"
-            stylesheets="@../css/base-styles.css,@../css/shiwan-m1-styles.css"
+            stylesheets="@../css/base-styles.css,@../css/shiwan-m1-styles.css,@../css/status-styles.css"
             prefWidth="1366" prefHeight="768">
 
     <!-- ==================== 菜单栏 ==================== -->
@@ -175,23 +175,23 @@
     <!-- ==================== 状态栏 ==================== -->
     <bottom>
         <HBox styleClass="status-bar" spacing="15" alignment="CENTER_LEFT">
-            <!-- 授权剩余天数（激活后才显示） -->
-            <Label fx:id="activationStatusLabel"
-                   styleClass="shiwan-m1-activation-badge"
-                   text="授权剩余: 0天"
-                   visible="false"
-                   managed="false"/>
+            <!-- 关联模式 · 品牌站点 -->
+            <Label text="瓶盒关联 · 石湾"
+                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280;"/>
             <!-- 弹性占位 -->
             <Region HBox.hgrow="ALWAYS"/>
+            <!-- 许可证状态 -->
+            <HBox fx:id="licenseStatusBox" styleClass="license-status-box" alignment="CENTER" spacing="5"
+                  onMouseClicked="#onLicenseStatusClick">
+                <Region fx:id="licenseStatusDot" styleClass="license-status-dot"/>
+                <Label fx:id="licenseStatusLabel" text="许可证：未激活" styleClass="license-status-text"/>
+            </HBox>
             <!-- 采集中指示（运行时显示） -->
             <Label fx:id="runningStatusLabel"
                    text="● 采集中"
                    styleClass="shiwan-m1-running-label"
                    visible="false"
                    managed="false"/>
-            <!-- 系统标识 -->
-            <Label text="瓶盒关联采集系统 - 1号机"
-                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280;"/>
             <!-- 实时时钟 -->
             <Label fx:id="currentTimeLabel" text="2026-03-10 12:00:00"/>
         </HBox>

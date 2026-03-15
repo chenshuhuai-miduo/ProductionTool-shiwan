@@ -2,7 +2,7 @@
 # 石湾1号机（瓶盒关联软件）
 
 app:
-  name: 赋码采集关联系统-石湾1号机
+  name: 米多赋码采集关联系统
 
 build:
   variant: shiwan
