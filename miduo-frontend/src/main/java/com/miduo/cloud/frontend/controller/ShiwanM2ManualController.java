@@ -116,8 +116,6 @@ public class ShiwanM2ManualController implements Initializable {
     private void startCapture() {
         isRunning = true;
         startBtn.setText("停止采集");
-        startBtn.getStyleClass().removeAll("sw2-btn-primary");
-        startBtn.getStyleClass().add("shiwan-m2-ctrl-btn-primary");
         startBtn.getStyleClass().add("running");
 
         bottlesPerBoxField.setEditable(false);
@@ -131,8 +129,6 @@ public class ShiwanM2ManualController implements Initializable {
         isRunning = false;
         startBtn.setText("开始采集");
         startBtn.getStyleClass().remove("running");
-        startBtn.getStyleClass().remove("shiwan-m2-ctrl-btn-primary");
-        startBtn.getStyleClass().add("sw2-btn-primary");
 
         bottlesPerBoxField.setEditable(true);
         addOpLog(now() + "  手工采集已停止", ShiwanM2MainController.LogType.INFO);

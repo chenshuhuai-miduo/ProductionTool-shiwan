@@ -17,94 +17,154 @@
                    styleClass="sw2-query-input"
                    HBox.hgrow="ALWAYS"
                    onKeyPressed="#onInputKeyPressed"/>
-        <Button text="正向查询" styleClass="sw2-btn-primary"
-                onAction="#onForwardQuery"
-                minHeight="40" prefHeight="40" style="-fx-padding:0 18px;"/>
-        <Button text="反向查询" styleClass="sw2-btn-green"
-                onAction="#onReverseQuery"
-                minHeight="40" prefHeight="40" style="-fx-padding:0 18px;"/>
+        <Button text="查询" styleClass="sw2-btn-primary"
+                onAction="#onQuery"
+                minHeight="40" prefHeight="40" style="-fx-padding:0 20px;"/>
         <Button text="清空" styleClass="sw2-btn-outline"
                 onAction="#onClear"
                 minHeight="40" prefHeight="40" style="-fx-padding:0 14px;"/>
         <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
-        <Label fx:id="queryStatusLabel" text="未查询" styleClass="sw2-query-status-idle"/>
     </HBox>
 
-    <!-- 结果区（StackPane：默认空状态/查询结果切换）-->
-    <StackPane VBox.vgrow="ALWAYS">
+    <!-- 主内容区：左右分栏 -->
+    <HBox VBox.vgrow="ALWAYS" spacing="12">
 
-        <!-- 空状态（默认显示）-->
-        <VBox fx:id="emptyPane" alignment="CENTER" spacing="12">
-            <Label text="🔍" style="-fx-font-size:48px;"/>
-            <Label text="请输入码进行正向或反向查询" style="-fx-font-size:15px; -fx-text-fill:#9CA3AF;"/>
-        </VBox>
+        <!-- 左侧：码关联信息（填充剩余宽度）-->
+        <VBox HBox.hgrow="ALWAYS" styleClass="sw2-result-panel" spacing="0">
 
-        <!-- 正向查询结果（code → 下级）-->
-        <VBox fx:id="forwardResultPane" visible="false" managed="false" spacing="10">
-            <!-- 查询码信息 -->
-            <HBox styleClass="sw2-query-bar" spacing="12" alignment="CENTER_LEFT">
-                <Label text="查询码信息：" styleClass="sw2-filter-label"/>
-                <Label text="码值：" styleClass="sw2-filter-label"/>
-                <Label fx:id="fwdCodeValue" text="" styleClass="sw2-code-value-label"
-                       style="-fx-text-fill:#2563EB;"/>
-                <Label text="层级：" styleClass="sw2-filter-label"/>
-                <Label fx:id="fwdCodeType" text="" styleClass="sw2-badge-blue"/>
-                <Label text="采集时间：" styleClass="sw2-filter-label"/>
-                <Label fx:id="fwdCodeTime" text="" styleClass="sw2-filter-label"
-                       style="-fx-font-weight: normal;"/>
-            </HBox>
-            <!-- 正向结果表格 -->
-            <VBox styleClass="sw2-result-panel" VBox.vgrow="ALWAYS">
-                <Label fx:id="fwdResultTitle" text="正向查询结果（直接下级）："
-                       styleClass="sw2-result-header"/>
-                <Label fx:id="fwdCountLabel" text="" style="-fx-font-size:13px; -fx-text-fill:#6B7280; -fx-padding:4px 16px;"/>
-                <TableView fx:id="fwdTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
-                    <columns>
-                        <TableColumn fx:id="fwdColSeq"  text="序号"   prefWidth="60"  minWidth="50"/>
-                        <TableColumn fx:id="fwdColCode" text="码值"   prefWidth="200" minWidth="150"/>
-                        <TableColumn fx:id="fwdColTime" text="采集时间" prefWidth="180" minWidth="150"/>
-                    </columns>
-                    <placeholder><Label text="暂无数据" style="-fx-text-fill:#9CA3AF;"/></placeholder>
-                </TableView>
-            </VBox>
-        </VBox>
-
-        <!-- 反向查询结果（code → 上级路径 + 同级）-->
-        <VBox fx:id="reverseResultPane" visible="false" managed="false" spacing="10">
-            <!-- 查询码信息 -->
-            <HBox styleClass="sw2-query-bar" spacing="12" alignment="CENTER_LEFT">
-                <Label text="查询码信息：" styleClass="sw2-filter-label"/>
-                <Label text="码值：" styleClass="sw2-filter-label"/>
-                <Label fx:id="revCodeValue" text="" styleClass="sw2-code-value-label"
-                       style="-fx-text-fill:#2563EB;"/>
-                <Label text="层级：" styleClass="sw2-filter-label"/>
-                <Label fx:id="revCodeType" text="" styleClass="sw2-badge-blue"/>
-                <Label text="采集时间：" styleClass="sw2-filter-label"/>
-                <Label fx:id="revCodeTime" text="" styleClass="sw2-filter-label"
-                       style="-fx-font-weight: normal;"/>
+            <!-- 标题行 + 条数 -->
+            <HBox alignment="CENTER_LEFT" spacing="16" minHeight="48"
+                  style="-fx-padding: 8px 16px 8px 16px; -fx-border-color: transparent transparent #E5E7EB transparent; -fx-border-width: 0 0 1px 0;">
+                <Label text="码关联信息" styleClass="sw2-result-header" style="-fx-border-width:0;"/>
+                <Label fx:id="countLabel" text="" styleClass="sw2-query-status-ok"/>
             </HBox>
 
-            <!-- 上级关联路径（动态生成）-->
-            <VBox styleClass="sw2-result-panel">
-                <Label text="上级关联路径：" styleClass="sw2-result-header"/>
-                <HBox fx:id="chainBox" spacing="8" alignment="CENTER_LEFT"
-                      style="-fx-padding:16px; -fx-background-color:#F3F4F6; -fx-background-radius:0 0 10px 10px;">
-                    <Label text="—" style="-fx-text-fill:#9CA3AF; -fx-font-size:14px;"/>
-                </HBox>
+            <!-- 空状态 -->
+            <VBox fx:id="emptyPane" VBox.vgrow="ALWAYS" alignment="CENTER" spacing="12">
+                <Label text="🔍" style="-fx-font-size:40px;"/>
+                <Label text="请输入码进行查询"
+                       style="-fx-font-size:16px; -fx-text-fill:#9CA3AF;"/>
             </VBox>
 
-            <!-- 同级数据表格 -->
-            <VBox styleClass="sw2-result-panel" VBox.vgrow="ALWAYS">
-                <Label fx:id="siblingTitle" text="同级数据：" styleClass="sw2-result-header"/>
-                <TableView fx:id="siblingTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
-                    <columns>
-                        <TableColumn fx:id="sibColCode" text="码值"   prefWidth="220" minWidth="160"/>
-                        <TableColumn fx:id="sibColTime" text="采集时间" prefWidth="180" minWidth="150"/>
-                    </columns>
-                    <placeholder><Label text="暂无同级数据" style="-fx-text-fill:#9CA3AF;"/></placeholder>
-                </TableView>
-            </VBox>
+            <!-- 分层结果表格（序号 + 四层码）-->
+            <TableView fx:id="resultTable" VBox.vgrow="ALWAYS"
+                       styleClass="sw2-table" fixedCellSize="52"
+                       visible="false" managed="false">
+                <columns>
+                    <TableColumn fx:id="colSeq" text="序号"
+                                 prefWidth="60" minWidth="50" maxWidth="70"/>
+                    <TableColumn fx:id="colL1"  text="第一层（瓶码）"
+                                 prefWidth="210" minWidth="130"/>
+                    <TableColumn fx:id="colL2"  text="第二层（盒码）"
+                                 prefWidth="210" minWidth="130"/>
+                    <TableColumn fx:id="colL3"  text="第三层（箱码）"
+                                 prefWidth="160" minWidth="100"/>
+                    <TableColumn fx:id="colL4"  text="第四层（垛码）"
+                                 prefWidth="160" minWidth="100"/>
+                </columns>
+                <placeholder>
+                    <Label text="暂无数据" style="-fx-text-fill:#9CA3AF; -fx-font-size:16px;"/>
+                </placeholder>
+            </TableView>
         </VBox>
 
-    </StackPane>
+        <!-- 右侧：具体信息（固定宽度）-->
+        <VBox prefWidth="300" minWidth="260" maxWidth="360"
+              styleClass="sw2-result-panel" spacing="0">
+
+            <HBox alignment="CENTER_LEFT" minHeight="48"
+                  style="-fx-padding: 8px 16px 8px 16px; -fx-border-color: transparent transparent #E5E7EB transparent; -fx-border-width: 0 0 1px 0;">
+                <Label text="具体信息" styleClass="sw2-result-header" style="-fx-border-width:0;"/>
+            </HBox>
+
+            <!-- 右侧空状态 -->
+            <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS"
+                  alignment="CENTER" spacing="8">
+                <Label text="请点击左侧记录"
+                       style="-fx-font-size:15px; -fx-text-fill:#9CA3AF;"/>
+                <Label text="查看详细信息"
+                       style="-fx-font-size:15px; -fx-text-fill:#9CA3AF;"/>
+            </VBox>
+
+            <!-- 详情内容（选中行后显示）-->
+            <ScrollPane fx:id="detailScrollPane" VBox.vgrow="ALWAYS"
+                        fitToWidth="true" visible="false" managed="false"
+                        style="-fx-background-color:transparent; -fx-background:transparent; -fx-border-width:0;">
+                <VBox spacing="16" style="-fx-padding: 12px 16px 16px 16px;">
+
+                    <!-- 码详细信息 -->
+                    <VBox spacing="8">
+                        <Label text="码详细信息"
+                               style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
+                        <Separator/>
+                        <GridPane hgap="8" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="72" maxWidth="72"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="瓶码" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <Label fx:id="detBottle" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                            <Label text="盒码" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                            <Label fx:id="detBox" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                            <Label text="箱码" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                            <Label fx:id="detCase" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                            <Label text="垛码" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                            <Label fx:id="detPallet" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                            <Label text="采集时间" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                            <Label fx:id="detTime" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                            <Label text="是否关联" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                            <Label fx:id="detLinked" text="—"
+                                   style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#059669;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- 产品信息 -->
+                    <VBox spacing="8">
+                        <Label text="产品信息"
+                               style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
+                        <Separator/>
+                        <GridPane hgap="8" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="72" maxWidth="72"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="产品编号" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <Label fx:id="detProductCode" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                            <Label text="产品名称" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                            <Label fx:id="detProductName" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                            <Label text="生产单号" styleClass="sw2-field-label"
+                                   GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                            <Label fx:id="detOrderNo" text="—"
+                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        </GridPane>
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+        </VBox>
+    </HBox>
 </VBox>
