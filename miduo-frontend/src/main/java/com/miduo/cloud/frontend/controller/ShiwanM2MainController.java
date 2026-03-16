@@ -27,11 +27,13 @@ import javafx.scene.control.TextInputDialog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.miduo.cloud.application.shiwan.UploadLogBus;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
+import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -156,14 +158,6 @@ public class ShiwanM2MainController implements Initializable {
     private static final int MAX_LOG_ENTRIES       = 1000;
     private static final DateTimeFormatter TIME_FMT     = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd  HH:mm:ss");
-    /** 设备类别代码：报警器 */
-    private static final int CATEGORY_ALARM_DEVICE = 5;
-    /** 设备类别代码：剔除装置 */
-    private static final int CATEGORY_REJECT_DEVICE = 6;
-    /** 报警器停止报警指令（参照致美斋） */
-    private static final String CMD_ALARM_STOP = "01";
-    /** 剔除装置收回指令（参照致美斋放行/复位指令） */
-    private static final String CMD_REJECT_RETRACT = "01";
 
     private final ObservableList<LogEntry>  dataLogItems   = FXCollections.observableArrayList();
     private final ObservableList<LogEntry>  opLogItems     = FXCollections.observableArrayList();
@@ -206,11 +200,58 @@ public class ShiwanM2MainController implements Initializable {
         setupInitialLogs();
         initActivationStatus();
         applyPageConfig();
+        registerPalletEventListener();
         Platform.runLater(() -> {
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
         });
         loadSpecFromSettings();
+    }
+
+    /**
+     * 注册 UploadLogBus 垛状态事件监听：
+     * UPLOADING → 实时上传数据区新增条目；
+     * SUCCESS/FAILED → 更新条目状态 + 数据接收区追加结果日志。
+     */
+    private void registerPalletEventListener() {
+        UploadLogBus.registerPalletEventListener((palletCode, boxCount, status, errorMsg) ->
+            Platform.runLater(() -> {
+                String time = LocalDateTime.now().format(TIME_FMT);
+                ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+                switch (status) {
+                    case UPLOADING:
+                        uploadItems.add(0, new UploadItem(palletCode, boxCount + "箱", UploadStatus.UPLOADING));
+                        break;
+                    case SUCCESS:
+                        updateUploadItemStatus(palletCode, UploadStatus.DONE);
+                        addDataLog(time + "  垛码上传成功：" + palletCode + " " + boxCount + "箱", LogType.SUCCESS);
+                        // 文档：上传成功 → 绿灯常亮，1 分钟后自动熄灭
+                        hw.greenLightOn();
+                        break;
+                    case FAILED:
+                        updateUploadItemStatus(palletCode, UploadStatus.FAILED);
+                        String errInfo = (errorMsg != null && !errorMsg.isEmpty()) ? "：" + errorMsg : "";
+                        addDataLog(time + "  垛码上传失败：" + palletCode + " " + boxCount + "箱" + errInfo, LogType.ERROR);
+                        addAlarmLog(time + "  上传失败：" + palletCode + (errInfo.isEmpty() ? "" : errInfo), LogType.ERROR);
+                        // 文档：上传失败 → 红灯常亮 + 蜂鸣
+                        hw.redLightAndBuzzer();
+                        break;
+                    default:
+                        break;
+                }
+            })
+        );
+    }
+
+    /** 按垛码查找 uploadItems 中对应条目并更新状态，更新后刷新列表 */
+    private void updateUploadItemStatus(String palletCode, UploadStatus newStatus) {
+        for (UploadItem item : uploadItems) {
+            if (palletCode.equals(item.palletCode)) {
+                item.status = newStatus;
+                break;
+            }
+        }
+        uploadDataList.refresh();
     }
 
     /** 根据系统设置中的页面配置，调整主界面 Tab 的显示与顺序（重启后生效） */
@@ -337,10 +378,6 @@ public class ShiwanM2MainController implements Initializable {
     private void setupInitialLogs() {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  系统启动完成，正在初始化...", LogType.INFO);
-
-        // 示例上传数据
-        uploadItems.add(new UploadItem("垛 P20241201001", "70箱", UploadStatus.PENDING));
-        uploadItems.add(new UploadItem("垛 P20241201002", "70箱", UploadStatus.DONE));
     }
 
     /** 主界面打开后异步检测本机数据库连接，结果写入操作日志 */
@@ -1132,6 +1169,9 @@ public class ShiwanM2MainController implements Initializable {
 
                 case "BOX_FAIL":
                     addDataLog(time + "  " + msg, LogType.ERROR);
+                    addAlarmLog(time + "  " + msg, LogType.WARN);
+                    // 盒码校验失败：黄灯告警（实物待后续在箱级剔除，不立即触发剔除装置）
+                    ShiwanM2HardwareService.getInstance().yellowLightOn();
                     break;
 
                 case "CASE_PENDING":
@@ -1179,8 +1219,15 @@ public class ShiwanM2MainController implements Initializable {
                 case "ASSOC_FAIL": {
                     String reason = evtData != null && evtData.has("reason") ? evtData.get("reason").asText() : msg;
                     addAlarmLog(time + "  关联失败：" + reason, LogType.ERROR);
+                    // 文档：盒箱关联失败 → 触发剔除装置 + 红灯+蜂鸣
+                    ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+                    hw.triggerRejection();
+                    hw.redLightAndBuzzer();
+                    totalRejectCount++;
+                    if (rejectCountLabel != null) rejectCountLabel.setText(String.valueOf(totalRejectCount));
                     break;
                 }
+
 
                 case "BOX_CONNECTED":
                     addOpLog(time + "  " + msg, LogType.SUCCESS);
@@ -1342,16 +1389,10 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onCloseAlarm() {
-        boolean sent = DeviceConnectionManager.getInstance()
-                .sendToDeviceByCategory(CATEGORY_ALARM_DEVICE, CMD_ALARM_STOP);
+        ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+        hw.allLightsOff();
         String now = LocalDateTime.now().format(TIME_FMT);
-        if (sent) {
-            addOpLog(now + "  [报警器] 已发送停止报警指令: " + CMD_ALARM_STOP, LogType.INFO);
-            showInfo("关闭报警", "已通过串口向报警器发送停止报警指令。");
-        } else {
-            addAlarmLog(now + "  [报警器] 停止报警指令发送失败或设备未连接", LogType.WARN);
-            showWarn("关闭报警失败", "发送停止报警指令失败，请检查报警灯串口连接状态。");
-        }
+        addOpLog(now + "  [报警器] 已发送关闭报警指令", LogType.INFO);
     }
 
     @FXML
@@ -1497,16 +1538,8 @@ public class ShiwanM2MainController implements Initializable {
         confirm.setContentText("将通过串口向剔除装置发送收回动作指令。");
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            boolean sent = DeviceConnectionManager.getInstance()
-                    .sendToDeviceByCategory(CATEGORY_REJECT_DEVICE, CMD_REJECT_RETRACT);
-            String now = LocalDateTime.now().format(TIME_FMT);
-            if (sent) {
-                addOpLog(now + "  [剔除装置] 已发送收回指令: " + CMD_REJECT_RETRACT, LogType.INFO);
-                showInfo("收回剔除", "已通过串口向剔除装置发送收回指令。");
-            } else {
-                addAlarmLog(now + "  [剔除装置] 收回指令发送失败或设备未连接", LogType.WARN);
-                showWarn("收回剔除失败", "发送收回指令失败，请检查剔除装置串口连接状态。");
-            }
+            ShiwanM2HardwareService.getInstance().retractRejection();
+            addOpLog(LocalDateTime.now().format(TIME_FMT) + "  [剔除装置] 已发送收回指令", LogType.INFO);
         }
     }
 
@@ -1718,9 +1751,10 @@ public class ShiwanM2MainController implements Initializable {
 
     /** 上传状态枚举 */
     public enum UploadStatus {
-        PENDING, // 待上传
-        DONE,    // 已上传
-        FAILED   // 上传失败
+        PENDING,   // 待上传
+        UPLOADING, // 上传中
+        DONE,      // 已上传
+        FAILED     // 上传失败
     }
 
     /** 上传条目数据模型 */
@@ -1830,12 +1864,16 @@ public class ShiwanM2MainController implements Initializable {
             boxCountLbl.setText(item.boxCount);
 
             statusBadge.getStyleClass().removeAll(
-                    "shiwan-m2-badge-pending", "shiwan-m2-badge-done"
+                    "shiwan-m2-badge-pending", "shiwan-m2-badge-done", "shiwan-m2-badge-uploading"
             );
             switch (item.status) {
                 case DONE:
                     statusBadge.setText("已上传");
                     statusBadge.getStyleClass().add("shiwan-m2-badge-done");
+                    break;
+                case UPLOADING:
+                    statusBadge.setText("上传中");
+                    statusBadge.getStyleClass().add("shiwan-m2-badge-uploading");
                     break;
                 case FAILED:
                     statusBadge.setText("上传失败");

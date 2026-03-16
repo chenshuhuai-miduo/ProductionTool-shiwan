@@ -1,5 +1,8 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.frontend.util.HttpUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,10 +13,11 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -34,13 +38,13 @@ public class ShiwanM2QueryController implements Initializable {
     @FXML private Label     countLabel;
 
     // 左侧
-    @FXML private VBox                             emptyPane;
-    @FXML private TableView<String[]>              resultTable;
-    @FXML private TableColumn<String[], String>    colSeq;
-    @FXML private TableColumn<String[], String>    colL1;
-    @FXML private TableColumn<String[], String>    colL2;
-    @FXML private TableColumn<String[], String>    colL3;
-    @FXML private TableColumn<String[], String>    colL4;
+    @FXML private VBox                                emptyPane;
+    @FXML private TableView<QueryRow>                 resultTable;
+    @FXML private TableColumn<QueryRow, String>       colSeq;
+    @FXML private TableColumn<QueryRow, String>       colL1;
+    @FXML private TableColumn<QueryRow, String>       colL2;
+    @FXML private TableColumn<QueryRow, String>       colL3;
+    @FXML private TableColumn<QueryRow, String>       colL4;
 
     // 右侧
     @FXML private VBox       detailEmptyPane;
@@ -70,7 +74,7 @@ public class ShiwanM2QueryController implements Initializable {
 
     private void setupColumns() {
         // 序号列：居中、灰色
-        colSeq.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[0]));
+        colSeq.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().seq));
         colSeq.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -81,10 +85,10 @@ public class ShiwanM2QueryController implements Initializable {
         });
 
         // 四层码列：若等于输入码则红色高亮
-        colL1.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[1]));
-        colL2.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[2]));
-        colL3.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[3]));
-        colL4.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[4]));
+        colL1.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().bottleCode));
+        colL2.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().boxCode));
+        colL3.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().caseCode));
+        colL4.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().palletCode));
 
         applyHighlightCellFactory(colL1);
         applyHighlightCellFactory(colL2);
@@ -92,7 +96,7 @@ public class ShiwanM2QueryController implements Initializable {
         applyHighlightCellFactory(colL4);
     }
 
-    private void applyHighlightCellFactory(TableColumn<String[], String> col) {
+    private void applyHighlightCellFactory(TableColumn<QueryRow, String> col) {
         col.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -130,7 +134,7 @@ public class ShiwanM2QueryController implements Initializable {
         String code = queryInput.getText().trim();
         if (code.isEmpty()) return;
         inputCode = code;
-        doQuery(code);
+        doQueryAsync(code);
     }
 
     @FXML
@@ -168,21 +172,48 @@ public class ShiwanM2QueryController implements Initializable {
 
     // ==================== 查询逻辑 ====================
 
-    private void doQuery(String code) {
-        List<String[]> rows = findRowsByCode(code);
-        if (rows.isEmpty()) {
-            setStatus("err", "未找到该码信息");
+    private void doQueryAsync(String code) {
+        setStatus("loading", "正在查询...");
+        String url = "/api/shiwan-m2/code/query?code=" + encodeParam(code);
+        HttpUtil.asyncGet(url, response -> {
+            try {
+                ApiResult<Map<String, Object>> result = HttpUtil.parseJson(
+                        response, new TypeReference<ApiResult<Map<String, Object>>>() {});
+                if (result == null || result.getCode() != 200 || result.getData() == null) {
+                    setStatus("err", result == null ? "查询服务异常" : result.getMessage());
+                    countLabel.setText("");
+                    showEmpty();
+                    return;
+                }
+                Object rowsObj = result.getData().get("rows");
+                if (!(rowsObj instanceof List) || ((List<?>) rowsObj).isEmpty()) {
+                    setStatus("err", "未找到该码信息");
+                    countLabel.setText("");
+                    showEmpty();
+                    return;
+                }
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> rows = (List<Map<String, Object>>) rowsObj;
+                ObservableList<QueryRow> data = FXCollections.observableArrayList();
+                for (int i = 0; i < rows.size(); i++) {
+                    data.add(QueryRow.from(i + 1, rows.get(i)));
+                }
+                setStatus("ok", "查询成功");
+                countLabel.setText("已查询到 " + data.size() + " 条码信息");
+                resultTable.setItems(data);
+                resultTable.refresh();
+                showResult();
+                hideDetail();
+            } catch (Exception ex) {
+                setStatus("err", "查询服务异常");
+                countLabel.setText("");
+                showEmpty();
+            }
+        }, ex -> {
+            setStatus("err", "查询服务异常");
             countLabel.setText("");
             showEmpty();
-        } else {
-            setStatus("ok", "查询成功");
-            countLabel.setText("已查询到 " + rows.size() + " 条码信息");
-            ObservableList<String[]> data = FXCollections.observableArrayList(rows);
-            resultTable.setItems(data);
-            resultTable.refresh();
-            showResult();
-            hideDetail();
-        }
+        });
     }
 
     // ==================== 视图切换 ====================
@@ -203,77 +234,57 @@ public class ShiwanM2QueryController implements Initializable {
         detailScrollPane.setVisible(false);  detailScrollPane.setManaged(false);
     }
 
-    private void showDetail(String[] row) {
+    private void showDetail(QueryRow row) {
         detailEmptyPane.setVisible(false);   detailEmptyPane.setManaged(false);
         detailScrollPane.setVisible(true);   detailScrollPane.setManaged(true);
 
-        // row: [序号, 瓶码, 盒码, 箱码, 垛码]
-        detBottle.setText(row[1].isEmpty() ? "—" : row[1]);
-        detBox.setText(row[2].isEmpty()    ? "—" : row[2]);
-        detCase.setText(row[3].isEmpty()   ? "—" : row[3]);
-        detPallet.setText(row[4].isEmpty() ? "—" : row[4]);
-        detTime.setText("2024-12-01 10:30:00");
+        detBottle.setText(row.bottleCode.isEmpty() ? "—" : row.bottleCode);
+        detBox.setText(row.boxCode.isEmpty() ? "—" : row.boxCode);
+        detCase.setText(row.caseCode.isEmpty() ? "—" : row.caseCode);
+        detPallet.setText(row.palletCode.isEmpty() ? "—" : row.palletCode);
+        detTime.setText(row.collectTime.isEmpty() ? "-" : row.collectTime);
         detLinked.setText("已关联");
         detLinked.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#059669;");
-        detProductCode.setText("SP001");
-        detProductName.setText("商品001");
-        detOrderNo.setText("PO202602248710");
+        detProductCode.setText(row.productNo.isEmpty() ? "-" : row.productNo);
+        detProductName.setText(row.productName.isEmpty() ? "-" : row.productName);
+        detOrderNo.setText(row.orderNo.isEmpty() ? "-" : row.orderNo);
     }
 
     private void setStatus(String type, String text) {
         // 状态标签已移除，此处保留空实现供后续扩展
     }
 
-    // ==================== 模拟数据 ====================
-
-    /**
-     * 根据输入码查找所属垛的所有行数据。
-     * 行格式：[序号, 瓶码, 盒码, 箱码, 垛码]
-     *
-     * 数据结构（模拟）：
-     *   垛 P20241201
-     *   ├─ 箱 11 → 盒 20241201001002, 20241201002002, 20241201003002
-     *   │   每盒 4 瓶：20241201001001/005/009/013, ...
-     *   ├─ 箱 12 → 盒 20241201004002, 20241201005002, 20241201006002
-     *   └─ 箱 13 → 盒 20241201007002, 20241201008002, 20241201009002
-     */
-    private List<String[]> findRowsByCode(String code) {
-        List<String[]> allRows = buildMockData();
-        boolean found = allRows.stream().anyMatch(row ->
-                row[1].equals(code) || row[2].equals(code) ||
-                row[3].equals(code) || row[4].equals(code));
-        return found ? allRows : Collections.emptyList();
+    private String encodeParam(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
-    private List<String[]> buildMockData() {
-        List<String[]> rows = new ArrayList<>();
-        String pallet = "P20241201";
-        // 箱码 → 盒码前缀映射（每箱3盒，每盒4瓶）
-        String[][] caseBoxes = {
-            {"11", "20241201001", "20241201002", "20241201003"},
-            {"12", "20241201004", "20241201005", "20241201006"},
-            {"13", "20241201007", "20241201008", "20241201009"}
-        };
-        int seq = 1;
-        for (String[] cb : caseBoxes) {
-            String caseCode = cb[0];
-            for (int bi = 1; bi < cb.length; bi++) {
-                String boxPrefix = cb[bi];
-                String boxCode   = boxPrefix + "002";
-                // 每盒4瓶，瓶码尾号 001, 005, 009, 013
-                int[] bottleSuffixes = {1, 5, 9, 13};
-                for (int suffix : bottleSuffixes) {
-                    String bottleCode = boxPrefix + String.format("%03d", suffix);
-                    rows.add(new String[]{
-                            String.valueOf(seq++),
-                            bottleCode,
-                            boxCode,
-                            caseCode,
-                            pallet
-                    });
-                }
-            }
+    private static class QueryRow {
+        private String seq = "";
+        private String bottleCode = "";
+        private String boxCode = "";
+        private String caseCode = "";
+        private String palletCode = "";
+        private String collectTime = "";
+        private String productNo = "";
+        private String productName = "";
+        private String orderNo = "";
+
+        static QueryRow from(int seqNo, Map<String, Object> map) {
+            QueryRow row = new QueryRow();
+            row.seq = String.valueOf(seqNo);
+            row.bottleCode = value(map.get("bottleCode"));
+            row.boxCode = value(map.get("boxCode"));
+            row.caseCode = value(map.get("caseCode"));
+            row.palletCode = value(map.get("palletCode"));
+            row.collectTime = value(map.get("collectTime"));
+            row.productNo = value(map.get("productNo"));
+            row.productName = value(map.get("productName"));
+            row.orderNo = value(map.get("orderNo"));
+            return row;
         }
-        return rows;
+
+        private static String value(Object v) {
+            return v == null ? "" : String.valueOf(v);
+        }
     }
 }

@@ -60,6 +60,9 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     // ==================== 业务 - 上传配置 ====================
     @FXML private ToggleButton autoUploadToggle;
 
+    // ==================== 业务 - 入库仓库设置 ====================
+    @FXML private TextField warehouseNoField;
+
     // ==================== 页面配置开关 ====================
     @FXML private ToggleButton pageManualToggle;
     @FXML private ToggleButton pageQueryToggle;
@@ -138,6 +141,10 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (s.getUpload() != null) {
             autoUploadToggle.setSelected(s.getUpload().isAutoUpload());
             syncToggleStyle(autoUploadToggle);
+        }
+        if (warehouseNoField != null) {
+            String wno = s.getWarehouseNo();
+            warehouseNoField.setText(wno != null && !wno.isEmpty() ? wno : "001");
         }
         if (s.getPageVisible() != null) {
             if (Boolean.TRUE.equals(s.getPageVisible().get("manual"))) pageManualToggle.setSelected(true); else pageManualToggle.setSelected(false);
@@ -365,6 +372,20 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getUpload().setAutoUpload(autoUploadToggle.isSelected());
         saveSettings(s);
         showSuccess("上传配置", "上传配置已保存。\n自动上传：" + (autoUploadToggle.isSelected() ? "开启" : "关闭"));
+    }
+
+    @FXML
+    private void onSaveWarehouseNo() {
+        if (warehouseNoField == null) return;
+        String wno = warehouseNoField.getText().trim();
+        if (wno.isEmpty()) {
+            showError("输入有误", "仓库编号不能为空。");
+            return;
+        }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        s.setWarehouseNo(wno);
+        saveSettings(s);
+        showSuccess("入库仓库设置", "仓库编号已保存：" + wno);
     }
 
     private void saveSettings(ShiwanM2Settings s) {

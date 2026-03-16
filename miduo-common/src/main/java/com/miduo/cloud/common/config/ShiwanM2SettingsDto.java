@@ -84,6 +84,25 @@ public class ShiwanM2SettingsDto {
         public void setLineCode(String lineCode) { this.lineCode = lineCode; }
     }
 
+    /** 入库仓库编号（上传垛码关联数据时作为 warehouseno 入参，默认 001） */
+    private String warehouseNo = "001";
+    public String getWarehouseNo() { return warehouseNo; }
+    public void setWarehouseNo(String warehouseNo) { this.warehouseNo = warehouseNo; }
+
+    /** 上传配置（对应前端 ShiwanM2Settings.UploadConfig） */
+    private Upload upload;
+    public Upload getUpload() { return upload; }
+    public void setUpload(Upload upload) { this.upload = upload; }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Upload {
+        /** 自动上传开关：默认 true（成垛后自动上传至开放平台） */
+        private boolean autoUpload = true;
+        public boolean isAutoUpload() { return autoUpload; }
+        public void setAutoUpload(boolean autoUpload) { this.autoUpload = autoUpload; }
+    }
+
     /** 接口配置（后端读 shiwan-m2-settings.json 中的 api 节点，用于产品同步等） */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -98,6 +117,7 @@ public class ShiwanM2SettingsDto {
         private String syncCodeAndVirtualRelationPath;
         private String getSyncResultPath;
         private String productsListPath;
+        private String codePackageQueryPath;
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -118,5 +138,7 @@ public class ShiwanM2SettingsDto {
         public void setGetSyncResultPath(String getSyncResultPath) { this.getSyncResultPath = getSyncResultPath; }
         public String getProductsListPath() { return productsListPath; }
         public void setProductsListPath(String productsListPath) { this.productsListPath = productsListPath; }
+        public String getCodePackageQueryPath() { return codePackageQueryPath; }
+        public void setCodePackageQueryPath(String codePackageQueryPath) { this.codePackageQueryPath = codePackageQueryPath; }
     }
 }

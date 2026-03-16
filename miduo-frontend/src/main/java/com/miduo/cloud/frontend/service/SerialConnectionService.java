@@ -177,6 +177,49 @@ public class SerialConnectionService {
     }
     
     /**
+     * 向串口发送原始字节（用于需要严格 hex 协议的工业设备，如报警灯、剔除装置）
+     *
+     * @param data 要发送的字节数组
+     * @return 发送成功返回 true
+     */
+    public boolean sendBytes(byte[] data) {
+        if (!isConnected()) {
+            System.err.println("[串口] 发送失败：串口未打开");
+            if (errorHandler != null) errorHandler.accept("串口未打开，无法发送数据");
+            return false;
+        }
+        try {
+            int written = writeToPort(data);
+            if (written == data.length) {
+                System.out.printf("[串口] sendBytes 成功，字节数=%d%n", written);
+                return true;
+            }
+            System.err.printf("[串口] sendBytes 不完整：期望%d，实际%d%n", data.length, written);
+            return false;
+        } catch (Exception e) {
+            System.err.println("[串口] sendBytes 异常: " + e.getMessage());
+            if (errorHandler != null) errorHandler.accept("发送字节异常: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 使用反射调用 jSerialComm 的 writeBytes 方法（兼容不同版本 API）
+     */
+    private int writeToPort(byte[] bytes) throws Exception {
+        try {
+            Method m = SerialPort.class.getMethod("writeBytes", byte[].class, long.class);
+            return (int) m.invoke(serialPort, bytes, (long) bytes.length);
+        } catch (NoSuchMethodException ignored) {}
+        try {
+            Method m = SerialPort.class.getMethod("writeBytes", byte[].class, int.class);
+            return (int) m.invoke(serialPort, bytes, bytes.length);
+        } catch (NoSuchMethodException ignored) {}
+        Method m = SerialPort.class.getMethod("writeBytes", byte[].class);
+        return (int) m.invoke(serialPort, (Object) bytes);
+    }
+
+    /**
      * 发送数据到串口
      * 
      * @param data 要发送的字符串数据
@@ -192,87 +235,16 @@ public class SerialConnectionService {
         }
         
         try {
-            System.out.println("[串口] 准备发送数据: " + data);
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-            System.out.println("[串口] 数据字节数: " + bytes.length);
-            
-            int bytesWritten = -1;
-            boolean methodFound = false;
-            
-            // 使用反射查找并调用 writeBytes 方法
-            try {
-                // 首先打印所有可用的 writeBytes 方法
-                System.out.println("[串口] 查找 SerialPort 类中的 writeBytes 方法...");
-                Method[] methods = SerialPort.class.getMethods();
-                for (Method m : methods) {
-                    if (m.getName().equals("writeBytes")) {
-                        System.out.println("[串口] 找到方法: " + m.getName() + " 参数类型: " + java.util.Arrays.toString(m.getParameterTypes()));
-                    }
-                }
-                
-                // 尝试方法 1: writeBytes(byte[], long)
-                try {
-                    Method method = SerialPort.class.getMethod("writeBytes", byte[].class, long.class);
-                    System.out.println("[串口] 使用 writeBytes(byte[], long) 方法");
-                    bytesWritten = (int) method.invoke(serialPort, bytes, (long) bytes.length);
-                    methodFound = true;
-                } catch (NoSuchMethodException e) {
-                    System.out.println("[串口] writeBytes(byte[], long) 方法不存在");
-                }
-                
-                // 尝试方法 2: writeBytes(byte[], int)
-                if (!methodFound) {
-                    try {
-                        Method method = SerialPort.class.getMethod("writeBytes", byte[].class, int.class);
-                        System.out.println("[串口] 使用 writeBytes(byte[], int) 方法");
-                        bytesWritten = (int) method.invoke(serialPort, bytes, bytes.length);
-                        methodFound = true;
-                    } catch (NoSuchMethodException e) {
-                        System.out.println("[串口] writeBytes(byte[], int) 方法不存在");
-                    }
-                }
-                
-                // 尝试方法 3: writeBytes(byte[])
-                if (!methodFound) {
-                    try {
-                        Method method = SerialPort.class.getMethod("writeBytes", byte[].class);
-                        System.out.println("[串口] 使用 writeBytes(byte[]) 方法");
-                        bytesWritten = (int) method.invoke(serialPort, (Object) bytes);
-                        methodFound = true;
-                    } catch (NoSuchMethodException e) {
-                        System.out.println("[串口] writeBytes(byte[]) 方法不存在");
-                    }
-                }
-                
-                if (!methodFound) {
-                    System.err.println("[串口] 无法找到任何可用的 writeBytes 方法");
-                    return false;
-                }
-                
-            } catch (Exception e) {
-                System.err.println("[串口] 反射调用失败: " + e.getMessage());
-                e.printStackTrace();
-                return false;
-            }
-            
-            System.out.println("[串口] writeBytes 返回值: " + bytesWritten);
-            
+            int bytesWritten = writeToPort(bytes);
             if (bytesWritten == bytes.length) {
                 System.out.println("[串口] 发送数据成功: " + data + " (字节数=" + bytesWritten + ")");
                 return true;
-            } else if (bytesWritten > 0) {
-                System.err.println("[串口] 发送数据不完整: 期望" + bytes.length + "字节，实际" + bytesWritten + "字节");
-                return false;
-            } else if (bytesWritten == -1) {
-                System.err.println("[串口] 发送失败: 串口可能已关闭或不可写");
-                return false;
-            } else {
-                System.err.println("[串口] 发送数据失败: writeBytes 返回 " + bytesWritten);
-                return false;
             }
+            System.err.println("[串口] 发送数据不完整: 期望" + bytes.length + "字节，实际" + bytesWritten + "字节");
+            return false;
         } catch (Exception e) {
             System.err.println("[串口] 发送数据异常: " + e.getMessage());
-            e.printStackTrace();
             if (errorHandler != null) {
                 errorHandler.accept("发送数据异常: " + e.getMessage());
             }

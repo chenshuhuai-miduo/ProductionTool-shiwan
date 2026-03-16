@@ -1,5 +1,8 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.miduo.cloud.application.shiwan.UploadLogBus;
+import com.miduo.cloud.frontend.util.HttpUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,7 +15,6 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -21,10 +23,10 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
- * 数据上传 Tab 控制器
+ * 数据上传 Tab 控制器（P02-08）。
  * <p>
- * 左侧：实时上传日志 + 手动上传按钮。
- * 右侧：垛码状态查询、设为未上传/已上传管理。
+ * 左侧：手动上传按钮 + 实时上传日志（日志最新条目在最上方）。<br>
+ * 右侧：垛码查询表单 + 查询结果展示区 + 设为未上传/已上传操作。
  * </p>
  */
 public class ShiwanM2UploadController implements Initializable {
@@ -52,18 +54,28 @@ public class ShiwanM2UploadController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // 向 UploadLogBus 注册日志监听，后端服务通过总线推送日志到本控制器
+        UploadLogBus.register((msg, color) -> addLog(msg, mapColor(color)));
+
         uploadLogList.setItems(logItems);
         uploadLogList.setCellFactory(lv -> new UploadLogCell());
 
-        // 加入示例历史日志
-        addLog("14:35:20  垛码 P20241201005 70箱 上传成功", UploadColor.GREEN);
-        addLog("14:35:18  垛码 P20241201005 70箱 上传中...", UploadColor.BLUE);
-        addLog("14:35:15  垛码 P20241201005 70箱 开始上传", UploadColor.GRAY);
-        addLog("14:30:22  垛码 P20241201004 70箱 上传失败，网络超时", UploadColor.RED);
-        addLog("14:25:10  垛码 P20241201003 70箱 上传成功", UploadColor.GREEN);
+        // 初始查询区状态
+        showQueryState(QueryState.PROMPT, null, null);
     }
 
-    // ==================== 事件处理 ====================
+    /** 将 UploadLogBus.Color 映射到本地 UploadColor */
+    private static UploadColor mapColor(UploadLogBus.Color c) {
+        if (c == null) return UploadColor.GRAY;
+        switch (c) {
+            case BLUE:  return UploadColor.BLUE;
+            case GREEN: return UploadColor.GREEN;
+            case RED:   return UploadColor.RED;
+            default:    return UploadColor.GRAY;
+        }
+    }
+
+    // ==================== 左侧：手动上传 ====================
 
     @FXML
     private void onManualUpload() {
@@ -74,126 +86,201 @@ public class ShiwanM2UploadController implements Initializable {
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) return;
 
-        String now = now();
-        addLog(now + "  手动上传任务已启动，共 3 个待上传垛...", UploadColor.GRAY);
-
-        // 模拟异步上传
-        javafx.animation.Timeline timeline = new javafx.animation.Timeline(
-                new javafx.animation.KeyFrame(Duration.seconds(0.5), e ->
-                        addLog(now + "  垛码 P20241201006 70箱 开始上传", UploadColor.GRAY)),
-                new javafx.animation.KeyFrame(Duration.seconds(1.5), e ->
-                        addLog(now() + "  垛码 P20241201006 70箱 上传中...", UploadColor.BLUE)),
-                new javafx.animation.KeyFrame(Duration.seconds(2.5), e ->
-                        addLog(now() + "  垛码 P20241201006 70箱 上传成功", UploadColor.GREEN))
-        );
-        timeline.play();
+        // 后台发起，服务端负责写日志到实时上传区
+        HttpUtil.asyncPost("/api/shiwan-m2/upload/manual-upload", "{}",
+                response -> { /* 服务端已通过 addLogExternal 推日志，前端无需额外处理 */ },
+                error -> showWarn("手动上传失败", "发起手动上传时发生错误：" + error.getMessage()));
     }
+
+    @FXML
+    private void onHelp() {
+        showInfo("手动上传说明", "手动上传：批量上传所有未上传的垛数据。\n\n" +
+                "系统将按队列顺序逐垛调用上传接口，每垛发起后 5 分钟自动查询上传结果。\n" +
+                "上传进度和结果将实时显示在下方日志区。");
+    }
+
+    // ==================== 右侧：垛码查询与状态管理 ====================
 
     @FXML
     private void onQueryStatus() {
         String code = palletCodeField.getText().trim();
         if (code.isEmpty()) {
-            queryResultLabel.setText("请输入垛码并点击查询状态");
-            queryResultLabel.setVisible(true);
-            queryResultLabel.setManaged(true);
-            resultDetailPane.setVisible(false);
-            resultDetailPane.setManaged(false);
+            showQueryState(QueryState.PROMPT, null, null);
             return;
         }
-
-        // 模拟查询
-        boolean found = code.startsWith("P") && code.length() > 5;
-        if (!found) {
-            queryResultLabel.setText("未找到垛码：" + code);
-            queryResultLabel.setStyle("-fx-text-fill:#DC2626; -fx-font-size:14px;");
-            queryResultLabel.setVisible(true);
-            queryResultLabel.setManaged(true);
-            resultDetailPane.setVisible(false);
-            resultDetailPane.setManaged(false);
-            return;
-        }
-
-        queryResultLabel.setVisible(false);
-        queryResultLabel.setManaged(false);
-        resultDetailPane.setVisible(true);
-        resultDetailPane.setManaged(true);
-
-        resultPalletCode.setText(code);
-        boolean success = !code.endsWith("4") && !code.endsWith("8");
-        resultStatus.setText(success ? "成功" : "异常");
-        resultStatus.getStyleClass().removeAll("sw2-badge-green", "sw2-badge-red");
-        resultStatus.getStyleClass().add(success ? "sw2-badge-green" : "sw2-badge-red");
-        resultUploadTime.setText("2024-12-01 " + (10 + (int)(Math.random() * 5)) + ":30:15");
-        resultBoxCount.setText("70");
-        resultFailReason.setText(success ? "-" : "网络超时");
+        HttpUtil.asyncGet("/api/shiwan-m2/upload/pallet-status?palletCode=" + code,
+                response -> {
+                    try {
+                        JsonNode root = HttpUtil.getObjectMapper().readTree(response);
+                        int httpCode = root.path("code").asInt(0);
+                        if (httpCode != 200 || root.path("data").isMissingNode() || root.path("data").isNull()) {
+                            showQueryState(QueryState.NOT_FOUND, code, null);
+                        } else {
+                            showQueryState(QueryState.FOUND, code, root.path("data"));
+                        }
+                    } catch (Exception e) {
+                        showQueryState(QueryState.NOT_FOUND, code, null);
+                    }
+                },
+                error -> showWarn("查询失败", "查询上传状态失败：" + error.getMessage()));
     }
 
     @FXML
     private void onSetNotUploaded() {
         String code = palletCodeField.getText().trim();
-        if (code.isEmpty()) { showWarn("请输入垛码", "请先输入要设置的垛码。"); return; }
+        if (code.isEmpty()) { showWarn("请输入垛码", "请先输入要操作的垛码。"); return; }
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("设为未上传");
-        confirm.setHeaderText("确认将垛码「" + code + "」设为未上传？");
-        confirm.setContentText("状态重置后，系统将在下次自动上传时重新上传此垛。");
+        confirm.setHeaderText("确认将垛码「" + code + "」的状态重置为未上传？");
+        confirm.setContentText("状态重置后，可通过手动上传重新上传此垛。");
         Optional<ButtonType> r = confirm.showAndWait();
-        if (r.isPresent() && r.get() == ButtonType.OK) {
-            addLog(now() + "  垛码 " + code + " 已设为未上传（待补传）", UploadColor.GRAY);
-            onQueryStatus();
-        }
+        if (r.isEmpty() || r.get() != ButtonType.OK) return;
+
+        HttpUtil.asyncPost("/api/shiwan-m2/upload/set-not-uploaded",
+                "{\"palletCode\":\"" + code + "\"}",
+                response -> {
+                    try {
+                        JsonNode root = HttpUtil.getObjectMapper().readTree(response);
+                        if (root.path("code").asInt(0) == 200) {
+                            addLog(now() + "  垛码 " + code + " 已设为未上传（待补传）", UploadColor.GRAY);
+                            onQueryStatus();
+                        } else {
+                            showWarn("操作失败", root.path("msg").asText("未知错误"));
+                        }
+                    } catch (Exception e) {
+                        showWarn("操作失败", e.getMessage());
+                    }
+                },
+                error -> showWarn("操作失败", "设为未上传时发生错误：" + error.getMessage()));
     }
 
     @FXML
     private void onSetUploaded() {
         String code = palletCodeField.getText().trim();
-        if (code.isEmpty()) { showWarn("请输入垛码", "请先输入要设置的垛码。"); return; }
+        if (code.isEmpty()) { showWarn("请输入垛码", "请先输入要操作的垛码。"); return; }
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("设为已上传");
         confirm.setHeaderText("确认将垛码「" + code + "」手动标记为已上传？");
         confirm.setContentText("此操作将跳过该垛的自动上传，避免重复上传。");
         Optional<ButtonType> r = confirm.showAndWait();
-        if (r.isPresent() && r.get() == ButtonType.OK) {
-            addLog(now() + "  垛码 " + code + " 已手动标记为已上传", UploadColor.GREEN);
-            onQueryStatus();
-        }
-    }
+        if (r.isEmpty() || r.get() != ButtonType.OK) return;
 
-    @FXML
-    private void onHelp() {
-        showInfo("手动上传说明",
-                "手动上传：批量上传所有未上传的垛数据。\n\n" +
-                "查询状态：输入垛码查看上传状态（成功/异常/待上传）及失败原因。\n\n" +
-                "设为未上传：用于数据修复后重新补传，系统将在下次自动上传时处理。\n\n" +
-                "设为已上传：手动标记已上传，避免系统重复上传此垛。");
+        HttpUtil.asyncPost("/api/shiwan-m2/upload/set-uploaded",
+                "{\"palletCode\":\"" + code + "\"}",
+                response -> {
+                    try {
+                        JsonNode root = HttpUtil.getObjectMapper().readTree(response);
+                        if (root.path("code").asInt(0) == 200) {
+                            addLog(now() + "  垛码 " + code + " 已手动标记为已上传", UploadColor.GREEN);
+                            onQueryStatus();
+                        } else {
+                            showWarn("操作失败", root.path("msg").asText("未知错误"));
+                        }
+                    } catch (Exception e) {
+                        showWarn("操作失败", e.getMessage());
+                    }
+                },
+                error -> showWarn("操作失败", "设为已上传时发生错误：" + error.getMessage()));
     }
 
     @FXML
     private void onStatusHelp() {
         showInfo("状态管理说明",
-                "查询状态：查询指定垛码的上传状态详情。\n" +
-                "设为未上传：重置为待上传，用于数据修复后重新补传。\n" +
+                "查询状态：查询指定垛码的上传状态详情（垛码、状态、上传时间、箱数、失败原因）。\n\n" +
+                "设为未上传：将垛码状态重置为待上传，用于数据修复后重新补传。\n\n" +
                 "设为已上传：手动标记为已上传，避免系统重复上传此垛。");
     }
 
-    // ==================== 上传日志管理 ====================
+    // ==================== 查询结果展示 ====================
+
+    private enum QueryState { PROMPT, NOT_FOUND, FOUND }
+
+    private void showQueryState(QueryState state, String code, JsonNode data) {
+        switch (state) {
+            case PROMPT:
+                queryResultLabel.setText("请输入垛码并点击查询状态");
+                queryResultLabel.setStyle("-fx-text-fill:#6B7280; -fx-font-size:14px;");
+                queryResultLabel.setVisible(true);
+                queryResultLabel.setManaged(true);
+                resultDetailPane.setVisible(false);
+                resultDetailPane.setManaged(false);
+                break;
+
+            case NOT_FOUND:
+                queryResultLabel.setText("未找到该垛码的上传记录：" + code);
+                queryResultLabel.setStyle("-fx-text-fill:#DC2626; -fx-font-size:14px;");
+                queryResultLabel.setVisible(true);
+                queryResultLabel.setManaged(true);
+                resultDetailPane.setVisible(false);
+                resultDetailPane.setManaged(false);
+                break;
+
+            case FOUND:
+                queryResultLabel.setVisible(false);
+                queryResultLabel.setManaged(false);
+                resultDetailPane.setVisible(true);
+                resultDetailPane.setManaged(true);
+
+                resultPalletCode.setText(code);
+
+                // 上传状态标签（0=未上传, 1=已上传, 2=上传失败, 3=上传中）
+                int isUpload = data != null ? data.path("isUpload").asInt(0) : 0;
+                String statusText;
+                String statusClass;
+                switch (isUpload) {
+                    case 1:
+                        statusText  = "已上传";
+                        statusClass = "sw2-badge-green";
+                        break;
+                    case 2:
+                        statusText  = "上传失败";
+                        statusClass = "sw2-badge-red";
+                        break;
+                    case 3:
+                        statusText  = "上传中";
+                        statusClass = "sw2-badge-gray";
+                        break;
+                    default:
+                        statusText  = "待上传";
+                        statusClass = "sw2-badge-gray";
+                        break;
+                }
+                resultStatus.setText(statusText);
+                resultStatus.getStyleClass().removeAll("sw2-badge-green", "sw2-badge-red", "sw2-badge-gray");
+                resultStatus.getStyleClass().add(statusClass);
+
+                String uploadTime = data != null ? data.path("uploadTime").asText("") : "";
+                resultUploadTime.setText(isNullOrBlank(uploadTime) ? "-" : uploadTime);
+
+                int boxCount = data != null ? data.path("boxCount").asInt(0) : 0;
+                resultBoxCount.setText(String.valueOf(boxCount));
+
+                String msg = data != null ? data.path("msg").asText("") : "";
+                resultFailReason.setText(isNullOrBlank(msg) ? "-" : msg);
+                break;
+        }
+    }
+
+    // ==================== 实时上传日志管理 ====================
 
     /**
-     * 向上传日志添加一条记录（外部服务可调用）
-     *
-     * @param message 日志内容
-     * @param color   颜色类型
+     * 向实时上传日志顶部插入一条记录（最新在最上方）。
+     * 可从任意线程调用，内部通过 Platform.runLater 切回 FX 线程。
      */
     public void addLog(String message, UploadColor color) {
-        Platform.runLater(() -> {
-            if (logItems.size() >= 500) logItems.remove(logItems.size() - 1);
-            logItems.add(0, new UploadLogEntry(message, color));
-        });
+        Platform.runLater(() -> logItems.add(0, new UploadLogEntry(message, color)));
     }
 
     // ==================== 工具 ====================
 
     private String now() {
         return LocalDateTime.now().format(TIME_FMT);
+    }
+
+    private static boolean isNullOrBlank(String s) {
+        return s == null || s.trim().isEmpty() || "null".equalsIgnoreCase(s.trim());
     }
 
     private void showInfo(String title, String content) {
@@ -244,18 +331,10 @@ public class ShiwanM2UploadController implements Initializable {
             label.getStyleClass().removeAll("sw2-ul-gray", "sw2-ul-blue", "sw2-ul-green", "sw2-ul-red");
             String colorClass;
             switch (item.color) {
-                case BLUE:
-                    colorClass = "sw2-ul-blue";
-                    break;
-                case GREEN:
-                    colorClass = "sw2-ul-green";
-                    break;
-                case RED:
-                    colorClass = "sw2-ul-red";
-                    break;
-                default:
-                    colorClass = "sw2-ul-gray";
-                    break;
+                case BLUE:  colorClass = "sw2-ul-blue";  break;
+                case GREEN: colorClass = "sw2-ul-green"; break;
+                case RED:   colorClass = "sw2-ul-red";   break;
+                default:    colorClass = "sw2-ul-gray";  break;
             }
             label.getStyleClass().add(colorClass);
             setGraphic(label);

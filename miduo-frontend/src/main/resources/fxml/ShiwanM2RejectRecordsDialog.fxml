@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2RejectRecordsController"
+      spacing="10" prefWidth="1120" prefHeight="760"
+      styleClass="sw2-tab-content"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <HBox alignment="CENTER_LEFT">
+        <Label text="剔除记录" styleClass="sw2-section-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="关闭" styleClass="sw2-btn-outline" onAction="#onClose"/>
+    </HBox>
+
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <TextField fx:id="caseCodeField" promptText="请输入箱码" styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
+        <Button text="筛选" styleClass="sw2-btn-primary" onAction="#onSearch"/>
+        <Button text="重置" styleClass="sw2-btn-outline" onAction="#onReset"/>
+    </HBox>
+
+    <HBox spacing="12" VBox.vgrow="ALWAYS">
+        <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="sw2-table-card">
+            <Label text="码关联信息（剔除记录）" styleClass="shiwan-m2-card-title"/>
+            <TableView fx:id="rejectTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+                <columns>
+                    <TableColumn fx:id="seqCol" text="序号" prefWidth="70"/>
+                    <TableColumn fx:id="bottleCol" text="第一层(瓶码)" prefWidth="230"/>
+                    <TableColumn fx:id="boxCol" text="第二层(盒码)" prefWidth="230"/>
+                    <TableColumn fx:id="caseCol" text="第三层(箱码)" prefWidth="180"/>
+                    <TableColumn fx:id="reasonCol" text="剔除原因" prefWidth="180"/>
+                </columns>
+            </TableView>
+        </VBox>
+
+        <VBox spacing="8" prefWidth="320" minWidth="300" styleClass="shiwan-m2-card">
+            <Label text="具体信息" styleClass="shiwan-m2-card-title"/>
+
+            <VBox fx:id="detailEmptyPane" spacing="4" alignment="CENTER" VBox.vgrow="ALWAYS">
+                <Label text="请点击左侧记录查看详细信息" style="-fx-text-fill:#9CA3AF;"/>
+            </VBox>
+
+            <VBox fx:id="detailPane" spacing="10" visible="false" managed="false">
+                <HBox spacing="8">
+                    <Label text="问题码：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detProblemCode" style="-fx-text-fill:#F44336; -fx-font-weight:bold;"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label text="箱码：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detCaseCode"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label text="剔除原因：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detReason"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label text="剔除时间：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detTime"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label text="产品编号：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detProductNo"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label text="产品名称：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detProductName" wrapText="true"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label text="生产单号：" styleClass="sw2-filter-label"/>
+                    <Label fx:id="detOrderNo"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </HBox>
+
+    <HBox styleClass="sw2-pagination-bar" spacing="8" alignment="CENTER_LEFT">
+        <Label fx:id="totalLabel" text="共 0 条" styleClass="sw2-page-info"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="prevBtn" text="上一页" styleClass="sw2-page-btn" onAction="#onPrevPage"/>
+        <Label fx:id="pageLabel" text="第 1 / 1 页" styleClass="sw2-page-info"/>
+        <Button fx:id="nextBtn" text="下一页" styleClass="sw2-page-btn" onAction="#onNextPage"/>
+        <ComboBox fx:id="pageSizeCombo" styleClass="sw2-filter-combo" prefWidth="80">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="10"/>
+                <String fx:value="20"/>
+                <String fx:value="50"/>
+                <String fx:value="100"/>
+            </FXCollections></items>
+            <value><String fx:value="20"/></value>
+        </ComboBox>
+    </HBox>
+</VBox>

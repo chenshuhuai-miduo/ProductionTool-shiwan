@@ -82,6 +82,107 @@ public class ShiwanM2BoxCaseController {
         return ApiResult.success("查询成功", count);
     }
 
+    /**
+     * P02-04 数据查询：输入任意层级码，查所属垛全部关联链。
+     * GET /api/shiwan-m2/code/query?code=xxx
+     */
+    @GetMapping("/code/query")
+    public ApiResult<Map<String, Object>> queryCode(@RequestParam String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return ApiResult.error(400, "码值不能为空");
+        }
+        Map<String, Object> data = shiwanM2BoxCaseService.queryCodeAssociation(code);
+        if (data == null || data.isEmpty()) {
+            return ApiResult.error(404, "未找到该码信息");
+        }
+        return ApiResult.success("查询成功", data);
+    }
+
+    /**
+     * P02-05 取消关联（物理删除）。
+     * POST /api/shiwan-m2/code/cancel
+     * Body: { caseCode: "箱码" }
+     */
+    @PostMapping("/code/cancel")
+    public ApiResult<Boolean> cancelCode(@RequestBody Map<String, Object> body) {
+        String caseCode = getStr(body, "caseCode");
+        return shiwanM2BoxCaseService.cancelByCaseCode(caseCode);
+    }
+
+    /**
+     * P02-06 数据替换。
+     * POST /api/shiwan-m2/code/replace
+     * Body: { oldCode: "", newCode: "", reason: "" }
+     */
+    @PostMapping("/code/replace")
+    public ApiResult<Boolean> replaceCode(@RequestBody Map<String, Object> body) {
+        String oldCode = getStr(body, "oldCode");
+        String newCode = getStr(body, "newCode");
+        String reason = getStr(body, "reason");
+        return shiwanM2BoxCaseService.replaceCode(oldCode, newCode, reason);
+    }
+
+    /**
+     * P02-07 生产统计汇总（垛数/箱数/盒数/剔除数）。
+     * GET /api/shiwan-m2/stats/production-summary
+     */
+    @GetMapping("/stats/production-summary")
+    public ApiResult<Map<String, Object>> productionSummary(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String orderNo) {
+        return ApiResult.success("查询成功",
+                shiwanM2BoxCaseService.getProductionSummary(startDate, endDate, orderNo));
+    }
+
+    /**
+     * P02-07 垛码列表弹窗数据。
+     * GET /api/shiwan-m2/stats/pallet-list
+     */
+    @GetMapping("/stats/pallet-list")
+    public ApiResult<Map<String, Object>> palletList(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String orderNo,
+            @RequestParam(required = false) String palletCode,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return ApiResult.success("查询成功",
+                shiwanM2BoxCaseService.getPalletList(startDate, endDate, orderNo, palletCode, page, pageSize));
+    }
+
+    /**
+     * P02-07 剔除记录弹窗数据。
+     * GET /api/shiwan-m2/stats/reject-records
+     */
+    @GetMapping("/stats/reject-records")
+    public ApiResult<Map<String, Object>> rejectRecords(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String orderNo,
+            @RequestParam(required = false) String caseCode,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return ApiResult.success("查询成功",
+                shiwanM2BoxCaseService.getRejectRecords(startDate, endDate, orderNo, caseCode, page, pageSize));
+    }
+
+    /**
+     * P02-07 上传统计列表（仅成功/异常）。
+     * GET /api/shiwan-m2/stats/upload-records
+     */
+    @GetMapping("/stats/upload-records")
+    public ApiResult<Map<String, Object>> uploadRecords(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String orderNo,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return ApiResult.success("查询成功",
+                shiwanM2BoxCaseService.getUploadRecords(startDate, endDate, orderNo, status, page, pageSize));
+    }
+
     private static String getStr(Map<String, Object> body, String key) {
         if (body == null) return null;
         Object v = body.get(key);

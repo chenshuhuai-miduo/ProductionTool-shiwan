@@ -231,6 +231,39 @@
                     </ScrollPane>
                 </Tab>
 
+                <!-- 入库仓库设置 -->
+                <Tab text="入库仓库设置">
+                    <ScrollPane fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER">
+                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
+                            <Label text="入库仓库设置（上传垛码关联数据时传入仓库编号）"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                                          -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="仓库编号（warehouseNo）"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"
+                                       minWidth="200"/>
+                                <TextField fx:id="warehouseNoField"
+                                           text="001"
+                                           prefWidth="160"
+                                           styleClass="sw2-field-input"
+                                           promptText="如 001"/>
+                            </HBox>
+
+                            <Label text="说明：上传垛码关联数据至开放平台时，将该仓库编号作为入参 warehouseno 传入，默认值为 001。"
+                                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <Button text="保 存"
+                                    styleClass="sw2-btn-primary"
+                                    minWidth="80" minHeight="36"
+                                    onAction="#onSaveWarehouseNo"/>
+                        </VBox>
+                    </ScrollPane>
+                </Tab>
+
             </TabPane>
         </Tab>
 

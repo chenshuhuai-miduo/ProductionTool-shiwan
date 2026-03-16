@@ -123,8 +123,13 @@ public class CodePackageApplicationService {
     public ApiResult<CodePackageOnlineImportResultVO> importOnline() {
         try {
             LocalDateTime defaultTime = parseTimeOrDefault(defaultPullStartTime, LocalDateTime.of(2024, 1, 1, 0, 0, 0));
+            // 各类型分别记录上次成功拉取时间，用于增量过滤
             LocalDateTime smallTypeStart = getLastOnlineImportCreateTime(1, defaultTime);
             LocalDateTime bigTypeStart = getLastOnlineImportCreateTime(3, defaultTime);
+            Map<Integer, LocalDateTime> typeStartMap = new HashMap<>();
+            typeStartMap.put(1, smallTypeStart);
+            typeStartMap.put(3, bigTypeStart);
+            // 统一用最早的时间发一次请求，拿回全量增量数据后再按各类型时间二次过滤
             LocalDateTime queryStart = smallTypeStart.isBefore(bigTypeStart) ? smallTypeStart : bigTypeStart;
             LocalDateTime queryEnd = LocalDateTime.now().plusHours(6).toLocalDate().atTime(23, 59, 59);
 
@@ -136,6 +141,14 @@ public class CodePackageApplicationService {
                 }
                 if (item.getRelationshipType() != 1 && item.getRelationshipType() != 3) {
                     continue;
+                }
+                // 按各类型自己的时间戳做二次过滤：跳过 upload_time 不晚于该类型上次成功拉取时间的条目
+                LocalDateTime typeStart = typeStartMap.get(item.getRelationshipType());
+                if (typeStart != null && StringUtils.hasText(item.getUploadTime())) {
+                    LocalDateTime itemUploadTime = parseTime(item.getUploadTime());
+                    if (itemUploadTime != null && !itemUploadTime.isAfter(typeStart)) {
+                        continue;
+                    }
                 }
                 resultVO.setTotalProcessed(resultVO.getTotalProcessed() + 1);
                 if (!StringUtils.hasText(item.getFileDownloadAddress())) {

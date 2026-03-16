@@ -53,6 +53,9 @@ public class ShiwanM2Settings {
     /** 接口：API base URL 等 */
     private ApiConfig api = new ApiConfig();
 
+    /** 入库仓库编号（上传垛码关联数据时作为 warehouseno 入参，默认 001） */
+    private String warehouseNo = "001";
+
     /** 采集规格：每垛箱数、每箱盒数（用于持久化上次采集规格） */
     private Integer boxesPerPallet = 70;
     private Integer boxesPerCase = 4;
@@ -179,6 +182,14 @@ public class ShiwanM2Settings {
 
     public void setApi(ApiConfig api) {
         this.api = api;
+    }
+
+    public String getWarehouseNo() {
+        return warehouseNo;
+    }
+
+    public void setWarehouseNo(String warehouseNo) {
+        this.warehouseNo = warehouseNo;
     }
 
     public Integer getBoxesPerPallet() {

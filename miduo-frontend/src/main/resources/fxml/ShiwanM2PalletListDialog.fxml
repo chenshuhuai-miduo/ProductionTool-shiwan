@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2PalletListController"
+      spacing="10" prefWidth="900" prefHeight="650"
+      styleClass="sw2-tab-content"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <HBox alignment="CENTER_LEFT">
+        <Label text="垛码列表" styleClass="sw2-section-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="关闭" styleClass="sw2-btn-outline" onAction="#onClose"/>
+    </HBox>
+
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <TextField fx:id="palletCodeField" promptText="请输入垛码" styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
+        <Button text="筛选" styleClass="sw2-btn-primary" onAction="#onSearch"/>
+        <Button text="重置" styleClass="sw2-btn-outline" onAction="#onReset"/>
+    </HBox>
+
+    <TableView fx:id="palletTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+        <columns>
+            <TableColumn fx:id="palletCodeCol" text="垛码" prefWidth="220"/>
+            <TableColumn fx:id="caseCountCol" text="箱数" prefWidth="100"/>
+            <TableColumn fx:id="orderNoCol" text="生产单号" prefWidth="200"/>
+            <TableColumn fx:id="associateTimeCol" text="关联时间" prefWidth="280"/>
+        </columns>
+        <placeholder>
+            <Label text="无匹配数据" style="-fx-text-fill:#9CA3AF;"/>
+        </placeholder>
+    </TableView>
+
+    <HBox styleClass="sw2-pagination-bar" spacing="8" alignment="CENTER_LEFT">
+        <Label fx:id="totalLabel" text="共 0 条" styleClass="sw2-page-info"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="prevBtn" text="上一页" styleClass="sw2-page-btn" onAction="#onPrevPage"/>
+        <Label fx:id="pageLabel" text="第 1 / 1 页" styleClass="sw2-page-info"/>
+        <Button fx:id="nextBtn" text="下一页" styleClass="sw2-page-btn" onAction="#onNextPage"/>
+        <ComboBox fx:id="pageSizeCombo" styleClass="sw2-filter-combo" prefWidth="80">
+            <items><FXCollections fx:factory="observableArrayList">
+                <String fx:value="10"/>
+                <String fx:value="20"/>
+                <String fx:value="50"/>
+                <String fx:value="100"/>
+            </FXCollections></items>
+            <value><String fx:value="20"/></value>
+        </ComboBox>
+    </HBox>
+</VBox>

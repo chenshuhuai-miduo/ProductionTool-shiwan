@@ -623,6 +623,29 @@ public class DeviceConnectionManager {
     }
     
     /**
+     * 向指定设备类别的设备发送原始字节（用于工业 hex 协议，如报警灯颜色/蜂鸣控制）
+     *
+     * @param categoryCode 设备类别代码（5=报警器, 6=剔除设备）
+     * @param data         要发送的原始字节
+     * @return 发送成功返回 true
+     */
+    public boolean sendBytesToDeviceByCategory(int categoryCode, byte[] data) {
+        String targetDeviceId = categoryToDeviceMap.get(categoryCode);
+        if (targetDeviceId == null) {
+            System.err.println("[连接管理器] 未找到类别代码为 " + categoryCode + " 的设备");
+            return false;
+        }
+        IoDeviceDTO device = deviceConfigs.get(targetDeviceId);
+        if (device == null) return false;
+        Object service = connectionServices.get(targetDeviceId);
+        if (service instanceof SerialConnectionService) {
+            return ((SerialConnectionService) service).sendBytes(data);
+        }
+        System.err.println("[连接管理器] 该设备类型不支持字节发送: " + device.getDeviceName());
+        return false;
+    }
+
+    /**
      * 向指定设备类别的设备发送数据
      * 
      * @param categoryCode 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备）

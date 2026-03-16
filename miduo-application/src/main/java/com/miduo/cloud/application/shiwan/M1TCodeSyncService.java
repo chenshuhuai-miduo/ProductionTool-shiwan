@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * 1 号机 T_Code 表定时同步到 2 号机 CodeRelationUpload。
  * 每 3 秒执行一次：从 1 号机 SQL Server 读取 SerialNo &gt; lastSynced 且 Status=0 的记录，
- * 插入 2 号机 MySQL CodeRelationUpload，OrderNo/ProductNO 取当前 2 号机生产订单号与产品编码，AddTime 取当前时间。
+ * 插入 2 号机 MySQL CodeRelationUpload。同步落库阶段 OrderNo/ProductNO/TagNo 统一写空字符串，
+ * 待后续盒箱关联成功时再回填当前选中的订单号与产品编码。
  * 启用条件：shiwan.m2.m1-sync.enabled=true
  * 运行时控制：调用 startSync()/stopSync() 动态开启/关闭每次执行逻辑。
  */
@@ -94,9 +95,9 @@ public class M1TCodeSyncService {
         Long lastSynced = M1SyncCursorStore.loadLastSyncedSerialNo();
         if (lastSynced == null) lastSynced = 0L;
 
-        CurrentTask currentTask = getCurrentTask();
-        String orderNo = currentTask != null ? currentTask.orderNo : "";
-        String productNo = currentTask != null ? currentTask.productNo : "";
+        // 同步落库阶段不写订单号/产品编号，待后续盒箱关联成功后回填
+        String orderNo = "";
+        String productNo = "";
 
         String jdbcUrl = String.format(JTDS_URL_TEMPLATE, host, port, database);
         try {
@@ -134,7 +135,7 @@ public class M1TCodeSyncService {
 
         LocalDateTime now = LocalDateTime.now();
         String empty = "";
-        String tagNo = "M1-SYNC";
+        String tagNo = "";
         String insertSql =
                 "INSERT INTO CodeRelationUpload (" +
                         "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
@@ -169,7 +170,7 @@ public class M1TCodeSyncService {
                     ps.setObject(17, now);
                     ps.setInt(18, 0);
                     ps.setString(19, empty);
-                    ps.setInt(20, 1);
+                    ps.setInt(20, 0);
                     ps.setInt(21, 0);
                     ps.setString(22, empty);
                     ps.setString(23, row.boxCode);

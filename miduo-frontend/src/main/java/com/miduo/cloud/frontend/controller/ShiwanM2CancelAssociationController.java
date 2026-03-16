@@ -37,7 +37,7 @@ import java.util.Optional;
 
 /**
  * 石湾M2-取消关联控制器
- * 说明：当前版本基于已有接口实现（/api/code/query、/api/code/delete-by-box-code）。
+ * 说明：石湾M2专用实现，调用 /api/shiwan-m2/code/query 与 /api/shiwan-m2/code/cancel。
  */
 public class ShiwanM2CancelAssociationController {
 
@@ -121,7 +121,7 @@ public class ShiwanM2CancelAssociationController {
         showAlert(Alert.AlertType.INFORMATION, "取消关联说明",
                 "单码模式：输入1个码并识别后取消。\n" +
                         "多码模式：可添加多个码批量识别和取消。\n" +
-                        "本页面当前基于已有接口实现，取消接口使用 /api/code/delete-by-box-code。\n" +
+                        "本页面调用石湾M2后端接口：/api/shiwan-m2/code/query、/api/shiwan-m2/code/cancel。\n" +
                         "取消操作需输入固定密码 123456。");
     }
 
@@ -343,10 +343,12 @@ public class ShiwanM2CancelAssociationController {
 
     private QueryCheckResult queryCancelable(String code) {
         try {
-            String response = HttpUtil.doGet("/api/code/query/" + encodePath(code));
-            ApiResult<List<Object>> result = HttpUtil.parseJson(response, new TypeReference<ApiResult<List<Object>>>() {});
-            if (result != null && result.getCode() == 200 && result.getData() != null && !result.getData().isEmpty()) {
-                return new QueryCheckResult(true, result.getData().size(), "可取消");
+            String response = HttpUtil.doGet("/api/shiwan-m2/code/query?code=" + encodePath(code));
+            ApiResult<Map<String, Object>> result = HttpUtil.parseJson(response, new TypeReference<ApiResult<Map<String, Object>>>() {});
+            if (result != null && result.getCode() == 200 && result.getData() != null) {
+                Object total = result.getData().get("total");
+                int affected = total instanceof Number ? ((Number) total).intValue() : 1;
+                return new QueryCheckResult(true, Math.max(affected, 1), "可取消");
             }
             String message = result == null ? "后端无响应" : result.getMessage();
             return new QueryCheckResult(false, 0, message);
@@ -357,7 +359,9 @@ public class ShiwanM2CancelAssociationController {
 
     private DeleteResult deleteByBoxCode(String code) {
         try {
-            String response = HttpUtil.doDelete("/api/code/delete-by-box-code/" + encodePath(code));
+            Map<String, String> body = new LinkedHashMap<>();
+            body.put("caseCode", code);
+            String response = HttpUtil.doPost("/api/shiwan-m2/code/cancel", body);
             ApiResult<Boolean> result = HttpUtil.parseJson(response, new TypeReference<ApiResult<Boolean>>() {});
             boolean success = result != null && result.getCode() == 200 && Boolean.TRUE.equals(result.getData());
             if (success) {

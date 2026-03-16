@@ -31,7 +31,7 @@
     "password" : "123456"
   },
   "m1DbConnection" : {
-    "host" : "192.168.0.9",
+    "host" : "192.168.5.117",
     "port" : "1433",
     "database" : "TkCode",
     "tableName" : "T_Code",
@@ -59,6 +59,7 @@
     "productsListPath" : "/api/sign/md.shop.products/v1/list",
     "appId" : "VrDiiCwOzGCbtrwhUqW51yA9"
   },
-  "boxesPerPallet" : 70,
+  "warehouseNo" : "001",
+  "boxesPerPallet" : 1,
   "boxesPerCase" : 4
 }

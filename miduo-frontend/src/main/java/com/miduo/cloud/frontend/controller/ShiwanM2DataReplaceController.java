@@ -98,7 +98,7 @@ public class ShiwanM2DataReplaceController {
                 request.setNewCode(newCode);
                 request.setReason(reason);
 
-                String response = HttpUtil.doPost("/api/code/replace", request);
+                String response = HttpUtil.doPost("/api/shiwan-m2/code/replace", request);
                 ApiResult<Boolean> result = HttpUtil.parseJson(response, new TypeReference<ApiResult<Boolean>>() {});
 
                 Platform.runLater(() -> handleReplaceResult(oldCode, newCode, reason, result));
