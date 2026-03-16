@@ -67,8 +67,13 @@ public class ShiwanM2PackageController implements Initializable {
     @FXML private TableColumn<PackageRow, Void> colAction;
 
     @FXML private Label totalLabel;
-    @FXML private Label pageLabel;
+    @FXML private Label pageTotalLabel;
+    @FXML private TextField pageField;
     @FXML private ComboBox<String> pageSizeCombo;
+    @FXML private Button firstPageBtn;
+    @FXML private Button prevPageBtn;
+    @FXML private Button nextPageBtn;
+    @FXML private Button lastPageBtn;
 
     private final ObservableList<PackageRow> tableData = FXCollections.observableArrayList();
     private int currentPage = 1;
@@ -79,16 +84,12 @@ public class ShiwanM2PackageController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupTableColumns();
         packageTable.setItems(tableData);
-        pageSizeCombo.setOnAction(event -> {
-            pageSize = resolvePageSize(pageSizeCombo.getValue());
-            currentPage = 1;
-            loadPage(currentPage);
-        });
         loadPage(1);
         triggerStartupOnlineUpdate();
     }
 
     private void setupTableColumns() {
+        packageTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         colType.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().typeName));
         colName.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().packageName));
         colImportTime.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().importTimeText));
@@ -203,8 +204,15 @@ public class ShiwanM2PackageController implements Initializable {
         importTypeCombo.setValue("全部");
         statusCombo.setValue("全部");
         packageTypeCombo.setValue("全部");
-        pageSizeCombo.setValue("20条");
+        pageSizeCombo.setValue("20");
         pageSize = 20;
+        currentPage = 1;
+        loadPage(currentPage);
+    }
+
+    @FXML
+    private void onPageSizeChange() {
+        pageSize = resolvePageSize(pageSizeCombo.getValue());
         currentPage = 1;
         loadPage(currentPage);
     }
@@ -238,6 +246,21 @@ public class ShiwanM2PackageController implements Initializable {
         if (currentPage < totalPages) {
             currentPage = totalPages;
             loadPage(currentPage);
+        }
+    }
+
+    @FXML
+    private void onGoPage() {
+        try {
+            int target = Integer.parseInt(pageField.getText().trim());
+            if (target < 1) target = 1;
+            if (target > totalPages) target = totalPages;
+            if (target != currentPage) {
+                currentPage = target;
+                loadPage(currentPage);
+            }
+        } catch (NumberFormatException ignored) {
+            pageField.setText(String.valueOf(currentPage));
         }
     }
 
@@ -326,7 +349,12 @@ public class ShiwanM2PackageController implements Initializable {
                     if (result == null || result.getCode() != 200 || result.getData() == null) {
                         tableData.clear();
                         totalLabel.setText("共 0 条");
-                        pageLabel.setText("第 1 / 1 页");
+                        pageField.setText("1");
+                        pageTotalLabel.setText("/ 1 页");
+                        firstPageBtn.setDisable(true);
+                        prevPageBtn.setDisable(true);
+                        nextPageBtn.setDisable(true);
+                        lastPageBtn.setDisable(true);
                         if (result != null && result.getMessage() != null) {
                             showAlert(Alert.AlertType.WARNING, "查询失败", result.getMessage());
                         }
@@ -339,7 +367,12 @@ public class ShiwanM2PackageController implements Initializable {
                     currentPage = pageOutput.getCurrent() == null ? 1 : pageOutput.getCurrent().intValue();
                     totalPages = pageOutput.getPages() == null || pageOutput.getPages() <= 0 ? 1 : pageOutput.getPages().intValue();
                     totalLabel.setText("共 " + (pageOutput.getTotal() == null ? 0 : pageOutput.getTotal()) + " 条");
-                    pageLabel.setText("第 " + currentPage + " / " + totalPages + " 页");
+                    pageField.setText(String.valueOf(currentPage));
+                    pageTotalLabel.setText("/ " + totalPages + " 页");
+                    firstPageBtn.setDisable(currentPage <= 1);
+                    prevPageBtn.setDisable(currentPage <= 1);
+                    nextPageBtn.setDisable(currentPage >= totalPages);
+                    lastPageBtn.setDisable(currentPage >= totalPages);
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "加载失败", "加载码包列表失败：" + e.getMessage()));
@@ -397,13 +430,11 @@ public class ShiwanM2PackageController implements Initializable {
     }
 
     private int resolvePageSize(String value) {
-        if ("50条".equals(value)) {
-            return 50;
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 20;
         }
-        if ("100条".equals(value)) {
-            return 100;
-        }
-        return 20;
     }
 
     private Integer resolveImportSource(String text) {

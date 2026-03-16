@@ -26,16 +26,29 @@
             <ColumnConstraints hgrow="ALWAYS"/>
         </columnConstraints>
 
-        <Label text="码包类型*" styleClass="sw2-field-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="packageTypeCombo" styleClass="sw2-field-input" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <!-- 码包类型（必填） -->
+        <HBox alignment="CENTER_LEFT" GridPane.rowIndex="0" GridPane.columnIndex="0">
+            <Label text="* " style="-fx-text-fill:#DC2626; -fx-font-weight:bold;"/>
+            <Label text="码包类型" styleClass="sw2-field-label"/>
+        </HBox>
+        <ComboBox fx:id="packageTypeCombo" styleClass="sw2-field-input"
+                  GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-        <Label text="选择文件*" styleClass="sw2-field-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <!-- 选择文件（必填） -->
+        <HBox alignment="CENTER_LEFT" GridPane.rowIndex="1" GridPane.columnIndex="0">
+            <Label text="* " style="-fx-text-fill:#DC2626; -fx-font-weight:bold;"/>
+            <Label text="选择文件" styleClass="sw2-field-label"/>
+        </HBox>
         <HBox spacing="8" alignment="CENTER_LEFT" GridPane.rowIndex="1" GridPane.columnIndex="1">
             <TextField fx:id="selectedFileField" styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
             <Button text="浏览..." onAction="#onBrowseFile" styleClass="sw2-btn-outline"/>
         </HBox>
 
-        <Label text="密码*" styleClass="sw2-field-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <!-- 密码（必填） -->
+        <HBox alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="0">
+            <Label text="* " style="-fx-text-fill:#DC2626; -fx-font-weight:bold;"/>
+            <Label text="密码" styleClass="sw2-field-label"/>
+        </HBox>
         <PasswordField fx:id="passwordField" promptText="请输入密码" styleClass="sw2-field-input"
                        GridPane.rowIndex="2" GridPane.columnIndex="1"/>
     </GridPane>
