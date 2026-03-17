@@ -4,8 +4,10 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.application.Platform;
@@ -23,6 +25,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -44,6 +47,9 @@ import java.util.ResourceBundle;
  * </p>
  */
 public class ShiwanM2SystemSettingsController implements Initializable {
+
+    // ==================== 主 TabPane ====================
+    @FXML private TabPane mainTabPane;
 
     // ==================== 标题栏 ====================
     @FXML private Button closeBtn;
@@ -107,6 +113,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField m1DbTableField;
     @FXML private TextField m1DbUserField;
     @FXML private PasswordField m1DbPasswordField;
+    @FXML private TextField m1InitialSerialNoField;
     @FXML private Label m1DbTestResultLabel;
 
     // ==================== 连接 - 后端服务地址 ====================
@@ -118,12 +125,29 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     // ==================== 初始化 ====================
 
+    /** 主 TabPane 中"设备" Tab 的固定索引（业务/页面配置/设备/连接） */
+    private static final int DEVICE_TAB_INDEX = 2;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupToggleStyles();
         setupIoDeviceTable();
         loadSettingsIntoUI();
         loadIoDevices();
+        setupDeviceTabListener();
+    }
+
+    /**
+     * 监听主 TabPane 的 Tab 切换：当切换到"设备"Tab 时，自动触发一次测试所有设备连接。
+     * 使用 Platform.runLater 延迟执行，确保 Tab 内容完全渲染后再开始测试。
+     */
+    private void setupDeviceTabListener() {
+        if (mainTabPane == null) return;
+        mainTabPane.getSelectionModel().selectedIndexProperty().addListener((obs, oldIdx, newIdx) -> {
+            if (newIdx != null && newIdx.intValue() == DEVICE_TAB_INDEX) {
+                Platform.runLater(this::onTestAllDevices);
+            }
+        });
     }
 
     /** 从配置加载到界面 */
@@ -172,6 +196,10 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             m1DbTableField.setText(s.getM1DbConnection().getTableName() != null ? s.getM1DbConnection().getTableName() : "T_Code");
             m1DbUserField.setText(s.getM1DbConnection().getUsername() != null ? s.getM1DbConnection().getUsername() : "");
             m1DbPasswordField.setText(s.getM1DbConnection().getPassword() != null ? s.getM1DbConnection().getPassword() : "");
+            if (m1InitialSerialNoField != null) {
+                Long initSn = s.getM1DbConnection().getInitialSerialNo();
+                m1InitialSerialNoField.setText(initSn != null ? String.valueOf(initSn) : "");
+            }
         }
         if (s.getApi() != null && backendBaseUrlField != null) {
             String url = s.getApi().getBackendBaseUrl();
@@ -490,7 +518,76 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @FXML
     private void onTestAllDevices() {
-        showInfo("测试所有设备", "已向所有设备发送测试请求（演示提示）。\n当前列表设备数：" + ioDeviceList.size());
+        new Thread(() -> {
+            try {
+                String responseJson = HttpUtil.doGet("/api/device/list");
+                ApiResult<List<IoDeviceDTO>> result = HttpUtil.parseJson(
+                        responseJson, new TypeReference<ApiResult<List<IoDeviceDTO>>>() {});
+
+                if (result == null || result.getCode() != 200 || result.getData() == null) {
+                    Platform.runLater(() -> showError("获取失败", "获取设备列表失败：" +
+                            (result != null ? result.getMessage() : "无响应")));
+                    return;
+                }
+
+                List<IoDeviceDTO> devices = result.getData();
+                int total = devices.size();
+                int connected = 0;
+                int reconnected = 0;
+
+                for (int i = 0; i < devices.size(); i++) {
+                    IoDeviceDTO device = devices.get(i);
+                    final int idx = i + 1;
+
+                    boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
+                    if (isConnected) {
+                        connected++;
+                        Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "已连接"));
+                    } else {
+                        Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "连接中..."));
+                        try {
+                            if (Boolean.TRUE.equals(device.getEnabled())) {
+                                DeviceConnectionManager.getInstance().stopConnection(device.getId());
+                                Thread.sleep(300);
+                                DeviceConnectionManager.getInstance().startConnection(device);
+                                Thread.sleep(500);
+                                if (DeviceConnectionManager.getInstance().isConnected(device.getId())) {
+                                    reconnected++;
+                                    connected++;
+                                    Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "已连接"));
+                                } else {
+                                    Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "连接失败"));
+                                }
+                            } else {
+                                Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "已禁用"));
+                            }
+                        } catch (Exception e) {
+                            Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "连接异常"));
+                        }
+                    }
+                    Thread.sleep(200);
+                }
+
+                final int finalTotal = total;
+                final int finalConnected = connected;
+                final int finalReconnected = reconnected;
+                final int failed = total - connected;
+
+                Platform.runLater(() -> {
+                    String msg = String.format(
+                            "测试完成！\n\n总设备数：%d\n已连接：%d\n重新连接成功：%d\n连接失败：%d",
+                            finalTotal, finalConnected, finalReconnected, failed);
+                    Alert alert = new Alert(
+                            failed > 0 ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
+                            msg, javafx.scene.control.ButtonType.OK);
+                    alert.setTitle("设备测试结果");
+                    alert.setHeaderText("IO设备连接测试完成");
+                    alert.showAndWait();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("测试异常", "测试所有设备时发生异常：" + e.getMessage()));
+            }
+        }).start();
     }
 
     private void onEditDevice(int index) {
@@ -560,8 +657,63 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     private void onTestDevice(int index) {
         if (index < 0 || index >= ioDeviceList.size()) return;
         IoDeviceDTO device = ioDeviceList.get(index);
-        showInfo("连接测试", "正在测试设备：" + device.getDeviceName() + "\n地址：" + device.getAddress() + ":" + device.getPort()
-            + "\n\n（演示提示，具体连接测试逻辑依赖设备接入模块）");
+        updateDeviceStatusInTable(device.getId(), "连接中...");
+
+        new Thread(() -> {
+            try {
+                boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
+                if (isConnected) {
+                    Platform.runLater(() -> {
+                        updateDeviceStatusInTable(device.getId(), "已连接");
+                        showSuccess("连接测试", "设备「" + device.getDeviceName() + "」连接正常。");
+                    });
+                    return;
+                }
+
+                // 未连接：尝试建立连接
+                if (!Boolean.TRUE.equals(device.getEnabled())) {
+                    Platform.runLater(() -> {
+                        updateDeviceStatusInTable(device.getId(), "已禁用");
+                        showInfo("连接测试", "设备「" + device.getDeviceName() + "」已禁用，无法测试连接。");
+                    });
+                    return;
+                }
+
+                DeviceConnectionManager.getInstance().stopConnection(device.getId());
+                Thread.sleep(300);
+                DeviceConnectionManager.getInstance().startConnection(device);
+                Thread.sleep(600);
+
+                boolean ok = DeviceConnectionManager.getInstance().isConnected(device.getId());
+                Platform.runLater(() -> {
+                    if (ok) {
+                        updateDeviceStatusInTable(device.getId(), "已连接");
+                        showSuccess("连接测试", "设备「" + device.getDeviceName() + "」连接成功！\n地址：" +
+                                device.getAddress() + ":" + device.getPort());
+                    } else {
+                        updateDeviceStatusInTable(device.getId(), "连接失败");
+                        showError("连接测试", "设备「" + device.getDeviceName() + "」连接失败。\n地址：" +
+                                device.getAddress() + ":" + device.getPort() + "\n请检查设备是否在线及地址配置是否正确。");
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    updateDeviceStatusInTable(device.getId(), "连接异常");
+                    showError("连接测试", "测试设备「" + device.getDeviceName() + "」时发生异常：" + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
+    /** 更新表格中指定设备的状态文本并刷新显示 */
+    private void updateDeviceStatusInTable(String deviceId, String status) {
+        for (IoDeviceDTO d : ioDeviceList) {
+            if (deviceId != null && deviceId.equals(d.getId())) {
+                d.setStatusText(status);
+                ioDeviceTable.refresh();
+                break;
+            }
+        }
     }
 
     private void onDeleteDevice(int index) {
@@ -748,6 +900,18 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             showError("输入有误", "数据库地址、端口、数据库名、用户名均为必填项。");
             return;
         }
+        Long initialSerialNo = null;
+        if (m1InitialSerialNoField != null) {
+            String snText = m1InitialSerialNoField.getText().trim();
+            if (!snText.isEmpty()) {
+                try {
+                    initialSerialNo = Long.parseLong(snText);
+                } catch (NumberFormatException ignored) {
+                    showError("输入有误", "初始同步游标必须为整数。");
+                    return;
+                }
+            }
+        }
         ShiwanM2Settings s = ShiwanM2SettingsStore.get();
         if (s.getM1DbConnection() == null) s.setM1DbConnection(new ShiwanM2Settings.M1DbConnectionConfig());
         s.getM1DbConnection().setHost(host);
@@ -756,6 +920,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getM1DbConnection().setTableName(tableName != null && !tableName.isEmpty() ? tableName : "T_Code");
         s.getM1DbConnection().setUsername(user);
         s.getM1DbConnection().setPassword(pwd != null ? pwd : "");
+        s.getM1DbConnection().setInitialSerialNo(initialSerialNo);
         saveSettings(s);
         showSuccess("1号机连接", "1号机数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name + " 表：" + (tableName.isEmpty() ? "T_Code" : tableName));
     }

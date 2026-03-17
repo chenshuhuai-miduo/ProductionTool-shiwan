@@ -1,5 +1,12 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.miduo.cloud.entity.enums.ModuleNameEnum;
+import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.config.ShiwanM2Settings;
+import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -15,6 +22,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -29,6 +38,15 @@ import java.util.ResourceBundle;
  * </p>
  */
 public class ShiwanM2ManualController implements Initializable {
+
+    private static final Logger log = LoggerFactory.getLogger(ShiwanM2ManualController.class);
+
+    /** 静态实例引用，供 ShiwanM2MainController 分发扫码枪数据时调用 */
+    private static volatile ShiwanM2ManualController instance;
+
+    public static ShiwanM2ManualController getInstance() {
+        return instance;
+    }
 
     // ==================== FXML 注入 ====================
 
@@ -63,6 +81,8 @@ public class ShiwanM2ManualController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        instance = this;
+
         dataLogList.setItems(dataLogItems);
         dataLogList.setCellFactory(lv -> new ShiwanM2MainController.LogCell());
 
@@ -123,6 +143,11 @@ public class ShiwanM2ManualController implements Initializable {
         String now = now();
         addOpLog(now + "  手工采集已启动，请按提示扫码", ShiwanM2MainController.LogType.INFO);
         addDataLog(now + "  系统就绪，请扫描第1个瓶码", ShiwanM2MainController.LogType.INFO);
+        OperateLogBuilder.create()
+                .module(ModuleNameEnum.MANUAL_COLLECT)
+                .operateType(OperateTypeEnum.START)
+                .content("手工采集已启动，规格：每盒" + parseBottlesPerBox() + "瓶")
+                .saveAsync();
     }
 
     private void stopCapture() {
@@ -132,6 +157,11 @@ public class ShiwanM2ManualController implements Initializable {
 
         bottlesPerBoxField.setEditable(true);
         addOpLog(now() + "  手工采集已停止", ShiwanM2MainController.LogType.INFO);
+        OperateLogBuilder.create()
+                .module(ModuleNameEnum.MANUAL_COLLECT)
+                .operateType(OperateTypeEnum.STOP)
+                .content("手工采集已停止，累计完成盒关联：" + totalBoxes + " 盒")
+                .saveAsync();
     }
 
     @FXML
@@ -154,35 +184,129 @@ public class ShiwanM2ManualController implements Initializable {
 
     // ==================== 外部调用（扫码枪回调）====================
 
+    /** 防止并发扫码时多次触发校验 */
+    private volatile boolean isValidating = false;
+
     /**
-     * 收到一条扫码数据（由上层服务调用）
+     * 收到一条扫码数据（由 ShiwanM2MainController 在扫码枪设备 category=7 数据到达时调用）。
+     * 校验顺序：码位数（本地）→ 热表 → CodeRelationUpload 重码（后端 API）。
      *
      * @param code 扫描到的码值
      */
     public void onScanCode(String code) {
-        if (!isRunning) return;
+        log.info("[手工采集] 扫码枪收到数据: {} | isRunning={}", code, isRunning);
+        if (!isRunning) {
+            log.info("[手工采集] 当前未启动采集，忽略扫码: {}", code);
+            return;
+        }
+        if (isValidating) {
+            log.info("[手工采集] 上一码正在校验中，忽略新码: {}", code);
+            return;
+        }
+        final String trimmedCode = code != null ? code.trim() : "";
+        if (trimmedCode.isEmpty()) return;
+
         Platform.runLater(() -> {
-            int bpb = parseBottlesPerBox();
-            String now = now();
-            if (waitingBottle) {
-                currentBottles++;
-                currentCountLabel.setText(String.valueOf(currentBottles));
-                addDataLog(now + "  瓶码采集：" + code, ShiwanM2MainController.LogType.DATA);
-                if (currentBottles >= bpb) {
-                    waitingBottle = false;
-                    addDataLog(now + "  扫码完成，请扫盒码", ShiwanM2MainController.LogType.DATA);
+            final int bpb = parseBottlesPerBox();
+            // 当前阶段：瓶码=1，盒码=2
+            final int packageType = waitingBottle ? 1 : 2;
+            final String codeTypeName = waitingBottle ? "瓶码" : "盒码";
+            final String now = now();
+
+            // 1. 码位数校验（本地读取系统设置）
+            ShiwanM2Settings settings = ShiwanM2SettingsStore.get();
+            if (settings != null && settings.getCodeDigits() != null) {
+                ShiwanM2Settings.CodeDigitsConfig digitsConfig = settings.getCodeDigits();
+                int expectedDigits = packageType == 1
+                        ? digitsConfig.getSmallCodeDigits()
+                        : digitsConfig.getMediumCodeDigits();
+                if (expectedDigits > 0 && trimmedCode.length() != expectedDigits) {
+                    log.warn("[手工采集] {}位数不符 code={} expected={} actual={}",
+                            codeTypeName, trimmedCode, expectedDigits, trimmedCode.length());
+                    addDataLog(now + "  【" + codeTypeName + "位数不符】需 " + expectedDigits
+                            + " 位，实 " + trimmedCode.length() + " 位：" + trimmedCode,
+                            ShiwanM2MainController.LogType.ERROR);
+                    return;
                 }
-            } else {
-                addDataLog(now + "  盒码关联成功：" + code + "（" + bpb + "瓶→1盒）",
-                        ShiwanM2MainController.LogType.SUCCESS);
-                totalBoxes++;
-                totalCountLabel.setText(String.valueOf(totalBoxes));
-                currentBottles = 0;
-                currentCountLabel.setText("0");
-                waitingBottle = true;
             }
-            refreshPrompt();
+
+            // 2. 后端校验：热表 + CodeRelationUpload 重码
+            isValidating = true;
+            String reqBody = "{\"code\":\"" + trimmedCode + "\",\"packageType\":" + packageType + "}";
+            HttpUtil.asyncPost(
+                    "/api/shiwan-m2/manual/validate-code",
+                    reqBody,
+                    json -> {
+                        isValidating = false;
+                        try {
+                            JsonNode node = HttpUtil.getObjectMapper().readTree(json);
+                            int respCode = node.has("code") ? node.get("code").asInt() : -1;
+                            String nowInner = now();
+                            if (respCode != 200) {
+                                String msg = node.has("message") ? node.get("message").asText() : "校验失败";
+                                log.warn("[手工采集] {}校验不通过 code={} msg={}", codeTypeName, trimmedCode, msg);
+                                addDataLog(nowInner + "  【" + codeTypeName + "校验不通过】" + msg,
+                                        ShiwanM2MainController.LogType.ERROR);
+                                OperateLogBuilder.create()
+                                        .module(ModuleNameEnum.MANUAL_COLLECT)
+                                        .operateType(OperateTypeEnum.VALIDATE)
+                                        .target(trimmedCode, codeTypeName)
+                                        .content("手工采集" + codeTypeName + "校验不通过：" + trimmedCode)
+                                        .failReason(msg)
+                                        .saveAsync();
+                                return;
+                            }
+                            // 校验通过，执行采集逻辑
+                            processValidatedCode(trimmedCode, packageType, bpb);
+                        } catch (Exception e) {
+                            isValidating = false;
+                            log.error("[手工采集] 解析校验响应异常 code={}", trimmedCode, e);
+                            addDataLog(now() + "  【" + codeTypeName + "校验响应异常】" + e.getMessage(),
+                                    ShiwanM2MainController.LogType.ERROR);
+                        }
+                    },
+                    err -> {
+                        isValidating = false;
+                        log.error("[手工采集] 校验请求失败 code={}", trimmedCode, err);
+                        addDataLog(now() + "  【" + codeTypeName + "校验请求失败】" + err.getMessage(),
+                                ShiwanM2MainController.LogType.ERROR);
+                    }
+            );
         });
+    }
+
+    /** 校验通过后执行采集入账逻辑（在 FX 线程执行） */
+    private void processValidatedCode(String code, int packageType, int bpb) {
+        String now = now();
+        if (packageType == 1) {
+            // 瓶码
+            currentBottles++;
+            currentCountLabel.setText(String.valueOf(currentBottles));
+            log.info("[手工采集] 瓶码 #{}: {} (当前已扫 {}/{})", currentBottles, code, currentBottles, bpb);
+            addDataLog(now + "  瓶码采集：" + code, ShiwanM2MainController.LogType.DATA);
+            if (currentBottles >= bpb) {
+                waitingBottle = false;
+                log.info("[手工采集] 瓶码已满 {} 个，等待扫盒码", bpb);
+                addDataLog(now + "  扫码完成，请扫盒码", ShiwanM2MainController.LogType.DATA);
+            }
+        } else {
+            // 盒码
+            log.info("[手工采集] 盒码: {} ({}瓶→1盒，累计 {} 盒)", code, bpb, totalBoxes + 1);
+            addDataLog(now + "  盒码关联成功：" + code + "（" + bpb + "瓶→1盒）",
+                    ShiwanM2MainController.LogType.SUCCESS);
+            totalBoxes++;
+            totalCountLabel.setText(String.valueOf(totalBoxes));
+            OperateLogBuilder.create()
+                    .module(ModuleNameEnum.MANUAL_COLLECT)
+                    .operateType(OperateTypeEnum.COLLECT)
+                    .target(code, code)
+                    .content("手工采集盒码关联成功：盒码=" + code + "，已关联" + bpb + "瓶，累计完成" + totalBoxes + "盒")
+                    .saveAsync();
+            currentBottles = 0;
+            currentCountLabel.setText("0");
+            waitingBottle = true;
+        }
+        refreshPrompt();
     }
 
     // ==================== 日志 ====================

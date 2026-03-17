@@ -484,8 +484,53 @@ public class ShiwanM2BoxCaseService {
         Long c = jdbcTemplate.queryForObject(
                 "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 " +
                         "AND BigSerialNumber != ''",
-                Long.class, orderNo.trim(), boxCode);
+                Long.class, boxCode);
         return c != null && c > 0;
+    }
+
+    /**
+     * 手工采集码校验（供前端 P02-02 调用）。
+     * packageType: 1=小码(瓶码), 2=中码(盒码)。
+     * 检查项：
+     * 1. 码是否在热表（CodePackageItemHot JOIN CodePackageImport WHERE PackageType=packageType）
+     * 2. CodeRelationUpload 中是否已存在该码的关联关系（重码）
+     */
+    public ApiResult<Map<String, Object>> validateManualCode(String code, int packageType) {
+        if (code == null || code.trim().isEmpty()) {
+            return ApiResult.error(400, "码值不能为空");
+        }
+        code = code.trim();
+        if (packageType != 1 && packageType != 2) {
+            return ApiResult.error(400, "packageType 仅支持 1（瓶码）或 2（盒码）");
+        }
+        String codeTypeName = packageType == 1 ? "瓶码" : "盒码";
+        try {
+            if (!isCodeInPackage(code, packageType)) {
+                return ApiResult.error(400, codeTypeName + "不在有效码包热表中：" + code);
+            }
+            boolean hasRelation;
+            if (packageType == 1) {
+                Long c = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM CodeRelationUpload WHERE SmallSerialNumber = ? AND IsDel = 0",
+                        Long.class, code);
+                hasRelation = c != null && c > 0;
+            } else {
+                Long c = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0",
+                        Long.class, code);
+                hasRelation = c != null && c > 0;
+            }
+            if (hasRelation) {
+                return ApiResult.error(400, codeTypeName + "已存在码关系（重码）：" + code);
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("code", code);
+            data.put("packageType", packageType);
+            return ApiResult.success("校验通过", data);
+        } catch (Exception e) {
+            log.error("[手工采集校验] 异常 code={} packageType={}", code, packageType, e);
+            return ApiResult.error("校验异常：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
     }
 
     /** 已生产垛数：该订单下不同 VirtualSerialNumber 的数量（非空且 IsDel=0）。
@@ -501,6 +546,34 @@ public class ShiwanM2BoxCaseService {
             return n != null ? n.intValue() : 0;
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    /**
+     * 写入单条剔除记录到 RejectRecord 表。
+     * <p>
+     * 字段说明（对应需求文档 10.1.6）：
+     * <ul>
+     *   <li>caseCode   — 被剔除箱的箱码（必填）</li>
+     *   <li>boxCode    — 问题盒码；大标/重码场景为 null</li>
+     *   <li>bottleCode — 问题瓶码；当前 TCP 采集场景暂为 null</li>
+     *   <li>problemCode— 导致剔除的具体码（大标/重码时为箱码，中标不通过时为盒码，盒箱校验不通过时为 null）</li>
+     *   <li>rejectReason— 枚举文本：大标不通过/重码/盒箱校验不通过/中标不通过 等</li>
+     * </ul>
+     * 写入失败仅记录日志，不向上抛异常，避免影响主流程。
+     */
+    public void insertRejectRecord(String orderNo, String caseCode, String boxCode,
+                                   String bottleCode, String problemCode, String rejectReason) {
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO RejectRecord (OrderNo, CaseCode, BoxCode, BottleCode, ProblemCode, RejectReason, RejectTime) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                    orderNo, caseCode, boxCode, bottleCode, problemCode, rejectReason);
+            log.info("[剔除记录] 写入成功 orderNo={} caseCode={} boxCode={} problemCode={} reason={}",
+                    orderNo, caseCode, boxCode, problemCode, rejectReason);
+        } catch (Exception e) {
+            log.error("[剔除记录] 写入失败 orderNo={} caseCode={} boxCode={} reason={}: {}",
+                    orderNo, caseCode, boxCode, rejectReason, e.getMessage(), e);
         }
     }
 

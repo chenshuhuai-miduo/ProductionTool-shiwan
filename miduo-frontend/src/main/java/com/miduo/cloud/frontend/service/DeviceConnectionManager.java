@@ -2,6 +2,8 @@ package com.miduo.cloud.frontend.service;
 
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import javafx.application.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +17,9 @@ import java.util.function.BiConsumer;
  * 管理所有IO设备的连接状态和数据接收
  */
 public class DeviceConnectionManager {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(DeviceConnectionManager.class);
+
     // 单例
     private static DeviceConnectionManager instance;
     
@@ -38,7 +42,7 @@ public class DeviceConnectionManager {
     private Consumer<String> dataReceiveHandler;
     
     // 数据接收处理器（新版本，携带设备类别信息）
-    // 参数1: 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备），参数2: 接收到的数据
+    // 参数1: 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备, 7=扫码枪, 8=继电器板），参数2: 接收到的数据
     private BiConsumer<Integer, String> dataReceiveHandlerWithOrder;
     
     // 操作日志处理器（用于记录重试日志到主界面）
@@ -139,7 +143,7 @@ public class DeviceConnectionManager {
     
     /**
      * 将设备类别文本转换为代码
-     * 码校验->1, 箱码采集->2, 托盘码关联->3, 箱码关联->4, 报警器->5, 剔除设备->6, 扫码枪->7
+     * 码校验->1, 箱码采集->2, 托盘码关联->3, 箱码关联->4, 报警器->5, 剔除设备->6, 扫码枪->7, 继电器板->8
      */
     private int convertCategoryTextToCode(String categoryText) {
         if (categoryText == null) return 0;
@@ -151,6 +155,7 @@ public class DeviceConnectionManager {
             case "报警器": return 5;
             case "剔除设备": return 6;
             case "扫码枪": return 7;
+            case "继电器板": return 8;
             default: return 0;
         }
     }
@@ -308,9 +313,9 @@ public class DeviceConnectionManager {
         IoDeviceDTO device = deviceConfigs.get(deviceId);
         String deviceName = device != null ? device.getDeviceName() : deviceId;
         String categoryName = device != null && device.getDeviceCategory() != null ? device.getDeviceCategory() : "未知";
-        
-        System.out.println("[连接管理器] 接收到数据: [" + categoryName + "(" + categoryCode + ")-" + deviceName + "] " + data);
-        
+
+        log.info("[设备数据] 类别={} code={} 设备={} 数据={}", categoryName, categoryCode, deviceName, data);
+
         // 调用新版处理器（携带设备类别代码）
         if (dataReceiveHandlerWithOrder != null) {
             final int finalCategoryCode = categoryCode;
@@ -571,7 +576,7 @@ public class DeviceConnectionManager {
     /**
      * 根据设备类别代码获取设备配置
      * 
-     * @param categoryCode 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备）
+     * @param categoryCode 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备, 7=扫码枪, 8=继电器板）
      * @return 设备配置，未找到返回null
      */
     public IoDeviceDTO getDeviceByCategory(int categoryCode) {
@@ -623,9 +628,9 @@ public class DeviceConnectionManager {
     }
     
     /**
-     * 向指定设备类别的设备发送原始字节（用于工业 hex 协议，如报警灯颜色/蜂鸣控制）
+     * 向指定设备类别的设备发送原始字节（用于工业 hex 协议，如报警灯颜色/蜂鸣控制、继电器板控制）
      *
-     * @param categoryCode 设备类别代码（5=报警器, 6=剔除设备）
+     * @param categoryCode 设备类别代码（5=报警器, 6=剔除设备, 8=继电器板）
      * @param data         要发送的原始字节
      * @return 发送成功返回 true
      */
@@ -648,7 +653,7 @@ public class DeviceConnectionManager {
     /**
      * 向指定设备类别的设备发送数据
      * 
-     * @param categoryCode 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备）
+     * @param categoryCode 设备类别代码（1=码校验, 2=箱码采集, 3=托盘码关联, 4=箱码关联, 5=报警器, 6=剔除设备, 7=扫码枪, 8=继电器板）
      * @param data 要发送的数据
      * @return 发送成功返回true
      */
@@ -693,7 +698,7 @@ public class DeviceConnectionManager {
      * 获取设备的类别代码
      * 
      * @param deviceId 设备ID
-     * @return 类别代码（1=码校验,2=箱码采集,3=托盘码关联,4=箱码关联,5=报警器,6=剔除设备），未找到返回0
+     * @return 类别代码（1=码校验,2=箱码采集,3=托盘码关联,4=箱码关联,5=报警器,6=剔除设备,7=扫码枪,8=继电器板），未找到返回0
      */
     public int getDeviceCategory(String deviceId) {
         return deviceCategoryMap.getOrDefault(deviceId, 0);

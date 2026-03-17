@@ -34,7 +34,12 @@ import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
+import com.miduo.cloud.entity.enums.ModuleNameEnum;
+import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -165,7 +170,11 @@ public class ShiwanM2MainController implements Initializable {
     private final ObservableList<UploadItem> uploadItems   = FXCollections.observableArrayList();
     private final ObservableList<ProductItem> productItems = FXCollections.observableArrayList();
 
-    private final ExecutorService productExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService productExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "capture-executor");
+        t.setDaemon(true);
+        return t;
+    });
     /** 为 true 时屏蔽编辑框文字变化触发的搜索（程序设值时用） */
     private volatile boolean suppressProductSearch = false;
 
@@ -191,6 +200,11 @@ public class ShiwanM2MainController implements Initializable {
         "dataCollection", "manual", "query", "replace", "stats", "package", "cancel", "upload"
     };
 
+    private static final Logger log = LoggerFactory.getLogger(ShiwanM2MainController.class);
+
+    /** 扫码枪设备类别代码（与 DeviceConnectionManager.convertCategoryTextToCode 保持一致） */
+    private static final int CATEGORY_SCANNER = 7;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupProductComboBox();
@@ -201,11 +215,39 @@ public class ShiwanM2MainController implements Initializable {
         initActivationStatus();
         applyPageConfig();
         registerPalletEventListener();
+        registerDeviceDataHandler();
         Platform.runLater(() -> {
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
         });
         loadSpecFromSettings();
+    }
+
+    /**
+     * 注册设备数据分发处理器：
+     * 所有设备收到的数据都写入数据接收区；
+     * category=7（扫码枪）→ 额外转发给手工采集控制器 {@link ShiwanM2ManualController#onScanCode}。
+     */
+    private void registerDeviceDataHandler() {
+        DeviceConnectionManager.getInstance().setDataReceiveHandlerWithOrder((categoryCode, data) -> {
+            log.info("[设备数据分发] category={} data={}", categoryCode, data);
+
+            // 查询设备名称，写入数据接收区
+            IoDeviceDTO device = DeviceConnectionManager.getInstance().getDeviceByCategory(categoryCode);
+            String deviceLabel = device != null ? device.getDeviceName() : ("类别" + categoryCode);
+            String now = LocalDateTime.now().format(TIME_FMT);
+            addDataLog(now + "  [" + deviceLabel + "] 收到: " + data, LogType.DATA);
+
+            if (categoryCode == CATEGORY_SCANNER) {
+                ShiwanM2ManualController manualCtrl = ShiwanM2ManualController.getInstance();
+                if (manualCtrl != null) {
+                    log.info("[设备数据分发] 扫码枪数据 → 手工采集控制器: {}", data);
+                    manualCtrl.onScanCode(data);
+                } else {
+                    log.warn("[设备数据分发] 扫码枪数据到达但手工采集控制器未初始化: {}", data);
+                }
+            }
+        });
     }
 
     /**
@@ -544,6 +586,10 @@ public class ShiwanM2MainController implements Initializable {
 
     private void doExit() {
         if (clockTimeline != null) clockTimeline.stop();
+        if (statsRefreshTimeline != null) statsRefreshTimeline.stop();
+        if (captureEventsTimeline != null) captureEventsTimeline.stop();
+        DeviceConnectionManager.getInstance().stopAllConnections();
+        productExecutor.shutdownNow();
         Platform.exit();
     }
 
@@ -650,7 +696,22 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onOperationLog() {
-        showInfo("操作日志", "操作日志功能开发中...");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/OperateLog.fxml"));
+            Parent root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("操作日志");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.initOwner(currentTimeLabel.getScene().getWindow());
+            stage.setResizable(true);
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showInfo("操作日志", "无法打开操作日志界面，请联系技术人员。\n错误信息：" + e.getMessage());
+        }
     }
 
     @FXML
@@ -910,14 +971,9 @@ public class ShiwanM2MainController implements Initializable {
             return;
         }
 
-        // 门禁4：必选设备检查
+        // 门禁4：必选设备检查（仅校验配置和TCP网口可达性，不检查前端连接状态；IO设备将在采集启动时统一连接）
         try {
-            String deviceConnectionsJson = buildDeviceConnectionsJsonEncoded();
-            String devUrl = "/api/shiwan-m2/device/check-required";
-            if (deviceConnectionsJson != null && !deviceConnectionsJson.isEmpty()) {
-                devUrl += "?deviceConnectionsJson=" + deviceConnectionsJson;
-            }
-            String devJson = HttpUtil.doGet(devUrl);
+            String devJson = HttpUtil.doGet("/api/shiwan-m2/device/check-required");
             JsonNode dev = JSON.readTree(devJson);
             if (dev != null && dev.has("data") && dev.get("data").has("passed")
                     && !dev.get("data").get("passed").asBoolean()) {
@@ -926,9 +982,9 @@ public class ShiwanM2MainController implements Initializable {
                     dev.get("data").get("failedChecks").forEach(item ->
                             sb.append("• ").append(item.asText()).append("\n"));
                 }
-                sb.append("\n请在「系统设置→设备→IO设备管理」中配置并连接上述设备。");
+                sb.append("\n请在「系统设置→设备→IO设备管理」中配置上述设备。");
                 final String devMsg = sb.toString();
-                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("设备未连接", devMsg); });
+                Platform.runLater(() -> { resetStartCaptureBtn(); showWarn("设备未就绪", devMsg); });
                 return;
             }
         } catch (Exception e) {
@@ -1035,9 +1091,18 @@ public class ShiwanM2MainController implements Initializable {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  开始采集 - 产品：" + product + "，生产单：" + orderNo, LogType.INFO);
         addDataLog(now + "  设备初始化完成，开始接收数据", LogType.SUCCESS);
+        OperateLogBuilder.create()
+                .module(ModuleNameEnum.BOX_CASE_ASSOCIATE)
+                .operateType(OperateTypeEnum.START)
+                .target(orderNo, product)
+                .content("开始采集 - 产品：" + product + "，生产单：" + orderNo
+                        + "，规格：每箱" + n + "盒/每垛" + m + "箱")
+                .saveAsync();
         refreshProducedPalletCount(orderNo);
         refreshRejectCount(orderNo);
 
+        // 连接所有IO设备（网口/串口），采集期间才占用端口
+        connectAllDevices();
         // 启动 1号机 T_Code 轮询同步（后台线程，不阻塞 UI）
         startM1Sync();
         // 启动 TCP 相机采集（n=每箱盒数, m=每垛箱数）
@@ -1094,6 +1159,43 @@ public class ShiwanM2MainController implements Initializable {
                 captureEventsTimeline.setCycleCount(Animation.INDEFINITE);
                 captureEventsTimeline.play();
             });
+        });
+    }
+
+    /**
+     * 开始采集时在后台线程连接所有已启用的IO设备（网口/串口），
+     * 采集期间才占用端口，停止采集时统一释放。
+     */
+    private void connectAllDevices() {
+        productExecutor.submit(() -> {
+            try {
+                String resp = HttpUtil.doGet("/api/device/list");
+                ApiResult<List<IoDeviceDTO>> result = HttpUtil.parseJson(
+                        resp, new TypeReference<ApiResult<List<IoDeviceDTO>>>() {});
+                if (result == null || result.getCode() != 200 || result.getData() == null) {
+                    Platform.runLater(() -> addOpLog(
+                            LocalDateTime.now().format(TIME_FMT) + "  获取设备列表失败，跳过IO设备连接", LogType.WARN));
+                    return;
+                }
+                int connectedCount = 0;
+                for (IoDeviceDTO device : result.getData()) {
+                    if (!Boolean.TRUE.equals(device.getEnabled())) continue;
+                    try {
+                        DeviceConnectionManager.getInstance().startConnection(device);
+                        connectedCount++;
+                    } catch (Exception e) {
+                        final String errMsg = device.getDeviceName() + " 连接失败：" + e.getMessage();
+                        Platform.runLater(() -> addOpLog(
+                                LocalDateTime.now().format(TIME_FMT) + "  [设备] " + errMsg, LogType.WARN));
+                    }
+                }
+                final int cnt = connectedCount;
+                Platform.runLater(() -> addOpLog(
+                        LocalDateTime.now().format(TIME_FMT) + "  IO设备连接完成，已连接 " + cnt + " 台", LogType.INFO));
+            } catch (Exception e) {
+                Platform.runLater(() -> addOpLog(
+                        LocalDateTime.now().format(TIME_FMT) + "  IO设备连接异常：" + e.getMessage(), LogType.WARN));
+            }
         });
     }
 
@@ -1197,6 +1299,12 @@ public class ShiwanM2MainController implements Initializable {
                         }
                     }
                     addDataLog(time + "  装箱完成 - 箱码：" + caseCode + " 已关联 " + bpc + " 盒", LogType.SUCCESS);
+                    OperateLogBuilder.create()
+                            .module(ModuleNameEnum.BOX_CASE_ASSOCIATE)
+                            .operateType(OperateTypeEnum.ASSOCIATE)
+                            .target(caseCode, orderNo)
+                            .content("盒箱关联成功 - 箱码：" + caseCode + " 已关联 " + bpc + " 盒，生产单：" + orderNo)
+                            .saveAsync();
 
                     currentBoxes = 0;
                     currentCases = cases;
@@ -1209,6 +1317,13 @@ public class ShiwanM2MainController implements Initializable {
                         String pc = palletCode != null ? palletCode : ("P" + orderNo + String.format("%03d", palletCount));
                         addDataLog(time + "  满垛完成 - 垛码：" + pc + " 共 " + cpp + " 箱，正在上传...", LogType.SUCCESS);
                         addOpLog(time + "  满垛完成，已生产垛数：" + palletCount, LogType.INFO);
+                        OperateLogBuilder.create()
+                                .module(ModuleNameEnum.PALLET_MANAGE)
+                                .operateType(OperateTypeEnum.COMPLETE)
+                                .target(pc, orderNo)
+                                .content("满垛完成 - 垛码：" + pc + " 共 " + cpp + " 箱，生产单：" + orderNo
+                                        + "，已生产垛数：" + palletCount)
+                                .saveAsync();
                         uploadItems.add(0, new UploadItem("垛 " + pc, cpp + "箱", UploadStatus.PENDING));
                         currentCases = 0;
                         curCasesLabel.setText("0");
@@ -1219,6 +1334,13 @@ public class ShiwanM2MainController implements Initializable {
                 case "ASSOC_FAIL": {
                     String reason = evtData != null && evtData.has("reason") ? evtData.get("reason").asText() : msg;
                     addAlarmLog(time + "  关联失败：" + reason, LogType.ERROR);
+                    OperateLogBuilder.create()
+                            .module(ModuleNameEnum.BOX_CASE_ASSOCIATE)
+                            .operateType(OperateTypeEnum.ASSOCIATE)
+                            .target("", orderNo)
+                            .content("盒箱关联失败，生产单：" + orderNo)
+                            .failReason(reason)
+                            .saveAsync();
                     // 文档：盒箱关联失败 → 触发剔除装置 + 红灯+蜂鸣
                     ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
                     hw.triggerRejection();
@@ -1366,6 +1488,13 @@ public class ShiwanM2MainController implements Initializable {
 
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  停止采集，未满垛数据已保留（" + currentCases + "箱）", LogType.INFO);
+        final String stopOrderNo = orderNumField.getText();
+        OperateLogBuilder.create()
+                .module(ModuleNameEnum.BOX_CASE_ASSOCIATE)
+                .operateType(OperateTypeEnum.STOP)
+                .target(stopOrderNo, stopOrderNo)
+                .content("停止采集，未满垛数据已保留（" + currentCases + "箱），生产单：" + stopOrderNo)
+                .saveAsync();
         stopStatsRefresh();
 
         // 停止 1 号机 T_Code 轮询同步
@@ -1373,6 +1502,13 @@ public class ShiwanM2MainController implements Initializable {
 
         // 停止 TCP 相机采集
         stopTcpCapture();
+
+        // 断开所有IO设备连接（释放网口和串口占用）
+        productExecutor.submit(() -> {
+            DeviceConnectionManager.getInstance().stopAllConnections();
+            Platform.runLater(() -> addOpLog(
+                    LocalDateTime.now().format(TIME_FMT) + "  所有IO设备连接已断开", LogType.INFO));
+        });
     }
 
     @FXML
@@ -1417,7 +1553,15 @@ public class ShiwanM2MainController implements Initializable {
             try {
                 JsonNode root = JSON.readTree(json);
                 if (root == null || !root.has("code") || root.get("code").asInt() != 200) {
-                    showWarn("强制满垛失败", root != null && root.has("message") ? root.get("message").asText() : "后端返回异常");
+                    String errMsg = root != null && root.has("message") ? root.get("message").asText() : "后端返回异常";
+                    OperateLogBuilder.create()
+                            .module(ModuleNameEnum.PALLET_MANAGE)
+                            .operateType(OperateTypeEnum.FORCE)
+                            .target("", orderNo)
+                            .content("强制满垛失败，生产单：" + orderNo + "，当前箱数：" + currentCaseCount)
+                            .failReason(errMsg)
+                            .saveAsync();
+                    showWarn("强制满垛失败", errMsg);
                     return;
                 }
                 JsonNode data = root.get("data");
@@ -1440,6 +1584,14 @@ public class ShiwanM2MainController implements Initializable {
         String now = LocalDateTime.now().format(TIME_FMT);
         addDataLog(now + "  强制满垛 - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱", LogType.SUCCESS);
         addOpLog(now + "  强制满垛操作完成，已生产垛数：" + palletCount, LogType.INFO);
+        final String forceOrderNo = orderNumField.getText();
+        OperateLogBuilder.create()
+                .module(ModuleNameEnum.PALLET_MANAGE)
+                .operateType(OperateTypeEnum.FORCE)
+                .target(palletCode, forceOrderNo)
+                .content("强制满垛 - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱，生产单：" + forceOrderNo
+                        + "，已生产垛数：" + palletCount)
+                .saveAsync();
         uploadItems.add(0, new UploadItem("垛 " + palletCode, caseCount + "箱", UploadStatus.PENDING));
         currentCases = 0;
         currentBoxes = 0;

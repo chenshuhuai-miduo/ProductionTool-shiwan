@@ -2788,6 +2788,12 @@ function switchTab(tabId) {
   const btnId = 'tabBtn-' + tabId.replace('tab-','');
   const btn = document.getElementById(btnId);
   if(btn) btn.classList.add('active');
+  if(tabId === 'tab-query') {
+    setTimeout(() => {
+      const inp = document.getElementById('queryInput');
+      if(inp) { inp.focus(); inp.select(); }
+    }, 80);
+  }
 }
 
 // 数据采集模拟
@@ -3377,6 +3383,11 @@ function doQuery() {
 
   document.getElementById('queryDetail').innerHTML = '请点击左侧记录查看详细信息';
   document.getElementById('queryDetail').style.color = '#9CA3AF';
+  // 查询完成后重新全选输入框，方便扫码枪连续扫码（下次扫码自动覆盖当前内容）
+  setTimeout(() => {
+    const inp = document.getElementById('queryInput');
+    if(inp) { inp.focus(); inp.select(); }
+  }, 80);
 }
 
 function selectQueryRow(idx) {

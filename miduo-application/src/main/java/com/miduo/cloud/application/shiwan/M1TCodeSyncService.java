@@ -70,14 +70,20 @@ public class M1TCodeSyncService {
             return;
         }
         if (!syncRunning.compareAndSet(false, true)) {
-            if (log.isDebugEnabled()) {
-                log.debug("1号机 T_Code 同步: 上一轮仍在执行，跳过本轮触发");
-            }
+            log.debug("1号机 T_Code 同步: 上一轮仍在执行，跳过本轮触发");
             return;
         }
         try {
+            doSync();
+        } finally {
+            syncRunning.set(false);
+        }
+    }
+
+    private void doSync() {
         ShiwanM2SettingsDto config = ShiwanM2SettingsFileLoader.load();
         if (config == null || config.getM1DbConnection() == null) {
+            log.warn("1号机 T_Code 同步: 未找到 M1 连接配置(shiwan-m2-settings.json 中 m1DbConnection)，跳过本次");
             return;
         }
         ShiwanM2SettingsDto.M1DbConnection m1 = config.getM1DbConnection();
@@ -89,11 +95,24 @@ public class M1TCodeSyncService {
         String username = m1.getUsername() != null ? m1.getUsername().trim() : null;
         String password = m1.getPassword() != null ? m1.getPassword() : "";
         if (host == null || host.isEmpty() || database == null || database.isEmpty() || username == null || username.isEmpty()) {
+            log.warn("1号机 T_Code 同步: M1 连接配置不完整(host={} database={} username={})，跳过本次", host, database, username);
             return;
         }
 
         Long lastSynced = M1SyncCursorStore.loadLastSyncedSerialNo();
-        if (lastSynced == null) lastSynced = 0L;
+        if (lastSynced == null) {
+            // 游标文件不存在（首次同步）：优先使用配置中设置的初始游标值
+            Long initialSerialNo = m1.getInitialSerialNo();
+            if (initialSerialNo != null && initialSerialNo > 0) {
+                lastSynced = initialSerialNo;
+                log.info("1号机 T_Code 同步: 首次同步，使用配置的初始游标 SerialNo={}", lastSynced);
+            } else {
+                lastSynced = 0L;
+                log.info("1号机 T_Code 同步: 首次同步，未配置初始游标，从 SerialNo=0 开始拉取全部数据");
+            }
+            // 立即持久化初始游标，防止游标文件始终不存在导致每轮都打印"首次同步"
+            M1SyncCursorStore.saveLastSyncedSerialNo(lastSynced);
+        }
 
         // 同步落库阶段不写订单号/产品编号，待后续盒箱关联成功后回填
         String orderNo = "";
@@ -107,12 +126,18 @@ public class M1TCodeSyncService {
             return;
         }
 
+        // ---- 查询语句（源：1号机 SQL Server → T_Code） ----
+        // 注意：不过滤 Status，同步全部 SerialNo > lastSynced 的记录
+        String querySql = "SELECT TOP " + MAX_ROWS_PER_SYNC + " SerialNo, BagCode, BoxCode FROM " + tableName
+                + " WHERE SerialNo > ? ORDER BY SerialNo ASC";
+        log.info("1号机 T_Code 同步 [查询] SQL: {} | 参数: SerialNo > {} | 目标: {}@{}:{}/{}",
+                querySql, lastSynced, username, host, port, database);
+
         List<TCodeRow> rows = new ArrayList<>();
         long maxSerialNo = lastSynced;
         try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
-            String sql = "SELECT TOP " + MAX_ROWS_PER_SYNC + " SerialNo, BagCode, BoxCode FROM " + tableName
-                    + " WHERE SerialNo > ? AND (Status = 0 OR Status = '0') ORDER BY SerialNo ASC";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            log.info("1号机 T_Code 同步 [查询] 连接成功: {}@{}:{}/{}", username, host, port, database);
+            try (PreparedStatement ps = conn.prepareStatement(querySql)) {
                 ps.setLong(1, lastSynced);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -124,18 +149,26 @@ public class M1TCodeSyncService {
                     }
                 }
             }
+            log.info("1号机 T_Code 同步 [查询] 结果: 共读取 {} 条 (SerialNo > {}, 上限 {}条/批)",
+                    rows.size(), lastSynced, MAX_ROWS_PER_SYNC);
+            if (!rows.isEmpty()) {
+                log.info("1号机 T_Code 同步 [查询] SerialNo 范围: {} ~ {} | 首条样本: SerialNo={} BagCode={} BoxCode={}",
+                        rows.get(0).serialNo, maxSerialNo,
+                        rows.get(0).serialNo, rows.get(0).bagCode, rows.get(0).boxCode);
+            }
         } catch (Exception e) {
-            log.debug("1号机 T_Code 查询失败: {}", e.getMessage());
+            log.warn("1号机 T_Code 同步 [查询] 连接或查询失败: {}@{}:{}/{} — {}", username, host, port, database, e.getMessage());
             return;
         }
 
         if (rows.isEmpty()) {
+            log.info("1号机 T_Code 同步 [查询] 暂无新数据 (SerialNo > {})，等待下次轮询", lastSynced);
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        String empty = "";
-        String tagNo = "";
+        // ---- 插入语句（目标：2号机 MySQL → CodeRelationUpload） ----
+        // 字段映射：T_Code.BoxCode → MediumSerialNumber(箱码), T_Code.BagCode → SmallSerialNumber(盒码)
+        // BigSerialNumber/OrderNo/ProductNO 留空，待盒箱关联成功后由 ShiwanM2BoxCaseService 回填
         String insertSql =
                 "INSERT INTO CodeRelationUpload (" +
                         "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
@@ -146,21 +179,29 @@ public class M1TCodeSyncService {
                         "WHERE NOT EXISTS (" +
                         "SELECT 1 FROM CodeRelationUpload " +
                         "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0)";
+        log.info("1号机 T_Code 同步 [插入] SQL: {} | 待写入 {} 条到 CodeRelationUpload (去重: MediumSerialNumber+SmallSerialNumber)",
+                insertSql, rows.size());
+
+        LocalDateTime now = LocalDateTime.now();
+        String empty = "";
+        String tagNo = "";
+        int insertedCount = 0;
+        int skippedCount = 0;
         try {
-            jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+            int[] results = jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
                     TCodeRow row = rows.get(i);
-                    ps.setString(1, empty);
-                    ps.setString(2, empty);
-                    ps.setString(3, row.boxCode);
-                    ps.setString(4, row.bagCode);
+                    ps.setString(1, empty);          // BiggerSerialNumber（垛码，成垛时回填）
+                    ps.setString(2, empty);          // BigSerialNumber（箱码，盒箱关联时回填）
+                    ps.setString(3, row.boxCode);    // MediumSerialNumber ← T_Code.BoxCode（中层箱码）
+                    ps.setString(4, row.bagCode);    // SmallSerialNumber  ← T_Code.BagCode（小层盒码）
                     ps.setString(5, empty);
                     ps.setString(6, empty);
                     ps.setString(7, empty);
                     ps.setInt(8, 0);
-                    ps.setString(9, productNo);
-                    ps.setString(10, orderNo);
+                    ps.setString(9, productNo);      // ProductNO（盒箱关联时回填）
+                    ps.setString(10, orderNo);       // OrderNo（盒箱关联时回填）
                     ps.setInt(11, 0);
                     ps.setString(12, tagNo);
                     ps.setInt(13, 0);
@@ -171,10 +212,10 @@ public class M1TCodeSyncService {
                     ps.setInt(18, 0);
                     ps.setString(19, empty);
                     ps.setInt(20, 0);
-                    ps.setInt(21, 0);
+                    ps.setInt(21, 0);                // IsDel=0
                     ps.setString(22, empty);
-                    ps.setString(23, row.boxCode);
-                    ps.setString(24, row.bagCode);
+                    ps.setString(23, row.boxCode);   // WHERE NOT EXISTS: MediumSerialNumber
+                    ps.setString(24, row.bagCode);   // WHERE NOT EXISTS: SmallSerialNumber
                 }
 
                 @Override
@@ -182,30 +223,34 @@ public class M1TCodeSyncService {
                     return rows.size();
                 }
             });
+            for (int r : results) {
+                if (r > 0) insertedCount++;
+                else skippedCount++;
+            }
         } catch (Exception e) {
-            log.warn("1号机 T_Code 批量写入失败，回退逐条写入: {}", e.getMessage());
+            log.warn("1号机 T_Code 同步 [插入] 批量写入失败，回退逐条写入: {}", e.getMessage());
             for (TCodeRow row : rows) {
                 try {
-                    jdbcTemplate.update(
+                    int affected = jdbcTemplate.update(
                             insertSql,
                             empty, empty, row.boxCode, row.bagCode,
                             empty, empty, empty, 0, productNo, orderNo, 0, tagNo, 0, 1,
                             empty, empty, now, 0, empty, 1, 0, empty,
                             row.boxCode, row.bagCode
                     );
+                    if (affected > 0) insertedCount++;
+                    else skippedCount++;
                 } catch (Exception ex) {
-                    log.warn("1号机 T_Code 同步写入 CodeRelationUpload 失败 SerialNo={}: {}", row.serialNo, ex.getMessage());
+                    log.warn("1号机 T_Code 同步 [插入] 单条写入失败 SerialNo={} BoxCode={} BagCode={}: {}",
+                            row.serialNo, row.boxCode, row.bagCode, ex.getMessage());
+                    skippedCount++;
                 }
             }
         }
 
         M1SyncCursorStore.saveLastSyncedSerialNo(maxSerialNo);
-        if (log.isDebugEnabled() && !rows.isEmpty()) {
-            log.debug("1号机 T_Code 同步: 读取 {} 条(单批上限 {}), lastSyncedSerialNo={}", rows.size(), MAX_ROWS_PER_SYNC, maxSerialNo);
-        }
-        } finally {
-            syncRunning.set(false);
-        }
+        log.info("1号机 T_Code 同步 [结果] 本批读取 {} 条，新增写入 {} 条，重复跳过 {} 条，游标更新至 SerialNo={}",
+                rows.size(), insertedCount, skippedCount, maxSerialNo);
     }
 
     private CurrentTask getCurrentTask() {

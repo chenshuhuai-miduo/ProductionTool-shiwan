@@ -59,6 +59,7 @@ public class ShiwanM2SettingsDto {
         private String tableName;
         private String username;
         private String password;
+        private Long initialSerialNo;
         public String getHost() { return host; }
         public void setHost(String host) { this.host = host; }
         public String getPort() { return port; }
@@ -71,6 +72,8 @@ public class ShiwanM2SettingsDto {
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+        public Long getInitialSerialNo() { return initialSerialNo; }
+        public void setInitialSerialNo(Long initialSerialNo) { this.initialSerialNo = initialSerialNo; }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -88,6 +91,28 @@ public class ShiwanM2SettingsDto {
     private String warehouseNo = "001";
     public String getWarehouseNo() { return warehouseNo; }
     public void setWarehouseNo(String warehouseNo) { this.warehouseNo = warehouseNo; }
+
+    /** 码位数配置（与前端 ShiwanM2Settings.CodeDigitsConfig 同结构） */
+    private CodeDigitsConfig codeDigits;
+    public CodeDigitsConfig getCodeDigits() { return codeDigits; }
+    public void setCodeDigits(CodeDigitsConfig codeDigits) { this.codeDigits = codeDigits; }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CodeDigitsConfig {
+        /** 瓶码（小码）位数，-1 表示不限，默认 14 */
+        private int smallCodeDigits = 14;
+        /** 盒码（中码）位数，-1 表示不限，默认 14 */
+        private int mediumCodeDigits = 14;
+        /** 箱码（大码）位数，-1 表示不限，默认 -1 */
+        private int largeCodeDigits = -1;
+        public int getSmallCodeDigits() { return smallCodeDigits; }
+        public void setSmallCodeDigits(int smallCodeDigits) { this.smallCodeDigits = smallCodeDigits; }
+        public int getMediumCodeDigits() { return mediumCodeDigits; }
+        public void setMediumCodeDigits(int mediumCodeDigits) { this.mediumCodeDigits = mediumCodeDigits; }
+        public int getLargeCodeDigits() { return largeCodeDigits; }
+        public void setLargeCodeDigits(int largeCodeDigits) { this.largeCodeDigits = largeCodeDigits; }
+    }
 
     /** 上传配置（对应前端 ShiwanM2Settings.UploadConfig） */
     private Upload upload;

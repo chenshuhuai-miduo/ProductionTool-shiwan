@@ -183,6 +183,18 @@ public class ShiwanM2BoxCaseController {
                 shiwanM2BoxCaseService.getUploadRecords(startDate, endDate, orderNo, status, page, pageSize));
     }
 
+    /**
+     * P02-02 手工采集码校验：热表 + CodeRelationUpload 重码检查。
+     * POST /api/shiwan-m2/manual/validate-code
+     * Body: { code: "码值", packageType: 1（瓶码）或 2（盒码） }
+     */
+    @PostMapping("/manual/validate-code")
+    public ApiResult<Map<String, Object>> validateManualCode(@RequestBody Map<String, Object> body) {
+        String code = getStr(body, "code");
+        int packageType = toInt(body != null ? body.get("packageType") : null, 0);
+        return shiwanM2BoxCaseService.validateManualCode(code, packageType);
+    }
+
     private static String getStr(Map<String, Object> body, String key) {
         if (body == null) return null;
         Object v = body.get(key);

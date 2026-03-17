@@ -32,6 +32,22 @@ import java.util.concurrent.TimeUnit;
  *   0x00 → 复位收回（若不支持自动复位时使用）
  * </pre>
  *
+ * <p><b>继电器板协议（8字节帧）：</b><br>
+ * 帧格式：{@code 55 01 01 R1 R2 R3 R4 SUM}，其中 Rx 值含义：
+ * <pre>
+ *   0 = 保持原状态
+ *   1 = 断开（关闭）
+ *   2 = 吸合（开启）
+ *   SUM = 前7字节之和的低8位
+ * </pre>
+ * 默认继电器接线约定：
+ * <pre>
+ *   继电器1 → 报警红灯（长亮）
+ *   继电器2 → 蜂鸣器
+ *   继电器3 → 黄灯
+ *   继电器4 → 绿灯
+ * </pre>
+ *
  * <p><b>使用方法：</b><br>
  * 获取单例后调用对应方法即可；绿灯会在 60 秒后自动熄灭。
  */
@@ -45,8 +61,10 @@ public class ShiwanM2HardwareService {
     public static final byte[] CMD_RED_BUZZ       = { 0x0A }; // 0x02 | 0x08
     /** 黄灯常亮：采集警告（盒码失败等）时使用 */
     public static final byte[] CMD_YELLOW_ON      = { 0x04 };
-    /** 全部关闭：手动关闭报警或定时熄灭时使用 */
-    public static final byte[] CMD_ALL_OFF        = { 0x00 };
+    /** 全部关闭：手动关闭报警或定时熄灭时使用（21 0F 00 00 00 08 01 69 3C A3） */
+    public static final byte[] CMD_ALL_OFF        = {
+        0x21, 0x0F, 0x00, 0x00, 0x00, 0x08, 0x01, 0x69, 0x3C, (byte) 0xA3
+    };
 
     // ==================== 剔除装置串口命令字节 ====================
 
@@ -55,12 +73,47 @@ public class ShiwanM2HardwareService {
     /** 收回复位：剔除装置未自动复位时手动发送 */
     public static final byte[] CMD_REJECT_RESET   = { 0x00 };
 
+    // ==================== 继电器板命令帧（8字节，55 01 01 R1 R2 R3 R4 SUM） ====================
+
+    /** 继电器值：保持原状态 */
+    private static final int RELAY_KEEP = 0;
+    /** 继电器值：断开（关闭） */
+    private static final int RELAY_OFF  = 1;
+    /** 继电器值：吸合（开启） */
+    private static final int RELAY_ON   = 2;
+
+    /**
+     * 红灯长亮 + 蜂鸣：继电器1（红灯）吸合 + 继电器2（蜂鸣器）吸合，
+     * 用于上传失败 / 关联失败报警场景。
+     */
+    public static final byte[] RELAY_CMD_ALARM_ON  = buildRelayFrame(RELAY_ON,  RELAY_ON,  RELAY_KEEP, RELAY_KEEP);
+
+    /**
+     * 断开所有继电器：关闭红灯、蜂鸣器、黄灯、绿灯，
+     * 用于「关闭报警」或事件解除场景。
+     */
+    public static final byte[] RELAY_CMD_ALARM_OFF = buildRelayFrame(RELAY_OFF, RELAY_OFF, RELAY_OFF,  RELAY_OFF);
+
+    /**
+     * 黄灯长亮：继电器3（黄灯）吸合，其余保持，
+     * 用于盒码校验失败等采集级告警。
+     */
+    public static final byte[] RELAY_CMD_YELLOW_ON = buildRelayFrame(RELAY_KEEP, RELAY_KEEP, RELAY_ON,  RELAY_KEEP);
+
+    /**
+     * 绿灯长亮：继电器4（绿灯）吸合，其余保持，
+     * 用于垛上传成功提示。
+     */
+    public static final byte[] RELAY_CMD_GREEN_ON  = buildRelayFrame(RELAY_KEEP, RELAY_KEEP, RELAY_KEEP, RELAY_ON);
+
     // ==================== 设备类别代码 ====================
 
     /** 报警器在 DeviceConnectionManager 中的类别代码 */
-    private static final int CATEGORY_ALARM  = 5;
+    private static final int CATEGORY_ALARM        = 5;
     /** 剔除装置在 DeviceConnectionManager 中的类别代码 */
-    private static final int CATEGORY_REJECT = 6;
+    private static final int CATEGORY_REJECT       = 6;
+    /** 继电器板在 DeviceConnectionManager 中的类别代码 */
+    private static final int CATEGORY_RELAY_BOARD  = 8;
 
     /** 绿灯自动熄灭延时（秒），文档规定 1 分钟 */
     private static final long GREEN_AUTO_OFF_SECONDS = 60;
@@ -102,37 +155,45 @@ public class ShiwanM2HardwareService {
     public void greenLightOn() {
         cancelGreenOffTimer();
         boolean sent = send(CATEGORY_ALARM, CMD_GREEN_ON, "绿灯亮");
+        send(CATEGORY_RELAY_BOARD, RELAY_CMD_GREEN_ON, "继电器板绿灯亮");
         if (sent) {
             greenOffFuture = scheduler.schedule(() -> {
                 System.out.println("[硬件] 绿灯自动熄灭（60s）");
                 send(CATEGORY_ALARM, CMD_ALL_OFF, "绿灯自动熄灭");
+                send(CATEGORY_RELAY_BOARD, RELAY_CMD_ALARM_OFF, "继电器板绿灯自动熄灭");
             }, GREEN_AUTO_OFF_SECONDS, TimeUnit.SECONDS);
         }
     }
 
     /**
      * 红灯常亮 + 蜂鸣（上传失败 / 关联失败）。
+     * 同时向继电器板发送吸合指令（继电器1=红灯长亮，继电器2=蜂鸣器）。
      * 需要用户手动点击「关闭报警」按钮才能停止。
      */
     public void redLightAndBuzzer() {
         cancelGreenOffTimer();
         send(CATEGORY_ALARM, CMD_RED_BUZZ, "红灯+蜂鸣");
+        send(CATEGORY_RELAY_BOARD, RELAY_CMD_ALARM_ON, "继电器板报警吸合（红灯+蜂鸣）");
     }
 
     /**
      * 黄灯常亮（盒码校验失败等采集级告警）。
+     * 同时向继电器板发送黄灯吸合指令（继电器3）。
      */
     public void yellowLightOn() {
         cancelGreenOffTimer();
         send(CATEGORY_ALARM, CMD_YELLOW_ON, "黄灯亮");
+        send(CATEGORY_RELAY_BOARD, RELAY_CMD_YELLOW_ON, "继电器板黄灯亮");
     }
 
     /**
      * 关闭所有灯光及蜂鸣（「关闭报警」按钮/绿灯定时熄灭均调用此方法）。
+     * 同时向继电器板发送断开所有继电器指令，确保报警灯和蜂鸣器完全停止。
      */
     public void allLightsOff() {
         cancelGreenOffTimer();
         send(CATEGORY_ALARM, CMD_ALL_OFF, "关闭所有灯光");
+        send(CATEGORY_RELAY_BOARD, RELAY_CMD_ALARM_OFF, "继电器板断开所有（关闭报警）");
     }
 
     // ==================== 剔除装置控制 ====================
@@ -184,5 +245,32 @@ public class ShiwanM2HardwareService {
             sb.append(String.format("%02X ", b));
         }
         return sb.toString().trim();
+    }
+
+    /**
+     * 构建继电器板 8 字节控制帧。
+     * <p>帧格式：{@code 55 01 01 R1 R2 R3 R4 SUM}，SUM = 前 7 字节之和的低 8 位。
+     *
+     * @param r1 第1路继电器（0=保持, 1=断开, 2=吸合）
+     * @param r2 第2路继电器
+     * @param r3 第3路继电器
+     * @param r4 第4路继电器
+     * @return 8 字节命令帧
+     */
+    public static byte[] buildRelayFrame(int r1, int r2, int r3, int r4) {
+        byte[] cmd = new byte[8];
+        cmd[0] = (byte) 0x55;
+        cmd[1] = 0x01;
+        cmd[2] = 0x01;
+        cmd[3] = (byte) r1;
+        cmd[4] = (byte) r2;
+        cmd[5] = (byte) r3;
+        cmd[6] = (byte) r4;
+        int sum = 0;
+        for (int i = 0; i < 7; i++) {
+            sum += (cmd[i] & 0xFF);
+        }
+        cmd[7] = (byte) (sum & 0xFF);
+        return cmd;
     }
 }

@@ -65,6 +65,11 @@ public class ShiwanM2TcpCaptureService {
     private final LinkedBlockingQueue<String> boxCodeQueue = new LinkedBlockingQueue<>();
     /** 待处理箱码列表：收到箱码时若内存队列中盒码不足 N 条则放入此队列 */
     private final LinkedBlockingQueue<String> pendingCaseCodes = new LinkedBlockingQueue<>();
+    /**
+     * BOX_FAIL 暂存队列：盒码校验失败后，箱码尚未到来，无法写剔除记录（需要箱码必填）。
+     * 在下一个 ASSOC_FAIL 时一并排尽并写入 RejectRecord；ASSOCIATED 成功时清空（无需写记录）。
+     */
+    private final LinkedBlockingQueue<FailedBoxEntry> pendingFailedBoxes = new LinkedBlockingQueue<>();
 
     // -------- 事件列表（前端轮询） --------
     private final Deque<CaptureEvent>  recentEvents = new ArrayDeque<>(MAX_EVENTS);
@@ -109,6 +114,7 @@ public class ShiwanM2TcpCaptureService {
         // 重置状态
         boxCodeQueue.clear();
         pendingCaseCodes.clear();
+        pendingFailedBoxes.clear();
         currentCasesInPallet.set(0);
 
         active = true;
@@ -290,6 +296,8 @@ public class ShiwanM2TcpCaptureService {
                     String errMsg = res != null ? res.getMessage() : "服务返回null";
                     addEvent("BOX_FAIL", "盒码采集失败：" + code + "，原因：" + errMsg, null);
                     log.warn("[盒码] {} 校验失败: {}", code, errMsg);
+                    // 箱码此时尚未到达，无法写剔除记录（需箱码必填）；暂存，待 ASSOC_FAIL 时统一写入
+                    pendingFailedBoxes.offer(new FailedBoxEntry(code, parseBoxRejectReason(errMsg), code));
                 }
             }
         } else {
@@ -315,6 +323,7 @@ public class ShiwanM2TcpCaptureService {
                 String errMsg = res != null ? res.getMessage() : "服务返回null";
                 addEvent("ASSOC_FAIL", "关联失败 箱码:" + code + "，原因：" + errMsg, buildFailData(polled, code, errMsg));
                 log.warn("箱码关联失败 caseCode={} boxCodes={} err={}", code, polled, errMsg);
+                writeRejectRecordsOnAssocFail(currentOrderNo, code, polled, errMsg);
                 return;
             }
             Map<String, Object> data = res.getData();
@@ -333,6 +342,8 @@ public class ShiwanM2TcpCaptureService {
             if (palletCode != null) evtData.put("palletCode", palletCode);
             addEvent("ASSOCIATED", "关联成功 #" + assocNo + " 箱码:" + code + " 盒码:[" + String.join(",", polled) + "]", evtData);
             log.info("关联成功 #{} caseCode={} boxCodes={} cases={} fullPallet={}", assocNo, code, polled, cases, fullPallet);
+            // 关联成功：该箱通过，清空暂存失败盒码（物理上无需触发剔除）
+            pendingFailedBoxes.clear();
         }
     }
 
@@ -404,6 +415,66 @@ public class ShiwanM2TcpCaptureService {
         }
     }
 
+    /**
+     * ASSOC_FAIL 时写剔除记录：
+     * <ol>
+     *   <li>根据错误信息确定剔除原因，决定是写"箱码级"还是"盒码级"记录；</li>
+     *   <li>排尽 {@link #pendingFailedBoxes}（BOX_FAIL 暂存），用本次失败箱码补全后写入。</li>
+     * </ol>
+     */
+    private void writeRejectRecordsOnAssocFail(String orderNo, String caseCode,
+                                               List<String> polledBoxCodes, String errMsg) {
+        String caseReason = parseCaseRejectReason(errMsg);
+
+        if ("大标不通过".equals(caseReason) || "重码".equals(caseReason)) {
+            // 箱码本身有问题：写一条记录，ProblemCode = 箱码
+            boxCaseService.insertRejectRecord(orderNo, caseCode, null, null, caseCode, caseReason);
+        } else {
+            // 盒箱校验不通过：按盒分条写入（便于核对 N 盒与箱码）
+            for (String boxCode : polledBoxCodes) {
+                boxCaseService.insertRejectRecord(orderNo, caseCode, boxCode, null, null, "盒箱校验不通过");
+            }
+        }
+
+        // 排尽暂存的 BOX_FAIL 失败盒码，用本次失败箱码补全后写入
+        List<FailedBoxEntry> deferred = new ArrayList<>();
+        pendingFailedBoxes.drainTo(deferred);
+        for (FailedBoxEntry entry : deferred) {
+            boxCaseService.insertRejectRecord(orderNo, caseCode,
+                    entry.boxCode, null, entry.problemCode, entry.rejectReason);
+        }
+    }
+
+    /**
+     * 从 ASSOC_FAIL 错误信息推断箱码级剔除原因。
+     * <ul>
+     *   <li>"大标码包" → 大标不通过（箱码不在码包内）</li>
+     *   <li>"重码"     → 重码（箱码已被使用）</li>
+     *   <li>其他      → 盒箱校验不通过</li>
+     * </ul>
+     */
+    private static String parseCaseRejectReason(String errMsg) {
+        if (errMsg == null) return "盒箱校验不通过";
+        if (errMsg.contains("大标码包")) return "大标不通过";
+        if (errMsg.contains("重码"))     return "重码";
+        return "盒箱校验不通过";
+    }
+
+    /**
+     * 从 BOX_FAIL 错误信息推断盒码级剔除原因。
+     * <ul>
+     *   <li>"中标码包" → 中标不通过（盒码不在码包内）</li>
+     *   <li>"重码"     → 重码（盒码已被使用）</li>
+     *   <li>其他      → 盒箱校验不通过（如1号机已标记该盒码为异常）</li>
+     * </ul>
+     */
+    private static String parseBoxRejectReason(String errMsg) {
+        if (errMsg == null) return "盒箱校验不通过";
+        if (errMsg.contains("中标码包")) return "中标不通过";
+        if (errMsg.contains("重码"))     return "重码";
+        return "盒箱校验不通过";
+    }
+
     private static Map<String, Object> buildFailData(List<String> boxCodes, String caseCode, String reason) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("boxCodes",  boxCodes);
@@ -427,6 +498,19 @@ public class ShiwanM2TcpCaptureService {
     // ================================================================
     //  内部数据类
     // ================================================================
+
+    /** BOX_FAIL 暂存项：记录校验失败的盒码及其剔除原因，等待箱码到达后统一写入 RejectRecord。 */
+    private static class FailedBoxEntry {
+        final String boxCode;
+        final String rejectReason;
+        final String problemCode;
+
+        FailedBoxEntry(String boxCode, String rejectReason, String problemCode) {
+            this.boxCode      = boxCode;
+            this.rejectReason = rejectReason;
+            this.problemCode  = problemCode;
+        }
+    }
 
     private static class CaptureEvent {
         final long               seq;

@@ -277,6 +277,11 @@ public class ShiwanM2Settings {
         private String tableName = "T_Code";
         private String username = "sa";
         private String password = "";
+        /**
+         * 首次同步起始游标（SerialNo）。仅在游标文件不存在时生效（即第一次同步），
+         * 同步将从该 SerialNo 之后的数据开始拉取；若为 null 则从 0 开始（拉取全部数据）。
+         */
+        private Long initialSerialNo;
 
         public String getHost() { return host; }
         public void setHost(String host) { this.host = host; }
@@ -290,6 +295,8 @@ public class ShiwanM2Settings {
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+        public Long getInitialSerialNo() { return initialSerialNo; }
+        public void setInitialSerialNo(Long initialSerialNo) { this.initialSerialNo = initialSerialNo; }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -759,6 +759,19 @@
                                                styleClass="sw2-field-input"/>
                             </HBox>
 
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="初始同步游标" minWidth="120"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="m1InitialSerialNoField"
+                                           prefWidth="180"
+                                           styleClass="sw2-field-input"
+                                           promptText="留空则从 0 开始"/>
+                                <Label text="首次同步时从此 SerialNo 之后开始拉取（已有游标文件时此项不生效）"
+                                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"
+                                       wrapText="false"/>
+                            </HBox>
+
                             <HBox spacing="10" alignment="CENTER_LEFT">
                                 <Button text="连接测试"
                                         styleClass="sw2-btn-outline"

@@ -22,6 +22,11 @@ public enum ModuleNameEnum {
     SYSTEM_CONFIG("系统配置"),
     DEVICE_MANAGEMENT("设备管理"),
     
+    // 石湾2号机专属模块
+    BOX_CASE_ASSOCIATE("盒箱关联"),
+    PALLET_MANAGE("垛管理"),
+    MANUAL_COLLECT("手工采集"),
+
     // 其他
     DATA_STATISTICS("数据统计"),
     SYSTEM_LOG("系统日志");
