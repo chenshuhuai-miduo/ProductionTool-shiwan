@@ -846,32 +846,10 @@ body {
   padding: 12px;
   gap: 10px;
 }
-.cancel-mode-bar {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex-shrink: 0;
-}
-.cancel-mode-btn {
-  padding: 9px 28px;
-  border: 1px solid #D1D5DB;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  background: #fff;
-  color: #374151;
-  transition: all 0.15s;
-}
-.cancel-mode-btn:first-child { border-radius: 6px 0 0 6px; }
-.cancel-mode-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
-.cancel-mode-btn.active { background: #2563EB; color: #fff; border-color: #2563EB; }
 .cancel-body { display: flex; flex: 1; gap: 12px; overflow: hidden; min-height: 0; }
-.cancel-left { width: 600px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0; }
+.cancel-left { width: 600px; flex-shrink: 0; overflow: hidden; display: flex; flex-direction: column; }
 .cancel-left .card { border-radius: 12px; }
 .cancel-right { flex: 1; min-width: 500px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-.cancel-form { display: none; flex-direction: column; gap: 14px; }
-.cancel-form.active { display: flex; }
 .cancel-field-label {
   font-size: 16px; font-weight: 700; color: #1F2937;
   margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
@@ -1687,96 +1665,85 @@ body {
 <!-- ===================== Tab7: 取消关联 ===================== -->
 <div class="tab-content" id="tab-cancel">
   <div class="cancel-layout">
-
-    <!-- 模式切换 -->
-    <div class="cancel-mode-bar" style="flex-shrink:0;">
-      <button class="cancel-mode-btn active" id="cancelSingle" onclick="switchCancelMode('single')">单码取消</button>
-      <button class="cancel-mode-btn" id="cancelBatch" onclick="switchCancelMode('batch')">多码取消</button>
-      <span class="help-icon" style="margin-left:8px;" onclick="showHelp('取消关联','单码模式：扫1个下级码（瓶/盒），子查父找上级，取消上级单元及其下全部；不支持箱码/垛码。有上级时需先逐级取消。\n多码模式：输入盒/箱/垛码加入列表，可添加多个、支持混合层级；直接指定要取消的单元，按垛→箱→盒顺序执行。\n通用：取消顺序垛→箱→盒→瓶；已上传须先取消云端再取消本地；操作不可恢复，需密码123456确认。')">?</span>
-    </div>
-
-    <!-- 主体：左侧表单 + 右侧结果 -->
+    <!-- 主体：左侧操作区 + 右侧结果区 -->
     <div class="cancel-body">
 
-      <!-- 左侧：表单区（两种模式切换） -->
+      <!-- 左侧：操作区 -->
       <div class="cancel-left">
+        <div class="card" style="padding:20px; display:flex; flex-direction:column; gap:14px; flex:1; overflow-y:auto;">
 
-        <!-- 单码取消表单 -->
-        <div class="card cancel-form active" id="cancelSingleContent" style="padding:20px;">
-          <div style="font-size:20px; font-weight:700; color:#1F2937; margin-bottom:18px;">单码取消</div>
-
-          <div>
-            <div class="cancel-field-label"><span class="req">*</span> 码（瓶/盒）</div>
-            <input type="text" class="cancel-input" id="code1" placeholder="请输入或扫描瓶码/盒码" value="20241201V010101">
+          <!-- 标题 + 帮助 -->
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <div style="font-size:24px; font-weight:700; color:#1F2937;">取消关联</div>
+            <span class="help-icon" onclick="showHelp('取消关联操作说明', '【输入码】支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码。不知道码值时，可先前往「数据查询」查询。\n\n【取消范围】\n· 只解一层（默认）：只取消该码层级的直接关联，下一层保留。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒。\n· 全部解除：取消该码层级及以下所有关联。垛码受层级限制仍只断箱-垛（与只解一层等价）；箱码断盒-箱+瓶-盒，所有码回迁热表；盒码与只解一层等价。\n\n【有上级时】若码已关联至上级（如盒已在箱内），须先取消上级才能取消该码；识别结果会提示上级码值，将上级码加入列表后执行即可。\n\n【已上传】云端数据以整垛为单位。若涉及码所在的垛已上传云端，系统先调用云端接口取消整垛数据，成功后再取消本地，保证两端一致。\n\n【密码】123456')">?</span>
           </div>
 
+          <!-- 码输入 -->
           <div>
-            <button class="btn btn-primary" style="height:48px; width:100px; font-size:16px; font-weight:700;" onclick="doRecognize()">识别</button>
-          </div>
-
-          <div class="cancel-warn">⚠ 操作不可恢复，请确认后执行。</div>
-
-          <div class="cancel-action-row">
-            <button class="btn btn-secondary" style="height:48px; width:80px; font-size:16px;" onclick="clearCancel()">清空</button>
-            <button class="btn btn-danger" style="height:48px; flex:1; font-size:16px; font-weight:700;" id="confirmCancelBtn" disabled onclick="openCancelConfirm('single')">确认取消关联</button>
-          </div>
-          <div id="cancelBtnHint" style="font-size:13px; color:#9CA3AF; display:none;">⚠ 有上级关联，请先从垛开始逐级解除</div>
-        </div>
-
-        <!-- 多码取消表单 -->
-        <div class="card cancel-form" id="cancelBatchContent" style="padding:20px;">
-          <div style="font-size:20px; font-weight:700; color:#1F2937; margin-bottom:18px;">多码取消</div>
-
-          <div>
-            <div class="cancel-field-label"><span class="req">*</span> 盒/箱/垛码</div>
+            <div class="cancel-field-label"><span class="req">*</span> 码（盒/箱/垛，支持扫瓶码）</div>
             <div style="display:flex; gap:8px;">
-              <input type="text" class="cancel-input" id="batchCode" value="20241201C001" placeholder="盒码、箱码或垛码（垛码为虚拟，可从数据查询等界面复制）" style="flex:1;">
-              <button class="btn btn-primary" style="height:48px; width:80px; font-size:16px; font-weight:700;" onclick="addBatchCode()">添加</button>
+              <input type="text" class="cancel-input" id="cancelCode" placeholder="请输入或扫描盒码、箱码、垛码（或瓶码）" style="flex:1; height:40px; font-size:16px;">
+              <button class="btn btn-primary" style="height:40px; width:100px; font-size:15px; font-weight:700; flex-shrink:0;" onclick="addCancelCode()">加入列表</button>
             </div>
           </div>
 
+          <!-- 待取消列表 -->
           <div>
-            <div style="font-size:16px; font-weight:700; color:#1F2937; margin-bottom:8px;">已添加的码列表</div>
-            <div class="batch-list" id="batchCodeList">
-              <div style="color:#9CA3AF; font-size:14px; text-align:center; padding:20px 0;">暂无添加</div>
+            <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:8px;">待取消列表</div>
+            <div class="batch-list" id="cancelCodeList">
+              <div style="color:#9CA3AF; font-size:14px; text-align:center; padding:20px;">暂无待取消项</div>
             </div>
           </div>
 
+          <!-- 识别按钮 -->
           <div>
-            <button class="btn btn-primary" style="height:48px; width:100px; font-size:16px; font-weight:700;" onclick="doBatchRecognize()">识别</button>
+            <button class="btn btn-primary" style="height:40px; width:80px; font-size:15px; font-weight:700;" onclick="doCancelRecognize()">识别</button>
           </div>
 
-          <div class="cancel-warn">⚠ 操作不可恢复，请确认后执行。</div>
-
-          <div class="cancel-action-row">
-            <button class="btn btn-secondary" style="height:48px; width:80px; font-size:16px;" onclick="clearBatch()">清空</button>
-            <button class="btn btn-danger" style="height:48px; flex:1; font-size:15px; font-weight:700;" onclick="openCancelConfirm('batch')">确认取消关联</button>
+          <!-- 取消范围 -->
+          <div>
+            <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:8px;">取消范围</div>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:16px; margin-bottom:8px;">
+              <input type="radio" name="cancelScope" id="scopeOne" value="one" checked onchange="onCancelScopeChange()" style="width:16px;height:16px; cursor:pointer;"> 只解一层
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:16px;">
+              <input type="radio" name="cancelScope" id="scopeAll" value="all" onchange="onCancelScopeChange()" style="width:16px;height:16px; cursor:pointer;"> 全部解除
+            </label>
           </div>
+
+          <!-- 警告 + 按钮 -->
+          <div style="margin-top:auto; padding-top:8px;">
+            <div class="cancel-warn" style="margin-bottom:12px;">⚠ 操作不可恢复，请确认后执行</div>
+            <div style="display:flex; gap:12px;">
+              <button class="btn btn-secondary" style="height:40px; width:100px; font-size:15px;" onclick="clearCancelList()">清空列表</button>
+              <button class="btn btn-danger" style="height:40px; width:150px; font-size:15px; font-weight:700;" onclick="openCancelConfirmNew()">确认取消关联</button>
+            </div>
+          </div>
+
         </div>
-
       </div><!-- /cancel-left -->
 
-      <!-- 右侧：识别结果（上）+ 取消结果（下）共用 -->
+      <!-- 右侧：识别结果（上）+ 取消记录（下）-->
       <div class="cancel-right">
 
         <!-- 识别结果 -->
         <div class="card" style="flex:1; display:flex; flex-direction:column; overflow:hidden; padding:0; min-height:0;">
           <div class="log-section-header" style="border-radius:12px 12px 0 0; font-size:15px;">
             <span>识别结果</span>
-            <span id="recognizeHint" style="font-size:12px; color:#9CA3AF; font-weight:400;">识别后将在此显示</span>
+            <span id="cancelRecognizeHint" style="font-size:12px; color:#9CA3AF; font-weight:400;">识别后将在此显示</span>
           </div>
-          <div style="flex:1; overflow-y:auto; padding:14px;" id="recognizeResult">
+          <div style="flex:1; overflow-y:auto; padding:14px;" id="cancelRecognizeResult">
             <div style="color:#9CA3AF; font-size:15px; text-align:center; padding-top:60px;">请在左侧输入码值并点击识别</div>
           </div>
         </div>
 
-        <!-- 取消结果 -->
+        <!-- 取消记录 -->
         <div class="card" style="height:220px; display:flex; flex-direction:column; overflow:hidden; padding:0; flex-shrink:0;">
           <div class="log-section-header" style="border-radius:12px 12px 0 0; font-size:15px;">
-            <span>取消结果</span>
-            <button style="background:none;border:none;font-size:12px;color:#9CA3AF;cursor:pointer;font-family:inherit;" onclick="document.getElementById('cancelResultLog').innerHTML='<div style=\'color:#9CA3AF;font-size:14px;text-align:center;padding:20px;\'>暂无取消关联记录</div>'">清空记录</button>
+            <span>取消记录</span>
+            <button style="background:none;border:none;font-size:12px;color:#9CA3AF;cursor:pointer;font-family:inherit;" onclick="document.getElementById('cancelRecordLog').innerHTML='<div style=\'color:#9CA3AF;font-size:14px;text-align:center;padding:20px;\'>暂无取消关联记录</div>'">清空记录</button>
           </div>
-          <div class="cancel-log-body" id="cancelResultLog">
+          <div class="cancel-log-body" id="cancelRecordLog">
             <div style="color:#9CA3AF; font-size:14px; text-align:center; padding:20px;">暂无取消关联记录</div>
           </div>
         </div>
@@ -2120,30 +2087,32 @@ body {
 
         <div class="help-section" id="h-cancel">
           <div class="help-h2">4.5 取消关联 <span class="help-badge-warn">需要密码 123456</span></div>
-          <p><strong>用途</strong>：解除码的关联关系（如数据错误、产品需要重新处理时）。</p>
+          <p><strong>用途</strong>：取消已建立的码关联关系，适用于报废、返工、重新包装、装错位置、数据纠错、召回退货等场景（仅针对已写入关联表的码）。</p>
           <div class="help-info-box">
             <strong>重要规则：</strong>
             <ul class="help-ul" style="margin-top:6px;">
-              <li>必须<strong>从大到小逐级解除</strong>（垛 → 箱 → 盒 → 瓶），不可一次性解除全部</li>
-              <li>系统自动检查上级关联状态，有上级时「确认」按钮禁用，提示先解除上级</li>
-              <li>系统自动检查云端数据并先解除云端关联，确保数据一致</li>
+              <li>不能跳过上级直接取消下级：若码有上级关联，须先取消上级</li>
+              <li>取消范围（全局生效，同批操作统一）：<strong>只解一层</strong>（只断该层直接关联，下层保留）或<strong>全部解除</strong>（取消该层及以下所有关联，仅箱码效果不同）</li>
+              <li>已上传云端：系统自动先取消整垛云端数据，成功后再取消本地；云端失败则本地不执行</li>
+              <li>瓶码不可直接取消：扫入瓶码时系统自动转换为其所在的盒码</li>
             </ul>
           </div>
-          <div class="help-step-title">单码取消操作步骤：</div>
+          <div class="help-step-title">操作步骤：</div>
           <ol class="help-ol">
-            <li>选择「单码取消」模式</li>
-            <li>输入或扫描1个瓶码/盒码（不支持箱码、垛码）</li>
-            <li>点击「识别」→ 右侧显示识别结果（含上级关联链路）</li>
-            <li>如有上级关联，先从垛开始逐级解除上级，再回来解除当前级</li>
-            <li>无上级关联后，点击「确认取消关联」→ 输入密码 <strong>123456</strong> → 确认执行</li>
+            <li>在左侧输入或扫描盒码/箱码/垛码（或瓶码），点击「加入列表」</li>
+            <li>可重复添加多个码到待取消列表</li>
+            <li>选择「取消范围」：只解一层（默认）或全部解除</li>
+            <li>点击「识别」→ 右侧显示每项状态（✓可解除 / ✗不可解除+原因）</li>
+            <li>确认内容后，点击「确认取消关联」→ 输入密码 <strong>123456</strong> → 执行</li>
           </ol>
-          <div class="help-step-title">多码取消操作步骤：</div>
-          <ol class="help-ol">
-            <li>选择「多码取消」模式</li>
-            <li>逐一输入盒码/箱码/垛码 → 点击「添加」</li>
-            <li>点击「识别」→ 右侧显示所有包装单元的识别结果</li>
-            <li>处理有上级关联的单元后，点击「确认取消关联」→ 输入密码 <strong>123456</strong> → 执行</li>
-          </ol>
+          <div class="help-step-title">取消范围说明：</div>
+          <table class="help-table">
+            <thead><tr><th>模式</th><th>垛码</th><th>箱码</th><th>盒码</th></tr></thead>
+            <tbody>
+              <tr><td>只解一层</td><td>断箱-垛（70条），盒-箱/瓶-盒保留</td><td>断盒-箱（4条），瓶-盒保留</td><td>断瓶-盒（6条）</td></tr>
+              <tr><td>全部解除</td><td>同左（层级限制）</td><td>断盒-箱+瓶-盒（共28条），全部回迁热表</td><td>同左（等价）</td></tr>
+            </tbody>
+          </table>
           <p class="help-warn">⚠ 操作不可恢复，请确认无误后操作</p>
         </div>
 
@@ -2918,8 +2887,8 @@ function startSimulation2() {
       document.getElementById('rejectCount').textContent = rejectCnt;
     }
 
-    document.getElementById('syncStatus').innerHTML = '<span>●</span> 已同步';
-    document.getElementById('syncStatus').className = 'sync-indicator sync-ok';
+    const syncEl = document.getElementById('syncStatus');
+    if(syncEl) { syncEl.innerHTML = '<span>●</span> 已同步'; syncEl.className = 'sync-indicator sync-ok'; }
   }, 3000);
 }
 
@@ -3455,25 +3424,16 @@ function openReplaceConfirm() {
 }
 
 // ── 取消关联模块 ──
-let cancelMode = 'single';
-// 用于记录当前识别结果（供确认时使用）
-let cancelRecognizeInfo = null;
+// 待取消列表
+const cancelCodes = [];
+// 识别结果数据（供确认时使用）
+let cancelRecognizeData = null;
 
-function switchCancelMode(mode) {
-  cancelMode = mode;
-  document.getElementById('cancelSingle').classList.toggle('active', mode === 'single');
-  document.getElementById('cancelBatch').classList.toggle('active', mode === 'batch');
-  document.getElementById('cancelSingleContent').classList.toggle('active', mode === 'single');
-  document.getElementById('cancelBatchContent').classList.toggle('active', mode === 'batch');
-  // 切换时清空识别结果提示
-  resetRecognizeResult(mode === 'single' ? '请在左侧输入码值并点击识别' : '请在左侧添加盒/箱/垛码并点击识别');
-}
-
-function resetRecognizeResult(msg) {
-  document.getElementById('recognizeResult').innerHTML =
+function resetCancelRecognizeResult(msg) {
+  document.getElementById('cancelRecognizeResult').innerHTML =
     `<div style="color:#9CA3AF;font-size:15px;text-align:center;padding-top:60px;">${msg}</div>`;
-  document.getElementById('recognizeHint').textContent = '识别后将在此显示';
-  cancelRecognizeInfo = null;
+  document.getElementById('cancelRecognizeHint').textContent = '识别后将在此显示';
+  cancelRecognizeData = null;
 }
 
 // 构建单个码的完整关联链（从根到当前码）
@@ -3506,219 +3466,252 @@ function analyzeCancelCode(code) {
   const d = mockData[code];
   if(!d) return null;
   const hasParent = !!d.parent;
-  const childCount = countBottleDescendants(code);
-  // 构建完整链路（不含当前码本身）
+  const directChildCount = d.children ? d.children.length : 0;
+  const allDescCount = countBottleDescendants(code);
   const chain = buildChain(code).filter(n => n.code !== code);
-  return { code, level: d.level, hasParent, childCount, chain };
+  return { code, level: d.level, hasParent, directChildCount, allDescCount, chain, parent: d.parent };
 }
 
-function renderCancelItem(info) {
+// 获取当前取消范围选项
+function getCancelScope() {
+  return document.getElementById('scopeOne').checked ? 'one' : 'all';
+}
+
+// 计算某码在指定模式下影响的关联条数
+function calcCancelImpact(info, scope) {
+  if(!info) return { relations: 0, desc: '', equiv: false };
+  const level = info.level;
+  const scope2 = scope;
+  if(level === '盒码') {
+    // 盒码两种模式等价：断瓶-盒
+    const n = info.directChildCount;
+    return { relations: n, desc: `解除${n}条瓶-盒关联，可重新关联（与${scope2==='one'?'全部解除':'只解一层'}等价）`, equiv: true };
+  } else if(level === '箱码') {
+    const boxes = info.directChildCount; // 盒数
+    const bottles = info.allDescCount - boxes; // 瓶数
+    if(scope2 === 'one') {
+      return { relations: boxes, desc: `解除${boxes}条盒-箱关联；瓶-盒结构保留，各盒可重新上产线归新箱`, equiv: false };
+    } else {
+      const total = boxes + bottles;
+      return { relations: total, desc: `解除${boxes}条盒-箱+${bottles}条瓶-盒关联，共${total}条；所有码可重新关联`, equiv: false };
+    }
+  } else if(level === '垛码') {
+    // 垛码两种模式等价：只断箱-垛
+    const cases = info.directChildCount;
+    return { relations: cases, desc: `解除${cases}条箱-垛关联；盒-箱、瓶-盒结构保留，各箱可重新上产线归垛（与${scope2==='one'?'全部解除':'只解一层'}等价）`, equiv: true };
+  }
+  return { relations: info.directChildCount, desc: '', equiv: false };
+}
+
+// 渲染单个识别结果项（基于取消范围）
+function renderCancelItemNew(info, scope) {
   if(!info) return '';
   const levelColor = { '垛码':'#7C3AED','箱码':'#C2410C','盒码':'#15803D','瓶码':'#1D4ED8' };
   const col = levelColor[info.level] || '#374151';
-  const levelMap = { '垛码':'垛','箱码':'箱','盒码':'盒','瓶码':'瓶' };
+  const scopeLabel = scope === 'one' ? '只解一层' : '全部解除';
+
+  if(info.notFound) {
+    return `<div class="cr-item cr-err">
+      <span class="cr-badge cr-badge-err">未找到</span>
+      <span style="font-weight:700;">${info.code}</span> — 该码未在关联表中，无需取消关联
+    </div>`;
+  }
+  if(info.level === '瓶码') {
+    return `<div class="cr-item cr-err">
+      <span class="cr-badge cr-badge-err">已转换</span>
+      <span style="color:${col};font-weight:700;">瓶码 ${info.code}</span> — 瓶码不支持直接输入，请扫码时通过提示转换为盒码
+    </div>`;
+  }
   if(!info.hasParent) {
-    const n = info.childCount > 0 ? info.childCount : 0;
+    const impact = calcCancelImpact(info, scope);
+    const equivTip = impact.equiv ? `<span style="font-size:12px;color:#9CA3AF;">（两种模式等价）</span>` : '';
     return `<div class="cr-item cr-ok">
-      <span style="color:${col};font-weight:700;">${info.level} ${info.code}</span>，可取消关联，取消<b>${n}</b>个
+      <div><span class="cr-badge cr-badge-ok">✓ 可解除</span><span style="color:${col};font-weight:700;">${info.level} ${info.code}</span></div>
+      <div class="cr-chain" style="margin-top:6px;">[${scopeLabel}] ${impact.desc} ${equivTip}</div>
     </div>`;
   } else {
-    const parentLabel = info.chain.length > 0 ? info.chain[info.chain.length-1].level : '上级';
-    const reason = `${levelMap[info.level]}已关联至${parentLabel}，请先取消上级`;
-    const chainStr = info.chain.map(n => `${n.level} ${n.code}`).join('→') + (info.chain.length ? `→${info.code}` : info.code);
+    const parentCode = info.parent;
+    const parentLevel = info.chain.length > 0 ? info.chain[info.chain.length-1].level : '上级';
     return `<div class="cr-item cr-err">
-      <span style="color:${col};font-weight:700;">${info.level} ${info.code}</span>，不可取消关联（${reason}）
-      <div class="cr-chain">链路: ${chainStr}</div>
+      <div><span class="cr-badge cr-badge-err">✗ 不可解除</span><span style="color:${col};font-weight:700;">${info.level} ${info.code}</span></div>
+      <div class="cr-chain" style="margin-top:6px;">已关联至${parentLevel} ${parentCode}，请先将${parentLevel}加入列表操作</div>
     </div>`;
   }
 }
 
-// 单码识别（子查父：扫瓶/盒找上级，取消上级单元）
-function doRecognize() {
-  const code = document.getElementById('code1').value.trim();
-  if(!code) { alert('请输入或扫描瓶码/盒码'); return; }
-
-  const d = mockData[code];
-  if(!d) {
-    document.getElementById('recognizeResult').innerHTML = `<div style="color:#DC2626;font-size:14px;padding:16px;">✗ 该码未在系统中找到，请检查码值</div>`;
-    document.getElementById('recognizeHint').textContent = '✗ 未找到';
-    document.getElementById('confirmCancelBtn').disabled = true;
-    document.getElementById('cancelBtnHint').style.display = 'none';
-    cancelRecognizeInfo = null;
+// 待取消列表渲染
+function renderCancelList() {
+  const list = document.getElementById('cancelCodeList');
+  if(cancelCodes.length === 0) {
+    list.innerHTML = '<div style="color:#9CA3AF;font-size:14px;text-align:center;padding:20px;">暂无待取消项</div>';
     return;
   }
-  // 单码模式不支持箱码、垛码
-  if(d.level === '箱码' || d.level === '垛码') {
-    document.getElementById('recognizeResult').innerHTML = `<div style="color:#DC2626;font-size:14px;padding:16px;">✗ 单码模式不支持箱码、垛码。整箱/整垛取消请使用多码模式。</div>`;
-    document.getElementById('recognizeHint').textContent = '✗ 不支持';
-    document.getElementById('confirmCancelBtn').disabled = true;
-    document.getElementById('cancelBtnHint').style.display = 'none';
-    cancelRecognizeInfo = null;
-    return;
-  }
-  // 子查父：瓶码→找盒；盒码→找箱。分析上级单元
-  const parentCode = d.parent;
-  if(!parentCode) {
-    document.getElementById('recognizeResult').innerHTML = `<div style="color:#DC2626;font-size:14px;padding:16px;">✗ 该码无上级关联</div>`;
-    document.getElementById('recognizeHint').textContent = '✗ 无上级';
-    document.getElementById('confirmCancelBtn').disabled = true;
-    document.getElementById('cancelBtnHint').style.display = 'none';
-    cancelRecognizeInfo = null;
-    return;
-  }
-  const info = analyzeCancelCode(parentCode);
-  const html = renderCancelItem(info);
-  const canCancel = info && !info.hasParent;
-
-  document.getElementById('recognizeResult').innerHTML = html;
-  document.getElementById('recognizeHint').textContent =
-    canCancel ? '✓ 识别完成，可执行解除' : '⚠ 识别完成，有上级关联';
-
-  const btn = document.getElementById('confirmCancelBtn');
-  const hint = document.getElementById('cancelBtnHint');
-  btn.disabled = !canCancel;
-  hint.style.display = canCancel ? 'none' : 'block';
-  cancelRecognizeInfo = { type: 'single', items: [info] };
-}
-
-function clearCancel() {
-  document.getElementById('code1').value = '20241201V010101';
-  document.getElementById('confirmCancelBtn').disabled = true;
-  document.getElementById('cancelBtnHint').style.display = 'none';
-  resetRecognizeResult('请在左侧输入码值并点击识别');
-}
-
-// 批量码列表
-const batchCodes = [];
-function addBatchCode() {
-  const code = document.getElementById('batchCode').value.trim();
-  if(!code) return;
-  if(batchCodes.includes(code)) { alert('该码已在列表中'); return; }
-  batchCodes.push(code);
-  document.getElementById('batchCode').value = '';
-  document.getElementById('batchCode').focus();
-  renderBatchList();
-}
-
-function renderBatchList() {
-  const list = document.getElementById('batchCodeList');
-  if(batchCodes.length === 0) {
-    list.innerHTML = '<div style="color:#9CA3AF;font-size:14px;text-align:center;padding:20px;">暂无添加</div>';
-    return;
-  }
-  list.innerHTML = batchCodes.map((c, i) => {
+  list.innerHTML = cancelCodes.map((c, i) => {
     const d = mockData[c];
     const levelLabel = d ? d.level : '未知';
+    const levelColor = { '垛码':'#7C3AED','箱码':'#C2410C','盒码':'#15803D','瓶码':'#1D4ED8' };
+    const col = levelColor[levelLabel] || '#374151';
     return `<div class="batch-list-item">
-      <span style="color:#374151;">${i+1}. <span style="color:#2563EB;font-weight:600;">${levelLabel}</span> ${c}</span>
-      <button class="batch-del-btn" onclick="removeBatchCode(${i})">删除</button>
+      <span style="color:#374151;">${i+1}. <span style="color:${col};font-weight:600;">${levelLabel}</span> ${c}</span>
+      <button class="batch-del-btn" onclick="removeCancelCodeItem(${i})">移除</button>
     </div>`;
   }).join('');
 }
 
-function removeBatchCode(idx) { batchCodes.splice(idx, 1); renderBatchList(); }
-
-function clearBatch() {
-  batchCodes.length = 0;
-  renderBatchList();
-  document.getElementById('batchCode').value = '20241201C001';
-  resetRecognizeResult('请在左侧添加盒/箱/垛码并点击识别');
-  cancelRecognizeInfo = null;
+function removeCancelCodeItem(idx) {
+  cancelCodes.splice(idx, 1);
+  renderCancelList();
+  if(cancelRecognizeData) doCancelRecognize();
 }
 
-// 批量识别
-function doBatchRecognize() {
-  if(batchCodes.length === 0) { alert('请先添加大码'); return; }
-  const infos = batchCodes.map(c => analyzeCancelCode(c) || { code: c, level:'未知', hasParent:true, childCount:0, chain:[], notFound:true });
-  let html = '';
-  let cancelableCount = 0, cancelableRelations = 0;
-
-  infos.forEach((info, i) => {
-    if(info.notFound) {
-      html += `<div class="cr-item cr-err"><span class="cr-badge cr-badge-err">未找到</span><span style="font-weight:700;">${info.code}</span> — 该码不存在</div>`;
+// 加入列表（含瓶码自动转换）
+function addCancelCode() {
+  const code = document.getElementById('cancelCode').value.trim();
+  if(!code) return;
+  const d = mockData[code];
+  if(!d) {
+    alert('该码未在关联表中，无需取消关联');
+    return;
+  }
+  // 瓶码自动转换为盒码
+  if(d.level === '瓶码') {
+    const boxCode = d.parent;
+    if(!boxCode) { alert('该瓶码未关联盒码，无法操作'); return; }
+    if(confirm(`提示：瓶码 ${code} 属于盒码 ${boxCode}\n已自动转换为盒码 ${boxCode} 加入列表\n\n点击确定继续，取消则放弃`)) {
+      if(cancelCodes.includes(boxCode)) { alert('该盒码已在列表中'); document.getElementById('cancelCode').value = ''; return; }
+      cancelCodes.push(boxCode);
+      document.getElementById('cancelCode').value = '';
+      renderCancelList();
+      resetCancelRecognizeResult('码已加入列表，请点击识别');
     } else {
-      html += renderCancelItem(info);
-      if(!info.hasParent && info.childCount > 0) {
-        cancelableCount++;
-        cancelableRelations += info.childCount;
-      }
+      document.getElementById('cancelCode').value = '';
+    }
+    return;
+  }
+  if(cancelCodes.includes(code)) { alert('该码已在列表中'); return; }
+  cancelCodes.push(code);
+  document.getElementById('cancelCode').value = '';
+  document.getElementById('cancelCode').focus();
+  renderCancelList();
+  resetCancelRecognizeResult('码已加入列表，请点击识别');
+}
+
+// 识别
+function doCancelRecognize() {
+  if(cancelCodes.length === 0) { alert('请先添加盒/箱/垛码'); return; }
+  const scope = getCancelScope();
+  const infos = cancelCodes.map(c => analyzeCancelCode(c) || { code: c, level:'未知', hasParent:true, directChildCount:0, allDescCount:0, chain:[], notFound:true });
+  let html = '';
+  let okCount = 0, errCount = 0, totalRelations = 0;
+
+  infos.forEach(info => {
+    html += renderCancelItemNew(info, scope);
+    if(!info.notFound && !info.hasParent && info.level !== '瓶码') {
+      okCount++;
+      totalRelations += calcCancelImpact(info, scope).relations;
+    } else if(!info.notFound) {
+      errCount++;
     }
   });
 
-  if(cancelableCount > 0) {
-    html += `<div class="cr-summary">📊 总影响范围：<b>${cancelableCount}</b> 个可取消，涉及 <b>${cancelableRelations}</b> 个码关系</div>`;
-  } else {
-    html += `<div class="cr-summary" style="background:#FEF2F2;border-color:#FCA5A5;color:#991B1B;">⚠ 所有单元均有上级关联，请先从垛开始逐级解除</div>`;
-  }
+  // 底部汇总
+  html += `<div class="cr-summary">共 ${infos.length} 项，其中 <b>${okCount}</b> 项可解除，<b>${infos.length - okCount}</b> 项不可解除</div>`;
 
-  document.getElementById('recognizeResult').innerHTML = html;
-  document.getElementById('recognizeHint').textContent = cancelableCount > 0
-    ? `✓ 识别完成，${cancelableCount}个可取消` : '⚠ 全部有上级关联';
-  cancelRecognizeInfo = { type: 'batch', items: infos, cancelableCount, cancelableRelations };
+  document.getElementById('cancelRecognizeResult').innerHTML = html;
+  document.getElementById('cancelRecognizeHint').textContent = okCount > 0
+    ? `✓ 识别完成，${okCount}项可解除` : '⚠ 无可解除项';
+  cancelRecognizeData = { infos, okCount, errCount, totalRelations, scope };
 }
 
-// 统一确认入口
-function openCancelConfirm(mode) {
-  if(mode === 'batch') {
-    if(batchCodes.length === 0) { alert('请先添加大码'); return; }
-    if(!cancelRecognizeInfo) { alert('请先点击识别'); return; }
-    const { cancelableCount, cancelableRelations } = cancelRecognizeInfo;
-    document.getElementById('confirmTitle').textContent = '取消关联确认';
-    document.getElementById('confirmMsg').innerHTML =
-      `将批量取消关联 <b>${cancelableCount}</b> 个包装单元，涉及 <b>${cancelableRelations}</b> 个码关系<br>
-       <span style="color:#DC2626;font-size:13px;">此操作不可恢复，请仔细核对后确认！</span>`;
-    currentConfirmAction = () => execCancelConfirm('batch');
-  } else {
-    if(!cancelRecognizeInfo) { alert('请先点击识别'); return; }
-    const cancelableItems = cancelRecognizeInfo.items.filter(i => !i.hasParent);
-    document.getElementById('confirmTitle').textContent = '取消关联确认';
-    const desc = cancelableItems.map(i => `${i.level} ${i.code}（解除${i.childCount}个）`).join('、');
-    document.getElementById('confirmMsg').innerHTML =
-      `确认取消关联：<b>${desc || '已识别码'}</b><br>
-       <span style="color:#DC2626;font-size:13px;">此操作不可恢复，请仔细核对后确认！</span>`;
-    currentConfirmAction = () => execCancelConfirm('single');
+// 取消范围切换时自动刷新识别结果
+function onCancelScopeChange() {
+  if(cancelRecognizeData) doCancelRecognize();
+}
+
+// 清空列表
+function clearCancelList() {
+  cancelCodes.length = 0;
+  renderCancelList();
+  document.getElementById('cancelCode').value = '';
+  resetCancelRecognizeResult('请在左侧输入码值并点击识别');
+}
+
+// 打开确认弹窗（新版）
+function openCancelConfirmNew() {
+  if(cancelCodes.length === 0) { alert('请先添加码到待取消列表'); return; }
+  if(!cancelRecognizeData) { alert('请先点击识别'); return; }
+  const { infos, okCount, totalRelations, scope } = cancelRecognizeData;
+  const errCount = infos.length - okCount;
+  const scopeLabel = scope === 'one' ? '只解一层' : '全部解除';
+
+  // 检查是否有垛码且模拟已上传
+  const palletItems = infos.filter(i => !i.notFound && !i.hasParent && i.level === '垛码');
+  const uploaded = palletItems.length > 0 && Math.random() > 0.5;
+  let cloudHtml = '';
+  if(uploaded && palletItems.length > 0) {
+    const dots = palletItems.map(i => `· 垛码 ${i.code}`).join('<br>');
+    cloudHtml = `<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px;color:#92400E;">
+      ⚠ 云端影响：以下垛码已上传云端，执行将先取消整垛云端数据<br>${dots}
+    </div>`;
   }
+
+  document.getElementById('confirmTitle').textContent = '取消关联确认';
+  document.getElementById('confirmMsg').innerHTML =
+    `<div style="margin-bottom:8px;">取消范围：<b>${scopeLabel}</b></div>
+     <div style="margin-bottom:8px;">本次将执行 <b>${okCount}</b> 个可解除项，共涉及 <b>${totalRelations}</b> 条关联</div>
+     ${errCount > 0 ? `<div style="margin-bottom:8px;color:#9CA3AF;">${errCount} 个不可解除项将被跳过</div>` : ''}
+     <div style="color:#DC2626;font-weight:700;">⚠ 此操作不可恢复</div>
+     ${cloudHtml}`;
+
   document.getElementById('confirmPwd').value = '';
   document.getElementById('confirmPwdErr').textContent = '';
+  currentConfirmAction = execCancelNew;
   document.getElementById('confirmOverlay').classList.add('active');
 }
 
-function execCancelConfirm(mode) {
+// 执行取消关联（新版）
+function execCancelNew() {
   const ts = getTs();
-  const log = document.getElementById('cancelResultLog');
-  // 清除空状态
-  const empty = log.querySelector('div[style*="暂无"]');
+  const log = document.getElementById('cancelRecordLog');
+  const empty = log.querySelector('[style*="暂无"]');
   if(empty) log.innerHTML = '';
 
-  if(mode === 'single') {
-    const cancelableItems = (cancelRecognizeInfo?.items || []).filter(i => !i.hasParent);
-    // 模拟云端检查（随机已上传）
-    const uploaded = Math.random() > 0.4;
-    let logHtml = '';
-    cancelableItems.forEach(info => {
-      if(uploaded) {
-        logHtml += `<div class="cl-entry"><span class="cl-ts">${ts}</span>🌐 云端检查：${info.level} ${info.code} 已上传，正在云端解除...</div>`;
-      }
-      logHtml += `<div class="cl-entry cl-ok"><span class="cl-ts">${ts}</span>✓ ${info.level} ${info.code} 取消${info.childCount}个</div>`;
+  const { infos, scope } = cancelRecognizeData || {};
+  const cancelableItems = (infos || []).filter(i => !i.notFound && !i.hasParent && i.level !== '瓶码');
+  const scopeLabel = scope === 'one' ? '只解一层' : '全部解除';
+
+  // 按垛→箱→盒顺序排序
+  const order = { '垛码': 0, '箱码': 1, '盒码': 2 };
+  cancelableItems.sort((a, b) => (order[a.level] || 9) - (order[b.level] || 9));
+
+  // 模拟垛码已上传云端
+  const palletItems = cancelableItems.filter(i => i.level === '垛码');
+  const uploaded = palletItems.length > 0 && Math.random() > 0.5;
+
+  let logHtml = '';
+  if(uploaded && palletItems.length > 0) {
+    logHtml += `<div class="cl-entry"><span class="cl-ts">${ts}</span>🌐 云端检查：以下垛已上传，正在取消整垛云端数据...</div>`;
+    palletItems.forEach(i => {
+      logHtml += `<div class="cl-entry cl-ok"><span class="cl-ts">${ts}</span>🌐 垛码 ${i.code} 云端取消成功</div>`;
     });
-    log.insertAdjacentHTML('afterbegin', logHtml);
-    document.getElementById('code1').value = '';
-    cancelRecognizeInfo = null;
-  } else {
-    const { items, cancelableCount, cancelableRelations } = cancelRecognizeInfo || {};
-    const cancelableItems = (items || []).filter(i => !i.hasParent);
-    const uploaded = Math.random() > 0.4;
-    let logHtml = '';
-    if(uploaded) {
-      logHtml += `<div class="cl-entry"><span class="cl-ts">${ts}</span>🌐 云端检查：${cancelableCount}个单元已上传，正在批量云端解除...</div>`;
-    }
-    cancelableItems.forEach(info => {
-      logHtml += `<div class="cl-entry cl-ok"><span class="cl-ts">${ts}</span>✓ ${info.level} ${info.code} 取消${info.childCount}个</div>`;
-    });
-    logHtml += `<div class="cl-entry cl-ok" style="font-weight:700;"><span class="cl-ts">${ts}</span>✓ 批量操作完成：${cancelableCount}个单元，共解除 ${cancelableRelations} 个码关系${uploaded?'（云端+本地）':'（本地）'}</div>`;
-    log.insertAdjacentHTML('afterbegin', logHtml);
-    clearBatch();
   }
+
+  cancelableItems.forEach(info => {
+    const impact = calcCancelImpact(info, scope);
+    logHtml += `<div class="cl-entry cl-ok"><span class="cl-ts">${ts}</span>✓ ${info.level} ${info.code}，解除 ${impact.relations} 条关联</div>`;
+  });
+
+  log.insertAdjacentHTML('afterbegin', logHtml);
+
+  // 成功项从列表移除
+  const successCodes = new Set(cancelableItems.map(i => i.code));
+  for(let i = cancelCodes.length - 1; i >= 0; i--) {
+    if(successCodes.has(cancelCodes[i])) cancelCodes.splice(i, 1);
+  }
+  renderCancelList();
+  document.getElementById('cancelCode').value = '';
+  resetCancelRecognizeResult('执行完成，可继续添加新的待取消码');
+  cancelRecognizeData = null;
 }
 
 // 生产统计（基于 mockData 演示：1垛=3箱=12盒=72瓶）
@@ -4251,9 +4244,8 @@ function closeUnfinishedExit() { document.getElementById('unfinishedExitOverlay'
 function closeStartCollectConfirm() { document.getElementById('startCollectConfirmOverlay').classList.remove('active'); }
 function confirmStartCollect() {
   closeStartCollectConfirm();
-  const productSel = document.getElementById('productSelect');
   const orderNum = document.getElementById('orderNum').value.trim();
-  const productName = productSel.options[productSel.selectedIndex].text;
+  const productName = document.getElementById('productDisplayName').textContent.trim();
   isCollecting = true;
   const btn = document.getElementById('collectBtn');
   btn.textContent = '停止采集';
