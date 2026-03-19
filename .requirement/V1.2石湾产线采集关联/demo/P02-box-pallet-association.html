@@ -1198,7 +1198,8 @@ body {
         </div>
         <div class="order-row" style="margin-top:12px;">
           <span style="font-size:13px; color:#6B7280;">生产单号</span>
-          <input type="text" class="order-input" id="orderNum" style="flex:1; min-width:0;">
+          <input type="text" class="order-input" id="orderNum" maxlength="20" style="flex:1; min-width:0;"
+            oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'')" placeholder="字母/数字，最长20位">
         </div>
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid #E5E7EB;">
           <div style="font-size:14px; font-weight:600; color:#1F2937; margin-bottom:10px;">采集规格设置</div>
@@ -2557,18 +2558,36 @@ body {
 
 <!-- 开始采集二次确认弹窗 -->
 <div class="modal-overlay" id="startCollectConfirmOverlay" onclick="if(event.target===this)closeStartCollectConfirm()">
-  <div class="confirm-box" style="width:420px;" onclick="event.stopPropagation()">
-    <div style="font-size:18px; font-weight:700; color:#1F2937; margin-bottom:16px;">开始采集确认</div>
-    <div style="font-size:14px; color:#374151; margin-bottom:16px; line-height:1.8;" id="startCollectConfirmMsg">
-      <div style="margin-bottom:8px;"><strong>生产信息：</strong></div>
-      <div id="startCollectProductInfo" style="margin-bottom:4px; padding-left:12px;">产品：—</div>
-      <div id="startCollectOrderInfo" style="margin-bottom:12px; padding-left:12px;">生产单：—</div>
-      <div style="margin-bottom:8px;"><strong>包装比例：</strong></div>
-      <div id="startCollectRatioInfo" style="padding-left:12px;">1垛 — 箱，1箱 — 盒</div>
+  <div onclick="event.stopPropagation()" style="width:560px;background:#fff;border-radius:12px;border:1px solid #D9E1EC;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- 标题栏 -->
+    <div style="height:56px;background:#F5F7FA;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;padding:0 24px;">
+      <span style="font-size:18px;font-weight:600;color:#1F2937;font-family:'Microsoft YaHei',sans-serif;">开始采集确认</span>
     </div>
-    <div style="display:flex; gap:12px; justify-content:flex-end;">
-      <button class="btn btn-secondary" style="height:44px; width:90px; font-size:14px;" onclick="closeStartCollectConfirm()">取消</button>
-      <button class="btn btn-primary" style="height:44px; width:90px; font-size:14px;" onclick="confirmStartCollect()">确认</button>
+    <!-- 内容区 -->
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+      <span style="font-size:13px;font-weight:600;color:#2563EB;font-family:'Microsoft YaHei',sans-serif;">生产信息</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;font-weight:600;color:#6B7280;font-family:'Microsoft YaHei',sans-serif;">产品名称</span>
+        <span id="startCollectProductName" style="font-size:14px;color:#1F2937;font-family:'Microsoft YaHei',sans-serif;">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;font-weight:600;color:#6B7280;font-family:'Microsoft YaHei',sans-serif;">产品编号</span>
+        <span id="startCollectProductCode" style="font-size:14px;color:#1F2937;font-family:'Microsoft YaHei',sans-serif;">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;font-weight:600;color:#6B7280;font-family:'Microsoft YaHei',sans-serif;">生产单号</span>
+        <span id="startCollectOrderNum" style="font-size:14px;color:#1F2937;font-family:'Microsoft YaHei',sans-serif;">—</span>
+      </div>
+      <div style="height:1px;background:#E5E7EB;"></div>
+      <span style="font-size:13px;font-weight:600;color:#2563EB;font-family:'Microsoft YaHei',sans-serif;">采集规格</span>
+      <div id="startCollectRatioText" style="font-size:14px;color:#1F2937;font-family:'Microsoft YaHei',sans-serif;display:flex;align-items:center;gap:4px;">
+        1垛 <strong>—</strong> 箱，1箱 <strong>—</strong> 盒
+      </div>
+    </div>
+    <!-- 底部按钮 -->
+    <div style="height:72px;background:#F9FAFB;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
+      <button onclick="closeStartCollectConfirm()" style="height:40px;width:90px;background:#F3F4F6;border:none;border-radius:8px;font-size:16px;font-weight:600;color:#374151;cursor:pointer;font-family:'Microsoft YaHei',sans-serif;">取消</button>
+      <button onclick="confirmStartCollect()" style="height:40px;width:90px;background:#2563EB;border:none;border-radius:8px;font-size:16px;font-weight:600;color:#fff;cursor:pointer;font-family:'Microsoft YaHei',sans-serif;">确定</button>
     </div>
   </div>
 </div>
@@ -2683,8 +2702,10 @@ body {
       </div>
       <!-- 查询结果区 -->
       <div id="extractUnfinishedResult" style="display:none;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;">
-        <div style="background:#F9FAFB;padding:10px 16px;font-size:14px;font-weight:600;color:#374151;border-bottom:1px solid #E5E7EB;">查询结果</div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:#1F2937;" id="extractUnfinishedInfo"></div>
+        <div style="background:#F9FAFB;height:44px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid #E5E7EB;">
+          <span style="font-size:14px;font-weight:600;color:#374151;font-family:'Microsoft YaHei',sans-serif;">查询结果</span>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;" id="extractUnfinishedInfo"></div>
       </div>
       <!-- 未找到提示 -->
       <div id="extractUnfinishedEmpty" style="display:none;text-align:center;color:#EF4444;font-size:14px;padding:8px 0;">
@@ -2938,6 +2959,11 @@ function toggleCollect() {
       document.getElementById('orderNum').focus();
       return;
     }
+    if(!/^[A-Za-z0-9]{1,20}$/.test(orderNum)) {
+      alert('生产单号格式不正确，仅允许字母和数字，最长20位！');
+      document.getElementById('orderNum').focus();
+      return;
+    }
     // 采集规格校验：不能为空、仅整数、范围 1～999
     const caseInput = document.getElementById('casePerPallet');
     const boxInput  = document.getElementById('boxPerCase');
@@ -2955,11 +2981,14 @@ function toggleCollect() {
     }
     // 二次确认：展示生产信息和包装比例
     const productName = productPage.selected.name;
+    const productCode = productPage.selected.code;
     const maxCase = parseInt(caseVal);
     const maxBox  = parseInt(boxVal);
-    document.getElementById('startCollectProductInfo').textContent = `产品：${productName}`;
-    document.getElementById('startCollectOrderInfo').textContent = `生产单：${orderNum}`;
-    document.getElementById('startCollectRatioInfo').textContent = `1垛 ${maxCase} 箱，1箱 ${maxBox} 盒`;
+    document.getElementById('startCollectProductName').textContent = productName;
+    document.getElementById('startCollectProductCode').textContent = productCode;
+    document.getElementById('startCollectOrderNum').textContent = orderNum;
+    document.getElementById('startCollectRatioText').innerHTML =
+      `1垛 <strong style="font-weight:600;">${maxCase}</strong> 箱，1箱 <strong style="font-weight:600;">${maxBox}</strong> 盒`;
     document.getElementById('startCollectConfirmOverlay').classList.add('active');
   } else {
     isCollecting = false;
@@ -3135,11 +3164,25 @@ function queryUnfinishedByBox() {
   if(found) {
     extractFoundRecord = found;
     document.getElementById('extractUnfinishedInfo').innerHTML = `
-      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">产品名称</span><span style="font-weight:600;">${found.product}</span></div>
-      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">产品编号</span><span>${found.productCode}</span></div>
-      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">生产单号</span><span>${found.orderNo}</span></div>
-      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">已完成箱数</span><span style="color:#2563EB;font-weight:600;">${found.doneBoxes} / ${found.totalBoxes} 箱</span></div>
-      <div style="display:flex;gap:8px;"><span style="color:#6B7280;width:80px;flex-shrink:0;">最后采集</span><span>${found.lastTime}</span></div>`;
+      <span style="font-size:13px;font-weight:600;color:#2563EB;font-family:'Microsoft YaHei',sans-serif;">生产信息</span>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Microsoft YaHei',sans-serif;">
+        <span style="font-weight:600;color:#6B7280;">产品名称</span><span style="color:#1F2937;">${found.product}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Microsoft YaHei',sans-serif;">
+        <span style="font-weight:600;color:#6B7280;">产品编号</span><span style="color:#1F2937;">${found.productCode}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Microsoft YaHei',sans-serif;">
+        <span style="font-weight:600;color:#6B7280;">生产单号</span><span style="color:#1F2937;">${found.orderNo}</span>
+      </div>
+      <div style="height:1px;background:#E5E7EB;"></div>
+      <span style="font-size:13px;font-weight:600;color:#2563EB;font-family:'Microsoft YaHei',sans-serif;">采集规格</span>
+      <div style="display:flex;align-items:center;gap:4px;font-size:14px;color:#1F2937;font-family:'Microsoft YaHei',sans-serif;">
+        1垛 <strong>${found.totalBoxes}</strong> 箱，1箱 <strong>4</strong> 盒
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-family:'Microsoft YaHei',sans-serif;">
+        <span style="font-weight:600;color:#6B7280;">已关联箱数</span>
+        <span style="font-weight:600;color:#2563EB;">${found.doneBoxes} 箱</span>
+      </div>`;
     document.getElementById('extractUnfinishedResult').style.display = 'block';
     btn.disabled = false; btn.style.background='#2563EB'; btn.style.cursor='pointer';
   } else {
@@ -3152,19 +3195,37 @@ function queryUnfinishedByBox() {
 function confirmExtractUnfinished() {
   if(!extractFoundRecord) return;
   const r = extractFoundRecord;
-  // 回显到主页面
+
+  // ── 1. 回显产品信息 ──
+  productPage.selected = mockProducts.find(p => p.code === r.productCode)
+    || { id:'', name:r.product, code:r.productCode };
   document.getElementById('productDisplayName').textContent = r.product;
   document.getElementById('productDisplayName').style.color = '#1F2937';
   document.getElementById('productCodeArea').style.display = 'block';
   document.getElementById('productCodeDisplay').textContent = r.productCode;
+
+  // ── 2. 回写生产单号 ──
   document.getElementById('orderNum').value = r.orderNo;
+
+  // ── 3. 回写采集规格 ──
+  document.getElementById('casePerPallet').value = r.totalBoxes;
+  document.getElementById('dispCasePerPallet').textContent = r.totalBoxes;
+
+  // ── 4. 恢复当前已完成箱数（未成垛继续生产） ──
+  curCases = r.doneBoxes;
+  document.getElementById('curCases').textContent = curCases;
+
   closeExtractUnfinished();
-  // 操作日志提示
-  const logArea = document.getElementById('opLogArea');
-  if(logArea) {
-    const ts = new Date().toLocaleString('zh-CN',{hour12:false}).replace(/\//g,'-');
-    logArea.insertAdjacentHTML('afterbegin',`<div class="log-entry log-info"><span class="log-ts">${ts}</span>已提取未成垛：生产单 ${r.orderNo}，已完成 ${r.doneBoxes}/${r.totalBoxes} 箱，继续生产</div>`);
-  }
+
+  // ── 5. 直接开始采集（用户在弹窗已确认，无需再弹二次确认） ──
+  isCollecting = true;
+  const btn = document.getElementById('collectBtn');
+  btn.textContent = '停止采集';
+  btn.style.background = '#DC2626';
+  document.getElementById('receivingDot').style.display = 'inline-flex';
+  setCollectFieldsLocked(true);
+  startSimulation2();
+  appendOpLog(`提取未成垛 - 产品：${r.product}，生产单：${r.orderNo}，已完成 ${r.doneBoxes}/${r.totalBoxes} 箱，继续采集`);
 }
 
 function resetReject() {
