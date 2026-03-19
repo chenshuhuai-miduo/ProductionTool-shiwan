@@ -1980,8 +1980,8 @@ body {
           <div class="help-h2">1.1 系统组成</div>
           <p>本系统采用<strong>四级关联模式</strong>（瓶-盒-箱-垛），由两个独立软件组成：</p>
           <ul class="help-ul">
-            <li><strong>1号机（瓶盒关联软件）</strong>：负责瓶码和盒码的采集关联，数据实时同步至2号机</li>
-            <li><strong>2号机（盒箱垛关联软件）</strong>：负责盒箱垛关联采集、数据管理和数据上传</li>
+            <li><strong>1号机（瓶盒关联软件）</strong>：负责瓶码和盒码的采集关联</li>
+            <li><strong>2号机（盒箱垛关联软件）</strong>：负责盒箱垛关联采集、数据校验、数据管理和数据上传</li>
           </ul>
           <div class="help-h2">1.2 包装规格</div>
           <p style="color:#6B7280; font-size:13px;">默认值，可在系统设置中配置，勿随意修改</p>
@@ -1998,35 +1998,26 @@ body {
         <div class="help-section" id="h-m1">
           <div class="help-h1">二、1号机操作指南（瓶盒关联软件）</div>
           <div class="help-h2">2.1 日常操作流程</div>
-          <div class="help-step-title">步骤1：确认采集规格</div>
-          <ul class="help-ul">
-            <li>在左侧「采集规格设置」区域，确认「1盒 6瓶」设置正确（6可修改，默认6瓶）</li>
-            <li class="help-warn">⚠ 开始采集后不可修改</li>
-          </ul>
+          <div class="help-step-title">步骤1：生产前准备（开始采集前需完成）</div>
+          <table class="help-table">
+            <thead><tr><th>类别</th><th>准备项</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>规格</td><td>采集规格已确认</td><td>1盒 [6]瓶（6可修改）；开始采集后不可修改</td></tr>
+              <tr><td>设备</td><td>读码器连接正常</td><td>瓶1读码器、瓶2读码器、盒读码器</td></tr>
+            </tbody>
+          </table>
           <div class="help-step-title">步骤2：开始采集</div>
           <ol class="help-ol">
             <li>点击「开始采集」按钮</li>
-            <li>系统自动检测设备状态（瓶1读码器、瓶2读码器、盒读码器）</li>
-            <li>检测通过后开始采集；按钮变为「停止采集」</li>
+            <li>检测设备连接正常后开始采集</li>
           </ol>
           <div class="help-step-title">步骤3：监控采集过程</div>
           <ul class="help-ul">
-            <li><strong>右侧 - 数据接收区</strong>：盒码、瓶码及关联结果统一展示，时间+具体信息每行一条；绿色=关联成功，红色=关联失败或异常；黑色=正常码，红色=重码/错码（系统会标记剔除，产线正常移动，下游按箱剔除）</li>
-            <li><strong>左侧 - 单位实时统计</strong>：「合计瓶数」「当前盒数」实时更新（文字在上、数字在下）</li>
+            <li>界面实时显示采集到的瓶码、盒码及关联结果</li>
+            <li>注意查看异常提示信息</li>
           </ul>
           <div class="help-step-title">步骤4：停止采集</div>
-          <ul class="help-ul"><li>点击「停止采集」按钮，未满盒的数据会保留</li></ul>
-          <div class="help-h2">2.2 设备连接状态</div>
-          <ul class="help-ul">
-            <li>右侧操作日志区域显示读码器连接状态</li>
-            <li>绿色文字：设备已连接 ✓</li>
-            <li>红色文字：设备未连接，请检查设备连接后重启</li>
-          </ul>
-          <div class="help-h2">2.3 清屏</div>
-          <ul class="help-ul">
-            <li>点击「清屏」按钮：清空数据接收区显示记录</li>
-            <li class="help-warn">⚠ 清屏不影响计数和数据库数据</li>
-          </ul>
+          <ul class="help-ul"><li>点击停止按钮，停止采集</li></ul>
         </div>
 
         <div class="help-section" id="h-m2">
@@ -2036,54 +2027,65 @@ body {
             <thead><tr><th>Tab 名称</th><th>功能说明</th></tr></thead>
             <tbody>
               <tr><td><strong>数据采集</strong></td><td>主界面，默认选中</td></tr>
-              <tr><td>手工采集</td><td>1号机相机损坏时备用</td></tr>
+              <tr><td>手工采集</td><td>相机损坏时备用</td></tr>
               <tr><td>码包管理</td><td>导入码包数据</td></tr>
               <tr><td>数据查询</td><td>查询码关联关系</td></tr>
               <tr><td>数据替换</td><td>码替换操作</td></tr>
-              <tr><td>取消关联</td><td>单个或批量解除关联</td></tr>
+              <tr><td>取消关联</td><td>批量加码到列表，统一识别后取消关联</td></tr>
               <tr><td>生产统计</td><td>查看生产数据统计</td></tr>
               <tr><td>数据上传</td><td>管理数据上传状态</td></tr>
             </tbody>
           </table>
           <p>系统设置通过菜单「配置」→「系统设置」进入（弹窗形式，需要密码）。</p>
           <div class="help-h2">3.2 数据采集主界面操作流程</div>
-          <div class="help-step-title">生产前准备：</div>
-          <ol class="help-ol">
-            <li>在左侧「当前生产信息」区域，点击「产品选择」下拉框，搜索并选择生产产品</li>
+          <div class="help-step-title">生产前准备（开始采集前需完成）：</div>
+          <table class="help-table">
+            <thead><tr><th>类别</th><th>准备项</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>门禁</td><td>码包已导入</td><td>盖外码小标、盒外码中标、箱外码大标；未导入则提示，支持在线拉取或本地导入</td></tr>
+              <tr><td>必填</td><td>产品已选择</td><td>左侧「产品选择」下拉框选中产品</td></tr>
+              <tr><td>必填</td><td>生产单号已填写</td><td>默认当天日期+001，可修改</td></tr>
+              <tr><td>规格</td><td>采集规格已确认</td><td>1垛 [70]箱、1箱 [4]盒；开始采集后不可修改</td></tr>
+              <tr><td>设备</td><td>设备连接正常</td><td>盒码相机、箱码相机、剔除装置、报警灯等</td></tr>
+              <tr><td>连接</td><td>数据库可访问</td><td>系统设置→连接→数据库连接测试通过</td></tr>
+            </tbody>
+          </table>
+          <ol class="help-ol" style="margin-top:8px;">
+            <li>在左侧「当前生产信息」区域，点击「产品选择」下拉框，在弹窗中搜索并选择生产产品</li>
             <li>确认生产单号（系统自动生成，可手动修改）</li>
             <li>确认采集规格（1垛 [70]箱、1箱 [4]盒，70、4可修改）；<strong>采集开始后不可修改</strong></li>
           </ol>
           <div class="help-step-title">开始采集：</div>
           <ol class="help-ol">
             <li>点击右侧「开始采集」按钮</li>
-            <li>系统检测设备状态，检测通过后开始采集</li>
-            <li><strong>报警灯绿灯常亮</strong>，表示系统正常工作</li>
+            <li>系统检测设备状态，检测通过后弹出二次确认弹窗，展示生产信息（产品、生产单号）和包装比例（1垛X箱、1箱X盒）</li>
+            <li>确认后开始采集</li>
           </ol>
           <div class="help-step-title">监控采集过程：</div>
           <ul class="help-ul">
-            <li><strong>中间上方 - 数据接收区</strong>（约60%高）：扫码数据和关联结果，最新在上</li>
-            <li><strong>中间中部 - 操作日志</strong>（约20%）：用户操作记录，最新在上</li>
-            <li><strong>中间下方 - 报警信息</strong>（约20%）：重码、关联失败等异常，最新在上</li>
+            <li><strong>中间上方 - 数据接收区</strong>：扫码数据和关联结果，最新在上</li>
+            <li><strong>中间中部 - 操作日志</strong>：用户操作记录，最新在上</li>
+            <li><strong>中间下方 - 报警信息</strong>：重码、关联失败等异常，最新在上</li>
             <li><strong>右侧 - 单位实时统计</strong>：当前箱数、每垛箱数、当前盒数、每箱盒数、已生产垛数、总剔除数，文字在上数字在下，每项独立卡片</li>
           </ul>
           <div class="help-step-title">成垛与自动上传：</div>
           <ul class="help-ul">
-            <li>箱数达到预设值时自动成垛，成垛后<strong>自动上传</strong>数据至云端</li>
-            <li>上传成功：绿灯常亮，无蜂鸣/提示音；一分钟后自动熄灭</li>
-            <li class="help-warn">上传失败：红灯常亮 + 声音提醒（需处理后手动重传）</li>
+            <li>箱数达到预设值时自动成垛</li>
+            <li>成垛后<strong>自动上传</strong>数据至云端（系统设置→业务→上传配置中「自动上传开关」开启时，默认开启；关闭时需手动上传）</li>
+            <li>上传成功：<strong>绿灯常亮</strong>，无蜂鸣/提示音；一分钟后自动熄灭</li>
+            <li class="help-warn">上传失败：<strong>红灯常亮</strong> + 蜂鸣；报警信息区显示具体失败原因</li>
           </ul>
           <div class="help-h2">3.3 右侧任务控制</div>
-          <p style="margin-bottom:8px;">总剔除数显示在单位实时统计区域。按钮一行两个排列：</p>
           <table class="help-table">
             <thead><tr><th>按钮</th><th>功能说明</th></tr></thead>
             <tbody>
               <tr><td>开始/停止采集</td><td>启动或停止数据采集；停止后未满垛数据保留</td></tr>
               <tr><td>无需采集码</td><td>当天不生产五码合一产品时开启，所有读码设备不工作</td></tr>
-              <tr><td>关闭报警</td><td>上传失败触发报警后，点击可重置报警状态（停止声光报警器、蜂鸣器）</td></tr>
+              <tr><td>关闭报警</td><td>发生长报警时（连续重码3次、数据上传失败等），点击可重置三色声光报警灯（停止灯光和蜂鸣）</td></tr>
               <tr><td>强制满垛</td><td>未达到预设箱数时，强制结束当前垛，生成垛码</td></tr>
               <tr><td>提取工单未成垛</td><td>弹窗输入/扫描垛内任一箱码，查出对应生产订单并显示，确认后回显主页面继续生产</td></tr>
               <tr><td>收回剔除</td><td>剔除设备动作后未自动收回时，点击手动收回</td></tr>
-              <tr><td>剔除数清零</td><td>将总剔除数重置为 0</td></tr>
+              <tr><td>剔除数清零</td><td>将总剔除数重置为 0（总剔除数显示在单位实时统计区域）</td></tr>
             </tbody>
           </table>
         </div>
@@ -2093,31 +2095,31 @@ body {
         </div>
 
         <div class="help-section" id="h-manual">
-          <div class="help-h2">4.1 手工采集（1号机相机损坏时使用，仅支持瓶盒关联）</div>
+          <div class="help-h2">4.1 手工采集（瓶盒采集相机损坏时使用，人工扫码补录瓶盒关联）</div>
           <ol class="help-ol">
             <li>点击「手工采集」Tab</li>
             <li>设置采集规格（1盒 [6]瓶，6可修改）；<strong>采集开始后不可修改</strong></li>
             <li>点击「开始采集」按钮，按钮变为「停止采集」</li>
             <li>按左侧「开始采集提示」顺序用扫码枪扫码：先扫瓶码（足够数量后）→ 扫盒码</li>
-            <li>左侧开始采集提示区文字随进度变化，告知当前应扫瓶码或盒码（无指示灯，文字提示即可）</li>
+            <li>左侧开始采集提示区文字随进度变化，告知当前应扫瓶码或盒码</li>
             <li>扫码完成后自动完成瓶盒关联，当前已读数量归零，继续下一组</li>
           </ol>
         </div>
 
         <div class="help-section" id="h-package">
           <div class="help-h2">4.2 码包管理</div>
-          <p><strong>用途</strong>：导入包材厂提供的码包文件，用于采集时比对校验（不在码包内的码会被剔除）。支持的码包类型：盖外码小标、盒外码中标、箱外码大标。码包文件都是指外码，请不要导入内码。</p>
+          <p><strong>用途</strong>：导入包材厂提供的码包文件，用于采集时比对校验（不在码包内的码会被剔除）。</p>
           <table class="help-table">
             <thead><tr><th>操作</th><th>步骤</th></tr></thead>
             <tbody>
-              <tr><td>启动时在线导入</td><td>软件启动时自动执行，仅拉取盖外码小标、箱外码大标，按上次拉取时间增量拉取，首次全量、后续增量</td></tr>
-              <tr><td>在线更新</td><td>点击「在线更新」→ 仅拉取瓶码（盖外码小标）、箱码（箱外码大标）两种码包；盒外码中标不参与，需本地导入</td></tr>
-              <tr><td>本地导入</td><td>点击「本地导入」→ 先选择码包类型 → 再选择 TXT 文件 → 输入密码 123456 → 确认解析入库。盒外码中标仅能本地导入；盖外码小标、箱外码大标无网络时也可本地导入</td></tr>
-              <tr><td>查看码包</td><td>点击操作列「查看」→ 弹窗显示该码包所有码，支持搜索与分页</td></tr>
-              <tr><td>删除码包</td><td>仅当该码包内无任何已关联码时允许删除；若有已关联码则禁止删除并提示。删除为逻辑删除</td></tr>
+              <tr><td>启动时在线导入</td><td>软件启动时自动执行，仅拉取<strong>盖外码小标</strong>；盒外码中标、箱外码大标不参与</td></tr>
+              <tr><td>本地导入</td><td>点击后弹窗 → 先选择码包类型（盖外码小标/盒外码中标/箱外码大标）→ 再选择 TXT 文件 → 输入密码（<strong>123456</strong>）→ 确认解析入库。盒外码中标、箱外码大标仅能本地导入；盖外码小标无网络时也可本地导入。因格式相同，类型需人工指定</td></tr>
+              <tr><td>在线更新</td><td>点击「在线更新」→ 仅拉取<strong>盖外码小标</strong>（盒外码中标、箱外码大标不参与，均需本地导入）</td></tr>
+              <tr><td>查看码包</td><td>点击操作列「查看」→ 弹窗显示该码包所有码，支持搜索</td></tr>
+              <tr><td>删除码包</td><td>仅当该码包内无已关联码时允许删除；有则禁止并提示。确认后逻辑删除</td></tr>
             </tbody>
           </table>
-          <p><strong>帮助提示</strong>：点击顶部操作区「?」图标可查看详细的码包导入说明、格式说明及删除规则。</p>
+          <p><strong>码包格式说明：</strong>TXT 文件，每行一个码（盖外码小标=瓶码，盒外码中标=盒码，箱外码大标=箱码）</p>
         </div>
 
         <div class="help-section" id="h-query">
@@ -2128,7 +2130,7 @@ body {
 
         <div class="help-section" id="h-replace">
           <div class="help-h2">4.4 数据替换 <span class="help-badge-warn">需要密码 123456</span></div>
-          <p><strong>用途</strong>：码损坏或码错误时，将旧码替换为新码。</p>
+          <p><strong>用途</strong>：码损坏或码错误时，将旧码替换为新码（仅操作外码：瓶码/盒码/箱码，无需操作内码）。</p>
           <ol class="help-ol">
             <li>输入原码（待替换）</li>
             <li>输入新码（替换后）</li>
@@ -2137,41 +2139,42 @@ body {
           </ol>
           <p><strong>新码要求（需同时满足）：</strong></p>
           <ul class="help-ul">
-            <li>✅ 在导入的码包范围内</li>
-            <li>✅ 未被使用过（系统中无关联关系）</li>
+            <li>✅ 与原码<strong>同层级</strong>（瓶码只能替换瓶码，盒码只能替换盒码，箱码只能替换箱码）</li>
+            <li>✅ 在对应层级码包中，且<strong>从未使用过</strong>（系统中不存在该码的关联记录）</li>
             <li>✅ 格式有效，且不能与原码相同</li>
+          </ul>
+          <p><strong>替换执行方式</strong>（系统自动判断）：</p>
+          <ul class="help-ul">
+            <li><strong>未上传（仅本地）</strong>：校验通过后直接替换本地数据</li>
+            <li><strong>已上传</strong>：先替换云端再替换本地，保证一致性；若码类型有内码（盖码、箱码），系统<strong>自动同步替换云端内码</strong>，无需手动操作</li>
           </ul>
           <p class="help-warn">⚠ 替换操作不可恢复，请务必核对无误再执行</p>
         </div>
 
         <div class="help-section" id="h-cancel">
           <div class="help-h2">4.5 取消关联 <span class="help-badge-warn">需要密码 123456</span></div>
-          <p><strong>用途</strong>：取消已建立的码关联关系，适用于报废、返工、重新包装、装错位置、数据纠错、召回退货等场景（仅针对已写入关联表的码）。</p>
+          <p><strong>用途</strong>：取消码的关联关系（如数据错误、产品需要重新处理时）。</p>
           <div class="help-info-box">
             <strong>重要规则：</strong>
             <ul class="help-ul" style="margin-top:6px;">
-              <li>不能跳过上级直接取消下级：若码有上级关联，须先取消上级</li>
-              <li>取消范围（全局生效，同批操作统一）：<strong>只解一层</strong>（只断该层直接关联，下层保留）或<strong>全部解除</strong>（取消该层及以下所有关联，仅箱码效果不同）</li>
-              <li>已上传云端：系统自动先取消整垛云端数据，成功后再取消本地；云端失败则本地不执行</li>
-              <li>瓶码不可直接取消：扫入瓶码时系统自动转换为其所在的盒码</li>
+              <li>不能跳过上级直接取消下级：若指定码有上级关联，系统在识别时标记为不可取消，须先将上级码加入列表处理</li>
+              <li>已上传云端时，系统先取消云端（整垛为单位），成功后再取消本地，确保一致性</li>
             </ul>
           </div>
+          <div class="help-step-title">取消范围（执行前选择）：</div>
+          <ul class="help-ul">
+            <li><strong>只解一层</strong>：垛码断箱-垛、箱码断盒-箱、盒码断瓶-盒，下一层保留</li>
+            <li><strong>全部解除</strong>：箱码断盒-箱及瓶-盒（垛码受限等同只解一层）</li>
+          </ul>
           <div class="help-step-title">操作步骤：</div>
           <ol class="help-ol">
-            <li>在左侧输入或扫描盒码/箱码/垛码（或瓶码），点击「加入列表」</li>
-            <li>可重复添加多个码到待取消列表</li>
-            <li>选择「取消范围」：只解一层（默认）或全部解除</li>
-            <li>点击「识别」→ 右侧显示每项状态（✓可解除 / ✗不可解除+原因）</li>
-            <li>确认内容后，点击「确认取消关联」→ 输入密码 <strong>123456</strong> → 执行</li>
+            <li>输入盒/箱/垛码（支持扫瓶码，系统自动转换为盒码）→ 点击「加入列表」</li>
+            <li>可批量加入多个码到待取消列表</li>
+            <li>点击「识别」→ 右侧显示各码识别结果（✓ 可取消 / ✗ 不可取消并提示原因）</li>
+            <li>若有码标记为不可取消（有上级），将上级码也加入列表，再次点击「识别」</li>
+            <li>选择取消范围（只解一层 / 全部解除）</li>
+            <li>点击「确认取消关联」→ 输入密码（<strong>123456</strong>）→ 执行</li>
           </ol>
-          <div class="help-step-title">取消范围说明：</div>
-          <table class="help-table">
-            <thead><tr><th>模式</th><th>垛码</th><th>箱码</th><th>盒码</th></tr></thead>
-            <tbody>
-              <tr><td>只解一层</td><td>断箱-垛（70条），盒-箱/瓶-盒保留</td><td>断盒-箱（4条），瓶-盒保留</td><td>断瓶-盒（6条）</td></tr>
-              <tr><td>全部解除</td><td>同左（层级限制）</td><td>断盒-箱+瓶-盒（共28条），全部回迁热表</td><td>同左（等价）</td></tr>
-            </tbody>
-          </table>
           <p class="help-warn">⚠ 操作不可恢复，请确认无误后操作</p>
         </div>
 
@@ -2181,10 +2184,9 @@ body {
           <table class="help-table">
             <thead><tr><th>操作</th><th>步骤</th></tr></thead>
             <tbody>
-              <tr><td>生产统计查询</td><td>左侧选择日期范围 → 点击「查询」→ 显示垛数/箱数/盒数/剔除数</td></tr>
-              <tr><td>查看垛码列表</td><td>点击「垛数」数字 → 弹窗显示垛码列表（垛码、箱数、生产单号、关联时间），支持按垛码筛选</td></tr>
-              <tr><td>查看剔除记录</td><td>点击「剔除数」数字 → 弹窗显示剔除记录，左右分栏（分层表格+详情），支持按箱码筛选</td></tr>
-              <tr><td>上传统计查询</td><td>右侧选择日期范围和状态（全部/成功/异常）→ 点击「查询」</td></tr>
+              <tr><td>生产统计查询</td><td>左侧选择日期（开始-结束）、可输入生产单号 → 点击「查询」→ 显示垛数/箱数/盒数</td></tr>
+              <tr><td>查看垛码列表</td><td>点击蓝色下划线的「垛数」数字 → 弹窗显示垛码列表，支持模糊筛选</td></tr>
+              <tr><td>上传统计查询</td><td>右侧选择日期、生产单号、状态（全部/成功/异常）→ 点击「查询」</td></tr>
             </tbody>
           </table>
         </div>
@@ -2213,14 +2215,14 @@ body {
         <div class="help-section" id="h-faq">
           <div class="help-h1">五、常见问题 &amp; 异常处理</div>
           <div class="help-faq-item">
-            <div class="help-faq-q">Q1：1号机显示红色码，怎么处理？</div>
-            <div class="help-faq-a">红色码 = 重码（已存在）或错码（格式错误）。系统自动标记待剔除，产线正常移动，下游龙门架按箱剔除，<strong>无需手动干预</strong>。</div>
+            <div class="help-faq-q">Q1：2号机提示码校验异常（重码/错码/超码/缺码），怎么处理？</div>
+            <div class="help-faq-a">2号机统一执行码包校验、重码检测和G数量校验。检测到异常后，该箱数据标记无效并触发剔除装置，产线正常移动，<strong>无需手动干预</strong>。查看报警信息区了解具体原因，根据提示处理实物后重新上线。</div>
           </div>
           <div class="help-faq-item">
             <div class="help-faq-q">Q2：设备显示未连接怎么办？</div>
             <ol class="help-ol">
               <li>检查读码器/相机的电源和网线是否插好</li>
-              <li>重启设备后，查看连接状态是否恢复绿色</li>
+              <li>重启设备后，查看连接状态是否恢复</li>
               <li>若仍未连接，联系技术人员</li>
             </ol>
           </div>
@@ -2229,7 +2231,7 @@ body {
             <ol class="help-ol">
               <li>查看「数据上传」Tab 中的失败原因</li>
               <li>根据失败原因进行数据处理或等待网络恢复</li>
-              <li>点击「关闭报警」重置报警灯和蜂鸣器</li>
+              <li>点击「关闭报警」重置三色声光报警灯（停止灯光和蜂鸣）</li>
               <li>处理完成后，点击「手动上传」重新上传</li>
             </ol>
           </div>
@@ -2237,7 +2239,15 @@ body {
             <div class="help-faq-q">Q4：生产结束时还有尾数（未满垛），怎么处理？</div>
             <div class="help-faq-a">
               <strong>方式一（推荐）</strong>：点击「强制满垛」，将当前数据强制成垛并上传<br>
-              <strong>方式二</strong>：直接停止采集，不做处理。下次生产时点击「提取工单未成垛」，选择该条数据继续生产
+              <strong>方式二</strong>：直接停止采集，退出软件前选择暂存数据。下次生产时点击「提取工单未成垛」，输入/扫描垛内任一箱码，查出对应生产订单并确认，回显主页面继续生产
+            </div>
+          </div>
+          <div class="help-faq-item">
+            <div class="help-faq-q">Q4-1：退出软件时有未满垛数据，弹窗怎么选？</div>
+            <div class="help-faq-a">
+              <strong>暂存</strong>：将未满垛数据存库标记未成垛，允许退出；下次可「提取工单未成垛」继续生产<br>
+              <strong>强制满垛</strong>：执行强制满垛流程（生成虚拟垛标、重置计数），操作完毕后允许退出<br>
+              <strong>取消</strong>：返回主界面，不退出
             </div>
           </div>
           <div class="help-faq-item">
@@ -2253,13 +2263,12 @@ body {
             <div class="help-faq-a">在「数据查询」Tab 中输入码值，点击「查询」或回车，左侧表格按层级分列展示，点击某行右侧可查看该行的详细信息。</div>
           </div>
           <div class="help-faq-item">
-            <div class="help-faq-q">Q8：取消关联时提示「请先解除上级」，怎么操作？</div>
+            <div class="help-faq-q">Q8：识别结果提示「不可取消，有上级关联」，怎么操作？</div>
             <ol class="help-ol">
-              <li>在「识别结果」中查看完整链路（如：垛码xxx → 箱码xxx → 盒码xxx）</li>
-              <li>先输入最顶层的垛码，执行取消关联</li>
-              <li>再输入箱码，执行取消关联</li>
-              <li>最后输入盒码，执行取消关联</li>
-              <li>每次解除都需要输入密码 123456</li>
+              <li>在识别结果中找到标记 ✗ 的码，查看提示（如「已关联至垛码xxx，请先将垛码加入列表」）</li>
+              <li>将提示的上级码（垛码）也输入并「加入列表」</li>
+              <li>再次点击「识别」，上级码通过后该码变为 ✓ 可取消</li>
+              <li>确认无 ✗ 码后，点击「确认取消关联」→ 输入密码（<strong>123456</strong>）→ 执行</li>
             </ol>
           </div>
         </div>
@@ -2268,11 +2277,11 @@ body {
           <div class="help-h1">六、注意事项</div>
           <div class="help-info-box">
             <ol class="help-ol" style="margin:0;">
-              <li><strong>密码保护</strong>：系统设置、码替换、取消关联均需要密码 <strong>123456</strong>，请妥善保管</li>
+              <li><strong>密码保护</strong>：系统设置、码替换、取消关联均需要输入密码确认</li>
               <li><strong>不可恢复操作</strong>：码替换、取消关联执行后<strong>无法撤销</strong>，操作前请仔细核对</li>
               <li><strong>包装比例</strong>：不可随意修改，如需变更请联系管理员</li>
               <li><strong>生产前检查</strong>：每次开始生产前，确认码包已导入、设备连接正常</li>
-              <li><strong>异常优先处理</strong>：发现报警信息（中间下方红色区域）应及时处理，避免影响数据准确性</li>
+              <li><strong>异常优先处理</strong>：2号机发现报警信息（中间下方红色区域）应及时处理，避免影响数据准确性</li>
             </ol>
           </div>
         </div>
