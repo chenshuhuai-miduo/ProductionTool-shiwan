@@ -81,6 +81,24 @@ public class ShiwanM2CurrentTaskController {
         return shiwanM2CurrentTaskService.queryUnfinishedByBoxCode(boxCode);
     }
 
+    /**
+     * 建议生产单号：prefix+001~999 中第一个未在 ProductionOrder 使用的单号。
+     * GET /api/shiwan-m2/current-task/suggest-order-no?prefix=YYYYMMDD
+     */
+    @GetMapping("/suggest-order-no")
+    public ApiResult<String> suggestOrderNo(@RequestParam String prefix) {
+        return ApiResult.success("建议单号", shiwanM2CurrentTaskService.suggestOrderNo(prefix));
+    }
+
+    /**
+     * 检查生产单号是否在 ProductionOrder 中已有记录。
+     * GET /api/shiwan-m2/current-task/exists?orderNo=xxx
+     */
+    @GetMapping("/exists")
+    public ApiResult<Boolean> existsOrderNo(@RequestParam String orderNo) {
+        return ApiResult.success("查询成功", shiwanM2CurrentTaskService.existsOrderNo(orderNo));
+    }
+
     private static Integer toInt(Object o, int defaultVal) {
         if (o == null) return defaultVal;
         if (o instanceof Number) return ((Number) o).intValue();

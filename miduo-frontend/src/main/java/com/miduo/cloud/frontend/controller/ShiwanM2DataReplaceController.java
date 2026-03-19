@@ -24,6 +24,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
@@ -84,12 +89,46 @@ public class ShiwanM2DataReplaceController {
             return;
         }
 
-        if (!showReplacePasswordConfirm(oldCode, newCode, reason)) {
-            return;
-        }
+        // 查询原码是否已上传，已上传则阻止替换
+        replaceStatusLabel.setText("检查原码状态...");
+        final String finalOldCode = oldCode;
+        final String finalNewCode = newCode;
+        final String finalReason  = reason;
+        new Thread(() -> {
+            boolean uploaded = checkCodeUploaded(finalOldCode);
+            Platform.runLater(() -> {
+                if (uploaded) {
+                    replaceStatusLabel.setText("替换中止：该码已上传");
+                    showAlert(Alert.AlertType.WARNING, "该码已上传", "原码已上传至云端，不允许替换。");
+                    return;
+                }
+                replaceStatusLabel.setText("请填写原码和新码后执行替换");
+                if (!showReplacePasswordConfirm(finalOldCode, finalNewCode, finalReason)) {
+                    return;
+                }
+                replaceStatusLabel.setText("替换请求处理中...");
+                doReplaceAsync(finalOldCode, finalNewCode, finalReason);
+            });
+        }, "shiwan-m2-replace-check").start();
+    }
 
-        replaceStatusLabel.setText("替换请求处理中...");
-        doReplaceAsync(oldCode, newCode, reason);
+    /**
+     * 查询该码是否已上传。复用取消关联的 check-cancel 接口获取 isUploaded 字段。
+     * @return true=已上传；false=未上传或查询失败（失败时保守放行，由后端再做校验）
+     */
+    private boolean checkCodeUploaded(String code) {
+        try {
+            String enc = java.net.URLEncoder.encode(code, "UTF-8");
+            String resp = HttpUtil.doGet("/api/shiwan-m2/code/check-cancel?code=" + enc);
+            com.fasterxml.jackson.databind.JsonNode root =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(resp);
+            if (root != null && root.has("code") && root.get("code").asInt() == 200
+                    && root.has("data") && !root.get("data").isNull()) {
+                com.fasterxml.jackson.databind.JsonNode data = root.get("data");
+                return data.has("isUploaded") && data.get("isUploaded").asBoolean(false);
+            }
+        } catch (Exception ignored) {}
+        return false;
     }
 
     private void doReplaceAsync(String oldCode, String newCode, String reason) {
@@ -159,7 +198,6 @@ public class ShiwanM2DataReplaceController {
     }
 
     private boolean showReplacePasswordConfirm(String oldCode, String newCode, String reason) {
-        // 每次弹窗时从配置文件实时读取密码，支持密码变更后立即生效
         ShiwanM2Settings settings = ShiwanM2SettingsStore.load();
         String configPassword = settings.getSystemSettingsPassword();
         if (configPassword == null || configPassword.isEmpty()) {
@@ -169,40 +207,87 @@ public class ShiwanM2DataReplaceController {
 
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("确认码替换");
-        dialog.setHeaderText("请确认替换信息并输入密码");
+        // 不使用系统 headerText，由内容区自定义标题
+        dialog.setHeaderText(null);
 
         ButtonType confirmType = new ButtonType("确认替换", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(confirmType, ButtonType.CANCEL);
+        ButtonType cancelType  = new ButtonType("取消",    ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(confirmType, cancelType);
 
-        Label detail = new Label(buildReplaceConfirmText(oldCode, newCode, reason));
-        detail.setWrapText(true);
-        PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("请输入系统密码");
-        VBox content = new VBox(10, detail, new Label("*请输入密码"), passwordField);
+        // ---- 标题行 ----
+        Label titleLabel = new Label("确认码替换");
+        titleLabel.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#1F2937;");
+
+        // ---- 确认提示 ----
+        Label confirmHint = new Label("请确认替换信息：");
+        confirmHint.setStyle("-fx-font-size:14px; -fx-text-fill:#374151;");
+
+        // ---- 信息盒（灰底圆角） ----
+        VBox infoBox = new VBox(4);
+        infoBox.setStyle("-fx-background-color:#F9FAFB; -fx-border-radius:8; " +
+                "-fx-background-radius:8; -fx-padding:14; -fx-line-spacing:4;");
+        infoBox.getChildren().add(infoRow("原码值：", oldCode));
+        infoBox.getChildren().add(infoRow("新码值：", newCode));
+        if (reason != null && !reason.isEmpty()) {
+            infoBox.getChildren().add(infoRow("替换原因：", reason));
+        }
+
+        // ---- 密码区 ----
+        Label pwdTitle = new Label("* 请输入密码");
+        pwdTitle.setStyle("-fx-font-size:14px; -fx-font-weight:600; -fx-text-fill:#DC2626;");
+        PasswordField pwdField = new PasswordField();
+        pwdField.setPromptText("请输入密码");
+        pwdField.setStyle("-fx-min-height:44px; -fx-font-size:14px; -fx-border-radius:6; " +
+                "-fx-background-radius:6; -fx-border-color:#D1D5DB; -fx-border-width:1px;");
+        Label pwdErr = new Label();
+        pwdErr.setStyle("-fx-text-fill:#DC2626; -fx-font-size:13px; -fx-min-height:18px;");
+
+        // ---- 不可恢复警告 ----
+        Label warnText = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
+        warnText.setStyle("-fx-text-fill:#DC2626; -fx-font-size:14px; -fx-font-weight:600;");
+
+        VBox content = new VBox(14,
+                titleLabel,
+                confirmHint,
+                infoBox,
+                new VBox(6, pwdTitle, pwdField, pwdErr),
+                warnText);
+        content.setPrefWidth(400);
+        content.setPadding(new Insets(20));
         dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().setStyle("-fx-padding:0;");
 
-        Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmType);
-        confirmButton.setDisable(true);
-        passwordField.textProperty().addListener((obs, ov, nv) ->
-                confirmButton.setDisable(!expectedPassword.equals(nv)));
+        // 按钮样式
+        Button confirmBtn = (Button) dialog.getDialogPane().lookupButton(confirmType);
+        confirmBtn.setStyle("-fx-background-color:#DC2626; -fx-text-fill:white; " +
+                "-fx-font-weight:bold; -fx-min-width:100px; -fx-min-height:44px; -fx-font-size:14px;");
+        Button cancelBtn = (Button) dialog.getDialogPane().lookupButton(cancelType);
+        cancelBtn.setStyle("-fx-background-color:#6B7280; -fx-text-fill:white; " +
+                "-fx-min-width:80px; -fx-min-height:44px; -fx-font-size:14px;");
+
+        // 点击确认时验证密码，错误则不关闭
+        confirmBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            if (!expectedPassword.equals(pwdField.getText())) {
+                pwdErr.setText("密码错误，请重新输入");
+                pwdField.clear();
+                ev.consume();
+            }
+        });
 
         Optional<ButtonType> result = dialog.showAndWait();
         return result.isPresent() && result.get() == confirmType;
     }
 
-    private String buildReplaceConfirmText(String oldCode, String newCode, String reason) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("原码值：").append(oldCode).append('\n');
-        builder.append("新码值：").append(newCode).append('\n');
-        if (!reason.isEmpty()) {
-            builder.append("替换原因：").append(reason).append('\n');
-        }
-        builder.append('\n');
-        builder.append("已上传的码关联将先替换云端再替换本地。").append('\n');
-        builder.append("盖码、箱码等有内码的类型，会同步替换云端内码。").append('\n');
-        builder.append('\n');
-        builder.append("此操作不可恢复，请仔细核对后确认。");
-        return builder.toString();
+    /** 构建信息行：加粗标签 + 普通值，横向排列 */
+    private static HBox infoRow(String label, String value) {
+        Label lbl = new Label(label);
+        lbl.setStyle("-fx-font-size:14px; -fx-font-weight:600; -fx-text-fill:#374151;");
+        Label val = new Label(value);
+        val.setStyle("-fx-font-size:14px; -fx-text-fill:#374151;");
+        val.setWrapText(true);
+        HBox row = new HBox(0, lbl, val);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 
     private void showAlert(Alert.AlertType type, String title, String message) {

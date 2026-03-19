@@ -3,6 +3,8 @@ package com.miduo.cloud.application.codepackage;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.miduo.cloud.common.config.ShiwanM2SettingsDto;
+import com.miduo.cloud.common.config.ShiwanM2SettingsFileLoader;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageImportVO;
@@ -396,6 +398,19 @@ public class CodePackageApplicationService {
         if (deduplicatedCodes.isEmpty()) {
             throw new IllegalArgumentException("导入文件中未解析到有效码");
         }
+
+        // 按系统设置的码位数校验，过滤位数不符的码
+        int totalBeforeDigitFilter = deduplicatedCodes.size();
+        deduplicatedCodes = filterCodesByDigits(deduplicatedCodes, packageType);
+        int invalidDigitCount = totalBeforeDigitFilter - deduplicatedCodes.size();
+        if (deduplicatedCodes.isEmpty()) {
+            String typeDesc = resolveTypeName(packageType);
+            int requiredDigits = resolveRequiredDigits(packageType);
+            throw new IllegalArgumentException(
+                    "导入的" + typeDesc + "码位数均不符合系统设置要求（要求 " + requiredDigits + " 位），共 "
+                            + totalBeforeDigitFilter + " 条全部过滤，导入中止");
+        }
+
         if (checkFileNameDuplicate && StringUtils.hasText(fileName)) {
             Long duplicateFile = codePackageImportMapper.countActiveByTypeAndFileName(packageType, fileName.trim());
             if (duplicateFile != null && duplicateFile > 0) {
@@ -425,8 +440,16 @@ public class CodePackageApplicationService {
         importPO.setCodeCount(newCodes.size());
         importPO.setStatus(CodePackageStatusEnum.NORMAL.getCode());
         importPO.setFileName(fileName);
+        // 拼接 remark：记录过滤掉的位数不符条数与重复条数
+        List<String> remarkParts = new ArrayList<>();
+        if (invalidDigitCount > 0) {
+            remarkParts.add("位数不符 " + invalidDigitCount + " 条已过滤");
+        }
         if (!existsSet.isEmpty()) {
-            importPO.setRemark("检测到重复码 " + existsSet.size() + " 条，已自动过滤");
+            remarkParts.add("重复码 " + existsSet.size() + " 条已过滤");
+        }
+        if (!remarkParts.isEmpty()) {
+            importPO.setRemark(String.join("，", remarkParts));
         }
         importPO.setCreateTime(now);
         importPO.setUpdateTime(now);
@@ -521,6 +544,38 @@ public class CodePackageApplicationService {
             start = end;
         }
         return map;
+    }
+
+    /**
+     * 按系统设置的码位数过滤：位数不符的码直接跳过。
+     * 若系统设置未配置或对应位数 <= 0（-1 表示不限），则不过滤。
+     */
+    private List<String> filterCodesByDigits(List<String> codes, Integer packageType) {
+        int required = resolveRequiredDigits(packageType);
+        if (required <= 0) {
+            return codes;
+        }
+        return codes.stream().filter(c -> c.length() == required).collect(Collectors.toList());
+    }
+
+    /**
+     * 读取系统设置，返回指定码包类型要求的位数；<= 0 表示不限。
+     */
+    private int resolveRequiredDigits(Integer packageType) {
+        ShiwanM2SettingsDto settings = ShiwanM2SettingsFileLoader.load();
+        if (settings == null || settings.getCodeDigits() == null) {
+            return -1;
+        }
+        ShiwanM2SettingsDto.CodeDigitsConfig cfg = settings.getCodeDigits();
+        if (packageType == null) {
+            return -1;
+        }
+        switch (packageType) {
+            case 1: return cfg.getSmallCodeDigits();
+            case 2: return cfg.getMediumCodeDigits();
+            case 3: return cfg.getLargeCodeDigits();
+            default: return -1;
+        }
     }
 
     private List<String> normalizeCodes(List<String> rawCodes) {
