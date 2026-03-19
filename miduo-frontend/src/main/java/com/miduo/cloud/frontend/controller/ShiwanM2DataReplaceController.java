@@ -5,8 +5,11 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.code.CodeReplaceRequest;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.config.ShiwanM2Settings;
+import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -32,7 +35,6 @@ import java.util.Optional;
  */
 public class ShiwanM2DataReplaceController {
 
-    private static final String FIXED_PASSWORD = "123456";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @FXML
@@ -157,6 +159,14 @@ public class ShiwanM2DataReplaceController {
     }
 
     private boolean showReplacePasswordConfirm(String oldCode, String newCode, String reason) {
+        // 每次弹窗时从配置文件实时读取密码，支持密码变更后立即生效
+        ShiwanM2Settings settings = ShiwanM2SettingsStore.load();
+        String configPassword = settings.getSystemSettingsPassword();
+        if (configPassword == null || configPassword.isEmpty()) {
+            configPassword = "123456";
+        }
+        final String expectedPassword = configPassword;
+
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("确认码替换");
         dialog.setHeaderText("请确认替换信息并输入密码");
@@ -167,13 +177,14 @@ public class ShiwanM2DataReplaceController {
         Label detail = new Label(buildReplaceConfirmText(oldCode, newCode, reason));
         detail.setWrapText(true);
         PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("请输入密码（固定密码）");
+        passwordField.setPromptText("请输入系统密码");
         VBox content = new VBox(10, detail, new Label("*请输入密码"), passwordField);
         dialog.getDialogPane().setContent(content);
 
         Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmType);
         confirmButton.setDisable(true);
-        passwordField.textProperty().addListener((obs, ov, nv) -> confirmButton.setDisable(!FIXED_PASSWORD.equals(nv)));
+        passwordField.textProperty().addListener((obs, ov, nv) ->
+                confirmButton.setDisable(!expectedPassword.equals(nv)));
 
         Optional<ButtonType> result = dialog.showAndWait();
         return result.isPresent() && result.get() == confirmType;
@@ -199,6 +210,7 @@ public class ShiwanM2DataReplaceController {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 }

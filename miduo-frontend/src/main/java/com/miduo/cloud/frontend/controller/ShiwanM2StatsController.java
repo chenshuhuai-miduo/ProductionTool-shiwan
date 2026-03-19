@@ -3,6 +3,7 @@ package com.miduo.cloud.frontend.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -85,6 +86,10 @@ public class ShiwanM2StatsController implements Initializable {
         uploadStartDate.setValue(LocalDate.now().withDayOfMonth(1));
         uploadEndDate.setValue(LocalDate.now());
         setupColumns();
+    }
+
+    /** 首次切换到生产统计 Tab 时由主控制器调用，触发数据加载 */
+    public void onFirstShow() {
         onQuery();
         onUploadQuery();
     }
@@ -276,6 +281,7 @@ public class ShiwanM2StatsController implements Initializable {
         alert.setTitle("提示");
         alert.setHeaderText(null);
         alert.setContentText(msg);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -292,7 +298,7 @@ public class ShiwanM2StatsController implements Initializable {
             row.palletCode = str(map.get("palletCode"));
             row.cases = str(map.get("caseCount"));
             row.orderNo = str(map.get("orderNo"));
-            row.uploadTime = str(map.get("uploadTime"));
+            row.uploadTime = formatDateTime(str(map.get("uploadTime")));
             String isUpload = str(map.get("isUpload"));
             row.status = "1".equals(isUpload) ? "成功" : "异常";
             row.reason = "1".equals(isUpload) ? "-" : str(map.get("errorMsg"));
@@ -302,6 +308,10 @@ public class ShiwanM2StatsController implements Initializable {
 
         private static String str(Object value) {
             return value == null ? "" : String.valueOf(value);
+        }
+
+        private static String formatDateTime(String s) {
+            return s == null || s.isEmpty() ? s : s.replace("T", " ");
         }
     }
 }

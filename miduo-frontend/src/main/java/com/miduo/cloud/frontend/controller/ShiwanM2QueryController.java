@@ -3,6 +3,7 @@ package com.miduo.cloud.frontend.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -167,6 +168,7 @@ public class ShiwanM2QueryController implements Initializable {
                 "─────────────────────────────────────────\n" +
                 "输入：手动输入码值 或 扫码枪扫描\n" +
                 "查询：点击「查询」按钮 或 回车键");
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 

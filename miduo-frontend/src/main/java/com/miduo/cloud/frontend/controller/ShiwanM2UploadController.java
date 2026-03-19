@@ -3,6 +3,7 @@ package com.miduo.cloud.frontend.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.miduo.cloud.application.shiwan.UploadLogBus;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -83,6 +84,7 @@ public class ShiwanM2UploadController implements Initializable {
         confirm.setTitle("手动上传");
         confirm.setHeaderText("确认批量上传所有未上传的垛数据？");
         confirm.setContentText("将按队列顺序依次上传，上传过程中请勿关闭软件。");
+        ShiwanM2AlertUtil.applyStyle(confirm);
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) return;
 
@@ -134,6 +136,7 @@ public class ShiwanM2UploadController implements Initializable {
         confirm.setTitle("设为未上传");
         confirm.setHeaderText("确认将垛码「" + code + "」的状态重置为未上传？");
         confirm.setContentText("状态重置后，可通过手动上传重新上传此垛。");
+        ShiwanM2AlertUtil.applyStyle(confirm);
         Optional<ButtonType> r = confirm.showAndWait();
         if (r.isEmpty() || r.get() != ButtonType.OK) return;
 
@@ -164,6 +167,7 @@ public class ShiwanM2UploadController implements Initializable {
         confirm.setTitle("设为已上传");
         confirm.setHeaderText("确认将垛码「" + code + "」手动标记为已上传？");
         confirm.setContentText("此操作将跳过该垛的自动上传，避免重复上传。");
+        ShiwanM2AlertUtil.applyStyle(confirm);
         Optional<ButtonType> r = confirm.showAndWait();
         if (r.isEmpty() || r.get() != ButtonType.OK) return;
 
@@ -288,6 +292,7 @@ public class ShiwanM2UploadController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -296,6 +301,7 @@ public class ShiwanM2UploadController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 

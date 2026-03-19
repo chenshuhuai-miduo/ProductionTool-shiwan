@@ -380,17 +380,16 @@ public class LicenseInfoController {
             }
         }
 
-        // 更新有效期
+        // 更新有效期（始终根据激活日期和到期日期计算，确保准确性）
         if (validDaysLabelActivated != null) {
-            if (licenseInfo.getValidDays() != null) {
-                validDaysLabelActivated.setText(licenseInfo.getValidDays() + "天");
-            } else if (licenseInfo.getExpireDate() != null && licenseInfo.getActivationDate() != null) {
-                // 如果没有有效天数，计算激活日期到到期日期的天数
+            if (licenseInfo.getExpireDate() != null && licenseInfo.getActivationDate() != null) {
                 long days = java.time.temporal.ChronoUnit.DAYS.between(
-                    licenseInfo.getActivationDate().toLocalDate(), 
+                    licenseInfo.getActivationDate().toLocalDate(),
                     licenseInfo.getExpireDate()
                 );
                 validDaysLabelActivated.setText(days + "天");
+            } else if (licenseInfo.getValidDays() != null) {
+                validDaysLabelActivated.setText(licenseInfo.getValidDays() + "天");
             } else {
                 validDaysLabelActivated.setText("无");
             }

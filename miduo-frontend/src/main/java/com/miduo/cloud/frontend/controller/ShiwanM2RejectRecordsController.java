@@ -3,6 +3,7 @@ package com.miduo.cloud.frontend.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -234,6 +235,7 @@ public class ShiwanM2RejectRecordsController implements Initializable {
         alert.setTitle("提示");
         alert.setHeaderText(null);
         alert.setContentText(msg);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -257,7 +259,7 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             row.caseCode = str(map.get("CaseCode"), map.get("caseCode"));
             row.problemCode = str(map.get("ProblemCode"), map.get("problemCode"));
             row.rejectReason = str(map.get("RejectReason"), map.get("rejectReason"));
-            row.rejectTime = str(map.get("RejectTime"), map.get("rejectTime"));
+            row.rejectTime = formatDateTime(str(map.get("RejectTime"), map.get("rejectTime")));
             row.productNo = str(map.get("ProductNo"), map.get("productNo"));
             row.productName = str(map.get("ProductName"), map.get("productName"));
             row.orderNo = str(map.get("OrderNo"), map.get("orderNo"));
@@ -267,6 +269,10 @@ public class ShiwanM2RejectRecordsController implements Initializable {
         private static String str(Object primary, Object fallback) {
             Object value = primary != null ? primary : fallback;
             return value == null ? "" : String.valueOf(value);
+        }
+
+        private static String formatDateTime(String s) {
+            return s == null || s.isEmpty() ? s : s.replace("T", " ");
         }
     }
 }

@@ -6,6 +6,7 @@ import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -430,6 +431,7 @@ public class ShiwanM2CancelAssociationController {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 

@@ -32,7 +32,7 @@ public class ShiwanM2ProductController {
     }
 
     /**
-     * 本地模糊查询产品
+     * 本地模糊查询产品（不分页，向下兼容）
      */
     @GetMapping("/search")
     public ApiResult<List<ProductInfoPO>> search(@RequestParam(value = "keyword", required = false) String keyword,
@@ -41,6 +41,25 @@ public class ShiwanM2ProductController {
             int realSize = size != null && size > 0 ? size : 20;
             List<ProductInfoPO> list = productSyncService.search(keyword, realSize);
             return ApiResult.success("查询成功", list);
+        } catch (Exception e) {
+            return ApiResult.error("查询产品失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 本地模糊查询产品（分页）
+     * GET /api/shiwan-m2/products/search-page?keyword=xxx&page=1&pageSize=10
+     */
+    @GetMapping("/search-page")
+    public ApiResult<java.util.Map<String, Object>> searchPage(
+            @RequestParam(value = "keyword",  required = false) String keyword,
+            @RequestParam(value = "page",     required = false, defaultValue = "1")  Integer page,
+            @RequestParam(value = "pageSize", required = false, defaultValue = "10") Integer pageSize) {
+        try {
+            int realPage = page     != null && page     > 0 ? page     : 1;
+            int realSize = pageSize != null && pageSize > 0 ? pageSize : 10;
+            java.util.Map<String, Object> result = productSyncService.searchPage(keyword, realPage, realSize);
+            return ApiResult.success("查询成功", result);
         } catch (Exception e) {
             return ApiResult.error("查询产品失败：" + e.getMessage());
         }

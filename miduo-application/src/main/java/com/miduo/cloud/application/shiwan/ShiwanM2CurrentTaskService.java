@@ -159,18 +159,19 @@ public class ShiwanM2CurrentTaskService {
     }
 
     /**
-     * 暂存：将当前任务下未成垛的 CodeRelationUpload 记录的 Status 设为 0（未完成）。
+     * 暂存：将当前任务下未成垛的 CodeRelationUpload 记录的 Status 设为 3（未成垛）。
      */
     public ApiResult<String> markUnfinished(String orderNo) {
         if (orderNo == null || orderNo.trim().isEmpty()) {
             return ApiResult.error(400, "订单号不能为空");
         }
         try {
-            int updated = jdbcTemplate.update(
-                    "UPDATE CodeRelationUpload SET Status = 0 WHERE OrderNo = ? AND IsDel = 0 " +
+            jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET Status = 3 WHERE OrderNo = ? AND IsDel = 0 " +
                             "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                            "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != ''");
-            return ApiResult.success("已标记未成垛数据为未完成", "OK");
+                            "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != ''",
+                    orderNo.trim());
+            return ApiResult.success("已标记未成垛数据为未成垛", "OK");
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResult.error("暂存失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
@@ -178,17 +179,68 @@ public class ShiwanM2CurrentTaskService {
     }
 
     /**
-     * 启动恢复：查询存在 Status=0 未完成数据的订单，返回订单号及未成垛箱数等。
+     * 提取工单未成垛：根据箱码精确查询未成垛记录。
+     * 条件：BigSerialNumber=箱码 AND VirtualSerialNumber='' AND Status=3 AND IsDel=0
+     * 找到后统计该订单下满足相同条件的所有箱（distinct BigSerialNumber）数量作为当前垛已有箱数。
+     */
+    public ApiResult<Map<String, Object>> queryUnfinishedByBoxCode(String boxCode) {
+        if (boxCode == null || boxCode.trim().isEmpty()) {
+            return ApiResult.error(400, "箱码不能为空");
+        }
+        try {
+            List<Map<String, Object>> records = jdbcTemplate.queryForList(
+                    "SELECT OrderNo, ProductNO FROM CodeRelationUpload " +
+                    "WHERE BigSerialNumber = ? AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
+                    "AND Status = 3 AND IsDel = 0 LIMIT 1",
+                    boxCode.trim());
+            if (records == null || records.isEmpty()) {
+                return ApiResult.error(404, "未找到对应的未成垛记录");
+            }
+            String orderNo  = records.get(0).get("OrderNo")  != null ? records.get(0).get("OrderNo").toString()  : "";
+            String productNo = records.get(0).get("ProductNO") != null ? records.get(0).get("ProductNO").toString() : "";
+
+            Integer boxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
+                    "WHERE OrderNo = ? AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
+                    "AND Status = 3 AND IsDel = 0",
+                    Integer.class, orderNo);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("orderNo", orderNo);
+            data.put("productNo", productNo);
+            data.put("currentCaseCount", boxCount != null ? boxCount : 0);
+            return ApiResult.success("查询成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResult.error("查询失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
+    }
+
+    /**
+     * 启动恢复：查询存在 Status=3（未成垛）数据的订单，返回订单号及未成垛箱数等。
      */
     public ApiResult<List<Map<String, Object>>> getUnfinishedOrders() {
         try {
+            // 查询未成垛的已关联箱数（Status=3）及产品编号
             List<Map<String, Object>> list = jdbcTemplate.queryForList(
-                    "SELECT OrderNo, COUNT(DISTINCT BigSerialNumber) AS currentCaseCount " +
-                            "FROM CodeRelationUpload WHERE Status = 0 AND IsDel = 0 " +
+                    "SELECT OrderNo, MAX(ProductNO) AS productNo, " +
+                            "COUNT(DISTINCT BigSerialNumber) AS currentCaseCount " +
+                            "FROM CodeRelationUpload WHERE Status = 3 AND IsDel = 0 " +
                             "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != '' " +
                             "GROUP BY OrderNo");
             if (list == null || list.isEmpty()) {
                 return ApiResult.success("无未成垛数据", Collections.emptyList());
+            }
+            // 补充：每个订单下等待入队的盒码数（Status=0, BigSerialNumber='', VirtualSerialNumber=''）
+            for (Map<String, Object> row : list) {
+                String orderNo = row.get("OrderNo") != null ? row.get("OrderNo").toString() : "";
+                Integer pendingBoxCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
+                        "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
+                        "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
+                        "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                        Integer.class, orderNo);
+                row.put("pendingBoxCount", pendingBoxCount != null ? pendingBoxCount : 0);
             }
             return ApiResult.success("查询成功", list);
         } catch (Exception e) {

@@ -156,7 +156,7 @@ public class ProductSyncService {
     }
 
     /**
-     * 本地模糊搜索产品
+     * 本地模糊搜索产品（不分页，向下兼容）
      */
     public List<ProductInfoPO> search(String keyword, int size) {
         QueryWrapper<ProductInfoPO> qw = new QueryWrapper<>();
@@ -166,6 +166,37 @@ public class ProductSyncService {
         }
         qw.last("LIMIT " + Math.max(size, 1));
         return productInfoMapper.selectList(qw);
+    }
+
+    /**
+     * 本地模糊搜索产品（支持分页），返回 { list, total, page, pageSize }
+     */
+    public java.util.Map<String, Object> searchPage(String keyword, int page, int pageSize) {
+        int realPage = Math.max(page, 1);
+        int realSize = Math.max(pageSize, 1);
+        int offset   = (realPage - 1) * realSize;
+
+        QueryWrapper<ProductInfoPO> countQw = new QueryWrapper<>();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String kw = "%" + keyword.trim() + "%";
+            countQw.lambda().like(ProductInfoPO::getProductName, kw).or().like(ProductInfoPO::getProductNo, kw);
+        }
+        Long total = productInfoMapper.selectCount(countQw);
+
+        QueryWrapper<ProductInfoPO> listQw = new QueryWrapper<>();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String kw = "%" + keyword.trim() + "%";
+            listQw.lambda().like(ProductInfoPO::getProductName, kw).or().like(ProductInfoPO::getProductNo, kw);
+        }
+        listQw.last("LIMIT " + realSize + " OFFSET " + offset);
+        List<ProductInfoPO> list = productInfoMapper.selectList(listQw);
+
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("list",     list);
+        result.put("total",    total != null ? total : 0);
+        result.put("page",     realPage);
+        result.put("pageSize", realSize);
+        return result;
     }
 
     private int parseAndPersist(String json) throws Exception {

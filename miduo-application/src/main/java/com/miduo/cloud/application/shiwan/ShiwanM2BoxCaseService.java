@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PreDestroy;
 import java.io.BufferedReader;
@@ -19,6 +21,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,11 +59,14 @@ public class ShiwanM2BoxCaseService {
 
     private final JdbcTemplate jdbcTemplate;
     private final VirtualPalletSequenceService virtualPalletSequenceService;
+    private final TransactionTemplate transactionTemplate;
 
     public ShiwanM2BoxCaseService(JdbcTemplate jdbcTemplate,
-                                  VirtualPalletSequenceService virtualPalletSequenceService) {
+                                  VirtualPalletSequenceService virtualPalletSequenceService,
+                                  PlatformTransactionManager transactionManager) {
         this.jdbcTemplate = jdbcTemplate;
         this.virtualPalletSequenceService = virtualPalletSequenceService;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
@@ -138,6 +144,12 @@ public class ShiwanM2BoxCaseService {
                         EMPTY, EMPTY, now, 0, EMPTY, 0, 0, EMPTY);
             }
 
+            // 落冷：箱码（大标）和盒码（中标）从热表迁移到冷表
+            dropCodeToCold(3, caseCode);
+            for (String boxCode : trimmedBoxCodes) {
+                dropCodeToCold(2, boxCode);
+            }
+
             // 当前垛内箱数（VirtualSerialNumber 为空的不同 BigSerialNumber 数）
             int currentCaseCount = countCurrentCasesInPallet(orderNo);
             boolean fullPallet = currentCaseCount >= boxesPerPallet;
@@ -185,6 +197,10 @@ public class ShiwanM2BoxCaseService {
             }
             String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
             if (useProductNo == null) useProductNo = "";
+            // 中标码包热表校验（错误信息含"中标码包"，供 parseBoxRejectReason 识别为"中标不通过"）
+            if (!isCodeInPackage(boxCode, 2)) {
+                return ApiResult.error(400, "盒码不在中标码包热表中：" + boxCode);
+            }
             Integer total = jdbcTemplate.queryForObject(
                     "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 " +
                             "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
@@ -241,6 +257,11 @@ public class ShiwanM2BoxCaseService {
                     args.toArray());
             if (updated <= 0) {
                 return ApiResult.error(400, "未找到可关联的盒码记录，箱码：" + caseCode);
+            }
+            // 落冷：箱码（大标）和盒码（中标）从热表迁移到冷表
+            dropCodeToCold(3, caseCode);
+            for (String boxCode : boxCodes) {
+                dropCodeToCold(2, boxCode);
             }
             int currentCaseCount = countCurrentCasesInPallet(orderNo);
             boolean fullPallet = currentCaseCount >= boxesPerPallet;
@@ -314,7 +335,7 @@ public class ShiwanM2BoxCaseService {
                 return ApiResult.error(400, "箱码已使用（重码）：" + caseCode);
             }
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT ID FROM CodeRelationUpload WHERE IsDel = 0 " +
+                    "SELECT ID, MediumSerialNumber FROM CodeRelationUpload WHERE IsDel = 0 " +
                             "AND (OrderNo IS NULL OR OrderNo = '' OR OrderNo = ?) " +
                             "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') ORDER BY ID ASC LIMIT " + boxesPerCase,
                     orderNo.trim());
@@ -329,9 +350,12 @@ public class ShiwanM2BoxCaseService {
                 return pendingResult;
             }
             List<Long> ids = new ArrayList<>();
+            List<String> pendingBoxCodes = new ArrayList<>();
             for (Map<String, Object> row : rows) {
                 Object id = row.get("ID");
                 if (id instanceof Number) ids.add(((Number) id).longValue());
+                String med = toStr(row.get("MediumSerialNumber"));
+                if (!med.isEmpty()) pendingBoxCodes.add(med);
             }
             if (ids.size() < boxesPerCase) {
                 ApiResult<Map<String, Object>> pendingResult = new ApiResult<>();
@@ -353,6 +377,11 @@ public class ShiwanM2BoxCaseService {
                     "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = '' " +
                             "WHERE IsDel = 0 AND ID IN (" + placeholders + ")",
                     args.toArray());
+            // 落冷：箱码（大标）和盒码（中标）从热表迁移到冷表
+            dropCodeToCold(3, caseCode);
+            for (String boxCode : pendingBoxCodes) {
+                dropCodeToCold(2, boxCode);
+            }
             int currentCaseCount = countCurrentCasesInPallet(orderNo);
             boolean fullPallet = currentCaseCount >= boxesPerPallet;
             String palletCode = null;
@@ -417,7 +446,7 @@ public class ShiwanM2BoxCaseService {
         return n != null ? n : 0;
     }
 
-    /** 成垛：取当前未成垛的前 limit 个箱（按该箱最小 ID 排序），生成虚拟垛标并更新这些记录的 VirtualSerialNumber/BiggerSerialNumber，完成后异步上传至开放平台。 */
+    /** 成垛：取当前未成垛的前 limit 个箱（按该箱最小 ID 排序），生成虚拟垛标并更新这些记录的 VirtualSerialNumber，完成后异步上传至开放平台。 */
     private String completeCurrentPallet(String orderNo, String productNo, int limit) throws Exception {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT BigSerialNumber, MIN(ID) AS minId FROM CodeRelationUpload " +
@@ -438,11 +467,10 @@ public class ShiwanM2BoxCaseService {
         String placeholders = String.join(",", Collections.nCopies(boxCount, "?"));
         List<Object> args = new ArrayList<>();
         args.add(palletCode);
-        args.add(palletCode);
         args.add(orderNo.trim());
         args.addAll(toClose);
         jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET VirtualSerialNumber = ?, BiggerSerialNumber = ? " +
+                "UPDATE CodeRelationUpload SET VirtualSerialNumber = ?, Status = 1 " +
                         "WHERE OrderNo = ? AND IsDel = 0 AND BigSerialNumber IN (" + placeholders + ")",
                 args.toArray());
 
@@ -599,25 +627,25 @@ public class ShiwanM2BoxCaseService {
         }
         String inputCode = code.trim();
         List<Map<String, Object>> palletRows = jdbcTemplate.queryForList(
-                "SELECT BiggerSerialNumber FROM CodeRelationUpload " +
-                        "WHERE (SmallSerialNumber = ? OR MediumSerialNumber = ? OR BigSerialNumber = ? OR BiggerSerialNumber = ?) " +
-                        "AND BiggerSerialNumber != '' LIMIT 1",
+                "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
+                        "WHERE (SmallSerialNumber = ? OR MediumSerialNumber = ? OR BigSerialNumber = ? OR VirtualSerialNumber = ?) " +
+                        "AND VirtualSerialNumber != '' LIMIT 1",
                 inputCode, inputCode, inputCode, inputCode);
         if (palletRows == null || palletRows.isEmpty()) {
             return Collections.emptyMap();
         }
-        String palletCode = toStr(palletRows.get(0).get("BiggerSerialNumber"));
+        String palletCode = toStr(palletRows.get(0).get("VirtualSerialNumber"));
         if (palletCode.isEmpty()) return Collections.emptyMap();
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT c.SmallSerialNumber AS bottleCode, c.MediumSerialNumber AS boxCode, " +
-                        "c.BigSerialNumber AS caseCode, c.BiggerSerialNumber AS palletCode, c.AddTime AS collectTime, " +
+                        "c.BigSerialNumber AS caseCode, c.VirtualSerialNumber AS palletCode, c.AddTime AS collectTime, " +
                         "c.ProductNO AS productNo, c.OrderNo AS orderNo, p.ProductName AS productName " +
                         "FROM CodeRelationUpload c " +
                         "LEFT JOIN ProductInfo p ON p.ProductNo = c.ProductNO " +
-                        "WHERE c.BiggerSerialNumber = ? " +
+                        "WHERE c.VirtualSerialNumber = ? " +
                         "ORDER BY CASE WHEN (c.SmallSerialNumber = ? OR c.MediumSerialNumber = ? " +
-                        "OR c.BigSerialNumber = ? OR c.BiggerSerialNumber = ?) THEN 0 ELSE 1 END, " +
+                        "OR c.BigSerialNumber = ? OR c.VirtualSerialNumber = ?) THEN 0 ELSE 1 END, " +
                         "c.BigSerialNumber, c.MediumSerialNumber, c.SmallSerialNumber",
                 palletCode, inputCode, inputCode, inputCode, inputCode);
         Map<String, Object> data = new LinkedHashMap<>();
@@ -629,7 +657,7 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
-     * P02-05 取消关联：按箱码物理删除。
+     * P02-05 取消关联：按箱码删除关联记录，并将箱码（大标）和对应盒码（中标）从冷表回迁到热表。
      */
     @Transactional(rollbackFor = Exception.class)
     public ApiResult<Boolean> cancelByCaseCode(String caseCode) {
@@ -637,53 +665,180 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "箱码不能为空");
         }
         String code = caseCode.trim();
+        // 取消前先查出该箱对应的所有盒码，用于后续冷表回迁
+        List<Map<String, Object>> boxRows = jdbcTemplate.queryForList(
+                "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload WHERE BigSerialNumber = ? AND IsDel = 0",
+                code);
         int rows = jdbcTemplate.update("DELETE FROM CodeRelationUpload WHERE BigSerialNumber = ?", code);
         if (rows <= 0) {
             return ApiResult.error(404, "未找到可取消的数据：" + code);
+        }
+        // 箱码（大标）回迁热表
+        returnCodeToHot(3, code);
+        // 盒码（中标）回迁热表
+        for (Map<String, Object> row : boxRows) {
+            String boxCode = toStr(row.get("MediumSerialNumber"));
+            if (!boxCode.isEmpty()) {
+                returnCodeToHot(2, boxCode);
+            }
         }
         return ApiResult.success("取消关联成功", true);
     }
 
     /**
-     * P02-06 数据替换：按层级直接更新对应列码值。
+     * P02-06 数据替换：按层级直接更新对应列码值，并同步热冷表。
+     * 流程：原码存在于冷表（已被关联）→ 验证新码在热表中（未使用）→ 更新关联表 → 原码从冷表回迁热表 → 新码从热表落冷。
      */
     @Transactional(rollbackFor = Exception.class)
     public ApiResult<Boolean> replaceCode(String oldCode, String newCode, String reason) {
+        // 1. 基础入参校验
         if (oldCode == null || oldCode.trim().isEmpty()) return ApiResult.error(400, "原码不能为空");
         if (newCode == null || newCode.trim().isEmpty()) return ApiResult.error(400, "新码不能为空");
         String oldV = oldCode.trim();
         String newV = newCode.trim();
         if (oldV.equals(newV)) return ApiResult.error(400, "原码和新码不能相同");
 
-        long smallCnt = countByColumn("SmallSerialNumber", oldV);
+        // 2. 查询原码所在层级
+        long smallCnt  = countByColumn("SmallSerialNumber",  oldV);
         long mediumCnt = countByColumn("MediumSerialNumber", oldV);
-        long bigCnt = countByColumn("BigSerialNumber", oldV);
-        int hitLayers = (smallCnt > 0 ? 1 : 0) + (mediumCnt > 0 ? 1 : 0) + (bigCnt > 0 ? 1 : 0);
+        long bigCnt    = countByColumn("BigSerialNumber",    oldV);
+        int hitLayers  = (smallCnt > 0 ? 1 : 0) + (mediumCnt > 0 ? 1 : 0) + (bigCnt > 0 ? 1 : 0);
         if (hitLayers == 0) return ApiResult.error(404, "原码不存在：" + oldV);
-        if (hitLayers > 1) return ApiResult.error(400, "原码命中多个层级，不允许替换：" + oldV);
+        if (hitLayers > 1)  return ApiResult.error(400, "原码命中多个层级，不允许替换：" + oldV);
 
-        if (countByColumn("SmallSerialNumber", newV) > 0
-                || countByColumn("MediumSerialNumber", newV) > 0
-                || countByColumn("BigSerialNumber", newV) > 0
-                || countByColumn("BiggerSerialNumber", newV) > 0) {
-            return ApiResult.error(400, "新码已存在，不允许替换：" + newV);
-        }
-
-        int updated;
+        // 3. 确定层级、列名和云端码类型（0=小标/瓶码, 1=中标/盒码, 2=大标/箱码）
+        int    packageType;
+        String column;
+        int    codeType;
         if (smallCnt > 0) {
-            updated = jdbcTemplate.update("UPDATE CodeRelationUpload SET SmallSerialNumber = ? WHERE SmallSerialNumber = ?", newV, oldV);
+            packageType = 1; column = "SmallSerialNumber";  codeType = 0;
         } else if (mediumCnt > 0) {
-            updated = jdbcTemplate.update("UPDATE CodeRelationUpload SET MediumSerialNumber = ? WHERE MediumSerialNumber = ?", newV, oldV);
+            packageType = 2; column = "MediumSerialNumber"; codeType = 1;
         } else {
-            updated = jdbcTemplate.update("UPDATE CodeRelationUpload SET BigSerialNumber = ? WHERE BigSerialNumber = ?", newV, oldV);
+            packageType = 3; column = "BigSerialNumber";    codeType = 2;
         }
-        if (updated <= 0) return ApiResult.error(500, "替换失败，未更新到记录");
+
+        // 4. 校验新码：必须在对应码包热表中且未被使用
+        if (!isCodeInPackage(newV, packageType)) {
+            return ApiResult.error(400, "新码不在对应码包热表中（未使用）：" + newV);
+        }
+        if (countByColumn("SmallSerialNumber",   newV) > 0
+                || countByColumn("MediumSerialNumber",  newV) > 0
+                || countByColumn("BigSerialNumber",     newV) > 0
+                || countByColumn("VirtualSerialNumber", newV) > 0) {
+            return ApiResult.error(400, "新码已存在于关联表，不允许替换：" + newV);
+        }
+
+        // 5. 查询原码记录的最大上传状态
+        Long maxIsUploadVal = jdbcTemplate.queryForObject(
+                "SELECT MAX(IsUpload) FROM CodeRelationUpload WHERE " + column + " = ? AND IsDel = 0",
+                Long.class, oldV);
+        int uploadStatus = maxIsUploadVal == null ? 0 : maxIsUploadVal.intValue();
+
+        // IsUpload=3 表示正在上传中，禁止替换
+        if (uploadStatus == 3) {
+            return ApiResult.error(400, "原码正在上传中，请等待上传完成后再进行替换");
+        }
+
+        // 6. 若已上传（IsUpload=1 成功）或上传过（IsUpload=2 失败），先替换云端
+        if (uploadStatus == 1 || uploadStatus == 2) {
+            ApiResult<Boolean> cloudResult = callCloudCodeSubstitution(oldV, newV, codeType);
+            if (cloudResult != null && cloudResult.getCode() != 200) {
+                return cloudResult;
+            }
+        }
+
+        // 7. 本地数据库操作（事务保护：全部成功或全部回滚）
+        try {
+            transactionTemplate.execute(status -> {
+                int updated = jdbcTemplate.update(
+                        "UPDATE CodeRelationUpload SET " + column + " = ? WHERE " + column + " = ?", newV, oldV);
+                if (updated <= 0) {
+                    throw new RuntimeException("替换失败，未更新到记录");
+                }
+                // 原码从冷表回迁热表（可重新使用）
+                returnCodeToHot(packageType, oldV);
+                // 新码从热表落冷（标记为已使用）
+                dropCodeToCold(packageType, newV);
+                return null;
+            });
+        } catch (RuntimeException e) {
+            log.error("[码替换] 本地数据库更新失败 oldCode={} newCode={}: {}", oldV, newV, e.getMessage(), e);
+            return ApiResult.error(500, e.getMessage());
+        }
+
         return ApiResult.success("替换成功", true);
     }
 
+    /**
+     * 调用云端码替换接口（CodeSubstitution）。
+     * 仅当原码已上传（IsUpload=1）或曾尝试上传（IsUpload=2）时调用。
+     * 若配置缺失则跳过（返回 null）；若接口调用失败则返回错误结果。
+     *
+     * @param codeType 0=小标/瓶码, 1=中标/盒码, 2=大标/箱码
+     */
+    private ApiResult<Boolean> callCloudCodeSubstitution(String oldV, String newV, int codeType) {
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        if (cfg == null || cfg.getApi() == null) {
+            log.warn("[码替换云端] 未配置API，跳过云端替换 oldCode={}", oldV);
+            return null;
+        }
+        String baseUrl = trimStr(cfg.getApi().getBaseUrl());
+        String path    = trimStr(cfg.getApi().getCodeSubstitutionPath());
+        if (baseUrl == null || path == null) {
+            log.warn("[码替换云端] 缺少 baseUrl 或 codeSubstitutionPath，跳过 oldCode={}", oldV);
+            return null;
+        }
+        String appId      = cfg.getApi().getAppId();
+        String appSecret  = cfg.getApi().getAppSecret();
+        String memberlogin = cfg.getApi().getMemberlogin();
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+            String time  = sdf.format(new Date());
+            String nonce = "123";
+
+            Map<String, Object> requestData = new LinkedHashMap<>();
+            requestData.put("Memberlogin", memberlogin != null ? memberlogin : "");
+            requestData.put("oldCode", oldV);
+            requestData.put("newCode", newV);
+            requestData.put("codeType", codeType);
+
+            String sign = palletSign(time, nonce, appSecret, requestData);
+
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("timestamp",    time);
+            headers.put("appid",        appId != null ? appId : "");
+            headers.put("nonce",        nonce);
+            headers.put("sign",         sign);
+            headers.put("Content-type", "application/json");
+
+            String response = sendPost(baseUrl + path, headers, MAPPER.writeValueAsString(requestData));
+            log.info("[码替换云端] oldCode={} newCode={} codeType={} 响应: {}", oldV, newV, codeType, response);
+
+            JsonNode root = MAPPER.readTree(response);
+            int returnCode = root.path("Return_code").asInt(-1);
+            if (returnCode != 0) {
+                String msg = root.path("Return_msg").asText("未知错误");
+                return ApiResult.error(500, "云端替换失败：" + msg);
+            }
+            JsonNode dataArr = root.path("Return_data");
+            if (dataArr.isArray() && dataArr.size() > 0) {
+                int status = dataArr.get(0).path("status").asInt(-1);
+                if (status != 0) {
+                    return ApiResult.error(500, "云端替换返回失败状态：" + status);
+                }
+            }
+            return ApiResult.success("云端替换成功", true);
+        } catch (Exception e) {
+            log.error("[码替换云端] 接口调用异常 oldCode={}: {}", oldV, e.getMessage(), e);
+            return ApiResult.error(500, "云端替换接口调用异常：" + e.getMessage());
+        }
+    }
+
     public Map<String, Object> getProductionSummary(String startDate, String endDate, String orderNo) {
-        LocalDateTime start = parseStartDate(startDate);
-        LocalDateTime end = parseEndDate(endDate);
+        Timestamp start = parseStartDate(startDate);
+        Timestamp end = parseEndDate(endDate);
         StringBuilder commonWhere = new StringBuilder(" FROM CodeRelationUpload WHERE AddTime BETWEEN ? AND ? ");
         List<Object> commonArgs = new ArrayList<>();
         commonArgs.add(start);
@@ -693,7 +848,7 @@ public class ShiwanM2BoxCaseService {
             commonArgs.add("%" + orderNo.trim() + "%");
         }
 
-        long palletCount = queryLong("SELECT COUNT(DISTINCT BiggerSerialNumber) " + commonWhere + " AND BiggerSerialNumber != ''", commonArgs);
+        long palletCount = queryLong("SELECT COUNT(DISTINCT VirtualSerialNumber) " + commonWhere + " AND VirtualSerialNumber != ''", commonArgs);
         long caseCount = queryLong("SELECT COUNT(DISTINCT BigSerialNumber) " + commonWhere + " AND BigSerialNumber != ''", commonArgs);
         long boxCount = queryLong("SELECT COUNT(DISTINCT MediumSerialNumber) " + commonWhere + " AND MediumSerialNumber != ''", commonArgs);
 
@@ -716,13 +871,13 @@ public class ShiwanM2BoxCaseService {
     }
 
     public Map<String, Object> getPalletList(String startDate, String endDate, String orderNo, String palletCode, int page, int pageSize) {
-        LocalDateTime start = parseStartDate(startDate);
-        LocalDateTime end = parseEndDate(endDate);
+        Timestamp start = parseStartDate(startDate);
+        Timestamp end = parseEndDate(endDate);
         int current = Math.max(1, page);
         int size = normalizePageSize(pageSize);
         int offset = (current - 1) * size;
 
-        StringBuilder where = new StringBuilder(" FROM CodeRelationUpload WHERE AddTime BETWEEN ? AND ? AND BiggerSerialNumber != '' ");
+        StringBuilder where = new StringBuilder(" FROM CodeRelationUpload WHERE AddTime BETWEEN ? AND ? AND VirtualSerialNumber != '' ");
         List<Object> args = new ArrayList<>();
         args.add(start);
         args.add(end);
@@ -731,25 +886,25 @@ public class ShiwanM2BoxCaseService {
             args.add("%" + orderNo.trim() + "%");
         }
         if (palletCode != null && !palletCode.trim().isEmpty()) {
-            where.append(" AND BiggerSerialNumber LIKE ? ");
+            where.append(" AND VirtualSerialNumber LIKE ? ");
             args.add("%" + palletCode.trim() + "%");
         }
 
-        long total = queryLong("SELECT COUNT(DISTINCT BiggerSerialNumber) " + where, args);
+        long total = queryLong("SELECT COUNT(DISTINCT VirtualSerialNumber) " + where, args);
         List<Object> listArgs = new ArrayList<>(args);
         listArgs.add(size);
         listArgs.add(offset);
         List<Map<String, Object>> records = jdbcTemplate.queryForList(
-                "SELECT BiggerSerialNumber AS palletCode, COUNT(DISTINCT BigSerialNumber) AS caseCount, " +
+                "SELECT VirtualSerialNumber AS palletCode, COUNT(DISTINCT BigSerialNumber) AS caseCount, " +
                         "MAX(OrderNo) AS orderNo, MAX(AddTime) AS associateTime " +
-                        where + " GROUP BY BiggerSerialNumber ORDER BY associateTime DESC LIMIT ? OFFSET ?",
+                        where + " GROUP BY VirtualSerialNumber ORDER BY associateTime DESC LIMIT ? OFFSET ?",
                 listArgs.toArray());
         return buildPageResult(records, total, current, size);
     }
 
     public Map<String, Object> getRejectRecords(String startDate, String endDate, String orderNo, String caseCode, int page, int pageSize) {
-        LocalDateTime start = parseStartDate(startDate);
-        LocalDateTime end = parseEndDate(endDate);
+        Timestamp start = parseStartDate(startDate);
+        Timestamp end = parseEndDate(endDate);
         int current = Math.max(1, page);
         int size = normalizePageSize(pageSize);
         int offset = (current - 1) * size;
@@ -783,14 +938,14 @@ public class ShiwanM2BoxCaseService {
     }
 
     public Map<String, Object> getUploadRecords(String startDate, String endDate, String orderNo, String status, int page, int pageSize) {
-        LocalDateTime start = parseStartDate(startDate);
-        LocalDateTime end = parseEndDate(endDate);
+        Timestamp start = parseStartDate(startDate);
+        Timestamp end = parseEndDate(endDate);
         int current = Math.max(1, page);
         int size = normalizePageSize(pageSize);
         int offset = (current - 1) * size;
 
         StringBuilder where = new StringBuilder(
-                " FROM CodeRelationUpload WHERE UploadTime BETWEEN ? AND ? AND BiggerSerialNumber != '' ");
+                " FROM CodeRelationUpload WHERE UploadTime BETWEEN ? AND ? AND VirtualSerialNumber != '' ");
         List<Object> args = new ArrayList<>();
         args.add(start);
         args.add(end);
@@ -811,18 +966,90 @@ public class ShiwanM2BoxCaseService {
 
         long total = queryLong(
                 "SELECT COUNT(*) FROM (" +
-                        "SELECT BiggerSerialNumber " + where + " GROUP BY BiggerSerialNumber " + having +
+                        "SELECT VirtualSerialNumber " + where + " GROUP BY VirtualSerialNumber " + having +
                         ") t", listArgsBase);
         List<Object> listArgs = new ArrayList<>(listArgsBase);
         listArgs.add(size);
         listArgs.add(offset);
         List<Map<String, Object>> records = jdbcTemplate.queryForList(
-                "SELECT BiggerSerialNumber AS palletCode, COUNT(DISTINCT BigSerialNumber) AS caseCount, " +
+                "SELECT VirtualSerialNumber AS palletCode, COUNT(DISTINCT BigSerialNumber) AS caseCount, " +
                         "MAX(OrderNo) AS orderNo, MAX(UploadTime) AS uploadTime, MAX(IsUpload) AS isUpload, MAX(Msg) AS errorMsg " +
-                        where + " GROUP BY BiggerSerialNumber " + having +
+                        where + " GROUP BY VirtualSerialNumber " + having +
                         " ORDER BY MAX(UploadTime) DESC LIMIT ? OFFSET ?",
                 listArgs.toArray());
         return buildPageResult(records, total, current, size);
+    }
+
+    /**
+     * 检查盒码（MediumSerialNumber）关联的所有 Status=4（待剔除）记录，写入剔除记录表。
+     * 返回 true 表示存在 Status=4 记录（调用方应将该盒码视为失败，不入队列）。
+     */
+    public boolean checkAndWriteRejectsForStatus4(String orderNo, String mediumSerialNumber) {
+        List<Map<String, Object>> status4Rows = jdbcTemplate.queryForList(
+                "SELECT SmallSerialNumber, Msg FROM CodeRelationUpload " +
+                "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
+                mediumSerialNumber);
+        if (status4Rows == null || status4Rows.isEmpty()) return false;
+        for (Map<String, Object> row : status4Rows) {
+            String bottleCode  = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
+            String msgReason   = row.get("Msg") != null && !row.get("Msg").toString().isEmpty()
+                    ? row.get("Msg").toString() : "码包热表校验不通过";
+            insertRejectRecord(orderNo, null, mediumSerialNumber, bottleCode,
+                    bottleCode != null ? bottleCode : mediumSerialNumber, msgReason);
+        }
+        // 写入剔除记录后将这些数据从 CodeRelationUpload 中删除（M1同步的数据）
+        jdbcTemplate.update(
+                "UPDATE CodeRelationUpload SET IsDel = 1 " +
+                "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
+                mediumSerialNumber);
+        log.warn("[Status=4] 盒码 {} 关联记录 {} 条已写入剔除记录并标记删除",
+                mediumSerialNumber, status4Rows.size());
+        return true;
+    }
+
+    /**
+     * 热表落冷：将指定码从 CodePackageItemHot 移至 CodePackageItemCold。
+     * 热表中不存在时仅记录警告，不抛异常，由调用方事务统一回滚。
+     */
+    private void dropCodeToCold(int packageType, String codeValue) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT Id, ImportId FROM CodePackageItemHot WHERE PackageType = ? AND CodeValue = ?",
+                packageType, codeValue);
+        if (rows == null || rows.isEmpty()) {
+            log.warn("[落冷] 热表中未找到 packageType={} code={}", packageType, codeValue);
+            return;
+        }
+        long importId = ((Number) rows.get(0).get("ImportId")).longValue();
+        jdbcTemplate.update(
+                "INSERT IGNORE INTO CodePackageItemCold (ImportId, PackageType, CodeValue, AssociatedAt) " +
+                "VALUES (?, ?, ?, NOW())",
+                importId, packageType, codeValue);
+        jdbcTemplate.update(
+                "DELETE FROM CodePackageItemHot WHERE PackageType = ? AND CodeValue = ?",
+                packageType, codeValue);
+        log.debug("[落冷] 完成 packageType={} code={}", packageType, codeValue);
+    }
+
+    /**
+     * 冷表回迁：将指定码从 CodePackageItemCold 移回 CodePackageItemHot。
+     * 冷表中不存在时仅记录警告，不抛异常，由调用方事务统一回滚。
+     */
+    private void returnCodeToHot(int packageType, String codeValue) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT Id, ImportId FROM CodePackageItemCold WHERE PackageType = ? AND CodeValue = ?",
+                packageType, codeValue);
+        if (rows == null || rows.isEmpty()) {
+            log.warn("[回迁] 冷表中未找到 packageType={} code={}", packageType, codeValue);
+            return;
+        }
+        long importId = ((Number) rows.get(0).get("ImportId")).longValue();
+        jdbcTemplate.update(
+                "INSERT IGNORE INTO CodePackageItemHot (ImportId, PackageType, CodeValue) VALUES (?, ?, ?)",
+                importId, packageType, codeValue);
+        jdbcTemplate.update(
+                "DELETE FROM CodePackageItemCold WHERE PackageType = ? AND CodeValue = ?",
+                packageType, codeValue);
+        log.debug("[回迁] 完成 packageType={} code={}", packageType, codeValue);
     }
 
     private long countByColumn(String column, String value) {
@@ -852,18 +1079,18 @@ public class ShiwanM2BoxCaseService {
         return 20;
     }
 
-    private LocalDateTime parseStartDate(String date) {
-        if (date == null || date.trim().isEmpty()) {
-            return LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        }
-        return LocalDate.parse(date.trim()).atStartOfDay();
+    private Timestamp parseStartDate(String date) {
+        LocalDateTime dt = (date == null || date.trim().isEmpty())
+                ? LocalDate.now().withDayOfMonth(1).atStartOfDay()
+                : LocalDate.parse(date.trim()).atStartOfDay();
+        return Timestamp.valueOf(dt);
     }
 
-    private LocalDateTime parseEndDate(String date) {
-        if (date == null || date.trim().isEmpty()) {
-            return LocalDate.now().atTime(23, 59, 59);
-        }
-        return LocalDate.parse(date.trim()).atTime(23, 59, 59);
+    private Timestamp parseEndDate(String date) {
+        LocalDateTime dt = (date == null || date.trim().isEmpty())
+                ? LocalDate.now().atTime(23, 59, 59)
+                : LocalDate.parse(date.trim()).atTime(23, 59, 59);
+        return Timestamp.valueOf(dt);
     }
 
     /**
@@ -890,8 +1117,8 @@ public class ShiwanM2BoxCaseService {
 
         // 查询该垛所有码关系记录
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, DxCode " +
-                "FROM CodeRelationUpload WHERE BiggerSerialNumber = ? AND OrderNo = ? AND IsDel = 0",
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, DxCode " +
+                "FROM CodeRelationUpload WHERE VirtualSerialNumber = ? AND OrderNo = ? AND IsDel = 0",
                 palletCode, orderNo.trim());
         if (rows == null || rows.isEmpty()) {
             log.warn("[虚拟垛标上传] 未查询到垛标 {} 的码关系数据，跳过上传", palletCode);
@@ -901,7 +1128,7 @@ public class ShiwanM2BoxCaseService {
         // ① 标记为"上传中"（IsUpload=3）
         try {
             jdbcTemplate.update(
-                    "UPDATE CodeRelationUpload SET IsUpload = 3 WHERE BiggerSerialNumber = ? AND IsDel = 0",
+                    "UPDATE CodeRelationUpload SET IsUpload = 3 WHERE VirtualSerialNumber = ? AND IsDel = 0",
                     palletCode);
         } catch (Exception e) {
             log.error("[虚拟垛标上传] 更新 IsUpload=3 失败 palletCode={}", palletCode, e);
@@ -920,7 +1147,7 @@ public class ShiwanM2BoxCaseService {
             List<Map<String, Object>> codeRelationList = new ArrayList<>();
             for (Map<String, Object> row : rows) {
                 Map<String, Object> item = new LinkedHashMap<>();
-                item.put("biggerserialnumber", toStr(row.get("BiggerSerialNumber")));
+                item.put("biggerserialnumber", "");
                 item.put("bigserialnumber",    toStr(row.get("BigSerialNumber")));
                 item.put("mediumserialnumber", toStr(row.get("MediumSerialNumber")));
                 item.put("smallserialnumber",  toStr(row.get("SmallSerialNumber")));
@@ -968,15 +1195,15 @@ public class ShiwanM2BoxCaseService {
             // ④ 5 分钟后轮询上传结果
             pollScheduler.schedule(
                     () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount),
-                    1, TimeUnit.MINUTES);
+                    10, TimeUnit.SECONDS);
 
         } catch (Exception e) {
             log.error("[虚拟垛标上传] palletCode={} 接口调用异常: {}", palletCode, e.getMessage(), e);
             // 标记为上传失败
             try {
                 jdbcTemplate.update(
-                        "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE BiggerSerialNumber = ? AND IsDel = 0",
-                        e.getMessage(), palletCode);
+                "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
+                e.getMessage(), palletCode);
             } catch (Exception ex) {
                 log.error("[虚拟垛标上传] 更新 IsUpload=2 失败 palletCode={}", palletCode, ex);
             }
@@ -1031,7 +1258,7 @@ public class ShiwanM2BoxCaseService {
 
             if ("处理成功".equals(returnMsg)) {
                 jdbcTemplate.update(
-                        "UPDATE CodeRelationUpload SET IsUpload = 1, UploadTime = NOW() WHERE BiggerSerialNumber = ? AND IsDel = 0",
+                        "UPDATE CodeRelationUpload SET IsUpload = 1, UploadTime = NOW() WHERE VirtualSerialNumber = ? AND IsDel = 0",
                         palletCode);
                 log.info("[垛标结果查询] 垛 {} 上传成功", palletCode);
                 UploadLogBus.log(
@@ -1041,7 +1268,7 @@ public class ShiwanM2BoxCaseService {
                         UploadLogBus.PalletUploadStatus.SUCCESS, null);
             } else {
                 jdbcTemplate.update(
-                        "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE BiggerSerialNumber = ? AND IsDel = 0",
+                        "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
                         returnMsg, palletCode);
                 log.warn("[垛标结果查询] 垛 {} 上传失败: {}", palletCode, returnMsg);
                 UploadLogBus.log(
@@ -1068,7 +1295,7 @@ public class ShiwanM2BoxCaseService {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT MIN(IsUpload) AS isUpload, MAX(UploadTime) AS uploadTime, " +
                 "COUNT(DISTINCT BigSerialNumber) AS boxCount, MAX(Msg) AS msg " +
-                "FROM CodeRelationUpload WHERE BiggerSerialNumber = ? AND IsDel = 0",
+                "FROM CodeRelationUpload WHERE VirtualSerialNumber = ? AND IsDel = 0",
                 palletCode.trim());
         if (rows == null || rows.isEmpty() || rows.get(0).get("isUpload") == null) return null;
         Map<String, Object> row = rows.get(0);
@@ -1088,7 +1315,7 @@ public class ShiwanM2BoxCaseService {
     public int setPalletNotUploaded(String palletCode) {
         if (palletCode == null || palletCode.trim().isEmpty()) return 0;
         return jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET IsUpload = 0 WHERE BiggerSerialNumber = ? AND IsDel = 0",
+                "UPDATE CodeRelationUpload SET IsUpload = 0 WHERE VirtualSerialNumber = ? AND IsDel = 0",
                 palletCode.trim());
     }
 
@@ -1099,22 +1326,22 @@ public class ShiwanM2BoxCaseService {
     public int setPalletUploaded(String palletCode) {
         if (palletCode == null || palletCode.trim().isEmpty()) return 0;
         return jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET IsUpload = 1 WHERE BiggerSerialNumber = ? AND IsDel = 0",
+                "UPDATE CodeRelationUpload SET IsUpload = 1 WHERE VirtualSerialNumber = ? AND IsDel = 0",
                 palletCode.trim());
     }
 
     /**
-     * 查询所有待上传的垛（IsUpload=0、BiggerSerialNumber 非空）。
+     * 查询所有待上传的垛（IsUpload=0、VirtualSerialNumber 非空）。
      * 返回列表每项含 palletCode / orderNo / productNo / boxCount，按最早入库时间排序。
      */
     public List<Map<String, Object>> getPendingUploadPallets() {
         return jdbcTemplate.queryForList(
-                "SELECT BiggerSerialNumber AS palletCode, " +
+                "SELECT VirtualSerialNumber AS palletCode, " +
                 "MAX(OrderNo) AS orderNo, MAX(ProductNO) AS productNo, " +
                 "COUNT(DISTINCT BigSerialNumber) AS boxCount " +
                 "FROM CodeRelationUpload " +
-                "WHERE IsUpload = 0 AND BiggerSerialNumber != '' AND IsDel = 0 " +
-                "GROUP BY BiggerSerialNumber ORDER BY MIN(AddTime) ASC");
+                "WHERE IsUpload = 0 AND VirtualSerialNumber != '' AND IsDel = 0 " +
+                "GROUP BY VirtualSerialNumber ORDER BY MIN(AddTime) ASC");
     }
 
     /**
@@ -1206,6 +1433,7 @@ public class ShiwanM2BoxCaseService {
     }
 
     private static String toStr(Object val) {
-        return val == null ? "" : val.toString();
+        if (val == null) return "";
+        return val.toString().replace("\uFEFF", "");
     }
 }

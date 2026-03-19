@@ -5,6 +5,7 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageViewCodeVO;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -157,6 +158,7 @@ public class ShiwanM2PackageViewCodesDialogController {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 

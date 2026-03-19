@@ -7,6 +7,7 @@ import com.miduo.cloud.entity.dto.codepackage.CodePackageImportVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageOnlineImportResultVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackagePageQueryDTO;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -84,6 +85,10 @@ public class ShiwanM2PackageController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupTableColumns();
         packageTable.setItems(tableData);
+    }
+
+    /** 首次切换到码包管理 Tab 时由主控制器调用，触发数据加载 */
+    public void onFirstShow() {
         loadPage(1);
         triggerStartupOnlineUpdate();
     }
@@ -274,6 +279,7 @@ public class ShiwanM2PackageController implements Initializable {
                 "本地导入：选择码包类型 -> 选择 TXT -> 输入密码 -> 后端解析入库并判重。\n" +
                 "查看：查看码包内码值，支持搜索和分页。\n" +
                 "删除：仅当码包内无已关联码时允许删除（物理删除导入记录和热表记录）。");
+        ShiwanM2AlertUtil.applyStyle(info);
         info.showAndWait();
     }
 
@@ -405,6 +411,7 @@ public class ShiwanM2PackageController implements Initializable {
         confirm.setTitle("删除确认");
         confirm.setHeaderText("确认删除码包「" + row.packageName + "」？");
         confirm.setContentText("若该码包内存在已关联码，将被禁止删除。");
+        ShiwanM2AlertUtil.applyStyle(confirm);
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) {
             return;
@@ -483,6 +490,7 @@ public class ShiwanM2PackageController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 

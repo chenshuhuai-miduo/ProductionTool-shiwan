@@ -52,14 +52,16 @@
   "api" : {
     "baseUrl" : "https://openapi.t.miduonet.com",
     "backendBaseUrl" : "http://localhost:8080",
-    "appSecret" : "4jiKog0cFCrzzqhxny5RzkZpf9kgA83S",
+    "appSecret" : "qOgfjloGSbpxtARYC7N8YmXoAASHhO8s",
     "syncCodeAndVirtualRelationPath" : "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation",
     "getSyncResultPath" : "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult",
-    "codePackageQueryCompletedPath" : "/api/v1/code/package/query-completed",
+    "codePackageQueryPath" : "/api/sign/md.fc.LevelPackage/v1/querycompleted",
     "productsListPath" : "/api/sign/md.shop.products/v1/list",
-    "appId" : "VrDiiCwOzGCbtrwhUqW51yA9"
+    "codeSubstitutionPath":"/api/v2/CodeRelation/CodeSubstitution",
+    "codeUnbindRelationPath": "/api/v2/CodeRelation/UnbindRelation",
+    "appId": "m8FKmNPfSWuQ7U4LtZNYpYRb"
   },
   "warehouseNo" : "001",
-  "boxesPerPallet" : 1,
-  "boxesPerCase" : 4
+  "boxesPerPallet" : 2,
+  "boxesPerCase" : 2
 }

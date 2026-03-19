@@ -92,6 +92,27 @@ public class ShiwanM2CaptureController {
         return ApiResult.success(captureService.getEvents(lastSeq));
     }
 
+    /**
+     * 从数据库恢复未关联盒码到内存队列（软件重启后用于继续未完成采集）。
+     * POST /api/shiwan-m2/capture/restore-queue
+     * Body: { orderNo }
+     */
+    @PostMapping("/restore-queue")
+    public ApiResult<Map<String, Object>> restoreQueue(@RequestBody Map<String, Object> body) {
+        if (captureService == null) {
+            return ApiResult.error("TCP采集服务未启用");
+        }
+        String orderNo = body != null && body.get("orderNo") != null ? body.get("orderNo").toString().trim() : null;
+        if (orderNo == null || orderNo.isEmpty()) {
+            return ApiResult.error("orderNo 不能为空");
+        }
+        int count = captureService.restoreBoxQueueFromDb(orderNo);
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("restoredCount", count);
+        data.put("orderNo",       orderNo);
+        return ApiResult.success("队列恢复完成，共恢复 " + count + " 个盒码", data);
+    }
+
     // ---- helpers ----
 
     private static String str(Map<String, Object> m, String key) {

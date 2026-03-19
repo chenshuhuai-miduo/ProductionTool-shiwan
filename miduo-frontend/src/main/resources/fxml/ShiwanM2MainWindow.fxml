@@ -240,11 +240,12 @@
                                             onAction="#onToggleCapture"
                                             maxWidth="Infinity"
                                             GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                                    <Button text="无需采集码"
-                                            styleClass="shiwan-m2-ctrl-btn-outline-blue"
-                                            onAction="#onNoCodeNeeded"
-                                            maxWidth="Infinity"
-                                            GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+<Button fx:id="noCodeNeededBtn" text="无需采集码"
+        styleClass="shiwan-m2-ctrl-btn-outline-blue"
+        onAction="#onNoCodeNeeded"
+        maxWidth="Infinity"
+        disable="true"
+        GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
                                     <Button text="关闭报警"
                                             styleClass="shiwan-m2-ctrl-btn-red"
@@ -295,13 +296,13 @@
                 </Tab>
 
                 <!-- ========== Tab 5: 生产统计 ========== -->
-                <Tab text="生产统计">
-                    <fx:include source="ShiwanM2StatsTab.fxml"/>
+                <Tab text="生产统计" fx:id="statsTab">
+                    <fx:include fx:id="stats" source="ShiwanM2StatsTab.fxml"/>
                 </Tab>
 
                 <!-- ========== Tab 6: 码包管理 ========== -->
-                <Tab text="码包管理">
-                    <fx:include source="ShiwanM2PackageTab.fxml"/>
+                <Tab text="码包管理" fx:id="packageTab">
+                    <fx:include fx:id="pkg" source="ShiwanM2PackageTab.fxml"/>
                 </Tab>
 
                 <!-- ========== Tab 7: 取消关联 ========== -->

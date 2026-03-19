@@ -6,9 +6,11 @@ import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.sql.DataSource;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -48,6 +50,13 @@ public class ShiwanM2TcpCaptureService {
 
     @Resource
     private DeviceApplicationService deviceApplicationService;
+
+    @Resource
+    private DataSource dataSource;
+
+    private JdbcTemplate jdbcTemplate() {
+        return new JdbcTemplate(dataSource);
+    }
 
     // -------- 运行时状态 --------
     private volatile boolean active = false;
@@ -142,6 +151,39 @@ public class ShiwanM2TcpCaptureService {
         if (caseReceiverThread != null) caseReceiverThread.interrupt();
         addEvent("STOPPED", "TCP采集已停止", null);
         log.info("TCP采集已停止");
+    }
+
+    /**
+     * 从数据库恢复未关联盒码到内存队列（用于软件重启后继续采集）。
+     * 仅在采集服务启动后（active=true）调用才有效。
+     * 查询条件：OrderNo=? AND Status=0 AND BigSerialNumber='' AND VirtualSerialNumber='' AND IsDel=0
+     * @return 恢复的盒码数量
+     */
+    public int restoreBoxQueueFromDb(String orderNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return 0;
+        try {
+            List<String> pending = jdbcTemplate().queryForList(
+                    "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
+                    "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
+                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
+                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') " +
+                    "ORDER BY MIN(ID) ASC",
+                    String.class, orderNo.trim());
+            int count = 0;
+            for (String code : pending) {
+                if (code != null && !code.isEmpty()) {
+                    boxCodeQueue.offer(code);
+                    count++;
+                }
+            }
+            if (count > 0) {
+                log.info("[队列恢复] 从数据库恢复 {} 个盒码到内存队列，订单号：{}", count, orderNo);
+            }
+            return count;
+        } catch (Exception e) {
+            log.warn("[队列恢复] 恢复盒码队列失败：{}", e.getMessage());
+            return 0;
+        }
     }
 
     /** 当前运行状态（供 Controller 查询）。 */
@@ -275,16 +317,51 @@ public class ShiwanM2TcpCaptureService {
     }
 
     /**
-     * 盒码收到：按 ";" 分隔提取每个盒码，逐一校验后放入内存队列；
+     * 盒码收到：按 ";" 分隔提取并去重，若数量不等于 boxesPerCase 则全部写入剔除记录（超码/缺码）；
+     * 数量正确时逐一校验后放入内存队列。
      * 箱码收到：从内存队列取 N（boxesPerCase）个盒码做关联，不足则箱码入待处理列表。
      */
     private void onCodeReceived(String rawCode, boolean isBoxCamera) {
         if (isBoxCamera) {
+            // 去重：保留首次出现顺序
             String[] parts = rawCode.split(";");
+            List<String> uniqueCodes = new ArrayList<>();
+            java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
             for (String part : parts) {
                 String code = part.trim();
-                if (code.isEmpty()) continue;
+                if (!code.isEmpty()) seen.add(code);
+            }
+            uniqueCodes.addAll(seen);
+
+            int expected = boxesPerCase;
+            // 超码/缺码时全部写入剔除记录
+            if (uniqueCodes.size() != expected) {
+                String reason = uniqueCodes.size() < expected ? "缺码" : "超码";
+                String desc = "[盒码相机] 一次读取到 " + uniqueCodes.size()
+                        + " 个盒码（去重后），期望 " + expected + " 个，原因：" + reason;
+                addEvent("BOX_FAIL", desc, null);
+                log.warn("[盒码] 数量不符：期望{}个，实际{}个，原因：{}", expected, uniqueCodes.size(), reason);
+                for (String code : uniqueCodes) {
+                    pendingFailedBoxes.offer(new FailedBoxEntry(code, reason, code));
+                }
+                // 无箱码时无法写剔除记录，留在 pendingFailedBoxes 等 ASSOC_FAIL 时统一写入
+                return;
+            }
+
+            for (String code : uniqueCodes) {
                 addEvent("BOX_RECV", "[盒码相机] 接收数据：" + code, null);
+                // 检查该盒码是否有 Status=4（M1同步时热表校验不通过）的关联记录
+                try {
+                    boolean hasStatus4 = boxCaseService.checkAndWriteRejectsForStatus4(currentOrderNo, code);
+                    if (hasStatus4) {
+                        addEvent("BOX_FAIL", "盒码 " + code + " 对应瓶盒关联数据热表校验不通过（待剔除），已写入剔除记录", null);
+                        log.warn("[盒码] {} 存在 Status=4 记录，跳过入队", code);
+                        pendingFailedBoxes.offer(new FailedBoxEntry(code, "码包热表校验不通过", code));
+                        continue;
+                    }
+                } catch (Exception ex) {
+                    log.warn("[盒码] {} Status=4 检查异常: {}", code, ex.getMessage());
+                }
                 ApiResult<Void> res = boxCaseService.validateBoxCodeForReceive(
                         currentOrderNo, currentProductNo, code, REQUIRED_ROWS_PER_BOX);
                 if (res != null && res.getCode() != null && res.getCode() == 200) {

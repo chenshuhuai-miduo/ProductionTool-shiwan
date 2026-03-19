@@ -1,5 +1,6 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -215,6 +216,7 @@ public class ShiwanM2ReplaceController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -223,6 +225,7 @@ public class ShiwanM2ReplaceController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 }

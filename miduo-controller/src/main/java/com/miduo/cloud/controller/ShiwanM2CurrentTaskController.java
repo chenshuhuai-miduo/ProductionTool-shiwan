@@ -53,7 +53,7 @@ public class ShiwanM2CurrentTaskController {
     }
 
     /**
-     * 暂存：将当前任务下未成垛数据标记为 Status=0。
+     * 暂存：将当前任务下未成垛数据标记为 Status=3（未成垛）。
      * POST /api/shiwan-m2/current-task/mark-unfinished
      * Body: orderNo
      */
@@ -64,12 +64,21 @@ public class ShiwanM2CurrentTaskController {
     }
 
     /**
-     * 启动恢复：查询存在 Status=0 未成垛数据的订单列表。
+     * 启动恢复：查询存在 Status=3（未成垛）数据的订单列表。
      * GET /api/shiwan-m2/current-task/unfinished
      */
     @GetMapping("/unfinished")
     public ApiResult<List<Map<String, Object>>> getUnfinishedOrders() {
         return shiwanM2CurrentTaskService.getUnfinishedOrders();
+    }
+
+    /**
+     * 提取工单未成垛：按箱码查询未成垛记录，返回订单号、产品编号、当前垛已有箱数。
+     * GET /api/shiwan-m2/current-task/unfinished-by-box-code?boxCode=xxx
+     */
+    @GetMapping("/unfinished-by-box-code")
+    public ApiResult<Map<String, Object>> getUnfinishedByBoxCode(@RequestParam String boxCode) {
+        return shiwanM2CurrentTaskService.queryUnfinishedByBoxCode(boxCode);
     }
 
     private static Integer toInt(Object o, int defaultVal) {

@@ -342,10 +342,15 @@ public class ShiwanM2Settings {
         @JsonProperty("appId")
         private String appId;
         private String appSecret;
+        /** 开放平台登录账号（Memberlogin 字段值，用于码替换等接口请求体） */
+        private String memberlogin;
         private String syncCodeAndVirtualRelationPath = "/api/sign/md.fc.Store/v1/SyncCodeAndVirtualRelation";
         private String getSyncResultPath = "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult";
-        private String codePackageQueryCompletedPath = "/api/v1/code/package/query-completed";
+        @com.fasterxml.jackson.annotation.JsonAlias("codePackageQueryCompletedPath")
+        private String codePackageQueryPath = "/api/sign/md.fc.LevelPackage/v1/querycompleted";
         private String productsListPath = "/api/sign/md.shop.products/v1/list";
+        /** 码替换接口路径 */
+        private String codeSubstitutionPath;
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -355,13 +360,17 @@ public class ShiwanM2Settings {
         public void setAppId(String appId) { this.appId = appId; }
         public String getAppSecret() { return appSecret; }
         public void setAppSecret(String appSecret) { this.appSecret = appSecret; }
+        public String getMemberlogin() { return memberlogin; }
+        public void setMemberlogin(String memberlogin) { this.memberlogin = memberlogin; }
         public String getSyncCodeAndVirtualRelationPath() { return syncCodeAndVirtualRelationPath; }
         public void setSyncCodeAndVirtualRelationPath(String path) { this.syncCodeAndVirtualRelationPath = path; }
         public String getGetSyncResultPath() { return getSyncResultPath; }
         public void setGetSyncResultPath(String path) { this.getSyncResultPath = path; }
-        public String getCodePackageQueryCompletedPath() { return codePackageQueryCompletedPath; }
-        public void setCodePackageQueryCompletedPath(String path) { this.codePackageQueryCompletedPath = path; }
+        public String getCodePackageQueryPath() { return codePackageQueryPath; }
+        public void setCodePackageQueryPath(String path) { this.codePackageQueryPath = path; }
         public String getProductsListPath() { return productsListPath; }
         public void setProductsListPath(String path) { this.productsListPath = path; }
+        public String getCodeSubstitutionPath() { return codeSubstitutionPath; }
+        public void setCodeSubstitutionPath(String codeSubstitutionPath) { this.codeSubstitutionPath = codeSubstitutionPath; }
     }
 }

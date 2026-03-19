@@ -3,6 +3,7 @@ package com.miduo.cloud.frontend.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -164,6 +165,7 @@ public class ShiwanM2PalletListController implements Initializable {
         alert.setTitle("提示");
         alert.setHeaderText(null);
         alert.setContentText(msg);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -178,12 +180,16 @@ public class ShiwanM2PalletListController implements Initializable {
             row.palletCode = str(map.get("palletCode"));
             row.caseCount = str(map.get("caseCount"));
             row.orderNo = str(map.get("orderNo"));
-            row.associateTime = str(map.get("associateTime"));
+            row.associateTime = formatDateTime(str(map.get("associateTime")));
             return row;
         }
 
         private static String str(Object value) {
             return value == null ? "" : String.valueOf(value);
+        }
+
+        private static String formatDateTime(String s) {
+            return s == null || s.isEmpty() ? s : s.replace("T", " ");
         }
     }
 }

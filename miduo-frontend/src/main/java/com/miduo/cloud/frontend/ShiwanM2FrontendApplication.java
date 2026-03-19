@@ -13,13 +13,16 @@ import com.miduo.cloud.frontend.util.CssHotReloader;
 import com.miduo.cloud.frontend.util.StageIconUtil;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.entity.enums.LicenseStatusEnum;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 /**
@@ -57,12 +60,23 @@ public class ShiwanM2FrontendApplication extends Application {
                 getClass().getResource("/fxml/ShiwanM2MainWindow.fxml"));
             Parent root = loader.load();
 
-            Scene scene = new Scene(root, 1400, 900);
+            com.miduo.cloud.frontend.controller.ShiwanM2MainController mainController = loader.getController();
+
+            // 动态适配屏幕分辨率：高度占屏幕 80%，宽度取适当值
+            Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+            double windowHeight = screenBounds.getHeight() * 0.80;
+            double windowWidth = Math.min(1400, screenBounds.getWidth() - 20);
+
+            Scene scene = new Scene(root, windowWidth, windowHeight);
 
             primaryStage.setTitle("米多赋码采集关联系统");
             primaryStage.setScene(scene);
             primaryStage.setResizable(true);
             primaryStage.setMaximized(false);
+
+            // 水平居中，Y 靠近屏幕顶部以确保标题栏（缩小/放大/关闭按钮）可见
+            primaryStage.setX(screenBounds.getMinX() + (screenBounds.getWidth() - windowWidth) / 2);
+            primaryStage.setY(screenBounds.getMinY() + 20);
 
             StageIconUtil.setStageIcon(primaryStage);
 
@@ -71,15 +85,15 @@ public class ShiwanM2FrontendApplication extends Application {
                 cssHotReloader.start();
             }
 
-            // 点 X 最小化而非退出（工控机常驻程序）
+            // 点 X 执行与菜单「退出软件」一致的退出逻辑（检查是否有正在进行的采集任务等）
             primaryStage.setOnCloseRequest(event -> {
                 event.consume();
-                primaryStage.setIconified(true);
+                mainController.requestExit();
             });
 
             primaryStage.show();
 
-            System.out.println("✓ 石湾 2 号机界面启动成功！窗口大小：1400x900");
+            System.out.println("✓ 石湾 2 号机界面启动成功！窗口大小：" + (int) windowWidth + "x" + (int) windowHeight);
 
         } catch (Exception e) {
             System.err.println("✗ 启动失败！" + e.getMessage());
@@ -144,6 +158,7 @@ public class ShiwanM2FrontendApplication extends Application {
                 alert.setTitle("许可证验证失败");
                 alert.setHeaderText("无法验证许可证状态");
                 alert.setContentText("请联系技术支持：15917372153");
+                ShiwanM2AlertUtil.applyStyle(alert);
                 alert.showAndWait();
                 Platform.exit();
             });

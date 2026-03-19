@@ -6,6 +6,7 @@ import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import javafx.collections.FXCollections;
@@ -35,6 +36,7 @@ import javafx.stage.Modality;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -50,9 +52,6 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     // ==================== 主 TabPane ====================
     @FXML private TabPane mainTabPane;
-
-    // ==================== 标题栏 ====================
-    @FXML private Button closeBtn;
 
     // ==================== 业务 - 码位数配置 ====================
     @FXML private TextField smallCodeDigitsField;
@@ -128,6 +127,9 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     /** 主 TabPane 中"设备" Tab 的固定索引（业务/页面配置/设备/连接） */
     private static final int DEVICE_TAB_INDEX = 2;
 
+    /** 设备自动测试取消标志：切换离开"设备" Tab 时置 true，中断正在进行的全量测试 */
+    private volatile boolean testAllDevicesCancelled = false;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupToggleStyles();
@@ -138,13 +140,18 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     }
 
     /**
-     * 监听主 TabPane 的 Tab 切换：当切换到"设备"Tab 时，自动触发一次测试所有设备连接。
-     * 使用 Platform.runLater 延迟执行，确保 Tab 内容完全渲染后再开始测试。
+     * 监听主 TabPane 的 Tab 切换：
+     * - 切换到"设备" Tab 时，重置取消标志并自动触发全量设备测试；
+     * - 切换离开"设备" Tab 时，设置取消标志以中断正在进行的测试。
      */
     private void setupDeviceTabListener() {
         if (mainTabPane == null) return;
         mainTabPane.getSelectionModel().selectedIndexProperty().addListener((obs, oldIdx, newIdx) -> {
+            if (oldIdx != null && oldIdx.intValue() == DEVICE_TAB_INDEX) {
+                testAllDevicesCancelled = true;
+            }
             if (newIdx != null && newIdx.intValue() == DEVICE_TAB_INDEX) {
+                testAllDevicesCancelled = false;
                 Platform.runLater(this::onTestAllDevices);
             }
         });
@@ -206,18 +213,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             backendBaseUrlField.setText(url != null && !url.isEmpty() ? url : "http://localhost:8080");
         }
         if (s.getPrinter() != null) {
-            printerNameField.setText(s.getPrinter().getPrinterName() != null ? s.getPrinter().getPrinterName() : "");
-            printerIpField.setText(s.getPrinter().getPrinterIp() != null ? s.getPrinter().getPrinterIp() : "");
-            printerPortField.setText(s.getPrinter().getPrinterPort() != null ? s.getPrinter().getPrinterPort() : "9100");
-            if (paperSizeCombo != null && s.getPrinter().getPaperSize() != null) {
-                paperSizeCombo.setValue(s.getPrinter().getPaperSize());
-            }
+            if (printerNameField != null) printerNameField.setText(s.getPrinter().getPrinterName() != null ? s.getPrinter().getPrinterName() : "");
+            if (printerIpField   != null) printerIpField.setText(s.getPrinter().getPrinterIp() != null ? s.getPrinter().getPrinterIp() : "");
+            if (printerPortField != null) printerPortField.setText(s.getPrinter().getPrinterPort() != null ? s.getPrinter().getPrinterPort() : "9100");
+            if (paperSizeCombo  != null && s.getPrinter().getPaperSize() != null) paperSizeCombo.setValue(s.getPrinter().getPaperSize());
         }
         if (s.getAlarm() != null) {
-            soundAlarmToggle.setSelected(s.getAlarm().isSoundAlarmEnabled());
-            alarmDelayField.setText(String.valueOf(s.getAlarm().getAlarmDelayMs()));
-            alarmIntervalField.setText(String.valueOf(s.getAlarm().getAlarmIntervalMs()));
-            syncToggleStyle(soundAlarmToggle);
+            if (soundAlarmToggle  != null) { soundAlarmToggle.setSelected(s.getAlarm().isSoundAlarmEnabled()); syncToggleStyle(soundAlarmToggle); }
+            if (alarmDelayField   != null) alarmDelayField.setText(String.valueOf(s.getAlarm().getAlarmDelayMs()));
+            if (alarmIntervalField != null) alarmIntervalField.setText(String.valueOf(s.getAlarm().getAlarmIntervalMs()));
         }
     }
 
@@ -294,15 +298,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 box.setAlignment(Pos.CENTER_LEFT);
                 String editStyle   = "-fx-background-color: #EFF6FF; -fx-text-fill: #2563EB;"
                     + "-fx-border-width: 0; -fx-background-radius: 4px; -fx-font-size: 12px;"
-                    + "-fx-font-weight: bold; -fx-padding: 3px 10px; -fx-min-height: 28px;"
+                    + "-fx-font-weight: bold; -fx-padding: 3px 14px; -fx-min-height: 28px; -fx-min-width: 58px;"
                     + "-fx-cursor: hand; -fx-font-family: 'Microsoft YaHei';";
                 String testStyle   = "-fx-background-color: #F0FDF4; -fx-text-fill: #16A34A;"
                     + "-fx-border-width: 0; -fx-background-radius: 4px; -fx-font-size: 12px;"
-                    + "-fx-font-weight: bold; -fx-padding: 3px 10px; -fx-min-height: 28px;"
+                    + "-fx-font-weight: bold; -fx-padding: 3px 14px; -fx-min-height: 28px; -fx-min-width: 58px;"
                     + "-fx-cursor: hand; -fx-font-family: 'Microsoft YaHei';";
                 String deleteStyle = "-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626;"
                     + "-fx-border-width: 0; -fx-background-radius: 4px; -fx-font-size: 12px;"
-                    + "-fx-font-weight: bold; -fx-padding: 3px 10px; -fx-min-height: 28px;"
+                    + "-fx-font-weight: bold; -fx-padding: 3px 14px; -fx-min-height: 28px; -fx-min-width: 58px;"
                     + "-fx-cursor: hand; -fx-font-family: 'Microsoft YaHei';";
                 editBtn.setStyle(editStyle);
                 testBtn.setStyle(testStyle);
@@ -494,6 +498,11 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 device.setEnabled(dialogController.isEnabled());
                 device.setDescription(dialogController.getDescription());
 
+                // 保存当前设备的连接状态快照
+                Map<String, String> statusSnapshot = new HashMap<>();
+                for (IoDeviceDTO d : ioDeviceList) {
+                    if (d.getId() != null) statusSnapshot.put(d.getId(), d.getStatusText());
+                }
                 new Thread(() -> {
                     try {
                         String resp = HttpUtil.doPost("/api/device/add", device);
@@ -501,7 +510,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                         Platform.runLater(() -> {
                             if (result.getCode() == 200) {
                                 showSuccess("添加设备", "IO设备添加成功");
-                                loadIoDevices();
+                                loadIoDevicesAndTestNew(statusSnapshot);
                             } else {
                                 showError("添加失败", result.getMessage());
                             }
@@ -516,17 +525,80 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
     }
 
-    @FXML
-    private void onTestAllDevices() {
+    /**
+     * 重新加载设备列表，恢复原有设备的连接状态，并自动测试新增设备。
+     * @param existingStatuses 添加前各设备ID→状态的快照
+     */
+    private void loadIoDevicesAndTestNew(Map<String, String> existingStatuses) {
         new Thread(() -> {
             try {
+                String responseJson = HttpUtil.doGet("/api/device/list");
+                ApiResult<java.util.List<IoDeviceDTO>> result = HttpUtil.parseJson(
+                    responseJson, new TypeReference<ApiResult<java.util.List<IoDeviceDTO>>>() {});
+                Platform.runLater(() -> {
+                    ioDeviceList.clear();
+                    if (result != null && result.getCode() == 200 && result.getData() != null) {
+                        IoDeviceDTO newDevice = null;
+                        for (IoDeviceDTO d : result.getData()) {
+                            String prevStatus = existingStatuses.get(d.getId());
+                            if (prevStatus != null) {
+                                d.setStatusText(prevStatus);
+                            } else {
+                                d.setStatusText("连接中...");
+                                newDevice = d;
+                            }
+                            ioDeviceList.add(d);
+                        }
+                        if (newDevice != null) {
+                            final IoDeviceDTO deviceToTest = newDevice;
+                            new Thread(() -> testDeviceAsync(deviceToTest)).start();
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("加载失败", "获取设备列表异常：" + e.getMessage()));
+            }
+        }).start();
+    }
+
+    /** 异步测试单台设备连接并更新表格状态，不弹窗。 */
+    private void testDeviceAsync(IoDeviceDTO device) {
+        try {
+            if (!Boolean.TRUE.equals(device.getEnabled())) {
+                Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "已禁用"));
+                return;
+            }
+            boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
+            if (isConnected) {
+                Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "已连接"));
+                return;
+            }
+            DeviceConnectionManager.getInstance().stopConnection(device.getId());
+            Thread.sleep(300);
+            DeviceConnectionManager.getInstance().startConnection(device);
+            Thread.sleep(600);
+            boolean ok = DeviceConnectionManager.getInstance().isConnected(device.getId());
+            Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), ok ? "已连接" : "连接失败"));
+        } catch (Exception e) {
+            Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "连接异常"));
+        }
+    }
+
+    @FXML
+    private void onTestAllDevices() {
+        testAllDevicesCancelled = false;
+        new Thread(() -> {
+            try {
+                if (testAllDevicesCancelled) return;
                 String responseJson = HttpUtil.doGet("/api/device/list");
                 ApiResult<List<IoDeviceDTO>> result = HttpUtil.parseJson(
                         responseJson, new TypeReference<ApiResult<List<IoDeviceDTO>>>() {});
 
                 if (result == null || result.getCode() != 200 || result.getData() == null) {
-                    Platform.runLater(() -> showError("获取失败", "获取设备列表失败：" +
-                            (result != null ? result.getMessage() : "无响应")));
+                    if (!testAllDevicesCancelled) {
+                        Platform.runLater(() -> showError("获取失败", "获取设备列表失败：" +
+                                (result != null ? result.getMessage() : "无响应")));
+                    }
                     return;
                 }
 
@@ -536,8 +608,8 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 int reconnected = 0;
 
                 for (int i = 0; i < devices.size(); i++) {
+                    if (testAllDevicesCancelled) return;
                     IoDeviceDTO device = devices.get(i);
-                    final int idx = i + 1;
 
                     boolean isConnected = DeviceConnectionManager.getInstance().isConnected(device.getId());
                     if (isConnected) {
@@ -549,8 +621,10 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                             if (Boolean.TRUE.equals(device.getEnabled())) {
                                 DeviceConnectionManager.getInstance().stopConnection(device.getId());
                                 Thread.sleep(300);
+                                if (testAllDevicesCancelled) return;
                                 DeviceConnectionManager.getInstance().startConnection(device);
                                 Thread.sleep(500);
+                                if (testAllDevicesCancelled) return;
                                 if (DeviceConnectionManager.getInstance().isConnected(device.getId())) {
                                     reconnected++;
                                     connected++;
@@ -562,11 +636,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                                 Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "已禁用"));
                             }
                         } catch (Exception e) {
-                            Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "连接异常"));
+                            if (!testAllDevicesCancelled) {
+                                Platform.runLater(() -> updateDeviceStatusInTable(device.getId(), "连接异常"));
+                            }
                         }
                     }
                     Thread.sleep(200);
                 }
+
+                if (testAllDevicesCancelled) return;
 
                 final int finalTotal = total;
                 final int finalConnected = connected;
@@ -574,6 +652,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 final int failed = total - connected;
 
                 Platform.runLater(() -> {
+                    if (testAllDevicesCancelled) return;
                     String msg = String.format(
                             "测试完成！\n\n总设备数：%d\n已连接：%d\n重新连接成功：%d\n连接失败：%d",
                             finalTotal, finalConnected, finalReconnected, failed);
@@ -582,6 +661,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                             msg, javafx.scene.control.ButtonType.OK);
                     alert.setTitle("设备测试结果");
                     alert.setHeaderText("IO设备连接测试完成");
+                    ShiwanM2AlertUtil.applyStyle(alert);
                     alert.showAndWait();
                 });
             } catch (Exception e) {
@@ -723,6 +803,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         confirm.setTitle("删除设备");
         confirm.setHeaderText("确认删除设备「" + device.getDeviceName() + "」？");
         confirm.setContentText("删除后不可恢复，需重新添加。");
+        ShiwanM2AlertUtil.applyStyle(confirm);
         confirm.showAndWait().ifPresent(bt -> {
             if (bt == javafx.scene.control.ButtonType.OK) {
                 new Thread(() -> {
@@ -953,7 +1034,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @FXML
     private void onClose() {
-        Stage stage = (Stage) closeBtn.getScene().getWindow();
+        Stage stage = (Stage) mainTabPane.getScene().getWindow();
         stage.close();
     }
 
@@ -982,6 +1063,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -990,6 +1072,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -998,6 +1081,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 }

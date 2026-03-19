@@ -3,6 +3,7 @@ package com.miduo.cloud.frontend.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -45,55 +46,51 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     }
 
     private void loadPage(int page) {
-        // 前端弹窗改用已存在的搜索接口：/api/shiwan-m2/products/search
-        // 搜索接口仅支持 keyword 与 size，返回 List，无分页信息
-        currentPage = 1;
-        String url = "/api/shiwan-m2/products/search?size=" + PAGE_SIZE;
+        currentPage = Math.max(page, 1);
+        StringBuilder url = new StringBuilder("/api/shiwan-m2/products/search-page?page=")
+                .append(currentPage).append("&pageSize=").append(PAGE_SIZE);
         if (keyword != null && !keyword.isEmpty()) {
             try {
-                url += "&keyword=" + java.net.URLEncoder.encode(keyword, "UTF-8");
+                url.append("&keyword=").append(java.net.URLEncoder.encode(keyword, "UTF-8"));
             } catch (Exception ignored) {}
         }
-        final String reqUrl = url;
+        final String reqUrl = url.toString();
         CompletableFuture.runAsync(() -> {
             try {
                 String json = HttpUtil.doGet(reqUrl);
                 JsonNode root = MAPPER.readTree(json);
                 int code = root.has("code") ? root.get("code").asInt() : 500;
                 if (code != 200 || !root.has("data")) {
-                    Platform.runLater(() -> updateTable(java.util.Collections.emptyList(), 0));
+                    Platform.runLater(() -> updateTable(java.util.Collections.emptyList(), 0, 0));
                     return;
                 }
                 JsonNode data = root.get("data");
+                long total = data.has("total") ? data.get("total").asLong() : 0;
+                JsonNode listNode = data.has("list") ? data.get("list") : data;
                 java.util.List<Map<String, String>> list = new java.util.ArrayList<>();
-                if (data.isArray()) {
-                    for (JsonNode item : data) {
+                if (listNode != null && listNode.isArray()) {
+                    for (JsonNode item : listNode) {
                         Map<String, String> row = new HashMap<>();
-                        // 兼容后端 ProductInfoPO 字段：productName / productNo
-                        row.put("name", item.has("productName") ? item.get("productName").asText() : "");
-                        row.put("pronumber", item.has("productNo") ? item.get("productNo").asText() : "");
+                        row.put("name",      item.has("productName") ? item.get("productName").asText() : "");
+                        row.put("pronumber", item.has("productNo")   ? item.get("productNo").asText()   : "");
                         list.add(row);
                     }
-                } else if (data.isObject()) {
-                    Map<String, String> row = new HashMap<>();
-                    row.put("name", data.has("productName") ? data.get("productName").asText() : "");
-                    row.put("pronumber", data.has("productNo") ? data.get("productNo").asText() : "");
-                    list.add(row);
                 }
-                Platform.runLater(() -> updateTable(list, list.size()));
+                final long totalFinal = total;
+                Platform.runLater(() -> updateTable(list, (int) totalFinal, currentPage));
             } catch (Exception e) {
-                Platform.runLater(() -> updateTable(java.util.Collections.emptyList(), 0));
+                Platform.runLater(() -> updateTable(java.util.Collections.emptyList(), 0, 1));
             }
         });
     }
 
-    private void updateTable(java.util.List<Map<String, String>> list, int total) {
-        totalCount = total;
+    private void updateTable(java.util.List<Map<String, String>> list, int total, int page) {
+        totalCount   = total;
+        currentPage  = Math.max(page, 1);
         productTable.getItems().clear();
         productTable.getItems().addAll(list);
         totalLabel.setText("共 " + total + " 条");
-        // 搜索接口不分页，这里固定单页展示
-        int totalPages = 1;
+        int totalPages = total <= 0 ? 1 : (total + PAGE_SIZE - 1) / PAGE_SIZE;
         pageInfoLabel.setText("第 " + currentPage + " / " + totalPages + " 页");
     }
 
@@ -127,6 +124,7 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
             Alert a = new Alert(Alert.AlertType.WARNING);
             a.setTitle("提示");
             a.setHeaderText("请先选择一行产品");
+            ShiwanM2AlertUtil.applyStyle(a);
             a.showAndWait();
             return;
         }

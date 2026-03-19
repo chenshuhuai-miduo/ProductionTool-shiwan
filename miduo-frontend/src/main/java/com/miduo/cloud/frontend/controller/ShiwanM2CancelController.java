@@ -1,5 +1,6 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -355,6 +356,7 @@ public class ShiwanM2CancelController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 
@@ -363,6 +365,7 @@ public class ShiwanM2CancelController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        ShiwanM2AlertUtil.applyStyle(alert);
         alert.showAndWait();
     }
 

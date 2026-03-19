@@ -119,7 +119,7 @@ public class CodePackageOpenPlatformClient {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(fileDownloadAddress).openConnection();
-            connection.setRequestMethod("POST");
+            connection.setRequestMethod("GET");
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(30000);
             try (BufferedReader reader = new BufferedReader(

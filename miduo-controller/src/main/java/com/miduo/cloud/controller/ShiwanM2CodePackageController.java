@@ -27,4 +27,14 @@ public class ShiwanM2CodePackageController {
     public ApiResult<Map<String, Object>> check() {
         return codePackageApplicationService.checkCodePackageGate();
     }
+
+    /**
+     * 手工采集门禁检查：热表中小标至少6条、中标至少1条。
+     * GET /api/shiwan-m2/code-package/check-manual
+     * 返回 data: { smallCount, mediumCount, passed }
+     */
+    @GetMapping("/check-manual")
+    public ApiResult<Map<String, Object>> checkManual() {
+        return codePackageApplicationService.checkManualCapturePackage();
+    }
 }

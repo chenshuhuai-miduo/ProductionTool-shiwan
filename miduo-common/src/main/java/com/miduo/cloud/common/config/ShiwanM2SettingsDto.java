@@ -139,10 +139,14 @@ public class ShiwanM2SettingsDto {
         private String appKey;  // 与前端兼容，部分配置写 appKey
         @JsonAlias({"app_secret", "appSecert"})
         private String appSecret;
+        /** 开放平台登录账号（Memberlogin 字段值，用于码替换等接口请求体） */
+        private String memberlogin;
         private String syncCodeAndVirtualRelationPath;
         private String getSyncResultPath;
         private String productsListPath;
         private String codePackageQueryPath;
+        /** 码替换接口路径 */
+        private String codeSubstitutionPath;
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -155,6 +159,8 @@ public class ShiwanM2SettingsDto {
         public void setAppKey(String appKey) { this.appKey = appKey; }
         public String getAppSecret() { return appSecret; }
         public void setAppSecret(String appSecret) { this.appSecret = appSecret; }
+        public String getMemberlogin() { return memberlogin; }
+        public void setMemberlogin(String memberlogin) { this.memberlogin = memberlogin; }
         public String getSyncCodeAndVirtualRelationPath() { return syncCodeAndVirtualRelationPath; }
         public void setSyncCodeAndVirtualRelationPath(String syncCodeAndVirtualRelationPath) {
             this.syncCodeAndVirtualRelationPath = syncCodeAndVirtualRelationPath;
@@ -165,5 +171,7 @@ public class ShiwanM2SettingsDto {
         public void setProductsListPath(String productsListPath) { this.productsListPath = productsListPath; }
         public String getCodePackageQueryPath() { return codePackageQueryPath; }
         public void setCodePackageQueryPath(String codePackageQueryPath) { this.codePackageQueryPath = codePackageQueryPath; }
+        public String getCodeSubstitutionPath() { return codeSubstitutionPath; }
+        public void setCodeSubstitutionPath(String codeSubstitutionPath) { this.codeSubstitutionPath = codeSubstitutionPath; }
     }
 }

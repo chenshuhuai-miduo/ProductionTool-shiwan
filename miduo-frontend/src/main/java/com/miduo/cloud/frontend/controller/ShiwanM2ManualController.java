@@ -6,6 +6,7 @@ import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -134,6 +135,35 @@ public class ShiwanM2ManualController implements Initializable {
     }
 
     private void startCapture() {
+        // 门禁：检查热表是否已导入小标和中标码包
+        try {
+            String checkJson = HttpUtil.doGet("/api/shiwan-m2/code-package/check-manual");
+            com.fasterxml.jackson.databind.JsonNode root =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(checkJson);
+            boolean passed = root != null && root.has("data")
+                    && root.get("data").has("passed")
+                    && root.get("data").get("passed").asBoolean();
+            if (!passed) {
+                String msg = root != null && root.has("message") ? root.get("message").asText() : "请先导入码包";
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("码包未导入");
+                alert.setHeaderText(null);
+                alert.setContentText(msg);
+                ShiwanM2AlertUtil.applyStyle(alert);
+                alert.showAndWait();
+                return;
+            }
+        } catch (Exception e) {
+            log.warn("[手工采集] 码包检查失败: {}", e.getMessage());
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("码包检查失败");
+            alert.setHeaderText(null);
+            alert.setContentText("码包门禁检查失败，请确认后端服务正常：" + e.getMessage());
+            ShiwanM2AlertUtil.applyStyle(alert);
+            alert.showAndWait();
+            return;
+        }
+
         isRunning = true;
         startBtn.setText("停止采集");
         startBtn.getStyleClass().add("running");
@@ -170,6 +200,7 @@ public class ShiwanM2ManualController implements Initializable {
         confirm.setTitle("清零确认");
         confirm.setHeaderText("确认将生产总数和当前读数清零？");
         confirm.setContentText("此操作仅重置界面计数，不影响已关联数据。");
+        ShiwanM2AlertUtil.applyStyle(confirm);
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             currentBottles = 0;

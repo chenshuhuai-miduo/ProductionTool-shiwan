@@ -251,6 +251,80 @@ public class M1TCodeSyncService {
         M1SyncCursorStore.saveLastSyncedSerialNo(maxSerialNo);
         log.info("1号机 T_Code 同步 [结果] 本批读取 {} 条，新增写入 {} 条，重复跳过 {} 条，游标更新至 SerialNo={}",
                 rows.size(), insertedCount, skippedCount, maxSerialNo);
+
+        // 热表校验：瓶码(PackageType=1)和盒码(PackageType=2)均须存在于热表，否则置 Status=4（待剔除）
+        checkHotTableAndMarkStatus4(rows);
+    }
+
+    /**
+     * 对本批同步的记录逐条检查码位数和热表：
+     * 1. 若 BagCode 位数不符配置（smallCodeDigits != -1）或 BoxCode 位数不符配置（mediumCodeDigits != -1），
+     * 2. 或 BagCode 不在 CodePackageItemHot(PackageType=1) 或 BoxCode 不在 CodePackageItemHot(PackageType=2)，
+     * 则将 CodeRelationUpload 对应记录的 Status 更新为 4（待剔除），并在 Msg 字段记录原因。
+     */
+    private void checkHotTableAndMarkStatus4(List<TCodeRow> rows) {
+        if (rows == null || rows.isEmpty()) return;
+
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        int smallCodeDigits  = -1;
+        int mediumCodeDigits = -1;
+        if (cfg != null && cfg.getCodeDigits() != null) {
+            smallCodeDigits  = cfg.getCodeDigits().getSmallCodeDigits();
+            mediumCodeDigits = cfg.getCodeDigits().getMediumCodeDigits();
+        }
+
+        int markedCount = 0;
+        for (TCodeRow row : rows) {
+            try {
+                String rejectMsg = null;
+
+                // 1. 码位数校验（-1 表示不校验）
+                if (smallCodeDigits != -1 && row.bagCode != null
+                        && row.bagCode.length() != smallCodeDigits) {
+                    rejectMsg = "小标位数不匹配，应为" + smallCodeDigits + "位，实际" + row.bagCode.length() + "位";
+                } else if (mediumCodeDigits != -1 && row.boxCode != null
+                        && row.boxCode.length() != mediumCodeDigits) {
+                    rejectMsg = "中标位数不匹配，应为" + mediumCodeDigits + "位，实际" + row.boxCode.length() + "位";
+                }
+
+                // 2. 热表校验（码位数已通过时才检查热表）
+                if (rejectMsg == null) {
+                    boolean bagInHot = isInHot(1, row.bagCode);
+                    boolean boxInHot = isInHot(2, row.boxCode);
+                    if (!bagInHot) {
+                        rejectMsg = "瓶码不在码包热表（小标PackageType=1）";
+                    } else if (!boxInHot) {
+                        rejectMsg = "盒码不在码包热表（中标PackageType=2）";
+                    }
+                }
+
+                if (rejectMsg != null) {
+                    final String msg = rejectMsg;
+                    int affected = jdbcTemplate.update(
+                            "UPDATE CodeRelationUpload SET Status = 4, Msg = ? " +
+                            "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0 AND Status = 0",
+                            msg, row.boxCode, row.bagCode);
+                    if (affected > 0) {
+                        markedCount++;
+                        log.debug("1号机同步校验不通过：bagCode={} boxCode={} 原因：{} → Status=4",
+                                row.bagCode, row.boxCode, msg);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("1号机同步校验时发生异常 SerialNo={}: {}", row.serialNo, e.getMessage());
+            }
+        }
+        if (markedCount > 0) {
+            log.info("1号机 T_Code 同步 [校验] 本批共将 {} 条记录置为 Status=4（待剔除）", markedCount);
+        }
+    }
+
+    private boolean isInHot(int packageType, String codeValue) {
+        if (codeValue == null || codeValue.trim().isEmpty()) return false;
+        Integer cnt = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM CodePackageItemHot WHERE PackageType = ? AND CodeValue = ?",
+                Integer.class, packageType, codeValue.trim());
+        return cnt != null && cnt > 0;
     }
 
     private CurrentTask getCurrentTask() {

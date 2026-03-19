@@ -294,6 +294,36 @@ public class CodePackageApplicationService {
     }
 
     /**
+     * 手工采集门禁检查：热表中小标(PackageType=1)至少6条、中标(PackageType=2)至少1条。
+     */
+    public ApiResult<Map<String, Object>> checkManualCapturePackage() {
+        try {
+            LambdaQueryWrapper<CodePackageItemHotPO> q1 = new LambdaQueryWrapper<>();
+            q1.eq(CodePackageItemHotPO::getPackageType, 1);
+            long sc = codePackageItemHotMapper.selectCount(q1);
+            LambdaQueryWrapper<CodePackageItemHotPO> q2 = new LambdaQueryWrapper<>();
+            q2.eq(CodePackageItemHotPO::getPackageType, 2);
+            long mc = codePackageItemHotMapper.selectCount(q2);
+            Map<String, Object> data = new HashMap<>();
+            data.put("smallCount", sc);
+            data.put("mediumCount", mc);
+            boolean passed = sc >= 6 && mc >= 1;
+            data.put("passed", passed);
+            if (passed) {
+                return ApiResult.success("码包检查通过", data);
+            }
+            List<String> missing = new ArrayList<>();
+            if (sc < 6) missing.add("小标（当前" + sc + "条，至少需要6条）");
+            if (mc < 1) missing.add("中标（当前" + mc + "条，至少需要1条）");
+            ApiResult<Map<String, Object>> err = ApiResult.error(400, "请先导入码包：" + String.join("、", missing));
+            err.setData(data);
+            return err;
+        } catch (Exception e) {
+            return ApiResult.error("码包门禁检查失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 门禁检查：小标(1)、中标(2)、大标(3) 是否均已导入（至少有一条 Status=1 的导入记录）。
      * 用于 2 号机开始采集前码包门禁。
      */
@@ -503,6 +533,10 @@ public class CodePackageApplicationService {
                 continue;
             }
             String code = rawCode.trim();
+            // 剥除 UTF-8 BOM（\uFEFF），文件以"UTF-8 with BOM"格式保存时第一行会携带该字符
+            if (code.startsWith("\uFEFF")) {
+                code = code.substring(1);
+            }
             if (StringUtils.hasText(code)) {
                 set.add(code);
             }
