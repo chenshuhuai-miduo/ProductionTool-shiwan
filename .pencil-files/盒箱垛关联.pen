@@ -1,5 +1,5 @@
 {
-  "version": "2.8",
+  "version": "2.9",
   "children": [
     {
       "type": "frame",
@@ -846,8 +846,8 @@
     {
       "type": "frame",
       "id": "rejectRecordModal",
-      "x": 7148,
-      "y": 1813,
+      "x": 5909,
+      "y": 1821,
       "name": "剔除记录弹窗",
       "width": 1000,
       "height": 700,
@@ -5792,7 +5792,7 @@
       "y": 1313,
       "name": "取消关联确认对话框",
       "width": 600,
-      "height": 480,
+      "height": 540,
       "fill": "#FFFFFF",
       "cornerRadius": 16,
       "stroke": {
@@ -5845,6 +5845,116 @@
           "children": [
             {
               "type": "frame",
+              "id": "tbwef",
+              "name": "newInfoBox",
+              "width": "fill_container",
+              "fill": "#EFF6FF",
+              "cornerRadius": 8,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "#BFDBFE"
+              },
+              "layout": "vertical",
+              "gap": 6,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "GzQ0R",
+                  "fill": "#1D4ED8",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "取消范围：只解一层",
+                  "fontFamily": "Arial",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "WD81v",
+                  "fill": "#1F2937",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "本次将执行 2 个可解除项，共涉及 76 条关联",
+                  "fontFamily": "Arial",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "7YxTH",
+                  "fill": "#6B7280",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "1 个不可解除项将被跳过",
+                  "fontFamily": "Arial",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Kx6fw",
+              "name": "警告文字区",
+              "width": "fill_container",
+              "fill": "#FEF3C7",
+              "cornerRadius": 8,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "#F59E0B"
+              },
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 12,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0Br3d",
+                  "name": "warningIcon1",
+                  "fill": "#92400E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "⚠ 云端影响：以下垛码已上传云端，执行将先取消整垛云端数据",
+                  "fontFamily": "Arial",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "ocGZH",
+                  "name": "warningText1Content",
+                  "fill": "#92400E",
+                  "content": "· 垛码 20241201003001",
+                  "fontFamily": "Arial",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "YrhO7",
+                  "width": "fill_container",
+                  "height": 1,
+                  "fill": "#D97706"
+                },
+                {
+                  "type": "text",
+                  "id": "CpFIS",
+                  "fill": "#B91C1C",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "⚠ 此操作不可恢复，请仔细核对后确认！",
+                  "fontFamily": "Arial",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
               "id": "Kl4r2",
               "name": "密码标签行",
               "gap": 2,
@@ -5893,82 +6003,12 @@
               "children": [
                 {
                   "type": "text",
-                  "id": "wlRLB",
-                  "name": "passwordPlaceholder",
+                  "id": "yLxU6",
                   "fill": "#6B7280",
                   "content": "请输入密码",
                   "fontFamily": "Arial",
                   "fontSize": 18,
                   "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "6wdGt",
-              "name": "确认信息区",
-              "width": "fill_container",
-              "fill": "#FEF3C7",
-              "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 1,
-                "fill": "#F59E0B"
-              },
-              "layout": "vertical",
-              "gap": 12,
-              "padding": 16,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "C1pJ1",
-                  "name": "confirmText1",
-                  "fill": "#92400E",
-                  "content": "包装信息: 盒码 20241201001002",
-                  "fontFamily": "Arial",
-                  "fontSize": 16,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "text",
-                  "id": "m6a7A",
-                  "name": "confirmText2",
-                  "fill": "#92400E",
-                  "content": "将取消该包装内的所有关联关系",
-                  "fontFamily": "Arial",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "Kx6fw",
-              "name": "警告文字区",
-              "width": "fill_container",
-              "gap": 8,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "0Br3d",
-                  "name": "warningIcon1",
-                  "fill": "#EF4444",
-                  "content": "⚠",
-                  "fontFamily": "Arial",
-                  "fontSize": 20,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "text",
-                  "id": "ocGZH",
-                  "name": "warningText1Content",
-                  "fill": "#EF4444",
-                  "content": "此操作不可恢复，请仔细核对后确认！",
-                  "fontFamily": "Arial",
-                  "fontSize": 20,
-                  "fontWeight": "600"
                 }
               ]
             }
@@ -6044,277 +6084,10 @@
     },
     {
       "type": "frame",
-      "id": "ErR4z",
-      "x": 4977,
-      "y": 1342,
-      "name": "批量取消关联确认对话框",
-      "width": 600,
-      "height": 520,
-      "fill": "#FFFFFF",
-      "cornerRadius": 16,
-      "stroke": {
-        "align": "inside",
-        "thickness": 2,
-        "fill": "#2563EB"
-      },
-      "layout": "vertical",
-      "children": [
-        {
-          "type": "frame",
-          "id": "La06M",
-          "name": "对话框标题",
-          "width": "fill_container",
-          "height": 64,
-          "fill": "#2563EB",
-          "cornerRadius": [
-            16,
-            16,
-            0,
-            0
-          ],
-          "padding": [
-            0,
-            24
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "nqhcs",
-              "name": "batchDialogTitle",
-              "fill": "#FFFFFF",
-              "content": "批量取消关联确认",
-              "fontFamily": "Arial",
-              "fontSize": 24,
-              "fontWeight": "600"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "hLLsm",
-          "name": "对话框内容",
-          "width": "fill_container",
-          "height": "fill_container",
-          "layout": "vertical",
-          "gap": 20,
-          "padding": 24,
-          "children": [
-            {
-              "type": "frame",
-              "id": "lHz82",
-              "name": "密码标签行",
-              "gap": 2,
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "njJD3",
-                  "name": "pwdStar2",
-                  "fill": "#EF4444",
-                  "content": "*",
-                  "fontFamily": "Arial",
-                  "fontSize": 18,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "text",
-                  "id": "D9clk",
-                  "name": "pwdLabel2",
-                  "fill": "#1F2937",
-                  "content": "密码",
-                  "fontFamily": "Arial",
-                  "fontSize": 18,
-                  "fontWeight": "600"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "7ldO4",
-              "name": "密码输入框",
-              "width": "fill_container",
-              "height": 48,
-              "fill": "#F9FAFB",
-              "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 1,
-                "fill": "#D1D5DB"
-              },
-              "padding": [
-                0,
-                16
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "BofRH",
-                  "name": "passwordPlaceholder2",
-                  "fill": "#6B7280",
-                  "content": "请输入密码",
-                  "fontFamily": "Arial",
-                  "fontSize": 18,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "3wK25",
-              "name": "确认信息区",
-              "width": "fill_container",
-              "fill": "#FEF3C7",
-              "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 1,
-                "fill": "#F59E0B"
-              },
-              "layout": "vertical",
-              "gap": 12,
-              "padding": 16,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "ZcMQ6",
-                  "name": "confirmText2_1",
-                  "fill": "#92400E",
-                  "content": "将要取消关联的包装单元数量: 2个",
-                  "fontFamily": "Arial",
-                  "fontSize": 16,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "text",
-                  "id": "wNcgt",
-                  "name": "confirmText2_2",
-                  "fill": "#92400E",
-                  "content": "将要取消关联的码关系数量: 32个",
-                  "fontFamily": "Arial",
-                  "fontSize": 16,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "text",
-                  "id": "Yt7Xn",
-                  "name": "confirmText2_3",
-                  "fill": "#92400E",
-                  "content": "涉及: 盒码20241201001001（12个）、垛码20241201003001（20个）",
-                  "fontFamily": "Arial",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "6Yybo",
-              "name": "警告文字区",
-              "width": "fill_container",
-              "gap": 8,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "efsSF",
-                  "name": "warningIcon2",
-                  "fill": "#EF4444",
-                  "content": "⚠",
-                  "fontFamily": "Arial",
-                  "fontSize": 20,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "text",
-                  "id": "RfcCu",
-                  "name": "warningText2Content",
-                  "fill": "#EF4444",
-                  "content": "此操作不可恢复，请仔细核对后确认！",
-                  "fontFamily": "Arial",
-                  "fontSize": 20,
-                  "fontWeight": "600"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "IKzb2",
-          "name": "对话框底部",
-          "width": "fill_container",
-          "height": 80,
-          "stroke": {
-            "align": "inside",
-            "thickness": {
-              "top": 1
-            },
-            "fill": "#E5E7EB"
-          },
-          "gap": 12,
-          "padding": 16,
-          "justifyContent": "center",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "9Z0hC",
-              "name": "取消按钮",
-              "width": 80,
-              "height": 48,
-              "fill": "#6B7280",
-              "cornerRadius": 8,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "dHpm1",
-                  "name": "cancelDialogBtnText2",
-                  "fill": "#FFFFFF",
-                  "content": "取消",
-                  "fontFamily": "Arial",
-                  "fontSize": 18,
-                  "fontWeight": "600"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "sx4wi",
-              "name": "确认按钮",
-              "width": 120,
-              "height": 48,
-              "fill": "#EF4444",
-              "cornerRadius": 8,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "0kT2L",
-                  "name": "confirmDialogBtnText2",
-                  "fill": "#FFFFFF",
-                  "content": "确认",
-                  "fontFamily": "Arial",
-                  "fontSize": 18,
-                  "fontWeight": "600"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "V461v",
       "x": 4234,
       "y": 147,
-      "name": "取消关联-单个模式-两栏",
+      "name": "取消关联",
       "clip": true,
       "width": 1366,
       "height": 768,
@@ -6584,9 +6357,11 @@
           "children": [
             {
               "type": "frame",
-              "id": "gO6Ig",
-              "name": "模式切换行",
+              "id": "YcQQv",
+              "name": "titleRow",
               "width": 1320,
+              "height": 48,
+              "fill": "#00000000",
               "gap": 12,
               "padding": [
                 0,
@@ -6595,69 +6370,39 @@
               "alignItems": "center",
               "children": [
                 {
-                  "type": "frame",
-                  "id": "hesWs",
-                  "name": "单码取消",
-                  "width": 150,
-                  "height": 48,
-                  "fill": "#2563EB",
-                  "cornerRadius": 8,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "9ezf8",
-                      "name": "singleBtnText",
-                      "fill": "#FFFFFF",
-                      "content": "单码取消",
-                      "fontFamily": "Arial",
-                      "fontSize": 16,
-                      "fontWeight": "600"
-                    }
-                  ]
+                  "type": "text",
+                  "id": "MuQoQ",
+                  "fill": "#1F2937",
+                  "content": "取消关联",
+                  "fontFamily": "Microsoft YaHei",
+                  "fontSize": 24,
+                  "fontWeight": "600"
                 },
                 {
                   "type": "frame",
-                  "id": "nF63K",
-                  "name": "多码取消",
-                  "width": 150,
-                  "height": 48,
-                  "fill": "#F3F4F6",
-                  "cornerRadius": 8,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "2ABNl",
-                      "name": "batchBtnText",
-                      "fill": "#6B7280",
-                      "content": "多码取消",
-                      "fontFamily": "Arial",
-                      "fontSize": 16,
-                      "fontWeight": "600"
-                    }
-                  ]
+                  "id": "D4Pnm",
+                  "name": "spacer",
+                  "width": "fill_container",
+                  "height": 1
                 },
                 {
                   "type": "frame",
-                  "id": "helpQIcon",
-                  "name": "帮助图标",
+                  "id": "NVT2P",
+                  "name": "helpBtn",
                   "width": 32,
                   "height": 32,
-                  "fill": "#F3F4F6",
-                  "cornerRadius": 6,
+                  "fill": "#E5E7EB",
+                  "cornerRadius": 16,
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "text",
-                      "id": "helpQText",
-                      "fill": "#6B7280",
+                      "id": "Xi8kn",
+                      "fill": "#374151",
                       "content": "?",
-                      "fontFamily": "Arial",
-                      "fontSize": 14,
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
                       "fontWeight": "600"
                     }
                   ]
@@ -6686,43 +6431,31 @@
                     "fill": "#D9E1EC"
                   },
                   "layout": "vertical",
-                  "gap": 16,
+                  "gap": 12,
                   "padding": 24,
                   "children": [
                     {
-                      "type": "text",
-                      "id": "2OOKM",
-                      "name": "leftTitle",
-                      "fill": "#1F2937",
-                      "content": "单码取消",
-                      "fontFamily": "Arial",
-                      "fontSize": 24,
-                      "fontWeight": "600"
-                    },
-                    {
                       "type": "frame",
-                      "id": "23qZk",
-                      "name": "第一个码标签",
+                      "id": "SuukU",
+                      "name": "labelRow",
                       "gap": 2,
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
-                          "id": "COW6s",
-                          "name": "code1Star2",
+                          "id": "9MTAq",
                           "fill": "#EF4444",
                           "content": "*",
-                          "fontFamily": "Arial",
+                          "fontFamily": "Microsoft YaHei",
                           "fontSize": 18,
                           "fontWeight": "600"
                         },
                         {
                           "type": "text",
-                          "id": "26Dez",
-                          "name": "code1Label2",
+                          "id": "hG6dD",
                           "fill": "#1F2937",
-                          "content": "码（瓶/盒）",
-                          "fontFamily": "Arial",
+                          "content": "码（盒/箱/垛，支持扫瓶码）",
+                          "fontFamily": "Microsoft YaHei",
                           "fontSize": 18,
                           "fontWeight": "600"
                         }
@@ -6730,41 +6463,187 @@
                     },
                     {
                       "type": "frame",
-                      "id": "lLuiq",
-                      "name": "第一个码输入",
+                      "id": "6TPb1",
+                      "name": "inputRow",
                       "width": "fill_container",
-                      "height": 48,
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "RD2Qz",
+                          "name": "inputBox",
+                          "width": "fill_container",
+                          "height": 40,
+                          "fill": "#F9FAFB",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#D1D5DB"
+                          },
+                          "padding": [
+                            0,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "3XICk",
+                              "fill": "#6B7280",
+                              "content": "请输入或扫描盒码、箱码、垛码（或瓶码）",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ySHXs",
+                          "name": "addBtn",
+                          "width": 100,
+                          "height": 40,
+                          "fill": "#2563EB",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ornEc",
+                              "fill": "#FFFFFF",
+                              "content": "加入列表",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 18,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "pkyc7",
+                      "fill": "#374151",
+                      "content": "待取消列表",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "9wkIK",
+                      "name": "listBox",
+                      "clip": true,
+                      "width": "fill_container",
+                      "height": 120,
                       "fill": "#F9FAFB",
                       "cornerRadius": 8,
                       "stroke": {
                         "align": "inside",
                         "thickness": 1,
-                        "fill": "#D1D5DB"
+                        "fill": "#E5E7EB"
                       },
-                      "padding": [
-                        0,
-                        16
-                      ],
-                      "alignItems": "center",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": 12,
                       "children": [
                         {
-                          "type": "text",
-                          "id": "8p47f",
-                          "name": "code1Placeholder",
-                          "fill": "#6B7280",
-                          "content": "请输入或扫描瓶码/盒码",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "normal"
+                          "type": "frame",
+                          "id": "8qGWg",
+                          "name": "item1",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "uLpln",
+                              "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "1. 盒码 20241201001001",
+                              "fontFamily": "Arial",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "H7XB2",
+                              "name": "rmBtn1",
+                              "width": 56,
+                              "height": 28,
+                              "fill": "#E5E7EB",
+                              "cornerRadius": 6,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "mgd6e",
+                                  "fill": "#374151",
+                                  "content": "移除",
+                                  "fontFamily": "Arial",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ie01g",
+                          "name": "item2",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "6d5m3",
+                              "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "2. 箱码 20241201002001",
+                              "fontFamily": "Arial",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "QN8hs",
+                              "name": "rmBtn2",
+                              "width": 56,
+                              "height": 28,
+                              "fill": "#E5E7EB",
+                              "cornerRadius": 6,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "5YmtQ",
+                                  "fill": "#374151",
+                                  "content": "移除",
+                                  "fontFamily": "Arial",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
                         }
                       ]
                     },
                     {
                       "type": "frame",
-                      "id": "QNFxd",
-                      "name": "识别按钮",
-                      "width": 100,
-                      "height": 48,
+                      "id": "8yBmf",
+                      "name": "identBtn",
+                      "width": 80,
+                      "height": 40,
                       "fill": "#2563EB",
                       "cornerRadius": 8,
                       "justifyContent": "center",
@@ -6772,8 +6651,7 @@
                       "children": [
                         {
                           "type": "text",
-                          "id": "jByuS",
-                          "name": "identifyBtnLeftText",
+                          "id": "15dcA",
                           "fill": "#FFFFFF",
                           "content": "识别",
                           "fontFamily": "Arial",
@@ -6783,63 +6661,80 @@
                       ]
                     },
                     {
+                      "type": "text",
+                      "id": "PKkss",
+                      "fill": "#374151",
+                      "content": "取消范围",
+                      "fontFamily": "Arial",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
                       "type": "frame",
-                      "id": "COod4",
-                      "name": "警告区",
-                      "width": "fill_container",
-                      "fill": "#FEF2F2",
-                      "cornerRadius": 8,
+                      "id": "iaFBK",
+                      "name": "rg",
+                      "layout": "vertical",
                       "gap": 8,
-                      "padding": 12,
-                      "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
-                          "id": "8OWE2",
-                          "name": "warningIconLeft",
-                          "fill": "#EF4444",
-                          "content": "⚠",
+                          "id": "yvcP2",
+                          "fill": "#2563EB",
+                          "content": "● 只解一层",
                           "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
+                          "fontSize": 16,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
-                          "id": "Tf9yK",
-                          "name": "warningTextLeft",
-                          "fill": "#EF4444",
-                          "content": "操作不可恢复，请确认后执行",
+                          "id": "nuomR",
+                          "fill": "#6B7280",
+                          "content": "○ 全部解除",
                           "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
+                          "fontSize": 16,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
                     {
                       "type": "frame",
-                      "id": "x6OmF",
-                      "name": "按钮行",
+                      "id": "loz5W",
                       "width": "fill_container",
-                      "gap": 15,
+                      "height": 1,
+                      "fill": "#E5E7EB"
+                    },
+                    {
+                      "type": "text",
+                      "id": "CaEPd",
+                      "fill": "#EF4444",
+                      "content": "⚠ 操作不可恢复，请确认后执行",
+                      "fontFamily": "Arial",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "60bbm",
+                      "name": "btnRow",
+                      "gap": 12,
                       "justifyContent": "center",
                       "children": [
                         {
                           "type": "frame",
-                          "id": "Q1pRI",
-                          "name": "清空",
-                          "width": 80,
-                          "height": 48,
-                          "fill": "#6B7280",
+                          "id": "uiwa1",
+                          "name": "clrBtn",
+                          "width": 100,
+                          "height": 40,
+                          "fill": "#9E9E9E",
                           "cornerRadius": 8,
                           "justifyContent": "center",
                           "alignItems": "center",
                           "children": [
                             {
                               "type": "text",
-                              "id": "oibuO",
-                              "name": "clearBtnLeftText",
+                              "id": "X1dCO",
                               "fill": "#FFFFFF",
-                              "content": "清空",
+                              "content": "清空列表",
                               "fontFamily": "Arial",
                               "fontSize": 18,
                               "fontWeight": "600"
@@ -6848,23 +6743,22 @@
                         },
                         {
                           "type": "frame",
-                          "id": "RZeC0",
-                          "name": "确认取消关联",
+                          "id": "MmfwX",
+                          "name": "cfmBtn",
                           "width": 150,
-                          "height": 48,
-                          "fill": "#9CA3AF",
+                          "height": 40,
+                          "fill": "#EF4444",
                           "cornerRadius": 8,
                           "justifyContent": "center",
                           "alignItems": "center",
                           "children": [
                             {
                               "type": "text",
-                              "id": "1dkaE",
-                              "name": "confirmBtnLeftText",
+                              "id": "vahNq",
                               "fill": "#FFFFFF",
                               "content": "确认取消关联",
                               "fontFamily": "Arial",
-                              "fontSize": 18,
+                              "fontSize": 16,
                               "fontWeight": "600"
                             }
                           ]
@@ -6888,6 +6782,7 @@
                       "type": "frame",
                       "id": "OL6SK",
                       "name": "结果显示区",
+                      "clip": true,
                       "width": "fill_container",
                       "height": "fill_container",
                       "fill": "#FFFFFF",
@@ -6898,7 +6793,7 @@
                         "fill": "#D9E1EC"
                       },
                       "layout": "vertical",
-                      "gap": 16,
+                      "gap": 8,
                       "padding": 24,
                       "children": [
                         {
@@ -6913,53 +6808,149 @@
                         },
                         {
                           "type": "text",
-                          "id": "7f14b",
-                          "name": "pkgInfo",
-                          "fill": "#1F2937",
-                          "content": "盒码 20241201001002，不可取消关联",
+                          "id": "AC350",
+                          "fill": "#9CA3AF",
+                          "content": "请在左侧输入码值并点击识别",
                           "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
-                          "id": "eiHWq",
-                          "name": "警告框",
+                          "id": "plvGU",
+                          "name": "res1",
                           "width": "fill_container",
-                          "fill": "transparent",
-                          "gap": 8,
-                          "alignItems": "center",
+                          "layout": "vertical",
+                          "gap": 4,
                           "children": [
                             {
                               "type": "text",
-                              "id": "0mcKk",
-                              "name": "warningIconRight",
-                              "fill": "#DC2626",
-                              "content": "⚠",
+                              "id": "M2nVf",
+                              "fill": "#10B981",
+                              "content": "✓ 盒码 20241201001001，可解除",
                               "fontFamily": "Arial",
-                              "fontSize": 16,
+                              "fontSize": 18,
                               "fontWeight": "600"
                             },
                             {
                               "type": "text",
-                              "id": "FHLrl",
-                              "name": "warningTextRight",
-                              "fill": "#DC2626",
-                              "content": "（盒已关联至箱/垛，请先解除上级）",
+                              "id": "M1fCf",
+                              "fill": "#6B7280",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "解除6条瓶-盒关联，可重新关联（与全部解除等价）",
                               "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "600"
+                              "fontSize": 14,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
                         {
+                          "type": "frame",
+                          "id": "7wdco",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "#E5E7EB"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Za3QF",
+                          "name": "res2",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 4,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "zwILp",
+                              "name": "titleFrame",
+                              "gap": 6,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "PsHWp",
+                                  "width": 20,
+                                  "height": 20,
+                                  "iconFontName": "circle-x",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#EF4444"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "BoH7R",
+                                  "fill": "#EF4444",
+                                  "content": "箱码 20241201002001，不可解除",
+                                  "fontFamily": "Arial",
+                                  "fontSize": 18,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "YfCg7",
+                              "fill": "#6B7280",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "已关联至垛码 20241201003001，请先将垛码加入列表操作",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "7gYMJ",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "#E5E7EB"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "tqwAn",
+                          "name": "res3",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 4,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ofhD3",
+                              "fill": "#10B981",
+                              "content": "✓ 垛码 20241201003001，可解除",
+                              "fontFamily": "Arial",
+                              "fontSize": 18,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "x1QKa",
+                              "fill": "#6B7280",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "解除70条箱-垛关联；盒-箱、瓶-盒结构保留，各箱可重新上产线归垛（与全部解除等价）",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "I6hfh",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "#E5E7EB"
+                        },
+                        {
                           "type": "text",
-                          "id": "qhKLe",
-                          "name": "chainText",
+                          "id": "4bPaJ",
                           "fill": "#6B7280",
-                          "content": "链路: 垛码xxx→箱码xxx→盒码20241201001002",
+                          "content": "共 3 项，其中 2 项可解除，1 项不可解除",
                           "fontFamily": "Arial",
-                          "fontSize": 16,
+                          "fontSize": 14,
                           "fontWeight": "normal"
                         }
                       ]
@@ -6969,7 +6960,7 @@
                       "id": "DDEZa",
                       "name": "取消结果区",
                       "width": "fill_container",
-                      "height": "fill_container",
+                      "height": 220,
                       "fill": "transparent",
                       "layout": "vertical",
                       "gap": 16,
@@ -6996,9 +6987,9 @@
                               "id": "z4vVT",
                               "name": "resultTitle",
                               "fill": "#1F2937",
-                              "content": "取消结果",
+                              "content": "取消记录",
                               "fontFamily": "Arial",
-                              "fontSize": 24,
+                              "fontSize": 20,
                               "fontWeight": "600"
                             },
                             {
@@ -7016,8 +7007,17 @@
                               "id": "4Rr2U",
                               "name": "simpleResult1",
                               "fill": "#10B981",
-                              "content": "10:25:33 ✓ 盒码20241201001001 解除12个",
-                              "fontFamily": "Inter",
+                              "content": "10:25:33 ✓ 盒码 20241201001001 解除6条关联",
+                              "fontFamily": "Arial",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "1ynPC",
+                              "fill": "#10B981",
+                              "content": "10:25:33 ✓ 垛码 20241201003001 解除70条关联",
+                              "fontFamily": "Arial",
                               "fontSize": 16,
                               "fontWeight": "normal"
                             }
@@ -7055,914 +7055,6 @@
               "type": "text",
               "id": "Atiav",
               "name": "time3",
-              "fill": "#374151",
-              "content": "2024-12-01 10:30:00",
-              "fontFamily": "Microsoft YaHei",
-              "fontSize": 16,
-              "fontWeight": "normal"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
-      "id": "WYmaF",
-      "x": 5684,
-      "y": 185,
-      "name": "取消关联-批量模式-两栏",
-      "clip": true,
-      "width": 1366,
-      "height": 768,
-      "fill": "#E9EEF5",
-      "layout": "vertical",
-      "children": [
-        {
-          "type": "frame",
-          "id": "ubOK9",
-          "name": "batchMenu2",
-          "width": "fill_container",
-          "height": 32,
-          "fill": "#ffffff",
-          "stroke": {
-            "thickness": {
-              "bottom": 1
-            },
-            "fill": "#e0e0e0"
-          },
-          "gap": 24,
-          "padding": [
-            0,
-            16
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "joQ2q",
-              "fill": "#333333",
-              "content": "文件(F)",
-              "fontFamily": "Microsoft YaHei",
-              "fontSize": 16,
-              "fontWeight": "normal"
-            },
-            {
-              "type": "text",
-              "id": "5ZDmn",
-              "fill": "#333333",
-              "content": "配置",
-              "fontFamily": "Microsoft YaHei",
-              "fontSize": 16,
-              "fontWeight": "normal"
-            },
-            {
-              "type": "text",
-              "id": "XkTmz",
-              "fill": "#333333",
-              "content": "数据",
-              "fontFamily": "Microsoft YaHei",
-              "fontSize": 16,
-              "fontWeight": "normal"
-            },
-            {
-              "type": "text",
-              "id": "rCB7X",
-              "fill": "#333333",
-              "content": "帮助(H)",
-              "fontFamily": "Microsoft YaHei",
-              "fontSize": 16,
-              "fontWeight": "normal"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "RjwTz",
-          "name": "batchTab2",
-          "width": "fill_container",
-          "height": 44,
-          "fill": "#E6ECF5",
-          "stroke": {
-            "thickness": {
-              "bottom": 1
-            },
-            "fill": "#d0d0d0"
-          },
-          "gap": 8,
-          "padding": [
-            4,
-            8
-          ],
-          "children": [
-            {
-              "type": "frame",
-              "id": "NIagP",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "uR9Pb",
-                  "fill": "#666666",
-                  "content": "数据采集",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "liIU7",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "t21Eg",
-                  "fill": "#666666",
-                  "content": "手工采集",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "y3EAQ",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "tuVMj",
-                  "fill": "#666666",
-                  "content": "数据查询",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "I0Rpt",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "v43gh",
-                  "fill": "#666666",
-                  "content": "数据替换",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "WDy31",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "jHPp8",
-                  "fill": "#666666",
-                  "content": "生产统计",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "9BfuO",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "WGRac",
-                  "fill": "#666666",
-                  "content": "码包管理",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "L9kq3",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#2563EB",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "hAp5c",
-                  "fill": "#ffffff",
-                  "content": "取消关联",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "600"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "g5yeQ",
-              "width": 100,
-              "height": "fill_container",
-              "fill": "#D7DEE9",
-              "cornerRadius": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "DLihp",
-                  "fill": "#666666",
-                  "content": "数据上传",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "normal"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "2JR2B",
-          "name": "主内容区",
-          "width": "fill_container",
-          "height": "fill_container",
-          "layout": "vertical",
-          "gap": 16,
-          "padding": [
-            16,
-            0
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "gWVM2",
-              "name": "模式切换行",
-              "width": 1320,
-              "gap": 12,
-              "padding": [
-                0,
-                16
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "PZPek",
-                  "name": "单码取消",
-                  "width": 150,
-                  "height": 48,
-                  "fill": "#F3F4F6",
-                  "cornerRadius": 8,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "dAKww",
-                      "name": "batchSingleBtnText2",
-                      "fill": "#6B7280",
-                      "content": "单码取消",
-                      "fontFamily": "Arial",
-                      "fontSize": 16,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "rCBjp",
-                  "name": "多码取消",
-                  "width": 150,
-                  "height": 48,
-                  "fill": "#2563EB",
-                  "cornerRadius": 8,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "lQyWG",
-                      "name": "batchBatchBtnText2",
-                      "fill": "#FFFFFF",
-                      "content": "多码取消",
-                      "fontFamily": "Arial",
-                      "fontSize": 16,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "helpQIcon2",
-                  "name": "帮助图标",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "#F3F4F6",
-                  "cornerRadius": 6,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "helpQText2",
-                      "fill": "#6B7280",
-                      "content": "?",
-                      "fontFamily": "Arial",
-                      "fontSize": 14,
-                      "fontWeight": "600"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "aJaJn",
-              "name": "左右两栏",
-              "width": 1320,
-              "height": "fill_container",
-              "gap": 16,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "KJWUm",
-                  "name": "左侧操作区",
-                  "width": 600,
-                  "height": "fill_container",
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 12,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#D9E1EC"
-                  },
-                  "layout": "vertical",
-                  "gap": 16,
-                  "padding": 24,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "Y0tDO",
-                      "name": "batchLeftTitle",
-                      "fill": "#1F2937",
-                      "content": "多码取消",
-                      "fontFamily": "Arial",
-                      "fontSize": 24,
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "frame",
-                      "id": "3LyQG",
-                      "name": "大码标签",
-                      "gap": 2,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "WirE7",
-                          "name": "bigCodeStar2",
-                          "fill": "#EF4444",
-                          "content": "*",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "6NQJx",
-                          "name": "bigCodeLabel2",
-                          "fill": "#1F2937",
-                          "content": "盒/箱/垛码",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "jwwbP",
-                      "name": "输入行",
-                      "width": "fill_container",
-                      "gap": 12,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "ZIord",
-                          "name": "大码输入框",
-                          "width": "fill_container",
-                          "height": 48,
-                          "fill": "#F9FAFB",
-                          "cornerRadius": 8,
-                          "stroke": {
-                            "align": "inside",
-                            "thickness": 1,
-                            "fill": "#D1D5DB"
-                          },
-                          "padding": [
-                            0,
-                            16
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "vNrb1",
-                              "name": "bigCodePlaceholder2",
-                              "fill": "#6B7280",
-                              "content": "盒码、箱码或垛码（垛码为虚拟，可从数据查询等界面复制）",
-                              "fontFamily": "Arial",
-                              "fontSize": 18,
-                              "fontWeight": "normal"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "ouzIr",
-                          "name": "添加按钮",
-                          "width": 80,
-                          "height": 48,
-                          "fill": "#2563EB",
-                          "cornerRadius": 8,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "i5P4s",
-                              "name": "addBtnText2",
-                              "fill": "#FFFFFF",
-                              "content": "添加",
-                              "fontFamily": "Arial",
-                              "fontSize": 18,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "text",
-                      "id": "xh1sV",
-                      "name": "listTitleBatch",
-                      "fill": "#374151",
-                      "content": "已添加的码列表",
-                      "fontFamily": "Arial",
-                      "fontSize": 18,
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "frame",
-                      "id": "St3wb",
-                      "name": "列表框",
-                      "width": "fill_container",
-                      "height": 200,
-                      "fill": "#FFFFFF",
-                      "cornerRadius": 8,
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": 1,
-                        "fill": "#E5E7EB"
-                      },
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": 12,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "AsVvD",
-                          "name": "列表项1",
-                          "width": "fill_container",
-                          "gap": 12,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "Em9E6",
-                              "name": "listItemBatch1Text",
-                              "fill": "#374151",
-                              "content": "1. 盒码 20241201001001",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "normal"
-                            },
-                            {
-                              "type": "frame",
-                              "id": "EzZk8",
-                              "name": "删除",
-                              "width": 60,
-                              "height": 32,
-                              "fill": "#EF4444",
-                              "cornerRadius": 6,
-                              "justifyContent": "center",
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "UlMWR",
-                                  "name": "deleteBtnBatch1Text",
-                                  "fill": "#FFFFFF",
-                                  "content": "删除",
-                                  "fontFamily": "Arial",
-                                  "fontSize": 16,
-                                  "fontWeight": "600"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "i2d3j",
-                          "name": "列表项2",
-                          "width": "fill_container",
-                          "gap": 12,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "abxXq",
-                              "name": "listItemBatch2Text",
-                              "fill": "#374151",
-                              "content": "2. 箱码 20241201002001",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "normal"
-                            },
-                            {
-                              "type": "frame",
-                              "id": "Um3j9",
-                              "name": "删除",
-                              "width": 60,
-                              "height": 32,
-                              "fill": "#EF4444",
-                              "cornerRadius": 6,
-                              "justifyContent": "center",
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "wRIHR",
-                                  "name": "deleteBtnBatch2Text",
-                                  "fill": "#FFFFFF",
-                                  "content": "删除",
-                                  "fontFamily": "Arial",
-                                  "fontSize": 16,
-                                  "fontWeight": "600"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "QbIVQ",
-                      "name": "识别按钮",
-                      "width": 100,
-                      "height": 48,
-                      "fill": "#2563EB",
-                      "cornerRadius": 8,
-                      "justifyContent": "center",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "tb2qq",
-                          "name": "identifyBtnBatchText",
-                          "fill": "#FFFFFF",
-                          "content": "识别",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "fnQKz",
-                      "name": "按钮行",
-                      "width": "fill_container",
-                      "gap": 15,
-                      "justifyContent": "center",
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "jvq2U",
-                          "name": "清空",
-                          "width": 80,
-                          "height": 48,
-                          "fill": "#6B7280",
-                          "cornerRadius": 8,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "Idg0p",
-                              "name": "clearBtnBatchText",
-                              "fill": "#FFFFFF",
-                              "content": "清空",
-                              "fontFamily": "Arial",
-                              "fontSize": 18,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "ATDXm",
-                          "name": "确认批量取消关联",
-                          "width": 180,
-                          "height": 48,
-                          "fill": "#EF4444",
-                          "cornerRadius": 8,
-                          "justifyContent": "center",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "gYkix",
-                              "name": "confirmBtnBatchText",
-                              "fill": "#FFFFFF",
-                              "content": "确认取消关联",
-                              "fontFamily": "Arial",
-                              "fontSize": 18,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "eOE0W",
-                  "name": "右侧结果区",
-                  "width": 700,
-                  "height": "fill_container",
-                  "fill": "transparent",
-                  "cornerRadius": 12,
-                  "layout": "vertical",
-                  "gap": 16,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "TESgY",
-                      "name": "结果显示区",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "fill": "#FFFFFF",
-                      "cornerRadius": 12,
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": 1,
-                        "fill": "#D9E1EC"
-                      },
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": 24,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "nhkoX",
-                          "name": "batchRightTitle",
-                          "fill": "#1F2937",
-                          "content": "识别结果",
-                          "fontFamily": "Arial",
-                          "fontSize": 24,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "TmwCg",
-                          "name": "unit1Title",
-                          "fill": "#1F2937",
-                          "content": "盒码 20241201001001，可取消关联，取消12个",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "6sCKi",
-                          "name": "分隔线",
-                          "width": "fill_container",
-                          "height": 1,
-                          "fill": "#D1D5DB"
-                        },
-                        {
-                          "type": "text",
-                          "id": "k0gJH",
-                          "name": "unit2Title",
-                          "fill": "#1F2937",
-                          "content": "箱码 20241201002001，不可取消关联",
-                          "fontFamily": "Arial",
-                          "fontSize": 18,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "0F4tn",
-                          "name": "警告框",
-                          "width": "fill_container",
-                          "fill": "transparent",
-                          "gap": 6,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "ysVFU",
-                              "name": "unit2WarningIcon",
-                              "fill": "#DC2626",
-                              "content": "⚠",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            },
-                            {
-                              "type": "text",
-                              "id": "V9iL4",
-                              "name": "unit2WarningText",
-                              "fill": "#DC2626",
-                              "content": "（箱已关联至垛，请先解除上级）",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "text",
-                          "id": "K8kq5",
-                          "name": "unit2Chain",
-                          "fill": "#6B7280",
-                          "content": "链路: 垛码xxx→箱码20241201002001",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "text",
-                          "id": "6QSxk",
-                          "name": "totalDetail",
-                          "fill": "#DC2626",
-                          "content": "总影响范围: 2个可取消，涉及1686个码关系",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "UhMPx",
-                      "name": "取消结果区",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "fill": "transparent",
-                      "layout": "vertical",
-                      "gap": 16,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "kIsW1",
-                          "name": "结果显示区",
-                          "width": "fill_container",
-                          "height": "fill_container",
-                          "fill": "#FFFFFF",
-                          "cornerRadius": 12,
-                          "stroke": {
-                            "align": "inside",
-                            "thickness": 1,
-                            "fill": "#D9E1EC"
-                          },
-                          "layout": "vertical",
-                          "gap": 12,
-                          "padding": 24,
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "GKicg",
-                              "name": "resultTitle2",
-                              "fill": "#1F2937",
-                              "content": "取消结果",
-                              "fontFamily": "Arial",
-                              "fontSize": 24,
-                              "fontWeight": "600"
-                            },
-                            {
-                              "type": "text",
-                              "id": "ANP6M",
-                              "name": "emptyHint2",
-                              "fill": "#6B7280",
-                              "content": "暂无取消关联记录",
-                              "fontFamily": "Arial",
-                              "fontSize": 16,
-                              "fontWeight": "normal"
-                            },
-                            {
-                              "type": "text",
-                              "id": "SFFpE",
-                              "name": "simpleResult2",
-                              "fill": "#10B981",
-                              "content": "10:25:33 ✓ 盒码20241201001001 解除12个",
-                              "fontFamily": "Inter",
-                              "fontSize": 16,
-                              "fontWeight": "normal"
-                            },
-                            {
-                              "type": "text",
-                              "id": "H6F1G",
-                              "name": "simpleResult3",
-                              "fill": "#10B981",
-                              "content": "10:25:33 ✓ 垛码20241201003001 解除20个",
-                              "fontFamily": "Inter",
-                              "fontSize": 16,
-                              "fontWeight": "normal"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "viOJY",
-          "name": "状态栏",
-          "width": "fill_container",
-          "height": 32,
-          "fill": "#F5F7FA",
-          "stroke": {
-            "thickness": {
-              "top": 1
-            },
-            "fill": "#D0D0D0"
-          },
-          "padding": [
-            0,
-            16
-          ],
-          "justifyContent": "end",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "AePhc",
-              "name": "time4",
               "fill": "#374151",
               "content": "2024-12-01 10:30:00",
               "fontFamily": "Microsoft YaHei",
@@ -8914,8 +8006,8 @@
     {
       "type": "frame",
       "id": "pGvIf",
-      "x": 7186,
-      "y": 207,
+      "x": 5947,
+      "y": 215,
       "name": "生产统计主页面",
       "clip": true,
       "width": 1366,
@@ -10376,8 +9468,8 @@
     {
       "type": "frame",
       "id": "ijnzU",
-      "x": 7186,
-      "y": 1048,
+      "x": 5947,
+      "y": 1056,
       "name": "垛码列表弹窗",
       "width": 800,
       "height": 650,
@@ -11069,8 +10161,8 @@
     {
       "type": "frame",
       "id": "tTqw2",
-      "x": 8808,
-      "y": 213,
+      "x": 7569,
+      "y": 221,
       "name": "数据上传页面",
       "width": 1366,
       "height": 768,
@@ -11907,8 +10999,8 @@
     {
       "type": "frame",
       "id": "h0eo2",
-      "x": 8808,
-      "y": 1149,
+      "x": 7569,
+      "y": 1157,
       "name": "数据查询-单一查询",
       "clip": true,
       "width": 1366,
