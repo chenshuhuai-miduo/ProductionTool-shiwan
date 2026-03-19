@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 1 号机 T_Code 表定时同步到 2 号机 CodeRelationUpload。
@@ -34,13 +34,21 @@ public class M1TCodeSyncService {
     private static final Logger log = LoggerFactory.getLogger(M1TCodeSyncService.class);
     private static final String JTDS_DRIVER = "net.sourceforge.jtds.jdbc.Driver";
     private static final String JTDS_URL_TEMPLATE = "jdbc:jtds:sqlserver://%s:%s/%s;loginTimeout=3;socketTimeout=3000";
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     /** 每轮最多同步记录数，避免单次任务占用连接过久。 */
     private static final int MAX_ROWS_PER_SYNC = 300;
+    /** 前端可拉取的同步事件队列最大容量 */
+    private static final int MAX_SYNC_EVENTS = 200;
 
     /** 运行时开关：只有 true 时才执行同步逻辑 */
     private volatile boolean syncActive = false;
     /** 防重入：上一轮未完成时跳过下一轮触发。 */
     private final AtomicBoolean syncRunning = new AtomicBoolean(false);
+
+    /** 同步事件序号，单调递增 */
+    private final AtomicLong syncEventSeq = new AtomicLong(0);
+    /** 同步结果事件队列，供前端轮询 */
+    private final Deque<Map<String, Object>> syncEventQueue = new ArrayDeque<>(MAX_SYNC_EVENTS);
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -158,6 +166,7 @@ public class M1TCodeSyncService {
             }
         } catch (Exception e) {
             log.warn("1号机 T_Code 同步 [查询] 连接或查询失败: {}@{}:{}/{} — {}", username, host, port, database, e.getMessage());
+            pushSyncEvent("SYNC_ERROR", "1号机同步失败：连接或查询失败 — " + e.getMessage());
             return;
         }
 
@@ -251,6 +260,13 @@ public class M1TCodeSyncService {
         M1SyncCursorStore.saveLastSyncedSerialNo(maxSerialNo);
         log.info("1号机 T_Code 同步 [结果] 本批读取 {} 条，新增写入 {} 条，重复跳过 {} 条，游标更新至 SerialNo={}",
                 rows.size(), insertedCount, skippedCount, maxSerialNo);
+
+        // 推送同步结果事件供前端轮询
+        if (insertedCount > 0 || skippedCount > 0) {
+            String msg = "本次成功同步了 " + insertedCount + " 条瓶盒数据"
+                    + (skippedCount > 0 ? "，重复跳过 " + skippedCount + " 条" : "");
+            pushSyncEvent("SYNC_RESULT", msg);
+        }
 
         // 热表校验：瓶码(PackageType=1)和盒码(PackageType=2)均须存在于热表，否则置 Status=4（待剔除）
         checkHotTableAndMarkStatus4(rows);
@@ -353,6 +369,30 @@ public class M1TCodeSyncService {
             this.orderNo = orderNo;
             this.productNo = productNo;
         }
+    }
+
+    /** 推送一条同步事件到队列（线程安全） */
+    private synchronized void pushSyncEvent(String type, String message) {
+        long seq = syncEventSeq.incrementAndGet();
+        Map<String, Object> evt = new LinkedHashMap<>();
+        evt.put("seq", seq);
+        evt.put("type", type);
+        evt.put("message", message);
+        evt.put("time", LocalDateTime.now().format(TIME_FMT));
+        if (syncEventQueue.size() >= MAX_SYNC_EVENTS) syncEventQueue.pollFirst();
+        syncEventQueue.addLast(evt);
+    }
+
+    /** 返回 seq > lastSeq 的同步事件列表，供前端轮询（线程安全） */
+    public synchronized List<Map<String, Object>> pollSyncEvents(long lastSeq) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> evt : syncEventQueue) {
+            Object seqObj = evt.get("seq");
+            if (seqObj instanceof Number && ((Number) seqObj).longValue() > lastSeq) {
+                result.add(evt);
+            }
+        }
+        return result;
     }
 
     private static class TCodeRow {

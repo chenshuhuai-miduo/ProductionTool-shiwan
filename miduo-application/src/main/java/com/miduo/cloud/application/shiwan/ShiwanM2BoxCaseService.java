@@ -561,6 +561,53 @@ public class ShiwanM2BoxCaseService {
         }
     }
 
+    /**
+     * 手工采集瓶盒关联写入：将一组瓶码与一个盒码关联写入 CodeRelationUpload，
+     * OrderNo 和 ProductNO 均为空字符串。
+     */
+    public ApiResult<Map<String, Object>> manualAssociate(String boxCode, List<String> bottleCodes) {
+        if (boxCode == null || boxCode.trim().isEmpty()) {
+            return ApiResult.error(400, "盒码不能为空");
+        }
+        boxCode = boxCode.trim();
+        if (bottleCodes == null || bottleCodes.isEmpty()) {
+            return ApiResult.error(400, "瓶码列表不能为空");
+        }
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            String insertSql = "INSERT INTO CodeRelationUpload (" +
+                    "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
+                    "DxCode, SalesCode, VirtualSerialNumber, IsVirtual, ProductNO, OrderNo, Status, TagNo, Qty, Type, " +
+                    "WarehouseNo, BatchNo, AddTime, ErrCount, Msg, IsUpload, IsDel, TeamName) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            final String finalBoxCode = boxCode;
+            for (String bottleCode : bottleCodes) {
+                String bc = bottleCode != null ? bottleCode.trim() : "";
+                if (bc.isEmpty()) continue;
+                jdbcTemplate.update(insertSql,
+                        EMPTY, EMPTY, finalBoxCode, bc,
+                        EMPTY, EMPTY, EMPTY, 0, EMPTY, EMPTY, 1, TAG_M2_BOX, 0, 1,
+                        EMPTY, EMPTY, now, 0, EMPTY, 0, 0, EMPTY);
+            }
+            // 落冷：盒码和瓶码从热表迁移到冷表
+            dropCodeToCold(2, finalBoxCode);
+            for (String bottleCode : bottleCodes) {
+                String bc = bottleCode != null ? bottleCode.trim() : "";
+                if (!bc.isEmpty()) {
+                    dropCodeToCold(1, bc);
+                }
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("success", true);
+            data.put("boxCode", finalBoxCode);
+            data.put("bottleCount", bottleCodes.size());
+            return ApiResult.success("瓶盒关联成功", data);
+        } catch (Exception e) {
+            log.error("[手工采集关联] 异常 boxCode={}", boxCode, e);
+            return ApiResult.error("关联异常：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
+        }
+    }
+
     /** 已生产垛数：该订单下不同 VirtualSerialNumber 的数量（非空且 IsDel=0）。
      * 注：VirtualSerialNumber NOT NULL，去掉 IS NOT NULL 条件，可命中 idx_order_del_virtual 索引。
      */
@@ -685,6 +732,341 @@ public class ShiwanM2BoxCaseService {
         return ApiResult.success("取消关联成功", true);
     }
 
+    // ================================================================
+    //  P02-06 取消关联：识别 + 执行
+    // ================================================================
+
+    /**
+     * P02-06 取消关联 - 识别码的可取消状态。
+     * 返回字段：code / codeType(PALLET|CASE|BOX|BOTTLE|UNKNOWN) / cancelable /
+     *          parentCode / affectedOneLayer / affectedAll / palletCode / isUploaded / boxCode / message
+     */
+    public Map<String, Object> checkCancelable(String code) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        if (code == null || code.trim().isEmpty()) {
+            r.put("codeType", "UNKNOWN");
+            r.put("cancelable", false);
+            r.put("message", "码值不能为空");
+            return r;
+        }
+        String c = code.trim();
+        r.put("code", c);
+
+        // 1. 垛码（VirtualSerialNumber）
+        if (countActiveBy("VirtualSerialNumber", c) > 0) {
+            r.put("codeType", "PALLET");
+            r.put("cancelable", true);
+            r.put("parentCode", null);
+            Long caseCnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
+                    "WHERE VirtualSerialNumber=? AND IsDel=0 AND BigSerialNumber!=''", Long.class, c);
+            int affected = caseCnt != null ? caseCnt.intValue() : 0;
+            r.put("affectedOneLayer", affected);
+            r.put("affectedAll", affected);
+            r.put("palletCode", c);
+            r.put("isUploaded", isPalletUploaded(c));
+            return r;
+        }
+
+        // 2. 箱码（BigSerialNumber）
+        if (countActiveBy("BigSerialNumber", c) > 0) {
+            r.put("codeType", "CASE");
+            String parentPallet = queryFirst(
+                    "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
+                    "WHERE BigSerialNumber=? AND IsDel=0 AND VirtualSerialNumber!='' LIMIT 1", c);
+            r.put("cancelable", parentPallet == null);
+            r.put("parentCode", parentPallet);
+            Long boxCnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
+                    "WHERE BigSerialNumber=? AND IsDel=0", Long.class, c);
+            Long rowCnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM CodeRelationUpload WHERE BigSerialNumber=? AND IsDel=0", Long.class, c);
+            int boxes = boxCnt != null ? boxCnt.intValue() : 0;
+            int rows  = rowCnt  != null ? rowCnt.intValue()  : 0;
+            r.put("affectedOneLayer", boxes);
+            r.put("affectedAll", boxes + rows);
+            r.put("palletCode", parentPallet);
+            r.put("isUploaded", parentPallet != null && isPalletUploaded(parentPallet));
+            return r;
+        }
+
+        // 3. 盒码（MediumSerialNumber）
+        if (countActiveBy("MediumSerialNumber", c) > 0) {
+            r.put("codeType", "BOX");
+            String parentCase = queryFirst(
+                    "SELECT BigSerialNumber FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber=? AND IsDel=0 AND BigSerialNumber!='' LIMIT 1", c);
+            r.put("cancelable", parentCase == null);
+            r.put("parentCode", parentCase);
+            Long bottleCnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber=? AND IsDel=0", Long.class, c);
+            int count = bottleCnt != null ? bottleCnt.intValue() : 0;
+            r.put("affectedOneLayer", count);
+            r.put("affectedAll", count);
+            String palletForBox = queryFirst(
+                    "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber=? AND IsDel=0 AND VirtualSerialNumber!='' LIMIT 1", c);
+            r.put("palletCode", palletForBox);
+            r.put("isUploaded", palletForBox != null && isPalletUploaded(palletForBox));
+            return r;
+        }
+
+        // 4. 瓶码（SmallSerialNumber）- 自动转换为盒码
+        if (countActiveBy("SmallSerialNumber", c) > 0) {
+            r.put("codeType", "BOTTLE");
+            r.put("cancelable", false);
+            String boxCode = queryFirst(
+                    "SELECT MediumSerialNumber FROM CodeRelationUpload " +
+                    "WHERE SmallSerialNumber=? AND IsDel=0 LIMIT 1", c);
+            r.put("boxCode", boxCode);
+            r.put("message", "瓶码请以盒为单位取消关联");
+            return r;
+        }
+
+        // 未找到
+        r.put("codeType", "UNKNOWN");
+        r.put("cancelable", false);
+        r.put("message", "该码未在关联表中，无需取消关联");
+        return r;
+    }
+
+    /**
+     * P02-06 取消关联 - 执行取消。
+     * mode: ONE_LAYER（只解一层）或 ALL（全部解除）。
+     * 流程：校验 → 检查云端 → （如已上传）调云端取消整垛 → 本地执行。
+     */
+    public ApiResult<Map<String, Object>> cancelCode(String code, String mode) {
+        if (code == null || code.trim().isEmpty()) {
+            return ApiResult.error(400, "码不能为空");
+        }
+        String c = code.trim();
+        boolean modeAll = "ALL".equalsIgnoreCase(mode);
+
+        // ① 确定码类型
+        final String codeType;
+        String parentCode = null;
+        String palletCode = null;
+
+        if (countActiveBy("VirtualSerialNumber", c) > 0) {
+            codeType   = "PALLET";
+            palletCode = c;
+        } else if (countActiveBy("BigSerialNumber", c) > 0) {
+            codeType   = "CASE";
+            parentCode = queryFirst(
+                    "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
+                    "WHERE BigSerialNumber=? AND IsDel=0 AND VirtualSerialNumber!='' LIMIT 1", c);
+            palletCode = parentCode;
+        } else if (countActiveBy("MediumSerialNumber", c) > 0) {
+            codeType   = "BOX";
+            parentCode = queryFirst(
+                    "SELECT BigSerialNumber FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber=? AND IsDel=0 AND BigSerialNumber!='' LIMIT 1", c);
+            if (palletCode == null) {
+                palletCode = queryFirst(
+                        "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
+                        "WHERE MediumSerialNumber=? AND IsDel=0 AND VirtualSerialNumber!='' LIMIT 1", c);
+            }
+        } else {
+            return ApiResult.error(404, "该码未在关联表中，无需取消关联：" + c);
+        }
+
+        // ② 验证无上级
+        if (parentCode != null) {
+            return ApiResult.error(400, "该码已关联至上级码 " + parentCode + "，请先取消上级");
+        }
+
+        // ③ 已上传则先调云端取消整垛
+        if (palletCode != null && isPalletUploaded(palletCode)) {
+            ApiResult<Boolean> cloudResult = callCloudUnbindForPallet(palletCode);
+            if (cloudResult != null && cloudResult.getCode() != 200) {
+                return ApiResult.error(cloudResult.getCode(), cloudResult.getMessage());
+            }
+        }
+
+        // ④ 本地事务执行取消
+        final String codeTypeFinal  = codeType;
+        final boolean modeAllFinal  = modeAll;
+        final Map<String, Object>[] resultHolder = new Map[]{null};
+        try {
+            transactionTemplate.execute(status -> {
+                try {
+                    resultHolder[0] = doLocalCancel(c, codeTypeFinal, modeAllFinal);
+                    return null;
+                } catch (RuntimeException e) {
+                    status.setRollbackOnly();
+                    throw e;
+                }
+            });
+        } catch (RuntimeException e) {
+            log.error("[取消关联] 本地取消失败 code={}: {}", c, e.getMessage(), e);
+            return ApiResult.error(500, "取消关联失败：" + e.getMessage());
+        }
+
+        Map<String, Object> data = resultHolder[0] != null ? resultHolder[0] : new LinkedHashMap<>();
+        data.put("code", c);
+        data.put("codeType", codeType);
+        data.put("mode", modeAll ? "ALL" : "ONE_LAYER");
+        return ApiResult.success("取消关联成功", data);
+    }
+
+    /** 执行本地取消（已在事务内） */
+    private Map<String, Object> doLocalCancel(String code, String codeType, boolean modeAll) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        switch (codeType) {
+            case "PALLET": {
+                int rows = jdbcTemplate.update(
+                        "UPDATE CodeRelationUpload SET VirtualSerialNumber='', BiggerSerialNumber='' " +
+                        "WHERE VirtualSerialNumber=? AND IsDel=0", code);
+                log.info("[取消关联] 垛码 {} 断箱-垛 {} 行", code, rows);
+                r.put("cancelledCount", rows);
+                break;
+            }
+            case "CASE": {
+                if (modeAll) {
+                    // 全部解除：收集盒/瓶码后删行，全部回迁热表
+                    List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                            "SELECT DISTINCT MediumSerialNumber, SmallSerialNumber " +
+                            "FROM CodeRelationUpload WHERE BigSerialNumber=? AND IsDel=0", code);
+                    Set<String> boxes   = new HashSet<>();
+                    Set<String> bottles = new HashSet<>();
+                    for (Map<String, Object> row : rows) {
+                        String b = toStr(row.get("MediumSerialNumber"));
+                        String p = toStr(row.get("SmallSerialNumber"));
+                        if (!b.isEmpty()) boxes.add(b);
+                        if (!p.isEmpty()) bottles.add(p);
+                    }
+                    jdbcTemplate.update("DELETE FROM CodeRelationUpload WHERE BigSerialNumber=? AND IsDel=0", code);
+                    returnCodeToHot(3, code);
+                    for (String bx : boxes)   returnCodeToHot(2, bx);
+                    for (String bt : bottles) returnCodeToHot(1, bt);
+                    int count = boxes.size() + rows.size();
+                    log.info("[取消关联] 箱码 {} 全部解除，盒 {} + 瓶-盒行 {}", code, boxes.size(), rows.size());
+                    r.put("cancelledCount", count);
+                } else {
+                    // 只解一层：清 BigSerialNumber 字段，盒码留冷
+                    List<Map<String, Object>> boxRows = jdbcTemplate.queryForList(
+                            "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
+                            "WHERE BigSerialNumber=? AND IsDel=0", code);
+                    jdbcTemplate.update(
+                            "UPDATE CodeRelationUpload SET BigSerialNumber='', BiggerSerialNumber='', VirtualSerialNumber='' " +
+                            "WHERE BigSerialNumber=? AND IsDel=0", code);
+                    returnCodeToHot(3, code);
+                    log.info("[取消关联] 箱码 {} 只解一层，断盒-箱 {} 条", code, boxRows.size());
+                    r.put("cancelledCount", boxRows.size());
+                }
+                break;
+            }
+            case "BOX": {
+                // 两种模式等价：删瓶-盒行，盒/瓶码回迁热表
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                        "SELECT SmallSerialNumber FROM CodeRelationUpload " +
+                        "WHERE MediumSerialNumber=? AND IsDel=0", code);
+                Set<String> bottles = new HashSet<>();
+                for (Map<String, Object> row : rows) {
+                    String p = toStr(row.get("SmallSerialNumber"));
+                    if (!p.isEmpty()) bottles.add(p);
+                }
+                int deleted = jdbcTemplate.update(
+                        "DELETE FROM CodeRelationUpload WHERE MediumSerialNumber=? AND IsDel=0", code);
+                returnCodeToHot(2, code);
+                for (String bt : bottles) returnCodeToHot(1, bt);
+                log.info("[取消关联] 盒码 {} 断瓶-盒 {} 条", code, deleted);
+                r.put("cancelledCount", deleted);
+                break;
+            }
+            default:
+                throw new RuntimeException("未知码类型：" + codeType);
+        }
+        return r;
+    }
+
+    /** 调用云端 UnbindRelation 接口取消整垛数据（批量，每批100个码）。 */
+    private ApiResult<Boolean> callCloudUnbindForPallet(String palletCode) {
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        if (cfg == null || cfg.getApi() == null) {
+            log.warn("[云端取消关联] 未配置API，跳过 palletCode={}", palletCode);
+            return null;
+        }
+        String baseUrl = trimStr(cfg.getApi().getBaseUrl());
+        String path    = trimStr(cfg.getApi().getCodeUnbindRelationPath());
+        if (baseUrl == null || path == null) {
+            log.warn("[云端取消关联] 缺少 baseUrl 或 codeUnbindRelationPath，跳过 palletCode={}", palletCode);
+            return null;
+        }
+        String memberlogin = cfg.getApi().getMemberlogin();
+
+        // 收集箱码 + 盒码（上传时包含这两层）
+        List<String> caseCodes = jdbcTemplate.queryForList(
+                "SELECT DISTINCT BigSerialNumber FROM CodeRelationUpload " +
+                "WHERE VirtualSerialNumber=? AND IsDel=0 AND BigSerialNumber!=''",
+                String.class, palletCode);
+        List<String> boxCodes = jdbcTemplate.queryForList(
+                "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
+                "WHERE VirtualSerialNumber=? AND IsDel=0 AND MediumSerialNumber!=''",
+                String.class, palletCode);
+
+        List<String> allCodes = new ArrayList<>();
+        allCodes.addAll(caseCodes);
+        allCodes.addAll(boxCodes);
+        if (allCodes.isEmpty()) {
+            log.warn("[云端取消关联] 垛 {} 无码数据，跳过", palletCode);
+            return null;
+        }
+
+        // 分批（每批100个）调用
+        int batchSize = 100;
+        for (int i = 0; i < allCodes.size(); i += batchSize) {
+            List<String> batch = allCodes.subList(i, Math.min(i + batchSize, allCodes.size()));
+            try {
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("Memberlogin", memberlogin != null ? memberlogin : "");
+                body.put("oldCodes", batch);
+
+                Map<String, String> headers = new LinkedHashMap<>();
+                headers.put("Content-type", "application/json");
+
+                String response = sendPost(baseUrl + path, headers, MAPPER.writeValueAsString(body));
+                log.info("[云端取消关联] palletCode={} batch={}-{} 响应: {}",
+                        palletCode, i, i + batch.size() - 1, response);
+
+                JsonNode root       = MAPPER.readTree(response);
+                int      returnCode = root.path("Return_code").asInt(-1);
+                if (returnCode != 0) {
+                    String msg = root.path("Return_msg").asText("未知错误");
+                    return ApiResult.error(500, "云端取消失败：" + msg);
+                }
+            } catch (Exception e) {
+                log.error("[云端取消关联] 接口调用异常 palletCode={}: {}", palletCode, e.getMessage(), e);
+                return ApiResult.error(500, "云端取消接口调用异常：" + e.getMessage());
+            }
+        }
+        return ApiResult.success("云端取消成功", true);
+    }
+
+    /** 查询垛码是否已成功上传（IsUpload=1）。 */
+    private boolean isPalletUploaded(String palletCode) {
+        Long maxUpload = jdbcTemplate.queryForObject(
+                "SELECT MAX(IsUpload) FROM CodeRelationUpload WHERE VirtualSerialNumber=? AND IsDel=0",
+                Long.class, palletCode);
+        return maxUpload != null && maxUpload.intValue() == 1;
+    }
+
+    /** 查询指定列的活跃记录数（IsDel=0）。 */
+    private long countActiveBy(String column, String value) {
+        Long n = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM CodeRelationUpload WHERE " + column + "=? AND IsDel=0",
+                Long.class, value);
+        return n == null ? 0L : n;
+    }
+
+    /** 查询单列第一行值，不存在返回 null。 */
+    private String queryFirst(String sql, String param) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, param);
+        if (rows.isEmpty()) return null;
+        Object val = rows.get(0).values().iterator().next();
+        return val == null || val.toString().isEmpty() ? null : val.toString();
+    }
+
     /**
      * P02-06 数据替换：按层级直接更新对应列码值，并同步热冷表。
      * 流程：原码存在于冷表（已被关联）→ 验证新码在热表中（未使用）→ 更新关联表 → 原码从冷表回迁热表 → 新码从热表落冷。
@@ -729,11 +1111,21 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "新码已存在于关联表，不允许替换：" + newV);
         }
 
-        // 5. 查询原码记录的最大上传状态
-        Long maxIsUploadVal = jdbcTemplate.queryForObject(
-                "SELECT MAX(IsUpload) FROM CodeRelationUpload WHERE " + column + " = ? AND IsDel = 0",
-                Long.class, oldV);
-        int uploadStatus = maxIsUploadVal == null ? 0 : maxIsUploadVal.intValue();
+        // 5. 查询原码记录的上传状态
+        // 瓶码（SmallSerialNumber）每瓶唯一一行，直接取该行 IsUpload；
+        // 盒码/箱码/垛码可能对应多行（同一垛），取 MAX(IsUpload) 确保保守判断。
+        int uploadStatus;
+        if (smallCnt > 0) {
+            Long isUploadVal = jdbcTemplate.queryForObject(
+                    "SELECT IsUpload FROM CodeRelationUpload WHERE SmallSerialNumber = ? AND IsDel = 0 LIMIT 1",
+                    Long.class, oldV);
+            uploadStatus = isUploadVal == null ? 0 : isUploadVal.intValue();
+        } else {
+            Long maxIsUploadVal = jdbcTemplate.queryForObject(
+                    "SELECT MAX(IsUpload) FROM CodeRelationUpload WHERE " + column + " = ? AND IsDel = 0",
+                    Long.class, oldV);
+            uploadStatus = maxIsUploadVal == null ? 0 : maxIsUploadVal.intValue();
+        }
 
         // IsUpload=3 表示正在上传中，禁止替换
         if (uploadStatus == 3) {

@@ -45,37 +45,53 @@ public class ShiwanM2CurrentTaskService {
 
         try {
             LocalDateTime now = LocalDateTime.now();
-            // 1. Insert ProductionOrder（与致美斋字段对齐，表结构为 OrderSumCoun 等）
-            String orderSql = "INSERT INTO ProductionOrder (SrcId, Type, OrderNo, OrderSumCoun, ProductSumCount, DmakeDate, OrderStatus, ProductSourceType, CreateTime, ProductionLine) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            jdbcTemplate.update(conn -> {
-                PreparedStatement ps = conn.prepareStatement(orderSql, Statement.RETURN_GENERATED_KEYS);
-                ps.setInt(1, 0);
-                ps.setInt(2, 1);   // 1 有箱码
-                ps.setString(3, orderNo.trim());
-                ps.setInt(4, 0);
-                ps.setInt(5, 0);
-                ps.setObject(6, now);
-                ps.setInt(7, 1);   // 1 入库中
-                ps.setInt(8, 2);   // 2 产线
-                ps.setObject(9, now);
-                ps.setInt(10, 1);  // ProductionLine
-                return ps;
-            }, keyHolder);
 
-            Number orderIdNum = keyHolder.getKey();
-            if (orderIdNum == null) {
-                return ApiResult.error("写入生产订单失败，未返回订单ID");
+            // 检查是否已有相同订单号的进行中任务（OrderStatus=1）
+            List<Map<String, Object>> existing = jdbcTemplate.queryForList(
+                    "SELECT po.Id AS orderId FROM ProductionOrder po " +
+                    "WHERE po.OrderNo = ? AND po.OrderStatus = 1 ORDER BY po.Id DESC LIMIT 1",
+                    orderNo.trim());
+
+            int orderId;
+            if (existing != null && !existing.isEmpty()) {
+                // 已有进行中的任务：只更新产品信息，不新建订单
+                orderId = ((Number) existing.get(0).get("orderId")).intValue();
+                jdbcTemplate.update(
+                        "UPDATE ProductionOrderDetail SET ProductName = ?, ProductNO = ?, Ratio = ? " +
+                        "WHERE OrderId = ? AND (IsDel = 0 OR IsDel IS NULL)",
+                        productName.trim(), productNo.trim(), m, orderId);
+            } else {
+                // 无进行中任务：新建 ProductionOrder + ProductionOrderDetail
+                String orderSql = "INSERT INTO ProductionOrder (SrcId, Type, OrderNo, OrderSumCoun, ProductSumCount, DmakeDate, OrderStatus, ProductSourceType, CreateTime, ProductionLine) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(conn -> {
+                    PreparedStatement ps = conn.prepareStatement(orderSql, Statement.RETURN_GENERATED_KEYS);
+                    ps.setInt(1, 0);
+                    ps.setInt(2, 1);   // 1 有箱码
+                    ps.setString(3, orderNo.trim());
+                    ps.setInt(4, 0);
+                    ps.setInt(5, 0);
+                    ps.setObject(6, now);
+                    ps.setInt(7, 1);   // 1 入库中
+                    ps.setInt(8, 2);   // 2 产线
+                    ps.setObject(9, now);
+                    ps.setInt(10, 1);  // ProductionLine
+                    return ps;
+                }, keyHolder);
+
+                Number orderIdNum = keyHolder.getKey();
+                if (orderIdNum == null) {
+                    return ApiResult.error("写入生产订单失败，未返回订单ID");
+                }
+                orderId = orderIdNum.intValue();
+
+                String detailSql = "INSERT INTO ProductionOrderDetail (OrderCount, ProductCount, ProductID, ProductName, ProductNO, ProductForMatID, ProductForMatName, OrderNo, OrderId, SyBatchNo, Type, Ratio, IsDel, AddTime, ProductTime, TwillendTime, CreateTime) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                jdbcTemplate.update(detailSql,
+                        0, 0, 0, productName.trim(), productNo.trim(), 0, "",
+                        orderNo.trim(), orderId, "", 1, m, 0, now, now, now, now);
             }
-            int orderId = orderIdNum.intValue();
-
-            // 2. Insert ProductionOrderDetail
-            String detailSql = "INSERT INTO ProductionOrderDetail (OrderCount, ProductCount, ProductID, ProductName, ProductNO, ProductForMatID, ProductForMatName, OrderNo, OrderId, SyBatchNo, Type, Ratio, IsDel, AddTime, ProductTime, TwillendTime, CreateTime) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            jdbcTemplate.update(detailSql,
-                    0, 0, 0, productName.trim(), productNo.trim(), 0, "",
-                    orderNo.trim(), orderId, "", 1, m, 0, now, now, now, now);
 
             Map<String, Object> data = new HashMap<>();
             data.put("taskId", orderId);
@@ -159,6 +175,40 @@ public class ShiwanM2CurrentTaskService {
     }
 
     /**
+     * 建议生产单号：从 prefix+001 开始递增，返回第一个在 ProductionOrder 中不存在的单号。
+     */
+    public String suggestOrderNo(String prefix) {
+        if (prefix == null || prefix.isEmpty()) return prefix;
+        for (int i = 1; i <= 999; i++) {
+            String candidate = prefix + String.format("%03d", i);
+            try {
+                Long cnt = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM ProductionOrder WHERE OrderNo = ?",
+                        Long.class, candidate);
+                if (cnt == null || cnt == 0) return candidate;
+            } catch (Exception ignored) {
+                return candidate;
+            }
+        }
+        return prefix + "999";
+    }
+
+    /**
+     * 检查生产单号是否在 ProductionOrder 表中已有记录。
+     */
+    public boolean existsOrderNo(String orderNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return false;
+        try {
+            Long cnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM ProductionOrder WHERE OrderNo = ?",
+                    Long.class, orderNo.trim());
+            return cnt != null && cnt > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * 暂存：将当前任务下未成垛的 CodeRelationUpload 记录的 Status 设为 3（未成垛）。
      */
     public ApiResult<String> markUnfinished(String orderNo) {
@@ -199,16 +249,39 @@ public class ShiwanM2CurrentTaskService {
             String orderNo  = records.get(0).get("OrderNo")  != null ? records.get(0).get("OrderNo").toString()  : "";
             String productNo = records.get(0).get("ProductNO") != null ? records.get(0).get("ProductNO").toString() : "";
 
+            // 从本地产品表查产品名称
+            String productName = "";
+            if (!productNo.isEmpty()) {
+                try {
+                    List<Map<String, Object>> nameRows = jdbcTemplate.queryForList(
+                            "SELECT ProductName FROM ProductInfo WHERE ProductNo = ? LIMIT 1", productNo);
+                    if (nameRows != null && !nameRows.isEmpty() && nameRows.get(0).get("ProductName") != null) {
+                        productName = nameRows.get(0).get("ProductName").toString();
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // 已关联到箱的箱码数（未成垛箱数）
             Integer boxCount = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
                     "WHERE OrderNo = ? AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
                     "AND Status = 3 AND IsDel = 0",
                     Integer.class, orderNo);
 
+            // 待入队盒码数（Status=0，尚未关联到箱）
+            Integer pendingBoxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
+                    "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
+                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
+                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                    Integer.class, orderNo);
+
             Map<String, Object> data = new HashMap<>();
             data.put("orderNo", orderNo);
             data.put("productNo", productNo);
+            data.put("productName", productName);
             data.put("currentCaseCount", boxCount != null ? boxCount : 0);
+            data.put("pendingBoxCount", pendingBoxCount != null ? pendingBoxCount : 0);
             return ApiResult.success("查询成功", data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -231,7 +304,7 @@ public class ShiwanM2CurrentTaskService {
             if (list == null || list.isEmpty()) {
                 return ApiResult.success("无未成垛数据", Collections.emptyList());
             }
-            // 补充：每个订单下等待入队的盒码数（Status=0, BigSerialNumber='', VirtualSerialNumber=''）
+            // 补充：每个订单下等待入队的盒码数（Status=0, BigSerialNumber='', VirtualSerialNumber=''）和产品名称
             for (Map<String, Object> row : list) {
                 String orderNo = row.get("OrderNo") != null ? row.get("OrderNo").toString() : "";
                 Integer pendingBoxCount = jdbcTemplate.queryForObject(
@@ -241,6 +314,19 @@ public class ShiwanM2CurrentTaskService {
                         "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
                         Integer.class, orderNo);
                 row.put("pendingBoxCount", pendingBoxCount != null ? pendingBoxCount : 0);
+                // 查询产品名称
+                String productNo = row.get("productNo") != null ? row.get("productNo").toString() : "";
+                String productName = "";
+                if (!productNo.isEmpty()) {
+                    try {
+                        List<Map<String, Object>> nameRows = jdbcTemplate.queryForList(
+                                "SELECT ProductName FROM ProductInfo WHERE ProductNo = ? LIMIT 1", productNo);
+                        if (nameRows != null && !nameRows.isEmpty() && nameRows.get(0).get("ProductName") != null) {
+                            productName = nameRows.get(0).get("ProductName").toString();
+                        }
+                    } catch (Exception ignored) {}
+                }
+                row.put("productName", productName);
             }
             return ApiResult.success("查询成功", list);
         } catch (Exception e) {

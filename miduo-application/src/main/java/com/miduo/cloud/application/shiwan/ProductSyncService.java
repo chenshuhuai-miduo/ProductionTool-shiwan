@@ -242,6 +242,8 @@ public class ProductSyncService {
             batch.add(po);
         }
         if (batch.isEmpty()) return 0;
+        // 全量覆盖：先清空本地产品表，再写入最新数据
+        productInfoMapper.delete(new QueryWrapper<>());
         // 每批 500 条，避免单条 SQL 过长
         int total = 0;
         int batchSize = 500;

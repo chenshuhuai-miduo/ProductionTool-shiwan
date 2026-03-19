@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -135,6 +136,37 @@ public class ShiwanM2ManualController implements Initializable {
     }
 
     private void startCapture() {
+        // 前端校验：每盒N瓶必须是正整数
+        String bpbText = bottlesPerBoxField.getText();
+        if (bpbText == null || bpbText.trim().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("采集规格错误");
+            alert.setHeaderText(null);
+            alert.setContentText("请填写「每盒瓶数 N」（1盒N瓶），不能为空。");
+            ShiwanM2AlertUtil.applyStyle(alert);
+            alert.showAndWait();
+            return;
+        }
+        int bpbCheck;
+        try { bpbCheck = Integer.parseInt(bpbText.trim()); } catch (NumberFormatException e) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("采集规格错误");
+            alert.setHeaderText(null);
+            alert.setContentText("每盒瓶数 N 必须是数字。");
+            ShiwanM2AlertUtil.applyStyle(alert);
+            alert.showAndWait();
+            return;
+        }
+        if (bpbCheck <= 0) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("采集规格错误");
+            alert.setHeaderText(null);
+            alert.setContentText("每盒瓶数 N 必须大于0。");
+            ShiwanM2AlertUtil.applyStyle(alert);
+            alert.showAndWait();
+            return;
+        }
+
         // 门禁：检查热表是否已导入小标和中标码包
         try {
             String checkJson = HttpUtil.doGet("/api/shiwan-m2/code-package/check-manual");
@@ -205,6 +237,7 @@ public class ShiwanM2ManualController implements Initializable {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             currentBottles = 0;
             totalBoxes     = 0;
+            pendingBottleCodes.clear();
             currentCountLabel.setText("0");
             totalCountLabel.setText("0");
             waitingBottle = true;
@@ -217,6 +250,9 @@ public class ShiwanM2ManualController implements Initializable {
 
     /** 防止并发扫码时多次触发校验 */
     private volatile boolean isValidating = false;
+
+    /** 当前盒码关联的瓶码暂存列表，盒码扫描成功后提交并清空 */
+    private final java.util.List<String> pendingBottleCodes = new java.util.ArrayList<>();
 
     /**
      * 收到一条扫码数据（由 ShiwanM2MainController 在扫码枪设备 category=7 数据到达时调用）。
@@ -312,6 +348,7 @@ public class ShiwanM2ManualController implements Initializable {
         if (packageType == 1) {
             // 瓶码
             currentBottles++;
+            pendingBottleCodes.add(code);
             currentCountLabel.setText(String.valueOf(currentBottles));
             log.info("[手工采集] 瓶码 #{}: {} (当前已扫 {}/{})", currentBottles, code, currentBottles, bpb);
             addDataLog(now + "  瓶码采集：" + code, ShiwanM2MainController.LogType.DATA);
@@ -321,23 +358,73 @@ public class ShiwanM2ManualController implements Initializable {
                 addDataLog(now + "  扫码完成，请扫盒码", ShiwanM2MainController.LogType.DATA);
             }
         } else {
-            // 盒码
-            log.info("[手工采集] 盒码: {} ({}瓶→1盒，累计 {} 盒)", code, bpb, totalBoxes + 1);
+            // 盒码：先写入关联表，再更新UI
+            final String boxCode = code;
+            final List<String> bottleCodesCopy = new java.util.ArrayList<>(pendingBottleCodes);
+            final int currentTotalBoxes = totalBoxes + 1;
+            log.info("[手工采集] 盒码: {} ({}瓶→1盒，累计 {} 盒)", code, bpb, currentTotalBoxes);
+
+            // 先重置计数和状态，避免重复扫码
+            currentBottles = 0;
+            pendingBottleCodes.clear();
+            currentCountLabel.setText("0");
+            waitingBottle = true;
+            totalBoxes = currentTotalBoxes;
+            totalCountLabel.setText(String.valueOf(totalBoxes));
+            refreshPrompt();
+
             addDataLog(now + "  盒码关联成功：" + code + "（" + bpb + "瓶→1盒）",
                     ShiwanM2MainController.LogType.SUCCESS);
-            totalBoxes++;
-            totalCountLabel.setText(String.valueOf(totalBoxes));
+
+            // 异步写入码关系表（ProductNO/OrderNo 为空字符串）
+            String reqBody = buildManualAssociateBody(boxCode, bottleCodesCopy);
+            HttpUtil.asyncPost(
+                    "/api/shiwan-m2/manual/associate",
+                    reqBody,
+                    json -> {
+                        try {
+                            com.fasterxml.jackson.databind.JsonNode node =
+                                    HttpUtil.getObjectMapper().readTree(json);
+                            int respCode = node.has("code") ? node.get("code").asInt() : -1;
+                            if (respCode != 200) {
+                                String msg = node.has("message") ? node.get("message").asText() : "写入失败";
+                                log.warn("[手工采集] 码关系写入失败 boxCode={} msg={}", boxCode, msg);
+                                Platform.runLater(() ->
+                                        addDataLog(now() + "  【写入码关系失败】" + msg,
+                                                ShiwanM2MainController.LogType.ERROR));
+                            }
+                        } catch (Exception e) {
+                            log.error("[手工采集] 解析写入响应异常 boxCode={}", boxCode, e);
+                        }
+                    },
+                    err -> log.error("[手工采集] 码关系写入请求失败 boxCode={}", boxCode, err)
+            );
+
             OperateLogBuilder.create()
                     .module(ModuleNameEnum.MANUAL_COLLECT)
                     .operateType(OperateTypeEnum.COLLECT)
                     .target(code, code)
                     .content("手工采集盒码关联成功：盒码=" + code + "，已关联" + bpb + "瓶，累计完成" + totalBoxes + "盒")
                     .saveAsync();
-            currentBottles = 0;
-            currentCountLabel.setText("0");
-            waitingBottle = true;
+            return;
         }
         refreshPrompt();
+    }
+
+    private String buildManualAssociateBody(String boxCode, List<String> bottleCodes) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"boxCode\":\"").append(escapeJson(boxCode)).append("\",\"bottleCodes\":[");
+        for (int i = 0; i < bottleCodes.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(escapeJson(bottleCodes.get(i))).append("\"");
+        }
+        sb.append("]}");
+        return sb.toString();
+    }
+
+    private static String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     // ==================== 日志 ====================

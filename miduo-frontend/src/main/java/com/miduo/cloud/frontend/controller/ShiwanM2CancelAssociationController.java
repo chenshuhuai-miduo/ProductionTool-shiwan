@@ -11,16 +11,8 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -30,352 +22,415 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
- * 石湾M2-取消关联控制器
- * 说明：石湾M2专用实现，调用 /api/shiwan-m2/code/query 与 /api/shiwan-m2/code/cancel。
+ * 石湾M2 - 取消关联控制器（P02-06）
+ * 布局：左侧「输入→加入列表→识别→确认取消」；右侧「识别结果 + 取消记录」。
  */
 public class ShiwanM2CancelAssociationController {
 
     private static final String FIXED_PASSWORD = "123456";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    @FXML
-    private TextField singleCodeField;
-    @FXML
-    private Button singleConfirmCancelButton;
-    @FXML
-    private TextField multiCodeField;
-    @FXML
-    private ListView<String> multiCodeList;
-    @FXML
-    private Button multiConfirmCancelButton;
-    @FXML
-    private Label identifySummaryLabel;
-    @FXML
-    private ListView<String> identifyResultList;
-    @FXML
-    private ListView<String> cancelResultList;
+    // ===== FXML 注入 =====
+    @FXML private TextField  codeInputField;
+    @FXML private ListView<PendingItem>       pendingList;
+    @FXML private ToggleGroup cancelScopeGroup;
+    @FXML private RadioButton scopeOneRadio;
+    @FXML private RadioButton scopeAllRadio;
+    @FXML private Button      confirmCancelButton;
+    @FXML private Label       identifySummaryLabel;
+    @FXML private ListView<IdentifyItem>      identifyResultList;
+    @FXML private ListView<CancelRecord>      cancelRecordList;
 
-    private String singleIdentifiedCode;
-    private boolean singleCanCancel;
-    private final ObservableList<String> multiCodes = FXCollections.observableArrayList();
-    private final ObservableList<String> identifyResults = FXCollections.observableArrayList();
-    private final ObservableList<String> cancelResults = FXCollections.observableArrayList();
-    private final Map<String, QueryCheckResult> multiIdentifyState = new LinkedHashMap<>();
+    // ===== 内部状态 =====
+    /** 待取消列表（保持插入顺序）key=码值 */
+    private final LinkedHashMap<String, PendingItem>  pendingMap     = new LinkedHashMap<>();
+    /** 最近一次识别结果 key=码值 */
+    private final LinkedHashMap<String, IdentifyItem> lastIdentifyMap = new LinkedHashMap<>();
+
+    private final ObservableList<PendingItem>    pendingItems     = FXCollections.observableArrayList();
+    private final ObservableList<IdentifyItem>   identifyItems    = FXCollections.observableArrayList();
+    private final ObservableList<CancelRecord>   cancelRecordItems = FXCollections.observableArrayList();
+
+    // ===== 初始化 =====
 
     @FXML
     public void initialize() {
-        multiCodeList.setItems(multiCodes);
-        identifyResultList.setItems(identifyResults);
-        cancelResultList.setItems(cancelResults);
+        pendingList.setItems(pendingItems);
+        identifyResultList.setItems(identifyItems);
+        cancelRecordList.setItems(cancelRecordItems);
 
-        multiCodeList.setPlaceholder(new Label("暂无添加的码"));
-        identifyResultList.setPlaceholder(new Label("请先执行识别"));
-        cancelResultList.setPlaceholder(new Label("暂无取消关联记录"));
+        pendingList.setPlaceholder(new Label("暂无待取消项"));
+        identifyResultList.setPlaceholder(new Label("请在左侧输入码值并点击识别"));
+        cancelRecordList.setPlaceholder(new Label("暂无取消关联记录"));
 
-        singleConfirmCancelButton.setDisable(true);
-        multiConfirmCancelButton.setDisable(true);
-        identifySummaryLabel.setText("识别结果：等待输入");
+        // 自定义 Cell
+        pendingList.setCellFactory(lv -> new PendingCell());
+        identifyResultList.setCellFactory(lv -> new IdentifyCell());
+        cancelRecordList.setCellFactory(lv -> new CancelRecordCell());
 
-        initMultiCodeCellFactory();
-    }
+        // 切换取消范围时刷新识别结果显示
+        cancelScopeGroup.selectedToggleProperty().addListener((obs, o, n) -> refreshIdentifyDisplay());
 
-    private void initMultiCodeCellFactory() {
-        multiCodeList.setCellFactory(lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                    return;
-                }
-                Label text = new Label(item);
-                text.setMaxWidth(Double.MAX_VALUE);
-                HBox.setHgrow(text, Priority.ALWAYS);
-
-                Button delete = new Button("删除");
-                delete.getStyleClass().add("shiwan-m2-mini-delete-btn");
-                delete.setOnAction(evt -> {
-                    multiCodes.remove(item);
-                    multiIdentifyState.remove(item);
-                    updateMultiConfirmButtonState();
-                });
-
-                Region spacer = new Region();
-                HBox.setHgrow(spacer, Priority.ALWAYS);
-                HBox row = new HBox(8, text, spacer, delete);
-                setGraphic(row);
-                setText(null);
-            }
+        // 回车加入列表
+        codeInputField.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ENTER) onAddToList();
         });
     }
 
+    // ===== 帮助 =====
+
     @FXML
-    private void onShowCancelHelp() {
+    private void onShowHelp() {
         showAlert(Alert.AlertType.INFORMATION, "取消关联说明",
-                "单码模式：输入1个码并识别后取消。\n" +
-                        "多码模式：可添加多个码批量识别和取消。\n" +
-                        "本页面调用石湾M2后端接口：/api/shiwan-m2/code/query、/api/shiwan-m2/code/cancel。\n" +
-                        "取消操作需输入固定密码 123456。");
+                "【输入码】支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码。\n\n" +
+                "【取消范围】\n" +
+                "· 只解一层（默认）：只断该码层级直接关联。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒。\n" +
+                "· 全部解除：断该码层级及以下所有关联。垛码受层级限制与只解一层等价；箱码断盒-箱+瓶-盒；盒码等价。\n\n" +
+                "【有上级时】须先取消上级，识别结果会提示上级码值。\n\n" +
+                "【已上传】若所在垛已上传云端，系统先取消整垛云端数据，成功后再取消本地。\n\n" +
+                "【密码】123456");
     }
 
-    @FXML
-    private void onSingleClear() {
-        singleCodeField.clear();
-        singleIdentifiedCode = null;
-        singleCanCancel = false;
-        singleConfirmCancelButton.setDisable(true);
-        identifySummaryLabel.setText("识别结果：等待输入");
-    }
+    // ===== 加入列表 =====
 
     @FXML
-    private void onSingleIdentify() {
-        String code = normalize(singleCodeField.getText());
-        if (code.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请输入待识别的码");
+    private void onAddToList() {
+        String raw = normalize(codeInputField.getText());
+        if (raw.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, "提示", "请输入码值");
+            return;
+        }
+        if (pendingMap.containsKey(raw)) {
+            showAlert(Alert.AlertType.WARNING, "提示", "该码已在列表中：" + raw);
+            codeInputField.clear();
+            return;
+        }
+        // 异步查询码类型（同时处理瓶码自动转换）
+        codeInputField.setDisable(true);
+        new Thread(() -> {
+            Map<String, Object> checkResult = doCheckCancel(raw);
+            Platform.runLater(() -> {
+                codeInputField.setDisable(false);
+                handleAddResult(raw, checkResult);
+            });
+        }, "shiwan-m2-check").start();
+    }
+
+    private void handleAddResult(String raw, Map<String, Object> check) {
+        if (check == null) {
+            showAlert(Alert.AlertType.ERROR, "错误", "识别请求失败，请检查网络连接");
+            return;
+        }
+        String codeType = str(check, "codeType");
+        String message  = str(check, "message");
+
+        if ("UNKNOWN".equals(codeType)) {
+            showAlert(Alert.AlertType.WARNING, "提示", message != null ? message : "该码未在关联表中，无需取消关联");
             return;
         }
 
-        identifySummaryLabel.setText("识别中...");
-        singleConfirmCancelButton.setDisable(true);
-        doIdentifyAsync(List.of(code), true);
-    }
-
-    @FXML
-    private void onSingleConfirmCancel() {
-        if (!singleCanCancel || singleIdentifiedCode == null) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请先识别可取消的码");
+        if ("BOTTLE".equals(codeType)) {
+            String boxCode = str(check, "boxCode");
+            if (boxCode == null || boxCode.isEmpty()) {
+                showAlert(Alert.AlertType.WARNING, "提示", "瓶码 " + raw + " 未在关联表中，无需取消关联");
+                return;
+            }
+            // 弹出确认转换为盒码
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("瓶码自动转换");
+            confirm.setHeaderText(null);
+            confirm.setContentText("瓶码 " + raw + " 属于盒码 " + boxCode + "\n已自动转换为盒码 " + boxCode + " 加入列表");
+            ShiwanM2AlertUtil.applyStyle(confirm);
+            Optional<ButtonType> btn = confirm.showAndWait();
+            if (btn.isPresent() && btn.get() == ButtonType.OK) {
+                if (pendingMap.containsKey(boxCode)) {
+                    showAlert(Alert.AlertType.WARNING, "提示", "盒码 " + boxCode + " 已在列表中");
+                } else {
+                    addPending(boxCode, "盒码");
+                }
+            }
+            codeInputField.clear();
             return;
         }
 
-        String detail = "单码取消关联\n目标码：" + singleIdentifiedCode + "\n此操作不可恢复。";
-        if (!showPasswordConfirm("取消关联确认", detail)) {
-            return;
-        }
-
-        doCancelAsync(List.of(singleIdentifiedCode), true);
+        // 正常添加
+        String typeName = codeTypeName(codeType);
+        addPending(raw, typeName);
+        codeInputField.clear();
     }
 
-    @FXML
-    private void onMultiAddCode() {
-        String code = normalize(multiCodeField.getText());
-        if (code.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请输入盒/箱/垛码");
-            return;
-        }
-        if (multiCodes.contains(code)) {
-            showAlert(Alert.AlertType.WARNING, "提示", "该码已在列表中");
-            return;
-        }
-        multiCodes.add(code);
-        multiCodeField.clear();
-        multiIdentifyState.remove(code);
-        updateMultiConfirmButtonState();
+    private void addPending(String code, String typeName) {
+        PendingItem item = new PendingItem(code, typeName);
+        pendingMap.put(code, item);
+        pendingItems.add(item);
     }
 
-    @FXML
-    private void onMultiClear() {
-        multiCodeField.clear();
-        multiCodes.clear();
-        multiIdentifyState.clear();
-        multiConfirmCancelButton.setDisable(true);
-        identifySummaryLabel.setText("识别结果：等待输入");
-    }
+    // ===== 识别 =====
 
     @FXML
-    private void onMultiIdentify() {
-        if (multiCodes.isEmpty()) {
+    private void onIdentify() {
+        if (pendingMap.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, "提示", "请先添加要识别的码");
             return;
         }
-        identifySummaryLabel.setText("批量识别中...");
-        multiConfirmCancelButton.setDisable(true);
-        doIdentifyAsync(new ArrayList<>(multiCodes), false);
+        identifySummaryLabel.setText("识别中...");
+        identifyItems.clear();
+        lastIdentifyMap.clear();
+        confirmCancelButton.setDisable(true);
+
+        List<String> codes = new ArrayList<>(pendingMap.keySet());
+        new Thread(() -> {
+            LinkedHashMap<String, IdentifyItem> resultMap = new LinkedHashMap<>();
+            for (String code : codes) {
+                Map<String, Object> check = doCheckCancel(code);
+                IdentifyItem item = buildIdentifyItem(code, check, isModeAll());
+                resultMap.put(code, item);
+            }
+            Platform.runLater(() -> applyIdentifyResult(resultMap));
+        }, "shiwan-m2-identify").start();
     }
+
+    private void applyIdentifyResult(LinkedHashMap<String, IdentifyItem> resultMap) {
+        lastIdentifyMap.clear();
+        lastIdentifyMap.putAll(resultMap);
+        refreshIdentifyDisplay();
+    }
+
+    /** 仅刷新识别结果区（切换取消范围时调用）。 */
+    private void refreshIdentifyDisplay() {
+        if (lastIdentifyMap.isEmpty()) return;
+        boolean modeAll = isModeAll();
+        int cancelable = 0, nonCancelable = 0;
+        identifyItems.clear();
+        for (IdentifyItem item : lastIdentifyMap.values()) {
+            item.modeAll = modeAll;
+            identifyItems.add(item);
+            if (item.cancelable) cancelable++;
+            else nonCancelable++;
+        }
+        int total = cancelable + nonCancelable;
+        identifySummaryLabel.setText(String.format("共 %d 项，其中 %d 项可解除，%d 项不可解除", total, cancelable, nonCancelable));
+        confirmCancelButton.setDisable(cancelable == 0);
+    }
+
+    // ===== 清空列表 =====
 
     @FXML
-    private void onMultiConfirmCancel() {
-        List<String> canCancelCodes = new ArrayList<>();
-        for (Map.Entry<String, QueryCheckResult> entry : multiIdentifyState.entrySet()) {
-            if (entry.getValue().cancelable) {
-                canCancelCodes.add(entry.getKey());
-            }
+    private void onClearList() {
+        codeInputField.clear();
+        pendingMap.clear();
+        pendingItems.clear();
+        lastIdentifyMap.clear();
+        identifyItems.clear();
+        identifySummaryLabel.setText("请在左侧输入码值并点击识别");
+        confirmCancelButton.setDisable(true);
+    }
+
+    // ===== 确认取消关联 =====
+
+    @FXML
+    private void onConfirmCancel() {
+        List<IdentifyItem> cancelableItems = new ArrayList<>();
+        List<IdentifyItem> skippedItems    = new ArrayList<>();
+        for (IdentifyItem item : lastIdentifyMap.values()) {
+            if (item.cancelable) cancelableItems.add(item);
+            else skippedItems.add(item);
         }
-        if (canCancelCodes.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "无可取消的码，请先识别");
+        if (cancelableItems.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, "提示", "无可取消的码，请先执行识别");
             return;
         }
 
-        String detail = "批量取消关联\n可取消数量：" + canCancelCodes.size() + "\n此操作不可恢复。";
-        if (!showPasswordConfirm("取消关联确认", detail)) {
-            return;
-        }
-        doCancelAsync(canCancelCodes, false);
-    }
+        // 统计影响条数（根据模式）
+        boolean modeAll = isModeAll();
+        int totalRelations = cancelableItems.stream()
+                .mapToInt(i -> modeAll ? i.affectedAll : i.affectedOneLayer)
+                .sum();
 
-    private void doIdentifyAsync(List<String> codes, boolean singleMode) {
-        new Thread(() -> {
-            Map<String, QueryCheckResult> resultMap = new LinkedHashMap<>();
-            for (String code : codes) {
-                resultMap.put(code, queryCancelable(code));
+        // 检查已上传垛码（弹窗显示云端影响）
+        List<IdentifyItem> uploadedPalletItems = new ArrayList<>();
+        for (IdentifyItem item : cancelableItems) {
+            if ("PALLET".equals(item.codeType) && item.isUploaded) {
+                uploadedPalletItems.add(item);
             }
-            Platform.runLater(() -> applyIdentifyResult(resultMap, singleMode));
-        }, "shiwan-m2-cancel-identify").start();
-    }
-
-    private void applyIdentifyResult(Map<String, QueryCheckResult> resultMap, boolean singleMode) {
-        int canCancelCount = 0;
-        int affectedCount = 0;
-        for (Map.Entry<String, QueryCheckResult> entry : resultMap.entrySet()) {
-            String code = entry.getKey();
-            QueryCheckResult result = entry.getValue();
-            if (result.cancelable) {
-                canCancelCount++;
-                affectedCount += result.affectedCount;
-            }
-            identifyResults.add(0, buildIdentifyLine(code, result));
         }
 
-        if (singleMode) {
-            QueryCheckResult singleResult = resultMap.values().iterator().next();
-            String code = resultMap.keySet().iterator().next();
-            singleCanCancel = singleResult.cancelable;
-            singleIdentifiedCode = singleCanCancel ? code : null;
-            singleConfirmCancelButton.setDisable(!singleCanCancel);
-            identifySummaryLabel.setText(singleCanCancel
-                    ? "识别结果：可取消1个，影响 " + singleResult.affectedCount + " 条关系"
-                    : "识别结果：不可取消，原因：" + singleResult.message);
+        if (!showPasswordConfirm(modeAll, cancelableItems.size(), totalRelations,
+                skippedItems.size(), uploadedPalletItems)) {
             return;
         }
 
-        multiIdentifyState.clear();
-        multiIdentifyState.putAll(resultMap);
-        identifySummaryLabel.setText("识别结果：可取消 " + canCancelCount + " 个，影响 " + affectedCount + " 条关系");
-        updateMultiConfirmButtonState();
-    }
-
-    private void updateMultiConfirmButtonState() {
-        for (QueryCheckResult value : multiIdentifyState.values()) {
-            if (value.cancelable) {
-                multiConfirmCancelButton.setDisable(false);
-                return;
-            }
-        }
-        multiConfirmCancelButton.setDisable(true);
-    }
-
-    private String buildIdentifyLine(String code, QueryCheckResult result) {
-        String now = LocalDateTime.now().format(TIME_FMT);
-        if (result.cancelable) {
-            return now + "  ✓ " + code + " 可取消关联，预计影响 " + result.affectedCount + " 条关系";
-        }
-        return now + "  ✗ " + code + " 不可取消，原因：" + result.message;
-    }
-
-    private void doCancelAsync(List<String> codes, boolean singleMode) {
-        singleConfirmCancelButton.setDisable(true);
-        multiConfirmCancelButton.setDisable(true);
-        identifySummaryLabel.setText("取消处理中...");
+        // 执行取消（按 垛→箱→盒 顺序）
+        cancelableItems.sort(Comparator.comparingInt(i -> codeTypeOrder(i.codeType)));
+        String mode = modeAll ? "ALL" : "ONE_LAYER";
+        confirmCancelButton.setDisable(true);
 
         new Thread(() -> {
-            int success = 0;
-            List<String> failedCodes = new ArrayList<>();
-
-            for (String code : codes) {
-                DeleteResult result = deleteByBoxCode(code);
-                if (result.success) {
-                    success++;
-                    logCancelSuccess(code);
+            List<String> successCodes = new ArrayList<>();
+            for (IdentifyItem item : cancelableItems) {
+                CancelRecord record = doCancel(item.code, mode);
+                Platform.runLater(() -> cancelRecordItems.add(0, record));
+                if (record.success) {
+                    successCodes.add(item.code);
+                    logSuccess(item.code);
                 } else {
-                    failedCodes.add(code);
-                    logCancelFailure(code, result.message);
+                    logFailure(item.code, record.message);
                 }
-
-                String line = buildCancelLine(code, result);
-                Platform.runLater(() -> cancelResults.add(0, line));
             }
-
-            int total = codes.size();
-            int successCount = success;
-            List<String> failedCodeSnapshot = new ArrayList<>(failedCodes);
             Platform.runLater(() -> {
-                String summary = "取消完成：成功 " + successCount + " / " + total;
-                if (!failedCodeSnapshot.isEmpty()) {
-                    summary += "，失败码：" + String.join("，", failedCodeSnapshot);
+                // 移除成功的码
+                for (String code : successCodes) {
+                    pendingMap.remove(code);
+                    lastIdentifyMap.remove(code);
+                    pendingItems.removeIf(p -> p.code.equals(code));
+                    identifyItems.removeIf(i -> i.code.equals(code));
                 }
-                identifySummaryLabel.setText(summary);
-
-                if (singleMode) {
-                    if (successCount > 0) {
-                        singleCodeField.clear();
-                        singleIdentifiedCode = null;
-                        singleCanCancel = false;
-                    }
-                    singleConfirmCancelButton.setDisable(!singleCanCancel);
-                    return;
-                }
-
-                if (successCount == total) {
-                    multiCodes.clear();
-                    multiIdentifyState.clear();
+                // 刷新汇总
+                if (!lastIdentifyMap.isEmpty()) {
+                    refreshIdentifyDisplay();
                 } else {
-                    multiCodes.removeIf(code -> !failedCodeSnapshot.contains(code));
-                    multiIdentifyState.entrySet().removeIf(entry -> !failedCodeSnapshot.contains(entry.getKey()));
+                    identifySummaryLabel.setText("执行完成");
+                    confirmCancelButton.setDisable(true);
                 }
-                updateMultiConfirmButtonState();
+                codeInputField.clear();
             });
         }, "shiwan-m2-cancel-exec").start();
     }
 
-    private String buildCancelLine(String code, DeleteResult result) {
-        String now = LocalDateTime.now().format(TIME_FMT);
-        if (result.success) {
-            return now + "  ✓ " + code + " 取消关联成功";
-        }
-        return now + "  ✗ " + code + " 取消关联失败，原因：" + result.message;
-    }
+    // ===== HTTP 调用 =====
 
-    private QueryCheckResult queryCancelable(String code) {
+    private Map<String, Object> doCheckCancel(String code) {
         try {
-            String response = HttpUtil.doGet("/api/shiwan-m2/code/query?code=" + encodePath(code));
-            ApiResult<Map<String, Object>> result = HttpUtil.parseJson(response, new TypeReference<ApiResult<Map<String, Object>>>() {});
-            if (result != null && result.getCode() == 200 && result.getData() != null) {
-                Object total = result.getData().get("total");
-                int affected = total instanceof Number ? ((Number) total).intValue() : 1;
-                return new QueryCheckResult(true, Math.max(affected, 1), "可取消");
+            String resp = HttpUtil.doGet("/api/shiwan-m2/code/check-cancel?code=" + enc(code));
+            ApiResult<Map<String, Object>> result = HttpUtil.parseJson(resp,
+                    new TypeReference<ApiResult<Map<String, Object>>>() {});
+            if (result != null && result.getCode() == 200) {
+                return result.getData();
             }
-            String message = result == null ? "后端无响应" : result.getMessage();
-            return new QueryCheckResult(false, 0, message);
+            return null;
         } catch (Exception e) {
-            return new QueryCheckResult(false, 0, "识别异常: " + e.getMessage());
+            return null;
         }
     }
 
-    private DeleteResult deleteByBoxCode(String code) {
+    private CancelRecord doCancel(String code, String mode) {
+        String time = LocalDateTime.now().format(TIME_FMT);
         try {
-            Map<String, String> body = new LinkedHashMap<>();
-            body.put("caseCode", code);
-            String response = HttpUtil.doPost("/api/shiwan-m2/code/cancel", body);
-            ApiResult<Boolean> result = HttpUtil.parseJson(response, new TypeReference<ApiResult<Boolean>>() {});
-            boolean success = result != null && result.getCode() == 200 && Boolean.TRUE.equals(result.getData());
-            if (success) {
-                return new DeleteResult(true, result.getMessage());
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("code", code);
+            body.put("mode", mode);
+            String resp = HttpUtil.doPost("/api/shiwan-m2/code/cancel", body);
+            ApiResult<Map<String, Object>> result = HttpUtil.parseJson(resp,
+                    new TypeReference<ApiResult<Map<String, Object>>>() {});
+            if (result != null && result.getCode() == 200) {
+                int count = 0;
+                if (result.getData() != null && result.getData().get("cancelledCount") instanceof Number) {
+                    count = ((Number) result.getData().get("cancelledCount")).intValue();
+                }
+                String codeTypeName = result.getData() != null
+                        ? codeTypeName(str(result.getData(), "codeType")) : "";
+                return new CancelRecord(time, code, codeTypeName, true, count, null);
             }
-            String message = result == null ? "后端无响应" : result.getMessage();
-            return new DeleteResult(false, message);
+            String msg = result == null ? "后端无响应" : result.getMessage();
+            return new CancelRecord(time, code, "", false, 0, msg);
         } catch (Exception e) {
-            return new DeleteResult(false, "请求异常: " + e.getMessage());
+            return new CancelRecord(time, code, "", false, 0, "请求异常: " + e.getMessage());
         }
     }
 
-    private void logCancelSuccess(String code) {
+    // ===== 密码确认弹窗 =====
+
+    private boolean showPasswordConfirm(boolean modeAll, int execCount, int totalRelations,
+                                        int skipCount, List<IdentifyItem> uploadedPallets) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("取消关联确认");
+        ButtonType confirmType = new ButtonType("确认", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelType  = new ButtonType("取消", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(confirmType, cancelType);
+
+        // 信息盒
+        VBox infoBox = new VBox(6);
+        infoBox.setStyle("-fx-background-color:#EFF6FF; -fx-border-color:#BFDBFE; " +
+                "-fx-border-radius:8; -fx-background-radius:8; -fx-padding:12;");
+        Label scopeLabel = new Label("取消范围：" + (modeAll ? "全部解除" : "只解一层"));
+        scopeLabel.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#1D4ED8;");
+        Label execLabel  = new Label("本次将执行 " + execCount + " 个可解除项，共涉及 " + totalRelations + " 条关联");
+        execLabel.setStyle("-fx-font-size:14px;");
+        infoBox.getChildren().addAll(scopeLabel, execLabel);
+        if (skipCount > 0) {
+            Label skipLabel = new Label(skipCount + " 个不可解除项将被跳过");
+            skipLabel.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280;");
+            infoBox.getChildren().add(skipLabel);
+        }
+
+        VBox content = new VBox(16, infoBox);
+
+        // 云端影响盒
+        if (!uploadedPallets.isEmpty()) {
+            VBox cloudBox = new VBox(8);
+            cloudBox.setStyle("-fx-background-color:#FEF3C7; -fx-border-color:#F59E0B; " +
+                    "-fx-border-radius:8; -fx-background-radius:8; -fx-padding:12;");
+            Label cloudTitle = new Label("⚠ 云端影响：以下垛码已上传云端，执行将先取消整垛云端数据");
+            cloudTitle.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#92400E;");
+            cloudTitle.setWrapText(true);
+            cloudBox.getChildren().add(cloudTitle);
+            for (IdentifyItem item : uploadedPallets) {
+                Label l = new Label("· 垛码 " + item.code);
+                l.setStyle("-fx-font-size:13px; -fx-text-fill:#92400E;");
+                cloudBox.getChildren().add(l);
+            }
+            Separator sep = new Separator();
+            Label warnLabel = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
+            warnLabel.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#B91C1C;");
+            cloudBox.getChildren().addAll(sep, warnLabel);
+            content.getChildren().add(cloudBox);
+        } else {
+            Label warnLabel = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
+            warnLabel.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#B91C1C;");
+            content.getChildren().add(warnLabel);
+        }
+
+        // 密码框
+        VBox pwdBox = new VBox(6);
+        Label pwdLabel = new Label("* 密码");
+        pwdLabel.setStyle("-fx-font-weight:bold; -fx-font-size:16px;");
+        PasswordField pwdField = new PasswordField();
+        pwdField.setPromptText("请输入密码");
+        pwdField.setStyle("-fx-min-height:44px; -fx-font-size:16px;");
+        Label pwdErr = new Label();
+        pwdErr.setStyle("-fx-text-fill:#EF4444; -fx-font-size:13px;");
+        pwdBox.getChildren().addAll(pwdLabel, pwdField, pwdErr);
+        content.getChildren().add(pwdBox);
+
+        content.setPrefWidth(480);
+        content.setPadding(new Insets(20));
+        dialog.getDialogPane().setContent(content);
+
+        Button confirmBtn = (Button) dialog.getDialogPane().lookupButton(confirmType);
+        confirmBtn.setStyle("-fx-background-color:#EF4444; -fx-text-fill:white; " +
+                "-fx-font-weight:bold; -fx-min-width:100px;");
+        Button cancelBtn = (Button) dialog.getDialogPane().lookupButton(cancelType);
+        cancelBtn.setStyle("-fx-background-color:#6B7280; -fx-text-fill:white; -fx-min-width:80px;");
+
+        // 密码验证：密码错误不关闭对话框
+        confirmBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            if (!FIXED_PASSWORD.equals(pwdField.getText())) {
+                pwdErr.setText("密码错误，请重新输入");
+                pwdField.clear();
+                ev.consume();
+            }
+        });
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        return result.isPresent() && result.get() == confirmType;
+    }
+
+    // ===== 日志 =====
+
+    private void logSuccess(String code) {
         OperateLogBuilder.create()
                 .module(ModuleNameEnum.CODE_QUERY)
                 .operateType(OperateTypeEnum.DELETE)
@@ -385,7 +440,7 @@ public class ShiwanM2CancelAssociationController {
                 .saveAsync();
     }
 
-    private void logCancelFailure(String code, String reason) {
+    private void logFailure(String code, String reason) {
         OperateLogBuilder.create()
                 .module(ModuleNameEnum.CODE_QUERY)
                 .operateType(OperateTypeEnum.DELETE)
@@ -396,34 +451,55 @@ public class ShiwanM2CancelAssociationController {
                 .saveAsync();
     }
 
-    private boolean showPasswordConfirm(String title, String detailText) {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        dialog.setHeaderText("请输入密码后确认");
-        ButtonType confirmType = new ButtonType("确认取消关联", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(confirmType, ButtonType.CANCEL);
+    // ===== 工具方法 =====
 
-        Label detail = new Label(detailText);
-        detail.setWrapText(true);
-        PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("请输入密码（固定密码）");
-        VBox content = new VBox(10, detail, new Label("*请输入密码"), passwordField);
-        dialog.getDialogPane().setContent(content);
-
-        Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmType);
-        confirmButton.setDisable(true);
-        passwordField.textProperty().addListener((obs, ov, nv) -> confirmButton.setDisable(!FIXED_PASSWORD.equals(nv)));
-
-        Optional<ButtonType> result = dialog.showAndWait();
-        return result.isPresent() && result.get() == confirmType;
+    private boolean isModeAll() {
+        return scopeAllRadio != null && scopeAllRadio.isSelected();
     }
 
-    private String encodePath(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    private static String codeTypeName(String codeType) {
+        if (codeType == null) return "";
+        switch (codeType) {
+            case "PALLET": return "垛码";
+            case "CASE":   return "箱码";
+            case "BOX":    return "盒码";
+            case "BOTTLE": return "瓶码";
+            default:       return codeType;
+        }
     }
 
-    private String normalize(String value) {
-        return value == null ? "" : value.trim();
+    private static int codeTypeOrder(String codeType) {
+        if ("PALLET".equals(codeType)) return 0;
+        if ("CASE".equals(codeType))   return 1;
+        return 2;
+    }
+
+    private static String str(Map<String, Object> map, String key) {
+        if (map == null) return null;
+        Object v = map.get(key);
+        return v == null ? null : v.toString();
+    }
+
+    private static int intVal(Map<String, Object> map, String key) {
+        if (map == null) return 0;
+        Object v = map.get(key);
+        if (v instanceof Number) return ((Number) v).intValue();
+        try { return v != null ? Integer.parseInt(v.toString()) : 0; } catch (Exception e) { return 0; }
+    }
+
+    private static boolean boolVal(Map<String, Object> map, String key) {
+        if (map == null) return false;
+        Object v = map.get(key);
+        if (v instanceof Boolean) return (Boolean) v;
+        return "true".equalsIgnoreCase(String.valueOf(v));
+    }
+
+    private static String normalize(String s) {
+        return s == null ? "" : s.trim();
+    }
+
+    private static String enc(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     private void showAlert(Alert.AlertType type, String title, String message) {
@@ -435,25 +511,197 @@ public class ShiwanM2CancelAssociationController {
         alert.showAndWait();
     }
 
-    private static class QueryCheckResult {
-        private final boolean cancelable;
-        private final int affectedCount;
-        private final String message;
+    /** 根据后端 check-cancel 响应构建识别项。若该码已上传则直接标记为不可解除。 */
+    private static IdentifyItem buildIdentifyItem(String code, Map<String, Object> check, boolean modeAll) {
+        IdentifyItem item = new IdentifyItem();
+        item.code    = code;
+        item.modeAll = modeAll;
+        if (check == null) {
+            item.codeType   = "UNKNOWN";
+            item.cancelable = false;
+            item.message    = "识别失败，请检查网络连接";
+            return item;
+        }
+        item.codeType        = str(check, "codeType");
+        item.parentCode      = str(check, "parentCode");
+        item.affectedOneLayer = intVal(check, "affectedOneLayer");
+        item.affectedAll     = intVal(check, "affectedAll");
+        item.isUploaded      = boolVal(check, "isUploaded");
+        // 已上传则不允许取消关联
+        if (item.isUploaded) {
+            item.cancelable = false;
+            item.message    = "该码已上传";
+        } else {
+            item.cancelable = boolVal(check, "cancelable");
+            item.message    = str(check, "message");
+        }
+        return item;
+    }
 
-        private QueryCheckResult(boolean cancelable, int affectedCount, String message) {
-            this.cancelable = cancelable;
-            this.affectedCount = affectedCount;
-            this.message = message;
+    // ===== 数据模型 =====
+
+    static class PendingItem {
+        final String code;
+        final String typeName;
+        PendingItem(String code, String typeName) {
+            this.code     = code;
+            this.typeName = typeName;
+        }
+        @Override public String toString() {
+            return typeName.isEmpty() ? code : typeName + " " + code;
         }
     }
 
-    private static class DeleteResult {
-        private final boolean success;
-        private final String message;
+    static class IdentifyItem {
+        String  code;
+        String  codeType;
+        boolean cancelable;
+        String  parentCode;
+        int     affectedOneLayer;
+        int     affectedAll;
+        boolean isUploaded;
+        String  message;
+        boolean modeAll;
 
-        private DeleteResult(boolean success, String message) {
-            this.success = success;
-            this.message = message;
+        String detailText() {
+            if (!cancelable) {
+                if (parentCode != null && !parentCode.isEmpty()) {
+                    String parentTypeName = parentTypeName(codeType);
+                    return "已关联至" + parentTypeName + "码 " + parentCode + "，请先将" + parentTypeName + "码加入列表操作";
+                }
+                return message != null ? message : "不可解除";
+            }
+            switch (codeType != null ? codeType : "") {
+                case "PALLET":
+                    return modeAll
+                        ? "解除" + affectedOneLayer + "条箱-垛关联；盒-箱、瓶-盒结构保留（垛码层级限制，与只解一层等价）"
+                        : "解除" + affectedOneLayer + "条箱-垛关联；盒-箱、瓶-盒结构保留，各箱可重新上产线归垛（与全部解除等价）";
+                case "CASE":
+                    if (modeAll) {
+                        int bottles = affectedAll - affectedOneLayer;
+                        return "解除" + affectedOneLayer + "条盒-箱+" + bottles + "条瓶-盒关联，共" + affectedAll + "条；所有码可重新关联";
+                    }
+                    return "解除" + affectedOneLayer + "条盒-箱关联；瓶-盒结构保留，各盒可重新上产线归新箱";
+                case "BOX":
+                    return "解除" + affectedOneLayer + "条瓶-盒关联，可重新关联（与" + (modeAll ? "只解一层" : "全部解除") + "等价）";
+                default:
+                    return message != null ? message : "";
+            }
+        }
+
+        static String parentTypeName(String codeType) {
+            if ("CASE".equals(codeType)) return "垛";
+            if ("BOX".equals(codeType))  return "箱";
+            return "上级";
+        }
+    }
+
+    static class CancelRecord {
+        final String  time;
+        final String  code;
+        final String  typeName;
+        final boolean success;
+        final int     count;
+        final String  message;
+        CancelRecord(String time, String code, String typeName, boolean success, int count, String message) {
+            this.time     = time;
+            this.code     = code;
+            this.typeName = typeName;
+            this.success  = success;
+            this.count    = count;
+            this.message  = message;
+        }
+        @Override public String toString() {
+            if (success) {
+                return time + " ✓ " + typeName + " " + code + "，解除 " + count + " 条关联";
+            }
+            return time + " ✗ " + typeName + " " + code + "，失败：" + message;
+        }
+    }
+
+    // ===== 自定义 ListCell =====
+
+    /** 待取消列表 Cell：「序号. 码类型 码值 [移除]」 */
+    private class PendingCell extends ListCell<PendingItem> {
+        @Override
+        protected void updateItem(PendingItem item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) { setGraphic(null); setText(null); return; }
+
+            int idx = getIndex() + 1;
+            Label text = new Label(idx + ". " + item);
+            text.setStyle("-fx-font-size:14px;");
+            HBox.setHgrow(text, Priority.ALWAYS);
+            text.setMaxWidth(Double.MAX_VALUE);
+
+            Button removeBtn = new Button("移除");
+            removeBtn.setStyle("-fx-background-color:#9E9E9E; -fx-text-fill:white; " +
+                    "-fx-font-size:12px; -fx-padding:2 8; -fx-cursor:hand;");
+            removeBtn.setOnAction(e -> {
+                pendingMap.remove(item.code);
+                pendingItems.remove(item);
+                lastIdentifyMap.remove(item.code);
+                identifyItems.removeIf(i -> i.code.equals(item.code));
+                refreshIdentifyDisplay();
+            });
+
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            HBox row = new HBox(6, text, spacer, removeBtn);
+            row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            setGraphic(row);
+            setText(null);
+        }
+    }
+
+    /** 识别结果 Cell：✓/✗ 标题 + 详情描述，带颜色区分 */
+    private class IdentifyCell extends ListCell<IdentifyItem> {
+        @Override
+        protected void updateItem(IdentifyItem item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) { setGraphic(null); setText(null); return; }
+
+            VBox card = new VBox(4);
+            card.setPadding(new Insets(8, 10, 8, 10));
+
+            String typeName = codeTypeName(item.codeType);
+            if (item.cancelable) {
+                card.setStyle("-fx-border-color: #16A34A transparent transparent transparent; " +
+                        "-fx-border-width: 3 0 0 0;");
+                Label title = new Label("✓ " + typeName + " " + item.code + "，可解除");
+                title.setStyle("-fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:#15803D;");
+                Label detail = new Label("   " + item.detailText());
+                detail.setStyle("-fx-font-size:13px; -fx-text-fill:#374151;");
+                detail.setWrapText(true);
+                card.getChildren().addAll(title, detail);
+            } else {
+                card.setStyle("-fx-border-color: #DC2626 transparent transparent transparent; " +
+                        "-fx-border-width: 3 0 0 0;");
+                Label title = new Label("✗ " + typeName + " " + item.code + "，不可解除");
+                title.setStyle("-fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+                Label detail = new Label("   " + item.detailText());
+                detail.setStyle("-fx-font-size:13px; -fx-text-fill:#6B7280;");
+                detail.setWrapText(true);
+                card.getChildren().addAll(title, detail);
+            }
+
+            setGraphic(card);
+            setText(null);
+        }
+    }
+
+    /** 取消记录 Cell：绿色/红色文字 */
+    private static class CancelRecordCell extends ListCell<CancelRecord> {
+        @Override
+        protected void updateItem(CancelRecord item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) { setGraphic(null); setText(null); return; }
+            Label label = new Label(item.toString());
+            label.setStyle("-fx-font-size:13px; -fx-text-fill:" +
+                    (item.success ? "#15803D" : "#DC2626") + ";");
+            label.setWrapText(true);
+            setGraphic(label);
+            setText(null);
         }
     }
 }

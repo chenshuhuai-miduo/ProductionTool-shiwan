@@ -5,7 +5,9 @@ import com.miduo.cloud.common.dto.ApiResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,5 +72,18 @@ public class ShiwanM2M1SyncController {
             data.put("active", m1TCodeSyncService.isSyncActive());
         }
         return ApiResult.success(data);
+    }
+
+    /**
+     * 轮询同步事件（增量，按 seq 去重）。
+     * GET /api/shiwan-m2/m1-sync/events?lastSeq=0
+     */
+    @GetMapping("/events")
+    public ApiResult<List<Map<String, Object>>> events(
+            @RequestParam(defaultValue = "0") long lastSeq) {
+        if (m1TCodeSyncService == null) {
+            return ApiResult.success(Collections.emptyList());
+        }
+        return ApiResult.success(m1TCodeSyncService.pollSyncEvents(lastSeq));
     }
 }

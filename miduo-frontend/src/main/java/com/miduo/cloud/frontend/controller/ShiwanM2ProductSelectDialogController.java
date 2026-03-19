@@ -85,8 +85,8 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     }
 
     private void updateTable(java.util.List<Map<String, String>> list, int total, int page) {
-        totalCount   = total;
-        currentPage  = Math.max(page, 1);
+        totalCount  = total;
+        currentPage = Math.max(page, 1);
         productTable.getItems().clear();
         productTable.getItems().addAll(list);
         totalLabel.setText("共 " + total + " 条");
@@ -101,6 +101,11 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     }
 
     @FXML
+    private void onFirstPage() {
+        if (currentPage > 1) loadPage(1);
+    }
+
+    @FXML
     private void onPrevPage() {
         if (currentPage > 1) loadPage(currentPage - 1);
     }
@@ -109,6 +114,12 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     private void onNextPage() {
         int totalPages = totalCount <= 0 ? 1 : (totalCount + PAGE_SIZE - 1) / PAGE_SIZE;
         if (currentPage < totalPages) loadPage(currentPage + 1);
+    }
+
+    @FXML
+    private void onLastPage() {
+        int totalPages = totalCount <= 0 ? 1 : (totalCount + PAGE_SIZE - 1) / PAGE_SIZE;
+        if (currentPage < totalPages) loadPage(totalPages);
     }
 
     @FXML

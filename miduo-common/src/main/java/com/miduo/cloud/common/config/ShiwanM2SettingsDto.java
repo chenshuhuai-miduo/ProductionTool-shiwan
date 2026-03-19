@@ -147,6 +147,8 @@ public class ShiwanM2SettingsDto {
         private String codePackageQueryPath;
         /** 码替换接口路径 */
         private String codeSubstitutionPath;
+        /** 取消关联接口路径（UnbindRelation） */
+        private String codeUnbindRelationPath;
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -173,5 +175,7 @@ public class ShiwanM2SettingsDto {
         public void setCodePackageQueryPath(String codePackageQueryPath) { this.codePackageQueryPath = codePackageQueryPath; }
         public String getCodeSubstitutionPath() { return codeSubstitutionPath; }
         public void setCodeSubstitutionPath(String codeSubstitutionPath) { this.codeSubstitutionPath = codeSubstitutionPath; }
+        public String getCodeUnbindRelationPath() { return codeUnbindRelationPath; }
+        public void setCodeUnbindRelationPath(String codeUnbindRelationPath) { this.codeUnbindRelationPath = codeUnbindRelationPath; }
     }
 }

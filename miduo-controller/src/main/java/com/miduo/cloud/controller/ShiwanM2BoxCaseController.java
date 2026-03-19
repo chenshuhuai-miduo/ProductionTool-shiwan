@@ -99,14 +99,31 @@ public class ShiwanM2BoxCaseController {
     }
 
     /**
-     * P02-05 取消关联（物理删除）。
+     * P02-06 取消关联 - 识别码的可取消状态。
+     * GET /api/shiwan-m2/code/check-cancel?code=xxx
+     */
+    @GetMapping("/code/check-cancel")
+    public ApiResult<Map<String, Object>> checkCancelable(@RequestParam String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return ApiResult.error(400, "码值不能为空");
+        }
+        Map<String, Object> data = shiwanM2BoxCaseService.checkCancelable(code);
+        return ApiResult.success("识别成功", data);
+    }
+
+    /**
+     * P02-06 取消关联 - 执行取消（支持垛/箱/盒码，含取消范围和云端处理）。
      * POST /api/shiwan-m2/code/cancel
-     * Body: { caseCode: "箱码" }
+     * Body: { code: "码值", mode: "ONE_LAYER|ALL" }
+     * 兼容旧版 Body: { caseCode: "箱码" }
      */
     @PostMapping("/code/cancel")
-    public ApiResult<Boolean> cancelCode(@RequestBody Map<String, Object> body) {
-        String caseCode = getStr(body, "caseCode");
-        return shiwanM2BoxCaseService.cancelByCaseCode(caseCode);
+    public ApiResult<Map<String, Object>> cancelCode(@RequestBody Map<String, Object> body) {
+        String code = getStr(body, "code");
+        if (code == null) code = getStr(body, "caseCode");
+        String mode = getStr(body, "mode");
+        if (mode == null) mode = "ONE_LAYER";
+        return shiwanM2BoxCaseService.cancelCode(code, mode);
     }
 
     /**
@@ -193,6 +210,23 @@ public class ShiwanM2BoxCaseController {
         String code = getStr(body, "code");
         int packageType = toInt(body != null ? body.get("packageType") : null, 0);
         return shiwanM2BoxCaseService.validateManualCode(code, packageType);
+    }
+
+    /**
+     * P02-02 手工采集瓶盒关联写入：将一组瓶码与一个盒码写入 CodeRelationUpload，OrderNo/ProductNO 为空。
+     * POST /api/shiwan-m2/manual/associate
+     * Body: { boxCode: "盒码", bottleCodes: ["瓶码1", "瓶码2", ...] }
+     */
+    @PostMapping("/manual/associate")
+    public ApiResult<Map<String, Object>> manualAssociate(@RequestBody Map<String, Object> body) {
+        String boxCode = getStr(body, "boxCode");
+        @SuppressWarnings("unchecked")
+        List<String> bottleCodes = body != null && body.get("bottleCodes") instanceof List
+                ? ((List<?>) body.get("bottleCodes")).stream()
+                        .map(o -> o != null ? o.toString().trim() : "")
+                        .collect(java.util.stream.Collectors.toList())
+                : null;
+        return shiwanM2BoxCaseService.manualAssociate(boxCode, bottleCodes);
     }
 
     private static String getStr(Map<String, Object> body, String key) {

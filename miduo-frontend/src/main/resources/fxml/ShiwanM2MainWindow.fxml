@@ -244,7 +244,6 @@
         styleClass="shiwan-m2-ctrl-btn-outline-blue"
         onAction="#onNoCodeNeeded"
         maxWidth="Infinity"
-        disable="true"
         GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
                                     <Button text="关闭报警"
