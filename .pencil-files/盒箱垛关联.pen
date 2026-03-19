@@ -6380,13 +6380,6 @@
                 },
                 {
                   "type": "frame",
-                  "id": "D4Pnm",
-                  "name": "spacer",
-                  "width": "fill_container",
-                  "height": 1
-                },
-                {
-                  "type": "frame",
                   "id": "NVT2P",
                   "name": "helpBtn",
                   "width": 32,
@@ -11398,16 +11391,6 @@
                       "fontWeight": "600"
                     }
                   ]
-                },
-                {
-                  "type": "text",
-                  "id": "tooGc",
-                  "name": "statusText",
-                  "fill": "#16A34A",
-                  "content": "查询成功",
-                  "fontFamily": "Inter",
-                  "fontSize": 16,
-                  "fontWeight": "600"
                 }
               ]
             },
