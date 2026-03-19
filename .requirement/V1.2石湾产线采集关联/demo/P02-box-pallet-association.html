@@ -1030,7 +1030,9 @@ body {
 .page-config-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .page-config-table th { background: #F3F4F6; padding: 10px 14px; text-align: left; font-weight: 600; border: 1px solid #E5E7EB; }
 .page-config-table td { padding: 10px 14px; border: 1px solid #E5E7EB; }
-#st-pages.sys-tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
+#st-pages.sys-tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow-y: auto; gap: 16px; }
+/* 页面配置为 flex 列，子项默认会 shrink，保存按钮易被压扁；禁止压缩并与其它 Tab 保存按钮同规格 */
+#st-pages .btn-primary { flex-shrink: 0; align-self: flex-start; min-height: 36px; height: 36px; padding: 0 16px; font-size: 13px; min-width: 80px; box-sizing: border-box; }
 
 /* ==================== 操作帮助弹窗 ==================== */
 .help-toc-item {
@@ -1196,7 +1198,7 @@ body {
         </div>
         <div class="order-row" style="margin-top:12px;">
           <span style="font-size:13px; color:#6B7280;">生产单号</span>
-          <input type="text" class="order-input" id="orderNum" value="20241201001" style="flex:1; min-width:0;">
+          <input type="text" class="order-input" id="orderNum" style="flex:1; min-width:0;">
         </div>
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid #E5E7EB;">
           <div style="font-size:14px; font-weight:600; color:#1F2937; margin-bottom:10px;">采集规格设置</div>
@@ -1423,11 +1425,10 @@ body {
 <div class="tab-content" id="tab-query">
   <div class="query-layout">
     <div class="query-top-bar">
-      <input type="text" class="form-input" id="queryInput" value="20241201C001" placeholder="如：20241201C001、20241201V010101、P20241201001" style="flex:1; min-width:200px;" onkeydown="if(event.key==='Enter')doQuery()">
+      <input type="text" class="form-input" id="queryInput" value="20241201C001" placeholder="如：20241201C001、20241201V010101、P20241201001" style="width:320px; flex-shrink:0;" onkeydown="if(event.key==='Enter')doQuery()">
       <button class="btn btn-primary" style="height:40px; padding:0 20px; font-size:14px;" onclick="doQuery()">查询</button>
       <button class="btn btn-outline" style="height:40px; padding:0 16px; font-size:14px;" onclick="clearQuery()">清空</button>
       <span class="help-icon" onclick="showQueryHelp()" style="width:24px;height:24px;font-size:14px;">?</span>
-      <span class="query-status" id="queryStatus">未查询</span>
     </div>
 
     <div class="query-split" id="querySplit" style="display:none;">
@@ -1667,9 +1668,8 @@ body {
     <!-- 标题行 -->
     <div style="display:flex; align-items:center; gap:12px; height:48px; flex-shrink:0;">
       <span style="font-size:24px; font-weight:600; color:#1F2937; font-family:'Microsoft YaHei',sans-serif;">取消关联</span>
-      <div style="flex:1;"></div>
-      <button onclick="showHelp('取消关联操作说明', '【输入码】支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码。不知道码值时，可先前往「数据查询」查询。\n\n【取消范围】\n· 只解一层（默认）：只取消该码层级的直接关联，下一层保留。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒。\n· 全部解除：取消该码层级及以下所有关联。垛码受层级限制仍只断箱-垛（与只解一层等价）；箱码断盒-箱+瓶-盒，所有码回迁热表；盒码与只解一层等价。\n\n【有上级时】若码已关联至上级（如盒已在箱内），须先取消上级才能取消该码；识别结果会提示上级码值，将上级码加入列表后执行即可。\n\n【已上传】云端数据以整垛为单位。若涉及码所在的垛已上传云端，系统先调用云端接口取消整垛数据，成功后再取消本地，保证两端一致。\n\n【密码】123456')"
-        style="width:32px; height:32px; border-radius:16px; background:#E5E7EB; border:none; font-size:16px; font-weight:600; color:#374151; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:inherit;">?</button>
+      <button onclick="showHelp('取消关联操作说明', '【输入码】支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码。不知道码值时，可先前往「数据查询」查询。\n\n【取消范围】\n· 只解一层（默认）：只取消该码层级的直接关联，下一层保留。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒。\n· 全部解除：取消该码层级及以下所有关联。垛码受层级限制仍只断箱-垛（与只解一层等价）；箱码断盒-箱+瓶-盒，所有码回迁热表；盒码与只解一层等价。\n\n【有上级时】若码已关联至上级（如盒已在箱内），须先取消上级才能取消该码；识别结果会提示上级码值，将上级码加入列表后执行即可。\n\n【已上传】云端数据以整垛为单位。若涉及码所在的垛已上传云端，系统先调用云端接口取消整垛数据，成功后再取消本地，保证两端一致。\n\n【密码】需要密码验证')"
+        style="width:24px; height:24px; border-radius:12px; background:#E5E7EB; border:none; font-size:13px; font-weight:600; color:#6B7280; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-family:inherit; flex-shrink:0; vertical-align:middle;">?</button>
     </div>
 
     <!-- 主体：左右两栏 -->
@@ -2113,7 +2113,7 @@ body {
             <thead><tr><th>操作</th><th>步骤</th></tr></thead>
             <tbody>
               <tr><td>启动时在线导入</td><td>软件启动时自动执行，仅拉取<strong>盖外码小标</strong>；盒外码中标、箱外码大标不参与</td></tr>
-              <tr><td>本地导入</td><td>点击后弹窗 → 先选择码包类型（盖外码小标/盒外码中标/箱外码大标）→ 再选择 TXT 文件 → 输入密码（<strong>123456</strong>）→ 确认解析入库。盒外码中标、箱外码大标仅能本地导入；盖外码小标无网络时也可本地导入。因格式相同，类型需人工指定</td></tr>
+              <tr><td>本地导入</td><td>点击后弹窗 → 先选择码包类型（盖外码小标/盒外码中标/箱外码大标）→ 再选择 TXT 文件 → 输入密码 → 确认解析入库。盒外码中标、箱外码大标仅能本地导入；盖外码小标无网络时也可本地导入。因格式相同，类型需人工指定</td></tr>
               <tr><td>在线更新</td><td>点击「在线更新」→ 仅拉取<strong>盖外码小标</strong>（盒外码中标、箱外码大标不参与，均需本地导入）</td></tr>
               <tr><td>查看码包</td><td>点击操作列「查看」→ 弹窗显示该码包所有码，支持搜索</td></tr>
               <tr><td>删除码包</td><td>仅当该码包内无已关联码时允许删除；有则禁止并提示。确认后逻辑删除</td></tr>
@@ -2129,13 +2129,13 @@ body {
         </div>
 
         <div class="help-section" id="h-replace">
-          <div class="help-h2">4.4 数据替换 <span class="help-badge-warn">需要密码 123456</span></div>
+          <div class="help-h2">4.4 数据替换 <span class="help-badge-warn">需要密码</span></div>
           <p><strong>用途</strong>：码损坏或码错误时，将旧码替换为新码（仅操作外码：瓶码/盒码/箱码，无需操作内码）。</p>
           <ol class="help-ol">
             <li>输入原码（待替换）</li>
             <li>输入新码（替换后）</li>
             <li>输入替换原因（可选）</li>
-            <li>点击「确认替换」→ 弹窗核对信息 → 输入密码 <strong>123456</strong> → 确认执行</li>
+            <li>点击「确认替换」→ 弹窗核对信息 → 输入密码 → 确认执行</li>
           </ol>
           <p><strong>新码要求（需同时满足）：</strong></p>
           <ul class="help-ul">
@@ -2152,7 +2152,7 @@ body {
         </div>
 
         <div class="help-section" id="h-cancel">
-          <div class="help-h2">4.5 取消关联 <span class="help-badge-warn">需要密码 123456</span></div>
+          <div class="help-h2">4.5 取消关联 <span class="help-badge-warn">需要密码</span></div>
           <p><strong>用途</strong>：取消码的关联关系（如数据错误、产品需要重新处理时）。</p>
           <div class="help-info-box">
             <strong>重要规则：</strong>
@@ -2173,7 +2173,7 @@ body {
             <li>点击「识别」→ 右侧显示各码识别结果（✓ 可取消 / ✗ 不可取消并提示原因）</li>
             <li>若有码标记为不可取消（有上级），将上级码也加入列表，再次点击「识别」</li>
             <li>选择取消范围（只解一层 / 全部解除）</li>
-            <li>点击「确认取消关联」→ 输入密码（<strong>123456</strong>）→ 执行</li>
+            <li>点击「确认取消关联」→ 输入密码 → 执行</li>
           </ol>
           <p class="help-warn">⚠ 操作不可恢复，请确认无误后操作</p>
         </div>
@@ -2256,7 +2256,7 @@ body {
           </div>
           <div class="help-faq-item">
             <div class="help-faq-q">Q6：忘记密码怎么办？</div>
-            <div class="help-faq-a">系统设置、码替换、取消关联的密码统一为：<strong style="color:#2563EB; font-size:18px;">123456</strong></div>
+            <div class="help-faq-a">系统设置、码替换、取消关联均需输入密码（密码请联系管理员获取）</div>
           </div>
           <div class="help-faq-item">
             <div class="help-faq-q">Q7：如何知道码属于哪一层级（瓶/盒/箱/垛）？</div>
@@ -2268,7 +2268,7 @@ body {
               <li>在识别结果中找到标记 ✗ 的码，查看提示（如「已关联至垛码xxx，请先将垛码加入列表」）</li>
               <li>将提示的上级码（垛码）也输入并「加入列表」</li>
               <li>再次点击「识别」，上级码通过后该码变为 ✓ 可取消</li>
-              <li>确认无 ✗ 码后，点击「确认取消关联」→ 输入密码（<strong>123456</strong>）→ 执行</li>
+              <li>确认无 ✗ 码后，点击「确认取消关联」→ 输入密码 → 执行</li>
             </ol>
           </div>
         </div>
@@ -2392,8 +2392,7 @@ body {
       </div>
       </div>
       <div class="sys-tab-panel" id="st-pages" style="padding:20px 24px;">
-        <div style="font-size:14px; color:#6B7280; margin-bottom:14px;">控制主界面 Tab 栏显示哪些页面。Switch 开启=Tab 显示，关闭=Tab 隐藏。配置保存至配置文件，重启后生效。</div>
-        <table class="page-config-table" style="margin-bottom:16px;">
+        <table class="page-config-table">
           <thead><tr><th>页面名称</th><th>功能说明</th><th style="width:80px;">显示</th></tr></thead>
           <tbody>
             <tr><td>数据采集（盒箱垛）</td><td>主界面，盒箱垛关联数据采集（必选不可关闭）</td><td><div class="toggle-track on disabled"><div class="toggle-thumb"></div></div></td></tr>
@@ -2406,7 +2405,12 @@ body {
             <tr><td>数据上传</td><td>手动上传、上传状态查询</td><td><div class="toggle-track on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div></td></tr>
           </tbody>
         </table>
-        <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px; min-width:80px; align-self:flex-start;" onclick="alert('页面配置已保存至配置文件')">保存</button>
+        <div class="page-config-hint" style="display:flex; flex-direction:column; gap:8px; font-size:12px; color:#6B7280; font-family:'Microsoft YaHei',sans-serif;">
+          <div>· 控制主界面Tab栏显示，勾选则显示、取消则隐藏</div>
+          <div>· 列表中勾选页面的顺序即为Tab栏显示顺序</div>
+          <div>· 配置保存后软件重启生效</div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('页面配置已保存至配置文件')">保存</button>
       </div>
       <div class="sys-tab-panel" id="st-device">
       <div class="sys-tab-panel active" id="st-io" style="flex:1; overflow-y:auto;">
@@ -2963,6 +2967,7 @@ function toggleCollect() {
     btn.style.background = '';
     document.getElementById('receivingDot').style.display = 'none';
     if(simInterval2) { clearInterval(simInterval2); simInterval2 = null; }
+    setCollectFieldsLocked(false);
     appendOpLog('停止采集');
   }
 }
@@ -3464,13 +3469,6 @@ function doQuery() {
   const pallet = getPalletForCode(code);
   queryRows = pallet ? allChains.filter(r => r.垛码 === pallet) : [];
 
-  const status = document.getElementById('queryStatus');
-  if (queryRows.length > 0) {
-    status.innerHTML = '<span style="color:#16A34A; font-weight:600;">查询成功</span>';
-  } else {
-    status.innerHTML = '<span style="color:#DC2626; font-weight:600;">未找到该码信息</span>';
-  }
-
   document.getElementById('queryCount').textContent = queryRows.length > 0 ? `已查询到 ${queryRows.length} 条码信息` : '未找到该码信息';
 
   const tbody = document.getElementById('queryTableBody');
@@ -3515,7 +3513,6 @@ function selectQueryRow(idx) {
 
 function clearQuery() {
   document.getElementById('queryInput').value = '20241201C001';
-  document.getElementById('queryStatus').textContent = '未查询';
   document.getElementById('querySplit').style.display = 'none';
   document.getElementById('queryEmpty').style.display = 'flex';
 }
@@ -4082,8 +4079,16 @@ function renderUploadStatPage() {
   renderPageBar('uploadStatPagination', uploadStatPage, renderUploadStatPage);
 }
 
-// 页面加载后初始化上传统计
-document.addEventListener('DOMContentLoaded', () => { initUploadStat(); });
+// 页面加载后初始化上传统计 + 生产单号默认值
+document.addEventListener('DOMContentLoaded', () => {
+  initUploadStat();
+  // 生产单号默认值：当天日期 + 001
+  const today = new Date();
+  const ymd = today.getFullYear().toString()
+    + String(today.getMonth() + 1).padStart(2, '0')
+    + String(today.getDate()).padStart(2, '0');
+  document.getElementById('orderNum').value = ymd + '001';
+});
 
 // 数据上传
 function doManualUpload() {
@@ -4276,7 +4281,7 @@ function doPackageImport() {
 }
 function showPackageHelp() {
   showHelp('码包导入说明',
-    '码包文件都是指外码，请不要导入内码，防止码包泄露。\n\n在线更新（仅盖外码小标、箱外码大标）\n点击「在线更新」后，系统按上次拉取时间增量拉取瓶码（盖外码小标）、箱码（箱外码大标）两种码包。盒外码中标不参与在线拉取，需通过本地导入。首次拉取全量，后续拉取增量。拉取完成后列表自动刷新。\n\n启动自动导入\n软件每次启动时自动执行一次在线更新，仅拉取盖外码小标、箱外码大标，规则同上。\n\n本地导入（包材厂给的码包文件）\n盒外码中标仅能通过本地导入；盖外码小标、箱外码大标在无网络时也可本地导入。\n1. 点击「本地导入」\n2. 先选择码包类型：瓶码 / 盒码 / 箱码（三种文件格式一样，需您指定）\n3. 再选择本地 TXT 文件\n4. 输入密码 123456\n5. 确认解析入库，导入成功后列表自动刷新\n\n码包文件格式（包材厂提供的 TXT 文件）\n- 瓶码：每行一个瓶码\n- 盒码：每行一个盒码\n- 箱码：每行一个箱码\n\n删除\n只有该码包里的码都还没用过时才能删除；有已用过的码则不能删（码替换时需要校验）。删除后数据仍保留，可查记录。\n\n提醒\n生产前请确保码包已正确导入，否则采集时会报错。可通过「查看」检查码包内容。'
+    '码包文件都是指外码，请不要导入内码，防止码包泄露。\n\n在线更新（仅盖外码小标、箱外码大标）\n点击「在线更新」后，系统按上次拉取时间增量拉取瓶码（盖外码小标）、箱码（箱外码大标）两种码包。盒外码中标不参与在线拉取，需通过本地导入。首次拉取全量，后续拉取增量。拉取完成后列表自动刷新。\n\n启动自动导入\n软件每次启动时自动执行一次在线更新，仅拉取盖外码小标、箱外码大标，规则同上。\n\n本地导入（包材厂给的码包文件）\n盒外码中标仅能通过本地导入；盖外码小标、箱外码大标在无网络时也可本地导入。\n1. 点击「本地导入」\n2. 先选择码包类型：瓶码 / 盒码 / 箱码（三种文件格式一样，需您指定）\n3. 再选择本地 TXT 文件\n4. 输入密码\n5. 确认解析入库，导入成功后列表自动刷新\n\n码包文件格式（包材厂提供的 TXT 文件）\n- 瓶码：每行一个瓶码\n- 盒码：每行一个盒码\n- 箱码：每行一个箱码\n\n删除\n只有该码包里的码都还没用过时才能删除；有已用过的码则不能删（码替换时需要校验）。删除后数据仍保留，可查记录。\n\n提醒\n生产前请确保码包已正确导入，否则采集时会报错。可通过「查看」检查码包内容。'
   );
 }
 function tryDeletePackage(name) {
@@ -4413,6 +4418,19 @@ function confirmExit() {
 function closeUnfinishedExit() { document.getElementById('unfinishedExitOverlay').classList.remove('active'); }
 
 function closeStartCollectConfirm() { document.getElementById('startCollectConfirmOverlay').classList.remove('active'); }
+function setCollectFieldsLocked(locked) {
+  // 产品选择框
+  const productBox = document.getElementById('productDisplayBox');
+  productBox.style.pointerEvents = locked ? 'none' : '';
+  productBox.style.opacity = locked ? '0.6' : '';
+  productBox.style.cursor = locked ? 'not-allowed' : '';
+  // 生产单号
+  document.getElementById('orderNum').disabled = locked;
+  // 采集规格
+  document.getElementById('casePerPallet').disabled = locked;
+  document.getElementById('boxPerCase').disabled = locked;
+}
+
 function confirmStartCollect() {
   closeStartCollectConfirm();
   const orderNum = document.getElementById('orderNum').value.trim();
@@ -4422,6 +4440,7 @@ function confirmStartCollect() {
   btn.textContent = '停止采集';
   btn.style.background = '#DC2626';
   document.getElementById('receivingDot').style.display = 'inline-flex';
+  setCollectFieldsLocked(true);
   startSimulation2();
   appendOpLog(`开始采集 - 产品：${productName}，生产单：${orderNum}`);
 }

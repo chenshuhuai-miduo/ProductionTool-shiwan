@@ -3692,16 +3692,6 @@
               "padding": 24,
               "children": [
                 {
-                  "type": "text",
-                  "id": "OHWPr",
-                  "name": "boxPcSectionTitle",
-                  "fill": "#333333",
-                  "content": "页面配置（控制主界面Tab栏显示，勾选则显示、取消则隐藏）",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 16,
-                  "fontWeight": "600"
-                },
-                {
                   "type": "frame",
                   "id": "8f063",
                   "name": "页面列表表格",
@@ -4579,14 +4569,41 @@
                   ]
                 },
                 {
-                  "type": "text",
-                  "id": "qHGOf",
+                  "type": "frame",
+                  "id": "EsWGZ",
                   "name": "boxPcHint",
-                  "fill": "#6B7280",
-                  "content": "说明：列表中勾选页面的顺序即为Tab栏显示顺序；配置保存后软件重启生效。",
-                  "fontFamily": "Microsoft YaHei",
-                  "fontSize": 12,
-                  "fontWeight": "normal"
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "HuVPT",
+                      "fill": "#6B7280",
+                      "content": "· 控制主界面Tab栏显示，勾选则显示、取消则隐藏",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nO7s4",
+                      "fill": "#6B7280",
+                      "content": "· 列表中勾选页面的顺序即为Tab栏显示顺序",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "JjzEz",
+                      "fill": "#6B7280",
+                      "content": "· 配置保存后软件重启生效",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
                 },
                 {
                   "type": "frame",
