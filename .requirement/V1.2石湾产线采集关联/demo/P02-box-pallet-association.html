@@ -1120,21 +1120,7 @@ body {
 }
 
 /* 帮助浮层 */
-.help-popup {
-  display: none;
-  position: absolute;
-  background: #fff;
-  border: 1px solid #CCCCCC;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #333;
-  max-width: 350px;
-  z-index: 300;
-  line-height: 1.7;
-}
-.help-popup.show { display: block; }
+/* help-tip modal 已迁移至 #helpTipOverlay */
 
 /* 产品选择弹窗 */
 .product-modal { width: 800px; max-height: 600px; }
@@ -2809,8 +2795,16 @@ body {
   </div>
 </div>
 
-<!-- 帮助弹窗 -->
-<div class="help-popup" id="helpPopup" onclick="event.stopPropagation()"></div>
+<!-- 帮助提示弹窗 -->
+<div class="modal-overlay" id="helpTipOverlay" onclick="if(event.target===this)closeHelpTip()">
+  <div onclick="event.stopPropagation()" style="width:560px;height:560px;background:#fff;border-radius:12px;border:1px solid #D9E1EC;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="height:56px;background:#2563EB;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;">
+      <span id="helpTipTitle" style="font-size:18px;font-weight:600;color:#fff;font-family:'Microsoft YaHei',sans-serif;">帮助提示</span>
+      <button onclick="closeHelpTip()" style="width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,0.19);border:none;color:#fff;font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
+    </div>
+    <div id="helpTipContent" style="flex:1;padding:24px;display:flex;flex-direction:column;gap:8px;font-size:16px;color:#374151;line-height:1.7;font-family:'Microsoft YaHei',sans-serif;overflow-y:auto;"></div>
+  </div>
+</div>
 
 <script>
 // 时钟
@@ -4453,15 +4447,15 @@ function testDb2Conn() {
 
 // 帮助弹窗
 function showHelp(title, content) {
-  const popup = document.getElementById('helpPopup');
-  popup.innerHTML = `<strong style="display:block; margin-bottom:8px; color:#1F2937;">${title}</strong><div style="white-space:pre-line; font-size:13px; color:#374151; line-height:1.7;">${content}</div>`;
-  popup.style.top = '50%'; popup.style.left = '50%';
-  popup.style.transform = 'translate(-50%, -50%)';
-  popup.style.position = 'fixed';
-  popup.classList.add('show');
-  setTimeout(() => document.addEventListener('click', hideHelp, {once:true}), 100);
+  document.getElementById('helpTipTitle').textContent = title;
+  const el = document.getElementById('helpTipContent');
+  el.innerHTML = content.split('\n\n')
+    .map(p => `<div style="white-space:pre-line;">${p}</div>`)
+    .join('');
+  document.getElementById('helpTipOverlay').classList.add('active');
 }
-function hideHelp() { document.getElementById('helpPopup').classList.remove('show'); }
+function closeHelpTip() { document.getElementById('helpTipOverlay').classList.remove('active'); }
+function hideHelp() { closeHelpTip(); }
 
 function confirmExit() {
   if (isCollecting) {

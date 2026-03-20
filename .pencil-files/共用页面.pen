@@ -4639,7 +4639,7 @@
       "x": 5496,
       "y": -8,
       "name": "帮助提示弹窗",
-      "width": 420,
+      "width": 560,
       "fill": "#FFFFFF",
       "cornerRadius": 12,
       "stroke": {
@@ -4709,6 +4709,7 @@
           "id": "iEuRP",
           "name": "内容区",
           "width": "fill_container",
+          "height": 480,
           "layout": "vertical",
           "gap": 12,
           "padding": 24,
@@ -4738,7 +4739,7 @@
                   "content": "开始/停止采集：系统检测硬件设备后开始采集；再次点击停止采集，未满垛数据会保留。",
                   "lineHeight": 1.7,
                   "fontFamily": "Inter",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "normal"
                 },
                 {
@@ -4751,7 +4752,7 @@
                   "content": "强制满垛：未达到设定箱数也强制结束当前垛，生成虚拟垛标并重置计数。",
                   "lineHeight": 1.7,
                   "fontFamily": "Inter",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "normal"
                 },
                 {
@@ -4764,7 +4765,7 @@
                   "content": "提取工单未成垛：停止采集时可用。弹窗输入或扫描未完成垛中的任一箱码，查出生产信息、采集规格和当前箱数后确认，回显主页面并自动开始采集。",
                   "lineHeight": 1.7,
                   "fontFamily": "Inter",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "normal"
                 }
               ]
