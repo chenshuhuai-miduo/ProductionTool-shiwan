@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 石湾 2 号机当前任务服务。
@@ -54,16 +55,19 @@ public class ShiwanM2CurrentTaskService {
 
             int orderId;
             if (existing != null && !existing.isEmpty()) {
-                // 已有进行中的任务：只更新产品信息，不新建订单
+                // 已有进行中的任务：更新产品信息及采集规格
                 orderId = ((Number) existing.get(0).get("orderId")).intValue();
                 jdbcTemplate.update(
-                        "UPDATE ProductionOrderDetail SET ProductName = ?, ProductNO = ?, Ratio = ? " +
+                        "UPDATE ProductionOrder SET CasesPerPallet = ?, BoxesPerCase = ? WHERE Id = ?",
+                        m, n, orderId);
+                jdbcTemplate.update(
+                        "UPDATE ProductionOrderDetail SET ProductName = ?, ProductNO = ?, Ratio = ?, ProductForMatID = ? " +
                         "WHERE OrderId = ? AND (IsDel = 0 OR IsDel IS NULL)",
-                        productName.trim(), productNo.trim(), m, orderId);
+                        productName.trim(), productNo.trim(), m, n, orderId);
             } else {
                 // 无进行中任务：新建 ProductionOrder + ProductionOrderDetail
-                String orderSql = "INSERT INTO ProductionOrder (SrcId, Type, OrderNo, OrderSumCoun, ProductSumCount, DmakeDate, OrderStatus, ProductSourceType, CreateTime, ProductionLine) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String orderSql = "INSERT INTO ProductionOrder (SrcId, Type, OrderNo, OrderSumCoun, ProductSumCount, DmakeDate, OrderStatus, ProductSourceType, CreateTime, ProductionLine, CasesPerPallet, BoxesPerCase) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 KeyHolder keyHolder = new GeneratedKeyHolder();
                 jdbcTemplate.update(conn -> {
                     PreparedStatement ps = conn.prepareStatement(orderSql, Statement.RETURN_GENERATED_KEYS);
@@ -77,6 +81,8 @@ public class ShiwanM2CurrentTaskService {
                     ps.setInt(8, 2);   // 2 产线
                     ps.setObject(9, now);
                     ps.setInt(10, 1);  // ProductionLine
+                    ps.setInt(11, m);  // CasesPerPallet
+                    ps.setInt(12, n);  // BoxesPerCase
                     return ps;
                 }, keyHolder);
 
@@ -89,7 +95,7 @@ public class ShiwanM2CurrentTaskService {
                 String detailSql = "INSERT INTO ProductionOrderDetail (OrderCount, ProductCount, ProductID, ProductName, ProductNO, ProductForMatID, ProductForMatName, OrderNo, OrderId, SyBatchNo, Type, Ratio, IsDel, AddTime, ProductTime, TwillendTime, CreateTime) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 jdbcTemplate.update(detailSql,
-                        0, 0, 0, productName.trim(), productNo.trim(), 0, "",
+                        0, 0, 0, productName.trim(), productNo.trim(), n, "",
                         orderNo.trim(), orderId, "", 1, m, 0, now, now, now, now);
             }
 
@@ -209,18 +215,46 @@ public class ShiwanM2CurrentTaskService {
     }
 
     /**
-     * 暂存：将当前任务下未成垛的 CodeRelationUpload 记录的 Status 设为 3（未成垛）。
+     * 暂存：将当前任务下未成垛的 CodeRelationUpload 记录的 Status 设为 3（未成垛），
+     * 并更新该垛 TagNo 对应所有记录的 Qty（= COUNT(*) WHERE TagNo）。
      */
     public ApiResult<String> markUnfinished(String orderNo) {
         if (orderNo == null || orderNo.trim().isEmpty()) {
             return ApiResult.error(400, "订单号不能为空");
         }
         try {
+            // 先找到当前未成垛记录的 TagNo（用于后续更新 Qty）
+            List<String> tagNos = jdbcTemplate.queryForList(
+                    "SELECT DISTINCT TagNo FROM CodeRelationUpload " +
+                    "WHERE OrderNo = ? AND IsDel = 0 " +
+                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
+                    "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != '' " +
+                    "AND TagNo IS NOT NULL AND TagNo != ''",
+                    String.class, orderNo.trim());
+
+            // 将未成垛记录标记为 Status=3
             jdbcTemplate.update(
                     "UPDATE CodeRelationUpload SET Status = 3 WHERE OrderNo = ? AND IsDel = 0 " +
                             "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
                             "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != ''",
                     orderNo.trim());
+
+            // 更新每个 TagNo 的 Qty = 该 TagNo 下所有未删除记录数
+            for (String tagNo : tagNos) {
+                try {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM CodeRelationUpload WHERE TagNo = ? AND IsDel = 0",
+                            Integer.class, tagNo);
+                    if (count != null && count > 0) {
+                        jdbcTemplate.update(
+                                "UPDATE CodeRelationUpload SET Qty = ? WHERE TagNo = ? AND IsDel = 0",
+                                count, tagNo);
+                    }
+                } catch (Exception e) {
+                    // Qty 更新失败不影响暂存主流程
+                }
+            }
+
             return ApiResult.success("已标记未成垛数据为未成垛", "OK");
         } catch (Exception e) {
             e.printStackTrace();
@@ -229,27 +263,60 @@ public class ShiwanM2CurrentTaskService {
     }
 
     /**
-     * 提取工单未成垛：根据箱码精确查询未成垛记录。
-     * 条件：BigSerialNumber=箱码 AND VirtualSerialNumber='' AND Status=3 AND IsDel=0
-     * 找到后统计该订单下满足相同条件的所有箱（distinct BigSerialNumber）数量作为当前垛已有箱数。
+     * 提取工单未成垛：两步查询。
+     * 第一步：根据输入箱码找到其 TagNo（条件：BigSerialNumber=箱码、VirtualSerialNumber=''、Status=3、IsDel=0、TagNo非空）。
+     * 第二步：用 TagNo 拉取该垛所有记录（条件：TagNo=?、Status=3、VirtualSerialNumber=''、IsDel=0），
+     *         从这些记录派生 currentCaseCount，同时关联 ProductionOrder 取采集规格。
      */
     public ApiResult<Map<String, Object>> queryUnfinishedByBoxCode(String boxCode) {
         if (boxCode == null || boxCode.trim().isEmpty()) {
             return ApiResult.error(400, "箱码不能为空");
         }
         try {
-            List<Map<String, Object>> records = jdbcTemplate.queryForList(
-                    "SELECT OrderNo, ProductNO FROM CodeRelationUpload " +
-                    "WHERE BigSerialNumber = ? AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                    "AND Status = 3 AND IsDel = 0 LIMIT 1",
+            // ── 第一步：根据箱码找到 TagNo 及基本信息 ─────────────────────────────
+            List<Map<String, Object>> anchor = jdbcTemplate.queryForList(
+                    "SELECT cru.TagNo, cru.OrderNo, cru.ProductNO, " +
+                    "po.CasesPerPallet AS casesPerPallet, po.BoxesPerCase AS boxesPerCase " +
+                    "FROM CodeRelationUpload cru " +
+                    "LEFT JOIN ProductionOrder po ON po.OrderNo = cru.OrderNo " +
+                    "WHERE cru.BigSerialNumber = ? " +
+                    "AND (cru.VirtualSerialNumber IS NULL OR cru.VirtualSerialNumber = '') " +
+                    "AND cru.Status = 3 AND cru.IsDel = 0 " +
+                    "AND cru.TagNo IS NOT NULL AND cru.TagNo != '' LIMIT 1",
                     boxCode.trim());
-            if (records == null || records.isEmpty()) {
+            if (anchor == null || anchor.isEmpty()) {
                 return ApiResult.error(404, "未找到对应的未成垛记录");
             }
-            String orderNo  = records.get(0).get("OrderNo")  != null ? records.get(0).get("OrderNo").toString()  : "";
-            String productNo = records.get(0).get("ProductNO") != null ? records.get(0).get("ProductNO").toString() : "";
+            String tagNo     = anchor.get(0).get("TagNo")    != null ? anchor.get(0).get("TagNo").toString()    : "";
+            String orderNo   = anchor.get(0).get("OrderNo")  != null ? anchor.get(0).get("OrderNo").toString()  : "";
+            String productNo = anchor.get(0).get("ProductNO") != null ? anchor.get(0).get("ProductNO").toString() : "";
+            int casesPerPallet = anchor.get(0).get("casesPerPallet") instanceof Number
+                    ? ((Number) anchor.get(0).get("casesPerPallet")).intValue() : 70;
+            int boxesPerCase   = anchor.get(0).get("boxesPerCase") instanceof Number
+                    ? ((Number) anchor.get(0).get("boxesPerCase")).intValue() : 4;
 
-            // 从本地产品表查产品名称
+            if (tagNo.isEmpty()) {
+                return ApiResult.error(404, "未找到对应的未成垛记录（TagNo 为空）");
+            }
+
+            // ── 第二步：按 TagNo 拉取该垛所有未成垛记录，派生 currentCaseCount ───────
+            List<Map<String, Object>> palletRecords = jdbcTemplate.queryForList(
+                    "SELECT BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload " +
+                    "WHERE TagNo = ? AND Status = 3 AND IsDel = 0 " +
+                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '')",
+                    tagNo);
+
+            // 从内存数据派生已关联箱数
+            Set<String> distinctCaseCodes = new java.util.HashSet<>();
+            for (Map<String, Object> row : palletRecords) {
+                Object bsn = row.get("BigSerialNumber");
+                if (bsn != null && !bsn.toString().isEmpty()) {
+                    distinctCaseCodes.add(bsn.toString());
+                }
+            }
+            int currentCaseCount = distinctCaseCodes.size();
+
+            // ── 产品名称 ──────────────────────────────────────────────────────────
             String productName = "";
             if (!productNo.isEmpty()) {
                 try {
@@ -261,14 +328,7 @@ public class ShiwanM2CurrentTaskService {
                 } catch (Exception ignored) {}
             }
 
-            // 已关联到箱的箱码数（未成垛箱数）
-            Integer boxCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
-                    "WHERE OrderNo = ? AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                    "AND Status = 3 AND IsDel = 0",
-                    Integer.class, orderNo);
-
-            // 待入队盒码数（Status=0，尚未关联到箱）
+            // ── 待入队盒码数（Status=0，尚未关联到箱）────────────────────────────
             Integer pendingBoxCount = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
                     "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
@@ -277,10 +337,13 @@ public class ShiwanM2CurrentTaskService {
                     Integer.class, orderNo);
 
             Map<String, Object> data = new HashMap<>();
+            data.put("tagNo", tagNo);
             data.put("orderNo", orderNo);
             data.put("productNo", productNo);
             data.put("productName", productName);
-            data.put("currentCaseCount", boxCount != null ? boxCount : 0);
+            data.put("casesPerPallet", casesPerPallet);
+            data.put("boxesPerCase", boxesPerCase);
+            data.put("currentCaseCount", currentCaseCount);
             data.put("pendingBoxCount", pendingBoxCount != null ? pendingBoxCount : 0);
             return ApiResult.success("查询成功", data);
         } catch (Exception e) {

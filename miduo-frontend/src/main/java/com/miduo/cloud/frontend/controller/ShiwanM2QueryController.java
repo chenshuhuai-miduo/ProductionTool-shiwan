@@ -71,6 +71,9 @@ public class ShiwanM2QueryController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupColumns();
         setupRowSelection();
+        Label placeholder = new Label("未找到该码信息");
+        placeholder.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 16px;");
+        resultTable.setPlaceholder(placeholder);
     }
 
     private void setupColumns() {
@@ -95,6 +98,13 @@ public class ShiwanM2QueryController implements Initializable {
         applyHighlightCellFactory(colL2);
         applyHighlightCellFactory(colL3);
         applyHighlightCellFactory(colL4);
+
+        // 禁止列拖动重排
+        colSeq.setReorderable(false);
+        colL1.setReorderable(false);
+        colL2.setReorderable(false);
+        colL3.setReorderable(false);
+        colL4.setReorderable(false);
     }
 
     private void applyHighlightCellFactory(TableColumn<QueryRow, String> col) {
@@ -183,15 +193,19 @@ public class ShiwanM2QueryController implements Initializable {
                         response, new TypeReference<ApiResult<Map<String, Object>>>() {});
                 if (result == null || result.getCode() != 200 || result.getData() == null) {
                     setStatus("err", result == null ? "查询服务异常" : result.getMessage());
-                    countLabel.setText("");
-                    showEmpty();
+                    countLabel.setText("未找到该码信息");
+                    resultTable.setItems(FXCollections.observableArrayList());
+                    showResult();
+                    hideDetail();
                     return;
                 }
                 Object rowsObj = result.getData().get("rows");
                 if (!(rowsObj instanceof List) || ((List<?>) rowsObj).isEmpty()) {
                     setStatus("err", "未找到该码信息");
-                    countLabel.setText("");
-                    showEmpty();
+                    countLabel.setText("未找到该码信息");
+                    resultTable.setItems(FXCollections.observableArrayList());
+                    showResult();
+                    hideDetail();
                     return;
                 }
                 @SuppressWarnings("unchecked")

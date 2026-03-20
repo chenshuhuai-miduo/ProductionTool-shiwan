@@ -85,6 +85,9 @@ public class ShiwanM2PackageController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupTableColumns();
         packageTable.setItems(tableData);
+        // 日期组件只允许通过弹出日历选择，禁止手动键入
+        startDatePicker.setEditable(false);
+        endDatePicker.setEditable(false);
     }
 
     /** 首次切换到码包管理 Tab 时由主控制器调用，触发数据加载 */
@@ -101,6 +104,15 @@ public class ShiwanM2PackageController implements Initializable {
         colImportWay.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().importSourceName));
         colCount.setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().codeCount)));
         colRemark.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().remark));
+        // 禁止列拖动重排
+        colType.setReorderable(false);
+        colName.setReorderable(false);
+        colImportTime.setReorderable(false);
+        colImportWay.setReorderable(false);
+        colCount.setReorderable(false);
+        colStatus.setReorderable(false);
+        colRemark.setReorderable(false);
+        colAction.setReorderable(false);
 
         colStatus.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().statusName));
         colStatus.setCellFactory(col -> new TableCell<>() {

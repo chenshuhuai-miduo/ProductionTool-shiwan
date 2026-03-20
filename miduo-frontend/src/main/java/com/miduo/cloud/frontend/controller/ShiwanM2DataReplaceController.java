@@ -89,27 +89,15 @@ public class ShiwanM2DataReplaceController {
             return;
         }
 
-        // 查询原码是否已上传，已上传则阻止替换
-        replaceStatusLabel.setText("检查原码状态...");
+        // 直接弹出确认对话框，云端接口负责判断是否允许替换
         final String finalOldCode = oldCode;
         final String finalNewCode = newCode;
         final String finalReason  = reason;
-        new Thread(() -> {
-            boolean uploaded = checkCodeUploaded(finalOldCode);
-            Platform.runLater(() -> {
-                if (uploaded) {
-                    replaceStatusLabel.setText("替换中止：该码已上传");
-                    showAlert(Alert.AlertType.WARNING, "该码已上传", "原码已上传至云端，不允许替换。");
-                    return;
-                }
-                replaceStatusLabel.setText("请填写原码和新码后执行替换");
-                if (!showReplacePasswordConfirm(finalOldCode, finalNewCode, finalReason)) {
-                    return;
-                }
-                replaceStatusLabel.setText("替换请求处理中...");
-                doReplaceAsync(finalOldCode, finalNewCode, finalReason);
-            });
-        }, "shiwan-m2-replace-check").start();
+        if (!showReplacePasswordConfirm(finalOldCode, finalNewCode, finalReason)) {
+            return;
+        }
+        replaceStatusLabel.setText("替换请求处理中...");
+        doReplaceAsync(finalOldCode, finalNewCode, finalReason);
     }
 
     /**

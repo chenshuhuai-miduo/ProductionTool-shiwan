@@ -42,8 +42,13 @@ public class ShiwanM2BoxCaseService {
     private static final Logger log = LoggerFactory.getLogger(ShiwanM2BoxCaseService.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final DateTimeFormatter LOG_TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
-    private static final String TAG_M2_BOX = "M2-BOX";
     private static final String EMPTY = "";
+
+    /**
+     * 当前正在关联的垛的 TagNo，同一垛所有记录共享。
+     * 成垛/强制满垛后重置为 null，下次自动生成或从 DB 恢复。
+     */
+    private volatile String currentPalletTagNo = null;
 
     /** 单线程定时器，用于成垛 5 分钟后轮询上传结果 */
     private final ScheduledExecutorService pollScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -132,6 +137,7 @@ public class ShiwanM2BoxCaseService {
             }
 
             LocalDateTime now = LocalDateTime.now();
+            String tagNo = getOrCreateCurrentTagNo(orderNo.trim());
             String insertSql = "INSERT INTO CodeRelationUpload (" +
                     "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
                     "DxCode, SalesCode, VirtualSerialNumber, IsVirtual, ProductNO, OrderNo, Status, TagNo, Qty, Type, " +
@@ -140,7 +146,7 @@ public class ShiwanM2BoxCaseService {
             for (String boxCode : trimmedBoxCodes) {
                 jdbcTemplate.update(insertSql,
                         EMPTY, caseCode, boxCode, EMPTY,
-                        EMPTY, EMPTY, EMPTY, 0, useProductNo, orderNo.trim(), 1, TAG_M2_BOX, 0, 1,
+                        EMPTY, EMPTY, EMPTY, 0, useProductNo, orderNo.trim(), 1, tagNo, 0, 1,
                         EMPTY, EMPTY, now, 0, EMPTY, 0, 0, EMPTY);
             }
 
@@ -244,14 +250,16 @@ public class ShiwanM2BoxCaseService {
             if (isCaseCodeAlreadyUsed(orderNo, caseCode)) {
                 return ApiResult.error(400, "箱码已使用（重码）：" + caseCode);
             }
+            String tagNo = getOrCreateCurrentTagNo(orderNo.trim());
             String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
             List<Object> args = new ArrayList<>();
             args.add(caseCode);
             args.add(orderNo.trim());
             args.add(useProductNo);
+            args.add(tagNo);
             args.addAll(boxCodes);
             int updated = jdbcTemplate.update(
-                    "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = '' " +
+                    "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = ? " +
                             "WHERE IsDel = 0 " +
                             "AND MediumSerialNumber IN (" + placeholders + ") AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
                     args.toArray());
@@ -367,14 +375,16 @@ public class ShiwanM2BoxCaseService {
                 pendingResult.setData(pending);
                 return pendingResult;
             }
+            String tagNo = getOrCreateCurrentTagNo(orderNo.trim());
             String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
             List<Object> args = new ArrayList<>();
             args.add(caseCode);
             args.add(orderNo.trim());
             args.add(useProductNo);
+            args.add(tagNo);
             args.addAll(ids);
             jdbcTemplate.update(
-                    "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = '' " +
+                    "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = ? " +
                             "WHERE IsDel = 0 AND ID IN (" + placeholders + ")",
                     args.toArray());
             // 落冷：箱码（大标）和盒码（中标）从热表迁移到冷表
@@ -474,6 +484,24 @@ public class ShiwanM2BoxCaseService {
                         "WHERE OrderNo = ? AND IsDel = 0 AND BigSerialNumber IN (" + placeholders + ")",
                 args.toArray());
 
+        // 成垛后更新该垛 TagNo 对应的所有记录的 Qty，并重置内存中的 TagNo 供下垛使用
+        String palletTagNo = currentPalletTagNo;
+        currentPalletTagNo = null;
+        if (palletTagNo != null && !palletTagNo.isEmpty()) {
+            try {
+                Integer qtyCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM CodeRelationUpload WHERE TagNo = ? AND IsDel = 0",
+                        Integer.class, palletTagNo);
+                if (qtyCount != null && qtyCount > 0) {
+                    jdbcTemplate.update(
+                            "UPDATE CodeRelationUpload SET Qty = ? WHERE TagNo = ? AND IsDel = 0",
+                            qtyCount, palletTagNo);
+                }
+            } catch (Exception e) {
+                log.warn("[TagNo] 成垛更新 Qty 失败 TagNo={}", palletTagNo, e);
+            }
+        }
+
         // 仅当系统设置→业务→上传配置中「自动上传开关」开启时才自动上传
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         boolean autoUpload = cfg == null || cfg.getUpload() == null || cfg.getUpload().isAutoUpload();
@@ -481,6 +509,35 @@ public class ShiwanM2BoxCaseService {
             syncVirtualPalletToCloud(orderNo, productNo, palletCode, boxCount);
         }
         return palletCode;
+    }
+
+    /**
+     * 获取或生成当前垛的 TagNo。
+     * 优先使用内存已有值；若为 null 则先尝试从 DB 恢复同订单未成垛记录的 TagNo，
+     * 仍无则生成新 UUID（与致美斋 generateNewTagNo() 相同策略）。
+     */
+    private synchronized String getOrCreateCurrentTagNo(String orderNo) {
+        if (currentPalletTagNo != null && !currentPalletTagNo.isEmpty()) {
+            return currentPalletTagNo;
+        }
+        // 尝试从 DB 恢复：查找该订单已关联箱但未成垛记录的 TagNo
+        try {
+            List<String> existing = jdbcTemplate.queryForList(
+                    "SELECT DISTINCT TagNo FROM CodeRelationUpload " +
+                    "WHERE OrderNo = ? AND IsDel = 0 AND VirtualSerialNumber = '' " +
+                    "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != '' " +
+                    "AND TagNo IS NOT NULL AND TagNo != '' LIMIT 1",
+                    String.class, orderNo);
+            if (!existing.isEmpty()) {
+                currentPalletTagNo = existing.get(0);
+                log.info("[TagNo] 从 DB 恢复当前垛 TagNo={} orderNo={}", currentPalletTagNo, orderNo);
+                return currentPalletTagNo;
+            }
+        } catch (Exception ignored) {}
+        // 生成新 UUID（同致美斋 generateNewTagNo()）
+        currentPalletTagNo = java.util.UUID.randomUUID().toString().replace("-", "").toUpperCase();
+        log.info("[TagNo] 生成新垛 TagNo={} orderNo={}", currentPalletTagNo, orderNo);
+        return currentPalletTagNo;
     }
 
     private Map<String, Object> getCurrentTaskByOrderNo(String orderNo) {
@@ -586,7 +643,7 @@ public class ShiwanM2BoxCaseService {
                 if (bc.isEmpty()) continue;
                 jdbcTemplate.update(insertSql,
                         EMPTY, EMPTY, finalBoxCode, bc,
-                        EMPTY, EMPTY, EMPTY, 0, EMPTY, EMPTY, 1, TAG_M2_BOX, 0, 1,
+                        EMPTY, EMPTY, EMPTY, 0, EMPTY, EMPTY, 1, EMPTY, 0, 1,
                         EMPTY, EMPTY, now, 0, EMPTY, 0, 0, EMPTY);
             }
             // 落冷：盒码和瓶码从热表迁移到冷表
@@ -666,35 +723,76 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
-     * P02-04 数据查询：输入任意层级码，展开该码所属垛的全部关联关系。
+     * P02-04 数据查询：输入任意层级码，展开该码所属垛/箱/盒的全部关联关系。
+     * 支持已成垛、已关联箱但未成垛、已关联盒但无箱、瓶码等所有层级。
      */
     public Map<String, Object> queryCodeAssociation(String code) {
         if (code == null || code.trim().isEmpty()) {
             return Collections.emptyMap();
         }
         String inputCode = code.trim();
-        List<Map<String, Object>> palletRows = jdbcTemplate.queryForList(
-                "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
-                        "WHERE (SmallSerialNumber = ? OR MediumSerialNumber = ? OR BigSerialNumber = ? OR VirtualSerialNumber = ?) " +
-                        "AND VirtualSerialNumber != '' LIMIT 1",
+
+        // Step1: 找到任意匹配记录，不要求已成垛
+        List<Map<String, Object>> matchRows = jdbcTemplate.queryForList(
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber " +
+                "FROM CodeRelationUpload " +
+                "WHERE (SmallSerialNumber = ? OR MediumSerialNumber = ? OR BigSerialNumber = ? OR VirtualSerialNumber = ?) " +
+                "AND IsDel = 0 LIMIT 1",
                 inputCode, inputCode, inputCode, inputCode);
-        if (palletRows == null || palletRows.isEmpty()) {
+        if (matchRows == null || matchRows.isEmpty()) {
             return Collections.emptyMap();
         }
-        String palletCode = toStr(palletRows.get(0).get("VirtualSerialNumber"));
-        if (palletCode.isEmpty()) return Collections.emptyMap();
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+        Map<String, Object> match = matchRows.get(0);
+        String palletCode = toStr(match.get("VirtualSerialNumber"));
+        String caseCode   = toStr(match.get("BigSerialNumber"));
+        String boxCode    = toStr(match.get("MediumSerialNumber"));
+
+        // Step2: 按最高层级锚点查询全部相关行
+        List<Map<String, Object>> rows;
+        String selectBase =
                 "SELECT c.SmallSerialNumber AS bottleCode, c.MediumSerialNumber AS boxCode, " +
-                        "c.BigSerialNumber AS caseCode, c.VirtualSerialNumber AS palletCode, c.AddTime AS collectTime, " +
-                        "c.ProductNO AS productNo, c.OrderNo AS orderNo, p.ProductName AS productName " +
-                        "FROM CodeRelationUpload c " +
-                        "LEFT JOIN ProductInfo p ON p.ProductNo = c.ProductNO " +
-                        "WHERE c.VirtualSerialNumber = ? " +
-                        "ORDER BY CASE WHEN (c.SmallSerialNumber = ? OR c.MediumSerialNumber = ? " +
-                        "OR c.BigSerialNumber = ? OR c.VirtualSerialNumber = ?) THEN 0 ELSE 1 END, " +
-                        "c.BigSerialNumber, c.MediumSerialNumber, c.SmallSerialNumber",
-                palletCode, inputCode, inputCode, inputCode, inputCode);
+                "c.BigSerialNumber AS caseCode, c.VirtualSerialNumber AS palletCode, " +
+                "c.AddTime AS collectTime, c.ProductNO AS productNo, " +
+                "c.OrderNo AS orderNo, p.ProductName AS productName " +
+                "FROM CodeRelationUpload c " +
+                "LEFT JOIN ProductInfo p ON p.ProductNo = c.ProductNO ";
+
+        if (!palletCode.isEmpty()) {
+            // 已成垛：以垛码为锚，返回该垛全部数据
+            rows = jdbcTemplate.queryForList(
+                    selectBase +
+                    "WHERE c.VirtualSerialNumber = ? AND c.IsDel = 0 " +
+                    "ORDER BY CASE WHEN (c.SmallSerialNumber = ? OR c.MediumSerialNumber = ? " +
+                    "    OR c.BigSerialNumber = ? OR c.VirtualSerialNumber = ?) THEN 0 ELSE 1 END, " +
+                    "c.BigSerialNumber, c.MediumSerialNumber, c.SmallSerialNumber",
+                    palletCode, inputCode, inputCode, inputCode, inputCode);
+        } else if (!caseCode.isEmpty()) {
+            // 已关联箱但未成垛：以箱码为锚，返回该箱全部盒码行
+            rows = jdbcTemplate.queryForList(
+                    selectBase +
+                    "WHERE c.BigSerialNumber = ? AND c.IsDel = 0 " +
+                    "ORDER BY CASE WHEN (c.SmallSerialNumber = ? OR c.MediumSerialNumber = ? " +
+                    "    OR c.BigSerialNumber = ?) THEN 0 ELSE 1 END, " +
+                    "c.MediumSerialNumber, c.SmallSerialNumber",
+                    caseCode, inputCode, inputCode, inputCode);
+        } else if (!boxCode.isEmpty()) {
+            // 已关联盒但无箱：以盒码为锚，返回该盒全部瓶码行
+            rows = jdbcTemplate.queryForList(
+                    selectBase +
+                    "WHERE c.MediumSerialNumber = ? AND c.IsDel = 0 " +
+                    "ORDER BY CASE WHEN (c.SmallSerialNumber = ? OR c.MediumSerialNumber = ?) THEN 0 ELSE 1 END, " +
+                    "c.SmallSerialNumber",
+                    boxCode, inputCode, inputCode);
+        } else {
+            // 仅找到单条记录（孤立码）
+            rows = jdbcTemplate.queryForList(
+                    selectBase +
+                    "WHERE (c.SmallSerialNumber = ? OR c.MediumSerialNumber = ? " +
+                    "    OR c.BigSerialNumber = ? OR c.VirtualSerialNumber = ?) AND c.IsDel = 0",
+                    inputCode, inputCode, inputCode, inputCode);
+        }
+
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("rows", rows == null ? Collections.emptyList() : rows);
         data.put("total", rows == null ? 0 : rows.size());
@@ -1132,12 +1230,10 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "原码正在上传中，请等待上传完成后再进行替换");
         }
 
-        // 6. 若已上传（IsUpload=1 成功）或上传过（IsUpload=2 失败），先替换云端
-        if (uploadStatus == 1 || uploadStatus == 2) {
-            ApiResult<Boolean> cloudResult = callCloudCodeSubstitution(oldV, newV, codeType);
-            if (cloudResult != null && cloudResult.getCode() != 200) {
-                return cloudResult;
-            }
+        // 6. 先调云端替换接口（无论上传状态），云端失败则中止本地替换
+        ApiResult<Boolean> cloudResult = callCloudCodeSubstitution(oldV, newV, codeType);
+        if (cloudResult != null && cloudResult.getCode() != 200) {
+            return cloudResult;
         }
 
         // 7. 本地数据库操作（事务保护：全部成功或全部回滚）

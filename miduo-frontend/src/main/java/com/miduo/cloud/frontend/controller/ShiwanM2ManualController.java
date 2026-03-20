@@ -91,6 +91,16 @@ public class ShiwanM2ManualController implements Initializable {
         opLogList.setItems(opLogItems);
         opLogList.setCellFactory(lv -> new ShiwanM2MainController.LogCell());
 
+        // 限制输入：仅允许1-3位正整数（范围1-999）
+        bottlesPerBoxField.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty()) return change;
+            if (!newText.matches("\\d{1,3}")) return null;
+            int val2 = Integer.parseInt(newText);
+            if (val2 < 1 || val2 > 999) return null;
+            return change;
+        }));
+
         bottlesPerBoxField.textProperty().addListener((obs, old, val) -> {
             if (val != null && !val.trim().isEmpty()) {
                 perBoxCountLabel.setText(val.trim());
@@ -157,11 +167,11 @@ public class ShiwanM2ManualController implements Initializable {
             alert.showAndWait();
             return;
         }
-        if (bpbCheck <= 0) {
+        if (bpbCheck <= 0 || bpbCheck > 999) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("采集规格错误");
             alert.setHeaderText(null);
-            alert.setContentText("每盒瓶数 N 必须大于0。");
+            alert.setContentText("每盒瓶数 N 必须在 1-999 之间。");
             ShiwanM2AlertUtil.applyStyle(alert);
             alert.showAndWait();
             return;

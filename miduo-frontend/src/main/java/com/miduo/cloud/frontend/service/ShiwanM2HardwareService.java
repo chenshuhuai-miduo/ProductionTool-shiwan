@@ -212,8 +212,8 @@ public class ShiwanM2HardwareService {
      */
     public void triggerRejection() {
         int delayMs   = getAlarmConfig().getRejectTriggerDelayMs();
-        int retractMs = getAlarmConfig().getRejectRetractTimeMs();
-        if (retractMs <= 0) retractMs = 2000;
+        int retractMsRaw = getAlarmConfig().getRejectRetractTimeMs();
+        final int retractMs = retractMsRaw <= 0 ? 2000 : retractMsRaw;
 
         Runnable doTrigger = () -> {
             rejectActive = true;
