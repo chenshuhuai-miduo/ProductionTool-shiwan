@@ -4632,6 +4632,146 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "16qth",
+      "x": 5496,
+      "y": -8,
+      "name": "帮助提示弹窗",
+      "width": 420,
+      "fill": "#FFFFFF",
+      "cornerRadius": 12,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#D9E1EC"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "9xz5U",
+          "name": "标题栏",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#2563EB",
+          "cornerRadius": [
+            12,
+            12,
+            0,
+            0
+          ],
+          "padding": [
+            0,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "Rv37w",
+              "name": "titleText",
+              "fill": "#FFFFFF",
+              "content": "帮助提示",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "u3kTA",
+              "name": "关闭按钮",
+              "width": 32,
+              "height": 32,
+              "fill": "#FFFFFF30",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2zc1s",
+                  "name": "closeBtnText",
+                  "fill": "#FFFFFF",
+                  "content": "×",
+                  "fontFamily": "Inter",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "iEuRP",
+          "name": "内容区",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "rLmzS",
+              "name": "文字内容区",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 8,
+              "stroke": {
+                "align": "inside",
+                "thickness": 0,
+                "fill": "#00000000"
+              },
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "4vseB",
+                  "name": "帮助内容1",
+                  "fill": "#374151",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "开始/停止采集：系统检测硬件设备后开始采集；再次点击停止采集，未满垛数据会保留。",
+                  "lineHeight": 1.7,
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "qPyHF",
+                  "name": "帮助内容2",
+                  "fill": "#374151",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "强制满垛：未达到设定箱数也强制结束当前垛，生成虚拟垛标并重置计数。",
+                  "lineHeight": 1.7,
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "CfqAv",
+                  "name": "帮助内容3",
+                  "fill": "#374151",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "提取工单未成垛：停止采集时可用。弹窗输入或扫描未完成垛中的任一箱码，查出生产信息、采集规格和当前箱数后确认，回显主页面并自动开始采集。",
+                  "lineHeight": 1.7,
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
