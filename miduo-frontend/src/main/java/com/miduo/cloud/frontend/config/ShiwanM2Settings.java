@@ -50,6 +50,9 @@ public class ShiwanM2Settings {
     /** 设备：报警配置 */
     private AlarmConfig alarm = new AlarmConfig();
 
+    /** 设备：自定义控制信号（16进制，用于主界面手动控制按钮） */
+    private DeviceSignalConfig deviceSignal = new DeviceSignalConfig();
+
     /** 接口：API base URL 等 */
     private ApiConfig api = new ApiConfig();
 
@@ -174,6 +177,14 @@ public class ShiwanM2Settings {
 
     public void setAlarm(AlarmConfig alarm) {
         this.alarm = alarm;
+    }
+
+    public DeviceSignalConfig getDeviceSignal() {
+        return deviceSignal;
+    }
+
+    public void setDeviceSignal(DeviceSignalConfig deviceSignal) {
+        this.deviceSignal = deviceSignal;
     }
 
     public ApiConfig getApi() {
@@ -317,12 +328,91 @@ public class ShiwanM2Settings {
         public void setPaperSize(String paperSize) { this.paperSize = paperSize; }
     }
 
+    /**
+     * 设备控制信号配置（16进制字符串，通过串口发送至报警器/指示灯控制器）。
+     * <p>业务状态指令（7个）：编码灯光状态+剔除状态，由系统自动发送。
+     * <p>手动按钮信号（6个）：供主界面手动按钮使用，由用户根据实际协议填写。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class DeviceSignalConfig {
+
+        // -------- 业务状态指令（系统自动发送，默认已预置协议值）--------
+
+        /** 全关：退出软件/停止采集时发送，关闭所有灯光和剔除 */
+        private String cmdAllOff                  = "21 0F 00 00 00 08 01 00 FC 8D";
+        /** 正常运行：工控机灯+龙门架灯亮（开始采集、收回剔除后） */
+        private String cmdNormalOn                = "21 0F 00 00 00 08 01 04 FD 4E";
+        /** 正常运行+剔除中：遇到问题触发剔除装置 */
+        private String cmdNormalWithReject        = "21 0F 00 00 00 08 01 05 3C 8E";
+        /** 上传成功：三灯亮（工控机+龙门架+上传成功灯），1分钟后自动切回正常 */
+        private String cmdUploadSuccess           = "21 0F 00 00 00 08 01 06 7C 8F";
+        /** 上传成功期间发生剔除：三灯亮+剔除 */
+        private String cmdUploadSuccessWithReject = "21 0F 00 00 00 08 01 07 BD 4F";
+        /** 上传失败报警：工控机灯+龙门架灯+红灯蜂鸣，持续报警直到手动关闭 */
+        private String cmdUploadFail              = "21 0F 00 00 00 08 01 0C FC 88";
+        /** 上传失败报警期间发生剔除：红灯蜂鸣+剔除 */
+        private String cmdUploadFailWithReject    = "21 0F 00 00 00 08 01 0D 3D 48";
+
+        // -------- 手动按钮信号（主界面按钮使用，用户自定义）--------
+
+        /** 主界面"打开报警"按钮信号 */
+        private String alarmOpenHex = "";
+        /** 主界面"关闭报警"按钮信号 */
+        private String alarmCloseHex = "";
+        /** 主界面"测试报警灯亮"按钮信号 */
+        private String alarmLightOnHex = "";
+        /** 主界面"测试报警灯灭"按钮信号 */
+        private String alarmLightOffHex = "";
+        /** 主界面"触发剔除"按钮信号 */
+        private String rejectTriggerHex = "";
+        /** 主界面"收回剔除"按钮信号 */
+        private String rejectRetractHex = "";
+
+        public String getCmdAllOff() { return cmdAllOff; }
+        public void setCmdAllOff(String v) { this.cmdAllOff = v; }
+        public String getCmdNormalOn() { return cmdNormalOn; }
+        public void setCmdNormalOn(String v) { this.cmdNormalOn = v; }
+        public String getCmdNormalWithReject() { return cmdNormalWithReject; }
+        public void setCmdNormalWithReject(String v) { this.cmdNormalWithReject = v; }
+        public String getCmdUploadSuccess() { return cmdUploadSuccess; }
+        public void setCmdUploadSuccess(String v) { this.cmdUploadSuccess = v; }
+        public String getCmdUploadSuccessWithReject() { return cmdUploadSuccessWithReject; }
+        public void setCmdUploadSuccessWithReject(String v) { this.cmdUploadSuccessWithReject = v; }
+        public String getCmdUploadFail() { return cmdUploadFail; }
+        public void setCmdUploadFail(String v) { this.cmdUploadFail = v; }
+        public String getCmdUploadFailWithReject() { return cmdUploadFailWithReject; }
+        public void setCmdUploadFailWithReject(String v) { this.cmdUploadFailWithReject = v; }
+
+        public String getAlarmOpenHex() { return alarmOpenHex; }
+        public void setAlarmOpenHex(String v) { this.alarmOpenHex = v; }
+        public String getAlarmCloseHex() { return alarmCloseHex; }
+        public void setAlarmCloseHex(String v) { this.alarmCloseHex = v; }
+        public String getAlarmLightOnHex() { return alarmLightOnHex; }
+        public void setAlarmLightOnHex(String v) { this.alarmLightOnHex = v; }
+        public String getAlarmLightOffHex() { return alarmLightOffHex; }
+        public void setAlarmLightOffHex(String v) { this.alarmLightOffHex = v; }
+        public String getRejectTriggerHex() { return rejectTriggerHex; }
+        public void setRejectTriggerHex(String v) { this.rejectTriggerHex = v; }
+        public String getRejectRetractHex() { return rejectRetractHex; }
+        public void setRejectRetractHex(String v) { this.rejectRetractHex = v; }
+    }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AlarmConfig {
         private boolean soundAlarmEnabled = true;
         private int alarmDelayMs = 500;
         private int alarmIntervalMs = 2000;
+        /**
+         * 触发剔除延时（ms）：检测到需要剔除后，等待该时间再发送剔除信号，
+         * 用于让物品移动到剔除装置正上方。0 表示立即发送。
+         */
+        private int rejectTriggerDelayMs = 0;
+        /**
+         * 剔除收回时间（ms）：发送剔除信号后，等待该时间自动发送收回（恢复正常状态）信号。
+         */
+        private int rejectRetractTimeMs = 2000;
 
         public boolean isSoundAlarmEnabled() { return soundAlarmEnabled; }
         public void setSoundAlarmEnabled(boolean soundAlarmEnabled) { this.soundAlarmEnabled = soundAlarmEnabled; }
@@ -330,6 +420,10 @@ public class ShiwanM2Settings {
         public void setAlarmDelayMs(int alarmDelayMs) { this.alarmDelayMs = alarmDelayMs; }
         public int getAlarmIntervalMs() { return alarmIntervalMs; }
         public void setAlarmIntervalMs(int alarmIntervalMs) { this.alarmIntervalMs = alarmIntervalMs; }
+        public int getRejectTriggerDelayMs() { return rejectTriggerDelayMs; }
+        public void setRejectTriggerDelayMs(int v) { this.rejectTriggerDelayMs = v; }
+        public int getRejectRetractTimeMs() { return rejectRetractTimeMs; }
+        public void setRejectRetractTimeMs(int v) { this.rejectRetractTimeMs = v; }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

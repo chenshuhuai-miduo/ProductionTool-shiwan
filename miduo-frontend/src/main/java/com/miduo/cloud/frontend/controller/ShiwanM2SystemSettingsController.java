@@ -97,6 +97,27 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField alarmDelayField;
     @FXML private TextField alarmIntervalField;
 
+    // ==================== 设备 - 设备信号配置（业务状态指令）====================
+    @FXML private TextField cmdAllOffField;
+    @FXML private TextField cmdNormalOnField;
+    @FXML private TextField cmdNormalWithRejectField;
+    @FXML private TextField cmdUploadSuccessField;
+    @FXML private TextField cmdUploadSuccessWithRejectField;
+    @FXML private TextField cmdUploadFailField;
+    @FXML private TextField cmdUploadFailWithRejectField;
+
+    // ==================== 设备 - 剔除时序配置 ====================
+    @FXML private TextField rejectTriggerDelayField;
+    @FXML private TextField rejectRetractTimeField;
+
+    // ==================== 设备 - 手动按钮信号 ====================
+    @FXML private TextField alarmOpenHexField;
+    @FXML private TextField alarmCloseHexField;
+    @FXML private TextField alarmLightOnHexField;
+    @FXML private TextField alarmLightOffHexField;
+    @FXML private TextField rejectTriggerHexField;
+    @FXML private TextField rejectRetractHexField;
+
     // ==================== 连接 - 数据库连接 ====================
     @FXML private TextField dbHostField;
     @FXML private TextField dbPortField;
@@ -223,6 +244,33 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             if (alarmDelayField   != null) alarmDelayField.setText(String.valueOf(s.getAlarm().getAlarmDelayMs()));
             if (alarmIntervalField != null) alarmIntervalField.setText(String.valueOf(s.getAlarm().getAlarmIntervalMs()));
         }
+        ShiwanM2Settings.DeviceSignalConfig sig = s.getDeviceSignal();
+        if (sig != null) {
+            // 业务状态指令
+            if (cmdAllOffField                  != null) cmdAllOffField.setText(orEmpty(sig.getCmdAllOff()));
+            if (cmdNormalOnField                != null) cmdNormalOnField.setText(orEmpty(sig.getCmdNormalOn()));
+            if (cmdNormalWithRejectField        != null) cmdNormalWithRejectField.setText(orEmpty(sig.getCmdNormalWithReject()));
+            if (cmdUploadSuccessField           != null) cmdUploadSuccessField.setText(orEmpty(sig.getCmdUploadSuccess()));
+            if (cmdUploadSuccessWithRejectField != null) cmdUploadSuccessWithRejectField.setText(orEmpty(sig.getCmdUploadSuccessWithReject()));
+            if (cmdUploadFailField              != null) cmdUploadFailField.setText(orEmpty(sig.getCmdUploadFail()));
+            if (cmdUploadFailWithRejectField    != null) cmdUploadFailWithRejectField.setText(orEmpty(sig.getCmdUploadFailWithReject()));
+            // 手动按钮信号
+            if (alarmOpenHexField     != null) alarmOpenHexField.setText(orEmpty(sig.getAlarmOpenHex()));
+            if (alarmCloseHexField    != null) alarmCloseHexField.setText(orEmpty(sig.getAlarmCloseHex()));
+            if (alarmLightOnHexField  != null) alarmLightOnHexField.setText(orEmpty(sig.getAlarmLightOnHex()));
+            if (alarmLightOffHexField != null) alarmLightOffHexField.setText(orEmpty(sig.getAlarmLightOffHex()));
+            if (rejectTriggerHexField != null) rejectTriggerHexField.setText(orEmpty(sig.getRejectTriggerHex()));
+            if (rejectRetractHexField != null) rejectRetractHexField.setText(orEmpty(sig.getRejectRetractHex()));
+        }
+        // 剔除时序
+        if (s.getAlarm() != null) {
+            if (rejectTriggerDelayField != null) rejectTriggerDelayField.setText(String.valueOf(s.getAlarm().getRejectTriggerDelayMs()));
+            if (rejectRetractTimeField  != null) rejectRetractTimeField.setText(String.valueOf(s.getAlarm().getRejectRetractTimeMs()));
+        }
+    }
+
+    private static String orEmpty(String s) {
+        return s != null ? s : "";
     }
 
     /** 初始化 ToggleButton 样式联动 */
@@ -863,6 +911,41 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         saveSettings(s);
         showSuccess("报警设置", "报警设置已保存。\n声音报警：" + (soundAlarmToggle.isSelected() ? "开启" : "关闭")
             + "\n延时：" + alarmDelayField.getText() + "ms  间隔：" + alarmIntervalField.getText() + "ms");
+    }
+
+    @FXML
+    private void onSaveDeviceSignalConfig() {
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getDeviceSignal() == null) s.setDeviceSignal(new ShiwanM2Settings.DeviceSignalConfig());
+        ShiwanM2Settings.DeviceSignalConfig sig = s.getDeviceSignal();
+        // 业务状态指令
+        if (cmdAllOffField                  != null) sig.setCmdAllOff(cmdAllOffField.getText().trim());
+        if (cmdNormalOnField                != null) sig.setCmdNormalOn(cmdNormalOnField.getText().trim());
+        if (cmdNormalWithRejectField        != null) sig.setCmdNormalWithReject(cmdNormalWithRejectField.getText().trim());
+        if (cmdUploadSuccessField           != null) sig.setCmdUploadSuccess(cmdUploadSuccessField.getText().trim());
+        if (cmdUploadSuccessWithRejectField != null) sig.setCmdUploadSuccessWithReject(cmdUploadSuccessWithRejectField.getText().trim());
+        if (cmdUploadFailField              != null) sig.setCmdUploadFail(cmdUploadFailField.getText().trim());
+        if (cmdUploadFailWithRejectField    != null) sig.setCmdUploadFailWithReject(cmdUploadFailWithRejectField.getText().trim());
+        // 手动按钮信号
+        if (alarmOpenHexField     != null) sig.setAlarmOpenHex(alarmOpenHexField.getText().trim());
+        if (alarmCloseHexField    != null) sig.setAlarmCloseHex(alarmCloseHexField.getText().trim());
+        if (alarmLightOnHexField  != null) sig.setAlarmLightOnHex(alarmLightOnHexField.getText().trim());
+        if (alarmLightOffHexField != null) sig.setAlarmLightOffHex(alarmLightOffHexField.getText().trim());
+        if (rejectTriggerHexField != null) sig.setRejectTriggerHex(rejectTriggerHexField.getText().trim());
+        if (rejectRetractHexField != null) sig.setRejectRetractHex(rejectRetractHexField.getText().trim());
+        // 剔除时序
+        if (s.getAlarm() == null) s.setAlarm(new ShiwanM2Settings.AlarmConfig());
+        try {
+            if (rejectTriggerDelayField != null && !rejectTriggerDelayField.getText().trim().isEmpty())
+                s.getAlarm().setRejectTriggerDelayMs(Integer.parseInt(rejectTriggerDelayField.getText().trim()));
+            if (rejectRetractTimeField != null && !rejectRetractTimeField.getText().trim().isEmpty())
+                s.getAlarm().setRejectRetractTimeMs(Integer.parseInt(rejectRetractTimeField.getText().trim()));
+        } catch (NumberFormatException e) {
+            showError("输入有误", "触发剔除延时和剔除收回时间必须为整数（毫秒）。");
+            return;
+        }
+        saveSettings(s);
+        showSuccess("设备信号配置", "设备信号配置已保存。");
     }
 
     // ==================== 连接 Tab 事件处理 ====================
