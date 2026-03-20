@@ -459,6 +459,10 @@ body {
 /* 隐藏数字输入框的上下箭头 */
 .qty-input::-webkit-inner-spin-button,
 .qty-input::-webkit-outer-spin-button { opacity: 0; width: 0; }
+/* 隐藏分页页码 input[type=number] 的上下箭头 */
+.pagination-page-input::-webkit-outer-spin-button,
+.pagination-page-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.pagination-page-input { -moz-appearance: textfield; }
 
 /* 实时上传数据区 - 参考 pen */
 .upload-row {
@@ -731,8 +735,6 @@ body {
   border: 1px solid #C7DBFF;
   border-radius: 10px;
   padding: 18px 22px;
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -743,12 +745,13 @@ body {
 .prompt-code-big { font-size: 44px; font-weight: 700; color: #2563EB; font-family:'Microsoft YaHei',sans-serif; line-height: 1.1; }
 
 /* 手工采集 - 右侧单位实时统计、任务控制 参考 pen */
-.manual-stats-card { padding: 14px 16px; }
+.manual-stats-card { padding: 14px 14px 24px 14px; }
 .manual-stats-row { display: flex; gap: 12px; }
-.manual-qty-card { flex: 1; min-width: 0; }
+.manual-qty-card { flex: 1; min-width: 0; height: 140px; padding: 16px; gap: 8px; }
 .manual-qty-num { font-size: 44px !important; font-weight: 700; line-height: 1; }
-.manual-total-row { margin-top: 12px; padding-top: 12px; border-top: 1px solid #E5E7EB; }
-.manual-total-num { font-size: 48px; font-weight: 700; color: #1F2937; line-height: 1.2; }
+.manual-qty-card .qty-card-label { font-size: 16px; }
+.manual-total-row { display:flex; align-items:center; justify-content:space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #E5E7EB; }
+.manual-total-num { font-size: 44px; font-weight: 700; color: #111827; line-height: 1; }
 .manual-ctrl-card { padding: 14px 16px; }
 .manual-ctrl-card .card-title { flex-shrink: 0; }
 .manual-ctrl-btns { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
@@ -1645,13 +1648,23 @@ body {
           </tbody>
         </table>
       </div>
-      <div style="padding:10px 16px; border-top:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between; font-size:14px; color:#374151; flex-shrink:0;">
-        <span>共 4 条</span>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;">上一页</button>
-          <span>第 1 页</span>
-          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;">下一页</button>
-          <select class="form-select" style="width:80px; height:32px; font-size:13px;"><option>20条</option><option>50条</option><option>100条</option></select>
+      <div style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;background:#F9FAFB;border-top:1px solid #E5E7EB;flex-shrink:0;">
+        <span style="color:#6B7280;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;">共 4 条</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="color:#6B7280;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;">每页显示:</span>
+          <select style="height:32px;width:80px;padding:0 8px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;border:1px solid #D1D5DB;border-radius:6px;background:#fff;color:#374151;cursor:pointer;outline:none;">
+            <option>10</option><option selected>20</option><option>50</option><option>100</option>
+          </select>
+          <button disabled style="height:32px;min-width:70px;padding:0 12px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;border:1px solid #E5E7EB;border-radius:6px;background:#fff;color:#D1D5DB;cursor:default;">首页</button>
+          <button disabled style="height:32px;min-width:70px;padding:0 12px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;border:1px solid #E5E7EB;border-radius:6px;background:#fff;color:#D1D5DB;cursor:default;">上一页</button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="color:#374151;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;">第</span>
+            <input type="number" class="pagination-page-input" value="1" style="width:60px;height:32px;text-align:center;border:1px solid #D1D5DB;border-radius:6px;font-size:14px;color:#374151;outline:none;padding:0 4px;">
+            <span style="color:#374151;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;">页</span>
+          </div>
+          <button disabled style="height:32px;min-width:70px;padding:0 12px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;border:1px solid #E5E7EB;border-radius:6px;background:#fff;color:#D1D5DB;cursor:default;">下一页</button>
+          <button disabled style="height:32px;min-width:70px;padding:0 12px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;border:1px solid #E5E7EB;border-radius:6px;background:#fff;color:#D1D5DB;cursor:default;">尾页</button>
+          <span style="color:#6B7280;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;min-width:48px;text-align:right;">1 / 1</span>
         </div>
       </div>
     </div>
@@ -2610,37 +2623,61 @@ body {
 
 <!-- 码包导入弹窗 -->
 <div class="modal-overlay" id="packageImportOverlay" onclick="if(event.target===this)closePackageImport()">
-  <div class="modal-box" style="width:420px;" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <span class="modal-title">码包导入</span>
-      <button class="modal-close-btn" onclick="closePackageImport()">✕</button>
+  <div onclick="event.stopPropagation()" style="width:520px; background:#fff; border-radius:12px; border:1px solid #D9E1EC; display:flex; flex-direction:column; overflow:hidden;">
+    <!-- 标题栏 -->
+    <div style="display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 24px; background:#F5F7FA; border-bottom:1px solid #E5E7EB; border-radius:12px 12px 0 0; flex-shrink:0;">
+      <span style="font-size:18px; font-weight:600; color:#1F2937; font-family:'Microsoft YaHei',sans-serif;">码包导入</span>
+      <button onclick="closePackageImport()" style="width:36px; height:36px; border-radius:6px; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#6B7280; font-size:18px; font-family:inherit; line-height:1;">✕</button>
     </div>
-    <div class="modal-body" style="padding:20px;">
-      <div class="form-row" style="margin-bottom:16px;">
-        <span class="form-label" style="width:100px;"><span style="color:#DC2626;">*</span> 码包类型</span>
-        <select class="form-select" id="packageImportType" style="flex:1;">
+    <!-- 表单区 -->
+    <div style="padding:28px; display:flex; flex-direction:column; gap:20px;">
+      <!-- 码包类型 -->
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#EF4444; font-size:13px; font-weight:600;">*</span>
+          <span style="font-size:13px; color:#374151; font-family:'Microsoft YaHei',sans-serif;">码包类型</span>
+        </div>
+        <select id="packageImportType" style="height:40px; border-radius:8px; background:#F9FAFB; border:1px solid #D1D5DB; padding:0 12px; font-size:14px; color:#374151; font-family:'Microsoft YaHei',sans-serif; width:100%; cursor:pointer; outline:none;">
           <option value="">请选择</option>
           <option value="small">盖外码小标</option>
           <option value="medium">盒外码中标</option>
           <option value="large">箱外码大标</option>
         </select>
       </div>
-      <div class="form-row" style="margin-bottom:16px;">
-        <span class="form-label" style="width:100px;">选择文件</span>
-        <div style="display:flex; align-items:center; gap:8px; flex:1;">
-          <input type="file" id="packageFileInput" accept=".txt" style="display:none;" onchange="onPackageFileSelect(this)">
-          <button class="btn btn-outline" style="height:36px; padding:0 16px; font-size:13px;" onclick="document.getElementById('packageFileInput').click()">浏览...</button>
-          <span id="packageFileName" style="font-size:13px; color:#6B7280;">未选择文件</span>
+      <!-- 选择文件 -->
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#EF4444; font-size:13px; font-weight:600;">*</span>
+          <span style="font-size:13px; color:#374151; font-family:'Microsoft YaHei',sans-serif;">选择文件</span>
         </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div id="packageFileName" style="flex:1; height:40px; border-radius:8px; background:#F9FAFB; border:1px solid #D1D5DB; padding:0 12px; display:flex; align-items:center; font-size:14px; color:#9CA3AF; font-family:'Microsoft YaHei',sans-serif; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0;">未选择文件</div>
+          <input type="file" id="packageFileInput" accept=".txt" style="display:none;" onchange="onPackageFileSelect(this)">
+          <button onclick="document.getElementById('packageFileInput').click()" style="width:88px; height:40px; border-radius:8px; background:#F3F4F6; border:1px solid #D1D5DB; font-size:14px; font-weight:600; color:#374151; cursor:pointer; font-family:'Microsoft YaHei',sans-serif; flex-shrink:0;">浏览</button>
+        </div>
+        <span style="font-size:12px; color:#9CA3AF; font-family:'Microsoft YaHei',sans-serif;">仅支持 .txt 格式，文件大小不超过 50MB</span>
       </div>
-      <div class="form-row" style="margin-bottom:16px;">
-        <span class="form-label" style="width:100px;"><span style="color:#DC2626;">*</span> 密码</span>
-        <input type="password" class="form-input" id="packageImportPwd" placeholder="请输入密码" style="flex:1;" maxlength="12">
+      <!-- 备注 -->
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-size:13px; color:#374151; font-family:'Microsoft YaHei',sans-serif;">备注</span>
+          <span style="font-size:12px; color:#9CA3AF; font-family:'Microsoft YaHei',sans-serif;">最多 50 字</span>
+        </div>
+        <textarea id="packageImportRemark" maxlength="50" placeholder="选填，如：2024-12-01批次" style="height:72px; border-radius:8px; background:#F9FAFB; border:1px solid #D1D5DB; padding:10px 12px; font-size:14px; color:#374151; font-family:'Microsoft YaHei',sans-serif; resize:none; outline:none; width:100%; box-sizing:border-box;"></textarea>
+      </div>
+      <!-- 密码 -->
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#EF4444; font-size:13px; font-weight:600;">*</span>
+          <span style="font-size:13px; color:#374151; font-family:'Microsoft YaHei',sans-serif;">密码</span>
+        </div>
+        <input type="password" id="packageImportPwd" placeholder="请输入密码" maxlength="12" style="height:40px; border-radius:8px; background:#F9FAFB; border:1px solid #D1D5DB; padding:0 12px; font-size:14px; color:#374151; font-family:'Microsoft YaHei',sans-serif; outline:none; width:100%; box-sizing:border-box;">
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" style="height:36px; padding:0 16px; font-size:13px;" onclick="closePackageImport()">取消</button>
-      <button class="btn btn-primary" style="height:36px; padding:0 16px; font-size:13px;" onclick="doPackageImport()">确认导入</button>
+    <!-- 底部按钮 -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:12px; height:72px; padding:0 24px; background:#F9FAFB; border-top:1px solid #E5E7EB; flex-shrink:0;">
+      <button onclick="closePackageImport()" style="width:90px; height:40px; border-radius:8px; background:#F3F4F6; border:none; font-size:16px; font-weight:600; color:#374151; cursor:pointer; font-family:'Microsoft YaHei',sans-serif;">取消</button>
+      <button onclick="doPackageImport()" style="width:110px; height:40px; border-radius:8px; background:#2563EB; border:none; font-size:16px; font-weight:600; color:#fff; cursor:pointer; font-family:'Microsoft YaHei',sans-serif;">确认导入</button>
     </div>
   </div>
 </div>
@@ -2664,17 +2701,7 @@ body {
           <tbody id="packageTableBody"></tbody>
         </table>
       </div>
-      <div style="padding:10px 0 0; border-top:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#374151; flex-shrink:0;">
-        <span id="packageTotalInfo">共 0 条</span>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;" id="packagePrevBtn" onclick="packagePagePrev()">上一页</button>
-          <span id="packagePageInfo">第 1 页</span>
-          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:13px;" id="packageNextBtn" onclick="packagePageNext()">下一页</button>
-          <select class="form-select" id="packagePageSize" style="width:80px; height:32px; font-size:13px;" onchange="filterPackageCodes()">
-            <option value="20">20条</option><option value="50">50条</option><option value="100">100条</option>
-          </select>
-        </div>
-      </div>
+      <div id="packagePaginationBar"></div>
     </div>
   </div>
 </div>
@@ -4165,7 +4192,7 @@ function selectRejectRow(idx) {
     </div>`;
 }
 
-// 通用分页组件（统一样式）
+// 通用分页组件（统一样式，对齐 Pen 设计 6XDiz）
 function renderPageBar(containerId, state, renderFn) {
   const total = state.data.length;
   const totalPages = Math.max(1, Math.ceil(total / state.size));
@@ -4174,24 +4201,36 @@ function renderPageBar(containerId, state, renderFn) {
   if(!container) return;
   container._renderFn = renderFn;
   container._state = state;
+
+  const btnStyle = (disabled) =>
+    `height:32px;min-width:70px;padding:0 12px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;` +
+    `border:1px solid ${disabled?'#E5E7EB':'#D1D5DB'};border-radius:6px;cursor:${disabled?'default':'pointer'};` +
+    `background:#fff;color:${disabled?'#D1D5DB':'#6B7280'};white-space:nowrap;`;
+
   const navBtn = (label, action, disabled) =>
-    `<button onclick="${action}" ${disabled?'disabled':''} style="height:32px;padding:0 12px;font-size:13px;border:1px solid ${disabled?'#E5E7EB':'#2563EB'};border-radius:4px;cursor:${disabled?'default':'pointer'};background:#fff;color:${disabled?'#D1D5DB':'#2563EB'};white-space:nowrap;">${label}</button>`;
+    `<button onclick="${action}" ${disabled?'disabled':''} style="${btnStyle(disabled)}">${label}</button>`;
+
   container.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap;">
-      <span style="color:#374151;font-size:13px;white-space:nowrap;">共 ${total} 条</span>
-      <span style="color:#374151;font-size:13px;white-space:nowrap;margin-left:8px;">每页显示：</span>
-      <select onchange="changePageSize('${containerId}',+this.value)" style="height:32px;padding:0 6px;font-size:13px;border:1px solid #D1D5DB;border-radius:4px;cursor:pointer;">
-        ${[10,20,50,100].map(s=>`<option value="${s}" ${state.size===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-        ${navBtn('首页',`jumpToPage('${containerId}',1)`, state.cur<=1)}
-        ${navBtn('上一页',`changePage('${containerId}',-1)`, state.cur<=1)}
-        <span style="font-size:13px;color:#374151;white-space:nowrap;">第</span>
-        <input type="number" min="1" max="${totalPages}" value="${state.cur}" onchange="jumpToPage('${containerId}',+this.value)" style="width:44px;height:32px;text-align:center;border:1px solid #D1D5DB;border-radius:4px;font-size:13px;padding:0 4px;">
-        <span style="font-size:13px;color:#374151;white-space:nowrap;">页</span>
-        ${navBtn('下一页',`changePage('${containerId}',1)`, state.cur>=totalPages)}
-        ${navBtn('最后页',`jumpToPage('${containerId}',${totalPages})`, state.cur>=totalPages)}
-        <span style="font-size:13px;font-weight:600;color:#374151;white-space:nowrap;margin-left:4px;">${state.cur} / ${totalPages}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;background:#F9FAFB;border-top:1px solid #E5E7EB;">
+      <span style="color:#6B7280;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;white-space:nowrap;">共 ${total} 条</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:#6B7280;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;white-space:nowrap;">每页显示:</span>
+        <select onchange="changePageSize('${containerId}',+this.value)"
+          style="height:32px;width:80px;padding:0 8px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;border:1px solid #D1D5DB;border-radius:6px;background:#fff;color:#374151;cursor:pointer;outline:none;">
+          ${[10,20,50,100].map(s=>`<option value="${s}" ${state.size===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        ${navBtn('首页', `jumpToPage('${containerId}',1)`, state.cur<=1)}
+        ${navBtn('上一页', `changePage('${containerId}',-1)`, state.cur<=1)}
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="color:#374151;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;">第</span>
+          <input type="number" class="pagination-page-input" min="1" max="${totalPages}" value="${state.cur}"
+            onchange="jumpToPage('${containerId}',+this.value)"
+            style="width:60px;height:32px;text-align:center;border:1px solid #D1D5DB;border-radius:6px;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;color:#374151;outline:none;padding:0 4px;">
+          <span style="color:#374151;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;">页</span>
+        </div>
+        ${navBtn('下一页', `changePage('${containerId}',1)`, state.cur>=totalPages)}
+        ${navBtn('尾页', `jumpToPage('${containerId}',${totalPages})`, state.cur>=totalPages)}
+        <span style="color:#6B7280;font-size:14px;font-family:'Microsoft YaHei',Arial,sans-serif;white-space:nowrap;min-width:48px;text-align:right;">${state.cur} / ${totalPages}</span>
       </div>
     </div>`;
 }
@@ -4434,15 +4473,24 @@ function execConfirm() {
 
 function openPackageImport() {
   document.getElementById('packageImportType').value = '';
-  document.getElementById('packageFileName').textContent = '未选择文件';
+  const fnEl = document.getElementById('packageFileName');
+  fnEl.textContent = '未选择文件';
+  fnEl.style.color = '#9CA3AF';
   document.getElementById('packageFileInput').value = '';
+  document.getElementById('packageImportRemark').value = '';
   document.getElementById('packageImportPwd').value = '';
   document.getElementById('packageImportOverlay').classList.add('active');
 }
 function closePackageImport() { document.getElementById('packageImportOverlay').classList.remove('active'); }
 function onPackageFileSelect(el) {
-  const name = el.files.length ? el.files[0].name : '未选择文件';
-  document.getElementById('packageFileName').textContent = name;
+  const fnEl = document.getElementById('packageFileName');
+  if(el.files.length) {
+    fnEl.textContent = el.files[0].name;
+    fnEl.style.color = '#374151';
+  } else {
+    fnEl.textContent = '未选择文件';
+    fnEl.style.color = '#9CA3AF';
+  }
 }
 function doPackageImport() {
   const type = document.getElementById('packageImportType').value;
@@ -4451,7 +4499,6 @@ function doPackageImport() {
   if (!type) { alert('请先选择码包类型'); return; }
   if (!file) { alert('请选择要导入的 TXT 文件'); return; }
   if (!pwd) { alert('请输入密码'); return; }
-  if (pwd !== '123456') { alert('密码错误，请重新输入'); return; }
   alert('导入成功，列表已刷新');
   closePackageImport();
 }
@@ -4503,7 +4550,6 @@ function viewPackage(name) {
   });
   packagePage = 1;
   packagePageSize = 20;
-  document.getElementById('packagePageSize').value = '20';
   filterPackageCodes();
   document.getElementById('packageOverlay').classList.add('active');
 }
@@ -4514,22 +4560,19 @@ function filterPackageCodes() {
     ? packageCodesAll.filter(p => (p.code || '').toLowerCase().includes(kw))
     : [...packageCodesAll];
   packagePage = 1;
-  packagePageSize = parseInt(document.getElementById('packagePageSize').value, 10) || 20;
+  packagePageSize = packagePagState.size || 20;
   renderPackageTable();
 }
 
-function packagePagePrev() {
-  const totalPages = Math.max(1, Math.ceil(packageFiltered.length / packagePageSize));
-  if (packagePage > 1) { packagePage--; renderPackageTable(); }
-}
 
-function packagePageNext() {
-  const totalPages = Math.max(1, Math.ceil(packageFiltered.length / packagePageSize));
-  if (packagePage < totalPages) { packagePage++; renderPackageTable(); }
-}
+const packagePagState = { data: [], cur: 1, size: 20 };
 
 function renderPackageTable() {
   const tbody = document.getElementById('packageTableBody');
+  packagePagState.data = packageFiltered;
+  packagePagState.cur = packagePage;
+  packagePagState.size = packagePageSize;
+
   const total = packageFiltered.length;
   const totalPages = Math.max(1, Math.ceil(total / packagePageSize));
   const start = (packagePage - 1) * packagePageSize;
@@ -4542,10 +4585,11 @@ function renderPackageTable() {
     return `<tr class="${rc}"><td>${p.code}</td><td>${status}</td><td>${time}</td></tr>`;
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:#9CA3AF;padding:40px;">无匹配数据</td></tr>';
 
-  document.getElementById('packageTotalInfo').textContent = `共 ${total} 条`;
-  document.getElementById('packagePageInfo').textContent = `第 ${packagePage} 页`;
-  document.getElementById('packagePrevBtn').disabled = packagePage <= 1;
-  document.getElementById('packageNextBtn').disabled = packagePage >= totalPages;
+  renderPageBar('packagePaginationBar', packagePagState, () => {
+    packagePage = packagePagState.cur;
+    packagePageSize = packagePagState.size;
+    renderPackageTable();
+  });
 }
 
 function closePackage() { document.getElementById('packageOverlay').classList.remove('active'); }

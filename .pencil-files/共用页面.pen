@@ -4,8 +4,8 @@
     {
       "type": "frame",
       "id": "G68jF",
-      "x": 43,
-      "y": -265,
+      "x": 157,
+      "y": -1600,
       "name": "操作帮助弹窗",
       "width": 900,
       "height": 720,
@@ -527,8 +527,8 @@
     {
       "type": "frame",
       "id": "DjbNH",
-      "x": 4066,
-      "y": -214,
+      "x": 3270,
+      "y": -350,
       "name": "系统设置-业务-上传配置",
       "width": 1280,
       "height": 768,
@@ -891,7 +891,7 @@
     {
       "type": "frame",
       "id": "Iw4Hk",
-      "x": 43,
+      "x": 157,
       "y": 878,
       "name": "系统设置-连接-数据库连接",
       "width": 1280,
@@ -1742,6 +1742,64 @@
                                 },
                                 {
                                   "type": "frame",
+                                  "id": "28uO4",
+                                  "name": "tableRow2",
+                                  "gap": 16,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "JW9Q4",
+                                      "name": "lb8",
+                                      "width": 110,
+                                      "justifyContent": "end",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "mb54l",
+                                          "fill": "$foreground",
+                                          "content": "表名:",
+                                          "fontFamily": "Microsoft YaHei",
+                                          "fontSize": 14,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "l3Wwa",
+                                      "name": "table2box",
+                                      "width": 200,
+                                      "height": 32,
+                                      "fill": "#ffffff",
+                                      "cornerRadius": 4,
+                                      "stroke": {
+                                        "align": "inside",
+                                        "thickness": 1,
+                                        "fill": "$border-color"
+                                      },
+                                      "padding": [
+                                        6,
+                                        12
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "yD06I",
+                                          "fill": "$muted-foreground",
+                                          "content": "T_Code",
+                                          "fontFamily": "Microsoft YaHei",
+                                          "fontSize": 14,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
                                   "id": "eEXRU",
                                   "name": "upRow2",
                                   "gap": 16,
@@ -1938,8 +1996,8 @@
     {
       "type": "frame",
       "id": "HJPpJ",
-      "x": 1133,
-      "y": -214,
+      "x": 157,
+      "y": -350,
       "name": "系统设置-业务-码位数配置",
       "width": 1280,
       "height": 768,
@@ -2450,8 +2508,8 @@
     {
       "type": "frame",
       "id": "EAhHM",
-      "x": 2554,
-      "y": -214,
+      "x": 1788,
+      "y": -350,
       "name": "系统设置-业务-虚拟垛标规则",
       "width": 1280,
       "height": 768,
@@ -3069,7 +3127,7 @@
     {
       "type": "frame",
       "id": "zcZRo",
-      "x": 1640,
+      "x": 1788,
       "y": 1030,
       "name": "系统设置-页面配置",
       "width": 1280,
@@ -3497,8 +3555,8 @@
     {
       "type": "frame",
       "id": "Yq73e",
-      "x": 3194,
-      "y": 1030,
+      "x": 3270,
+      "y": 1068,
       "name": "系统设置-页面配置-盒箱垛",
       "width": 1280,
       "height": 768,
@@ -4636,8 +4694,8 @@
     {
       "type": "frame",
       "id": "16qth",
-      "x": 5496,
-      "y": -8,
+      "x": 1360,
+      "y": -1600,
       "name": "帮助提示弹窗",
       "width": 560,
       "fill": "#FFFFFF",
