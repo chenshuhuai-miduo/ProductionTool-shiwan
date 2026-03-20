@@ -154,6 +154,24 @@ public class ShiwanM2MainController implements Initializable {
     /** 无需采集码切换按钮 */
     @FXML private Button noCodeNeededBtn;
 
+    /** 打开/关闭报警切换按钮（初始文字：打开报警） */
+    @FXML private Button alarmToggleBtn;
+
+    /** 触发/收回剔除切换按钮（初始文字：触发剔除） */
+    @FXML private Button rejectToggleBtn;
+
+    /** 测试报警灯亮/灭按钮（初始文字：测试报警灯亮） */
+    @FXML private Button alarmLightTestBtn;
+
+    /** 报警是否处于打开状态（false=未打开, true=已打开） */
+    private boolean alarmOpen = false;
+
+    /** 剔除是否处于触发状态（false=未触发, true=已触发） */
+    private boolean rejectTriggered = false;
+
+    /** 测试报警灯当前是否处于亮状态 */
+    private boolean alarmLightOn = false;
+
     /** 无需采集码模式是否已激活 */
     private boolean noCodeNeededMode = false;
 
@@ -1928,12 +1946,78 @@ public class ShiwanM2MainController implements Initializable {
         }
     }
 
-    @FXML
-    private void onCloseAlarm() {
+    /** 保留供内部调用（自动关闭报警，如业务触发的关闭）。 */
+    private void closeAlarmInternal() {
         ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
         hw.allLightsOff();
         String now = LocalDateTime.now().format(TIME_FMT);
-        addOpLog(now + "  [报警器] 已发送关闭报警指令", LogType.INFO);
+        addOpLog(now + "  [报警器] 已发送关闭报警指令（内部）", LogType.INFO);
+    }
+
+    /**
+     * 打开/关闭报警切换按钮：
+     * 初始状态文字为"打开报警"，点击发送打开报警信号，按钮变为"关闭报警"；
+     * 再次点击发送关闭报警信号，按钮恢复为"打开报警"。
+     */
+    @FXML
+    private void onToggleAlarm() {
+        ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+        String now = LocalDateTime.now().format(TIME_FMT);
+        if (!alarmOpen) {
+            hw.openAlarm();
+            alarmOpen = true;
+            if (alarmToggleBtn != null) alarmToggleBtn.setText("关闭报警");
+            addOpLog(now + "  [报警器] 已发送打开报警信号", LogType.INFO);
+        } else {
+            hw.closeAlarm();
+            alarmOpen = false;
+            if (alarmToggleBtn != null) alarmToggleBtn.setText("打开报警");
+            addOpLog(now + "  [报警器] 已发送关闭报警信号", LogType.INFO);
+        }
+    }
+
+    /**
+     * 触发/收回剔除切换按钮：
+     * 初始状态文字为"触发剔除"，点击发送触发剔除信号，按钮变为"收回剔除"；
+     * 再次点击发送收回剔除信号，按钮恢复为"触发剔除"。
+     */
+    @FXML
+    private void onToggleReject() {
+        ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+        String now = LocalDateTime.now().format(TIME_FMT);
+        if (!rejectTriggered) {
+            hw.triggerRejectCustom();
+            rejectTriggered = true;
+            if (rejectToggleBtn != null) rejectToggleBtn.setText("收回剔除");
+            addOpLog(now + "  [剔除] 已发送触发剔除信号", LogType.INFO);
+        } else {
+            hw.retractRejectCustom();
+            rejectTriggered = false;
+            if (rejectToggleBtn != null) rejectToggleBtn.setText("触发剔除");
+            addOpLog(now + "  [剔除] 已发送收回剔除信号", LogType.INFO);
+        }
+    }
+
+    /**
+     * 测试报警灯亮/灭按钮：
+     * 初始文字"测试报警灯亮"，点击发送报警灯亮信号，按钮变为"测试报警灯灭"；
+     * 再次点击发送报警灯灭信号，按钮恢复为"测试报警灯亮"。
+     */
+    @FXML
+    private void onToggleAlarmLight() {
+        ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+        String now = LocalDateTime.now().format(TIME_FMT);
+        if (!alarmLightOn) {
+            hw.alarmLightOn();
+            alarmLightOn = true;
+            if (alarmLightTestBtn != null) alarmLightTestBtn.setText("测试报警灯灭");
+            addOpLog(now + "  [报警灯] 已发送报警灯亮信号", LogType.INFO);
+        } else {
+            hw.alarmLightOff();
+            alarmLightOn = false;
+            if (alarmLightTestBtn != null) alarmLightTestBtn.setText("测试报警灯亮");
+            addOpLog(now + "  [报警灯] 已发送报警灯灭信号", LogType.INFO);
+        }
     }
 
     @FXML
@@ -2345,11 +2429,12 @@ public class ShiwanM2MainController implements Initializable {
         showInfo("任务控制 - 功能说明",
                 "● 开始/停止采集：系统检测硬件后开始采集；再次点击停止，未满垛数据保留。\n" +
                 "● 无需采集码：当天不生产五码合一产品时开启，所有读码设备不工作。\n" +
-                "● 关闭报警：重置报警状态，停止声光报警器/蜂鸣器等。\n" +
+                "● 打开/关闭报警：切换按钮，发送系统设置中配置的打开/关闭报警自定义信号。\n" +
                 "● 强制满垛：未达到设定箱数也强制结束当前垛，生成虚拟垛标并重置计数。\n" +
                 "● 提取工单未成垛：弹窗输入/扫描垛内任一箱码，查出对应生产订单继续生产。\n" +
-                "● 收回剔除：剔除设备未自动收回时，点击收回当前剔除动作（PLC控制）。\n" +
-                "● 剔除数清零：将总剔除数重置为0。");
+                "● 触发/收回剔除：切换按钮，发送系统设置中配置的触发剔除/收回剔除自定义信号。\n" +
+                "● 剔除数清零：将总剔除数重置为0。\n" +
+                "● 测试报警灯亮/灭：切换按钮，发送系统设置中配置的报警灯亮/灭信号（用于调试）。");
     }
 
     // ==================== 外部调用接口（业务服务调用）====================
