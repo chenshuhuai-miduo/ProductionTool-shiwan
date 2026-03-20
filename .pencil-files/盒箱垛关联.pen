@@ -392,6 +392,71 @@
                     },
                     {
                       "type": "frame",
+                      "id": "oc5xg",
+                      "name": "码输入区",
+                      "width": "fill_container",
+                      "height": 44,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "F3SqE",
+                          "name": "输入框",
+                          "width": "fill_container",
+                          "height": 44,
+                          "fill": "#F9FAFB",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#D1D5DB"
+                          },
+                          "padding": [
+                            0,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "SDKKk",
+                              "name": "inputPlaceholder",
+                              "fill": "#9CA3AF",
+                              "content": "扫描或输入瓶码",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 15,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "OZ2uW",
+                          "name": "加入按钮",
+                          "width": 72,
+                          "height": 44,
+                          "fill": "#D1D5DB",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "8uTig",
+                              "name": "addBtnText",
+                              "fill": "#9CA3AF",
+                              "content": "加入",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
                       "id": "AxiWy",
                       "width": "fill_container",
                       "fill": "#EEF5FF",

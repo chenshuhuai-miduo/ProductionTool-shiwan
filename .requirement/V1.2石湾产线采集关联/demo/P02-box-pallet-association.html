@@ -708,11 +708,28 @@ body {
 .light-active { background: #D1FAE5; color: #065F46; }
 .light-next { background: #FEF3C7; color: #92400E; }
 
-/* 手工采集 - 开始采集提示 参考 pen，平铺剩余空间 */
+/* 手工采集 - 码输入区 */
+.manual-code-row { display:flex; align-items:center; gap:8px; height:44px; flex-shrink:0; }
+.manual-code-input {
+  flex:1; height:44px; padding:0 12px; border-radius:8px;
+  background:#F9FAFB; border:1px solid #D1D5DB;
+  font-size:15px; outline:none; font-family:'Microsoft YaHei',sans-serif; color:#1F2937;
+}
+.manual-code-input:disabled { background:#F3F4F6; color:#9CA3AF; cursor:not-allowed; }
+.manual-code-input:not(:disabled):focus { border-color:#2563EB; background:#fff; }
+.manual-add-btn {
+  width:72px; height:44px; border-radius:8px;
+  background:#D1D5DB; border:none;
+  font-size:15px; font-weight:600; color:#9CA3AF;
+  cursor:not-allowed; font-family:'Microsoft YaHei',sans-serif; flex-shrink:0;
+}
+.manual-add-btn.active { background:#2563EB; color:#fff; cursor:pointer; }
+
+/* 手工采集 - 当前应扫提示区 */
 .prompt-area {
-  background: #fff;
-  border-radius: 0;
-  border: none;
+  background: #EEF5FF;
+  border: 1px solid #C7DBFF;
+  border-radius: 10px;
   padding: 18px 22px;
   flex: 1;
   min-height: 0;
@@ -722,22 +739,8 @@ body {
   justify-content: center;
   gap: 8px;
 }
-.prompt-main {
-  font-size: 18px;
-  font-weight: 600;
-  color: #374151;
-}
-.prompt-codes {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 44px;
-  font-weight: 700;
-}
-.code-scan { color: #2563EB; }
-.code-wait { color: #D1D5DB; }
-.code-divider { color: #9CA3AF; font-size: 32px; }
+.prompt-main { font-size: 18px; font-weight: 600; color: #374151; font-family:'Microsoft YaHei',sans-serif; }
+.prompt-code-big { font-size: 44px; font-weight: 700; color: #2563EB; font-family:'Microsoft YaHei',sans-serif; line-height: 1.1; }
 
 /* 手工采集 - 右侧单位实时统计、任务控制 参考 pen */
 .manual-stats-card { padding: 14px 16px; }
@@ -1184,8 +1187,8 @@ body {
         </div>
         <div class="order-row" style="margin-top:12px;">
           <span style="font-size:13px; color:#6B7280;">生产单号</span>
-          <input type="text" class="order-input" id="orderNum" maxlength="20" style="flex:1; min-width:0;"
-            oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'')" placeholder="字母/数字，最长20位">
+          <input type="text" class="order-input" id="orderNum" maxlength="16" style="flex:1; min-width:0;"
+            oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'')" placeholder="字母/数字，4~16位">
         </div>
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid #E5E7EB;">
           <div style="font-size:14px; font-weight:600; color:#1F2937; margin-bottom:10px;">采集规格设置</div>
@@ -1348,15 +1351,19 @@ body {
           <span style="font-size:16px;">瓶</span>
         </div>
       </div>
-      <div class="card manual-prompt-card" style="padding:0; overflow:hidden; display:flex; flex-direction:column; background:#fff;">
-        <div class="card-title" style="padding:14px 16px 0;">开始采集提示</div>
+      <div class="card manual-prompt-card" style="padding:14px; overflow:hidden; display:flex; flex-direction:column; gap:12px; background:#fff;">
+        <div class="card-title" style="margin:0; padding:0;">开始采集提示</div>
+        <!-- 码输入区 -->
+        <div class="manual-code-row">
+          <input type="text" class="manual-code-input" id="manualCodeInput"
+            placeholder="扫描或输入瓶码" disabled autocomplete="off"
+            onkeydown="if(event.key==='Enter')submitManualCode()">
+          <button class="manual-add-btn" id="manualAddBtn" disabled onclick="submitManualCode()">加入</button>
+        </div>
+        <!-- 当前应扫提示 -->
         <div class="prompt-area">
           <div class="prompt-main">当前应扫</div>
-        <div class="prompt-codes">
-          <span class="code-scan" id="promptCode1">瓶码</span>
-          <span class="code-divider">/</span>
-          <span class="code-wait" id="promptCode2">盒码</span>
-        </div>
+          <div class="prompt-code-big" id="manualPromptCode">瓶码</div>
         </div>
       </div>
     </div>
@@ -1366,11 +1373,13 @@ body {
         <div class="log-section" style="flex:1; min-height:0;">
           <div class="log-section-header">📡 数据接收区 <span style="font-size:11px; color:#9CA3AF; font-weight:400;">（最新在上）</span></div>
           <div class="log-section-body" id="manualDataArea">
-            <div class="log-entry le-success"><span class="ts">10:30:38</span>盒码关联成功：20241201002001（6瓶→1盒）</div>
-            <div class="log-entry le-data"><span class="ts">10:30:36</span>扫码完成，请扫盒码</div>
-            <div class="log-entry le-data"><span class="ts">10:30:35</span>瓶码采集：20241201010006</div>
-            <div class="log-entry le-data"><span class="ts">10:30:34</span>瓶码采集：20241201010005</div>
-            <div class="log-entry le-data"><span class="ts">10:30:33</span>瓶码采集：20241201010004</div>
+            <div class="log-entry le-success"><span class="ts">10:30:38</span>盒码关联成功 20241201002001（6瓶）</div>
+            <div class="log-entry le-data"><span class="ts">10:30:36</span>瓶码采集 20241201010006</div>
+            <div class="log-entry le-data"><span class="ts">10:30:35</span>瓶码采集 20241201010005</div>
+            <div class="log-entry le-data"><span class="ts">10:30:34</span>瓶码采集 20241201010004</div>
+            <div class="log-entry le-data"><span class="ts">10:30:33</span>瓶码采集 20241201010003</div>
+            <div class="log-entry le-data"><span class="ts">10:30:32</span>瓶码采集 20241201010002</div>
+            <div class="log-entry le-data"><span class="ts">10:30:31</span>瓶码采集 20241201010001</div>
           </div>
         </div>
       </div>
@@ -2085,11 +2094,19 @@ body {
           <div class="help-h2">4.1 手工采集（瓶盒采集相机损坏时使用，人工扫码补录瓶盒关联）</div>
           <ol class="help-ol">
             <li>点击「手工采集」Tab</li>
-            <li>设置采集规格（1盒 [6]瓶，6可修改）；<strong>采集开始后不可修改</strong></li>
-            <li>点击「开始采集」按钮，按钮变为「停止采集」</li>
-            <li>按左侧「开始采集提示」顺序用扫码枪扫码：先扫瓶码（足够数量后）→ 扫盒码</li>
-            <li>左侧开始采集提示区文字随进度变化，告知当前应扫瓶码或盒码</li>
-            <li>扫码完成后自动完成瓶盒关联，当前已读数量归零，继续下一组</li>
+            <li>设置采集规格（每盒瓶数，采集开始后不可修改）</li>
+            <li>点击「开始采集」，系统自动检测码包是否已导入；未导入时会提示，须先完成码包导入再重试</li>
+            <li>采集中，参照左侧<strong>蓝色文字</strong>提示（「当前应扫：瓶码」或「当前应扫：盒码」）进行扫码</li>
+            <li>扫码方式任选其一：
+              <ul style="margin-top:4px; padding-left:20px; list-style:disc;">
+                <li>扫码枪对准码直接扫（自动提交）</li>
+                <li>手动输入码值后按 <strong>Enter</strong></li>
+                <li>手动输入码值后点击「加入」按钮</li>
+              </ul>
+            </li>
+            <li>中间数据接收区实时显示扫码结果：<strong style="color:#16A34A;">绿色</strong>表示关联成功，<strong style="color:#DC2626;">红色</strong>表示码异常（请重新扫码）</li>
+            <li>扫够规格数量的瓶码后再扫盒码，自动完成本组瓶盒关联，当前已读归零，继续下一组</li>
+            <li>点击「停止采集」结束；已扫但尚未完成关联的瓶码将被<strong>丢弃</strong>，下次从头开始计数</li>
           </ol>
         </div>
 
@@ -2953,8 +2970,8 @@ function toggleCollect() {
       document.getElementById('orderNum').focus();
       return;
     }
-    if(!/^[A-Za-z0-9]{1,20}$/.test(orderNum)) {
-      alert('生产单号格式不正确，仅允许字母和数字，最长20位！');
+    if(!/^[A-Za-z0-9]{4,16}$/.test(orderNum)) {
+      alert('生产单号格式不正确，仅允许字母和数字，长度须为4~16位！');
       document.getElementById('orderNum').focus();
       return;
     }
@@ -3300,6 +3317,36 @@ function confirmProductSelect() {
 
 // 手工采集（仅支持瓶盒关联）
 let isManualCollecting = false;
+// 手工采集 - 当前扫码阶段：'bottle'（瓶码）| 'box'（盒码）
+let manualPhase = 'bottle';
+// 当前已扫瓶码列表（等待配盒码）
+let manualBottleCodes = [];
+
+function setManualInputEnabled(enabled) {
+  const input = document.getElementById('manualCodeInput');
+  const addBtn = document.getElementById('manualAddBtn');
+  input.disabled = !enabled;
+  addBtn.disabled = !enabled;
+  if(enabled) {
+    addBtn.classList.add('active');
+    input.focus();
+  } else {
+    addBtn.classList.remove('active');
+  }
+}
+
+function updateManualPrompt() {
+  const el = document.getElementById('manualPromptCode');
+  const input = document.getElementById('manualCodeInput');
+  if(manualPhase === 'bottle') {
+    el.textContent = '瓶码';
+    input.placeholder = '扫描或输入瓶码';
+  } else {
+    el.textContent = '盒码';
+    input.placeholder = '扫描或输入盒码';
+  }
+}
+
 function toggleManualCollect() {
   const btn = document.getElementById('manualCollectBtn');
   const manualN = document.getElementById('manualN');
@@ -3312,13 +3359,87 @@ function toggleManualCollect() {
     }
     manualN.disabled = true;
     isManualCollecting = true;
+    manualPhase = 'bottle';
+    manualBottleCodes = [];
     btn.textContent = '停止采集';
     btn.style.background = '#DC2626';
+    setManualInputEnabled(true);
+    updateManualPrompt();
+    // 操作日志
+    const now = new Date(), ts = now.toTimeString().slice(0,8);
+    const area = document.getElementById('manualOpLogArea');
+    if(area) {
+      const d = document.createElement('div');
+      d.className = 'log-entry le-info';
+      d.innerHTML = `<span class="ts">${ts}</span>进入手工采集模式 - 采集规格：1盒 ${nVal}瓶`;
+      area.insertBefore(d, area.firstChild);
+    }
   } else {
     manualN.disabled = false;
     isManualCollecting = false;
+    manualPhase = 'bottle';
+    manualBottleCodes = [];
     btn.textContent = '开始采集';
     btn.style.background = '';
+    setManualInputEnabled(false);
+    document.getElementById('manualCodeInput').value = '';
+    updateManualPrompt();
+    // 已扫未完成的瓶码直接丢弃，当前已读归零
+    document.getElementById('manualCurrentCount').textContent = '0';
+  }
+}
+
+function submitManualCode() {
+  if(!isManualCollecting) return;
+  const input = document.getElementById('manualCodeInput');
+  const code = input.value.trim();
+  input.value = '';
+  input.focus();
+
+  const now = new Date(), ts = now.toTimeString().slice(0,8);
+  const dataArea = document.getElementById('manualDataArea');
+  const manualN = parseInt(document.getElementById('manualN').value) || 6;
+
+  function addEntry(text, cls) {
+    if(!dataArea) return;
+    const d = document.createElement('div');
+    d.className = `log-entry ${cls || 'le-data'}`;
+    d.innerHTML = `<span class="ts">${ts}</span>${text}`;
+    dataArea.insertBefore(d, dataArea.firstChild);
+  }
+
+  if(!code) {
+    addEntry('输入内容无效，请重新扫码或输入', 'le-error');
+    return;
+  }
+
+  if(manualPhase === 'bottle') {
+    // 校验：重码检查
+    if(manualBottleCodes.includes(code)) {
+      addEntry(`瓶码 ${code}：重复出现`, 'le-error');
+      return;
+    }
+    manualBottleCodes.push(code);
+    const cur = manualBottleCodes.length;
+    addEntry(`瓶码采集 ${code}`, 'le-data');
+    document.getElementById('manualCurrentCount').textContent = cur;
+    // 达到规格数量，切换到盒码阶段
+    if(cur >= manualN) {
+      manualPhase = 'box';
+      updateManualPrompt();
+    }
+  } else {
+    // 盒码阶段 - 触发瓶盒关联
+    addEntry(`盒码关联成功 ${code}（${manualN}瓶）`, 'le-success');
+    // 生产总数累计
+    const totalEl = document.getElementById('manualTotal');
+    const curTotal = parseInt(totalEl.textContent) || 0;
+    totalEl.textContent = curTotal + 1;
+    // 当前已读归零，重置进入下一组瓶码
+    manualBottleCodes = [];
+    manualPhase = 'bottle';
+    document.getElementById('manualCurrentCount').textContent = '0';
+    updateManualPrompt();
   }
 }
 
