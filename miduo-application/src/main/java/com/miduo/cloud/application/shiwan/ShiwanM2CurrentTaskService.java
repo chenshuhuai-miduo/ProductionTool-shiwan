@@ -184,19 +184,28 @@ public class ShiwanM2CurrentTaskService {
      * 建议生产单号：从 prefix+001 开始递增，返回第一个在 ProductionOrder 中不存在的单号。
      */
     public String suggestOrderNo(String prefix) {
-        if (prefix == null || prefix.isEmpty()) return prefix;
-        for (int i = 1; i <= 999; i++) {
-            String candidate = prefix + String.format("%03d", i);
-            try {
-                Long cnt = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(1) FROM ProductionOrder WHERE OrderNo = ?",
-                        Long.class, candidate);
-                if (cnt == null || cnt == 0) return candidate;
-            } catch (Exception ignored) {
-                return candidate;
+        if (prefix == null || prefix.isEmpty()) return "001";
+        try {
+            int prefixLen = prefix.length();
+            // 查找当天格式（prefix + 纯数字后缀）中已存在的最大序号
+            Integer maxSuffix = jdbcTemplate.queryForObject(
+                    "SELECT MAX(CAST(SUBSTRING(OrderNo, ?) AS UNSIGNED)) " +
+                    "FROM ProductionOrder " +
+                    "WHERE OrderNo LIKE ? " +
+                    "AND SUBSTRING(OrderNo, ?) REGEXP '^[0-9]+$'",
+                    Integer.class,
+                    prefixLen + 1,    // SUBSTRING 起始位（1-indexed）
+                    prefix + "%",     // LIKE 过滤前缀
+                    prefixLen + 1);   // 同上，用于 REGEXP 纯数字校验
+            if (maxSuffix == null || maxSuffix <= 0) {
+                return prefix + "001";
             }
+            int next = maxSuffix + 1;
+            return prefix + String.format("%03d", Math.min(next, 999));
+        } catch (Exception e) {
+            System.err.println("[suggestOrderNo] 查询失败 prefix=" + prefix + ": " + e.getMessage());
+            return prefix + "001";
         }
-        return prefix + "999";
     }
 
     /**
