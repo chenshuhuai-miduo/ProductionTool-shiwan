@@ -1496,6 +1496,73 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
+     * 批次关联 - 查询指定盒码中存在 Status=4 记录的盒码列表（码包热表校验不通过）。
+     * 仅返回在 CodeRelationUpload 中有 Status=4 记录的盒码。
+     */
+    public List<String> getStatus4BoxCodes(List<String> boxCodes) {
+        if (boxCodes == null || boxCodes.isEmpty()) return Collections.emptyList();
+        try {
+            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            return jdbcTemplate.queryForList(
+                    "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND Status = 4 AND IsDel = 0",
+                    String.class, boxCodes.toArray());
+        } catch (Exception e) {
+            log.warn("[Status=4检查] 查询失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 批次关联 - 为 Status=4 的盒码写入剔除记录（每条瓶码写一条 RejectRecord）。
+     * @param caseCode 当前批次的箱码（用于填充 RejectRecord.CaseCode）
+     */
+    public void insertStatus4RejectRecordsForBox(String orderNo, String caseCode, String boxCode) {
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT SmallSerialNumber, Msg FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
+                    boxCode);
+            if (rows == null || rows.isEmpty()) {
+                insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode, "码包热表校验不通过");
+                return;
+            }
+            for (Map<String, Object> row : rows) {
+                String bottleCode = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
+                String msgReason  = row.get("Msg") != null && !row.get("Msg").toString().isEmpty()
+                        ? row.get("Msg").toString() : "码包热表校验不通过";
+                insertRejectRecord(orderNo, caseCode, boxCode, bottleCode,
+                        bottleCode != null && !bottleCode.isEmpty() ? bottleCode : boxCode, msgReason);
+            }
+        } catch (Exception e) {
+            log.warn("[Status=4剔除] 写入失败 boxCode={}: {}", boxCode, e.getMessage());
+        }
+    }
+
+    /**
+     * 批次关联 - 从 CodeRelationUpload 中硬删除指定盒码（MediumSerialNumber）的未关联记录。
+     * 条件：BigSerialNumber 为空（尚未关联箱码）且 IsDel=0，不论 Status。
+     * @return 实际删除行数
+     */
+    public int deleteCodeRelationUploadByBoxCodes(List<String> boxCodes) {
+        if (boxCodes == null || boxCodes.isEmpty()) return 0;
+        try {
+            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            int deleted = jdbcTemplate.update(
+                    "DELETE FROM CodeRelationUpload WHERE MediumSerialNumber IN (" + placeholders + ") " +
+                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') AND IsDel = 0",
+                    boxCodes.toArray());
+            if (deleted > 0) {
+                log.info("[批次剔除] 从 CodeRelationUpload 删除 {} 条记录，盒码：{}", deleted, boxCodes);
+            }
+            return deleted;
+        } catch (Exception e) {
+            log.error("[批次剔除] 删除 CodeRelationUpload 记录失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    /**
      * 热表落冷：将指定码从 CodePackageItemHot 移至 CodePackageItemCold。
      * 热表中不存在时仅记录警告，不抛异常，由调用方事务统一回滚。
      */

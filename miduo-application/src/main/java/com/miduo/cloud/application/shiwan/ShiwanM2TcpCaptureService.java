@@ -8,11 +8,9 @@ import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -23,11 +21,18 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
- * 石湾 2 号机 TCP 采集服务。
- * 盒码收到即落库（CodeRelationUpload 一条，BigSerialNumber 为空）；箱码收到时查当前未关联的前 N 条盒码，
- * 够 N 条则更新其 BigSerialNumber，不足则箱码入待处理列表，待后续盒码落库后再尝试关联。
+ * 石湾 2 号机 TCP 采集服务（批次匹配模式）。
+ *
+ * 工作原理：
+ *   - 盒码相机每次扫描产生一个盒码批次（BatchNo 自增），放入盒码批次队列。
+ *   - 箱码相机每次扫描产生一个箱码批次（BatchNo 自增），放入箱码批次队列。
+ *   - 当两个队列头部的 BatchNo 相同时，触发盒箱关联。
+ *   - 无论校验是否通过，所有码均进入批次队列；校验结果仅在数据接收区展示。
+ *   - 关联时重新校验位数 + 检查 Status=4：有问题则整批剔除并写剔除记录表，全部通过则执行正常关联。
+ *
  * 启用条件：shiwan.m2.tcp-capture.enabled=true
  */
 @Service
@@ -36,16 +41,15 @@ public class ShiwanM2TcpCaptureService {
 
     private static final Logger log = LoggerFactory.getLogger(ShiwanM2TcpCaptureService.class);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
-    /** 盒码采集相机的 deviceCategory 文本（INI 中存为数字 2，读出后转为此文本） */
+
+    /** 盒码采集相机的 deviceCategory 文本 */
     private static final String BOX_CATEGORY  = "盒码采集";
-    /** 箱码采集相机的 deviceCategory 文本（INI 中存为数字 3） */
+    /** 箱码采集相机的 deviceCategory 文本 */
     private static final String CASE_CATEGORY = "箱码采集";
-    /** 每个盒码在 CodeRelationUpload 中需满足的条数 */
-    private static final int REQUIRED_ROWS_PER_BOX = 6;
     /** 事件队列最大容量 */
-    private static final int MAX_EVENTS = 1000;
+    private static final int MAX_EVENTS    = 1000;
     /** 相机断线后重试间隔（ms） */
-    private static final int RECONNECT_MS = 3000;
+    private static final int RECONNECT_MS  = 3000;
 
     @Resource
     private ShiwanM2BoxCaseService boxCaseService;
@@ -53,44 +57,43 @@ public class ShiwanM2TcpCaptureService {
     @Resource
     private DeviceApplicationService deviceApplicationService;
 
-    @Resource
-    private DataSource dataSource;
-
-    private JdbcTemplate jdbcTemplate() {
-        return new JdbcTemplate(dataSource);
-    }
-
     // -------- 运行时状态 --------
-    private volatile boolean active = false;
+    private volatile boolean active         = false;
     private volatile String  currentOrderNo;
     private volatile String  currentProductNo;
-    private volatile int     boxesPerCase    = 4;
-    private volatile int     boxesPerPallet  = 70;
+    private volatile int     boxesPerCase   = 4;
+    private volatile int     boxesPerPallet = 70;
 
-    /** 当前垛内已完成的箱数（从最后一次关联返回值更新） */
+    /** 当前垛内已完成的箱数 */
     private final AtomicInteger currentCasesInPallet = new AtomicInteger(0);
-    /** 已完成关联的总次数（供前端检测是否有新关联） */
+    /** 已完成关联的总次数 */
     private final AtomicLong    totalAssociations    = new AtomicLong(0);
 
-    /** 已通过校验的盒码内存队列（校验条件：表中该 MediumSerialNumber 对应 6 条、SmallSerialNumber 互异、BigSerialNumber 均为空） */
-    private final LinkedBlockingQueue<String> boxCodeQueue = new LinkedBlockingQueue<>();
-    /** 待处理箱码列表：收到箱码时若内存队列中盒码不足 N 条则放入此队列 */
-    private final LinkedBlockingQueue<String> pendingCaseCodes = new LinkedBlockingQueue<>();
     /**
-     * BOX_FAIL 暂存队列：盒码校验失败后，箱码尚未到来，无法写剔除记录（需要箱码必填）。
-     * 在下一个 ASSOC_FAIL 时一并排尽并写入 RejectRecord；ASSOCIATED 成功时清空（无需写记录）。
+     * 盒码批次队列：盒码相机每次扫描 → BoxBatchEntry（含批号、所有码及各码位数校验状态）。
      */
-    private final LinkedBlockingQueue<FailedBoxEntry> pendingFailedBoxes = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<BoxBatchEntry>  boxBatchQueue  = new LinkedBlockingQueue<>();
+    /**
+     * 箱码批次队列：箱码相机每次扫描 → CaseBatchEntry（含批号、箱码及位数校验状态）。
+     */
+    private final LinkedBlockingQueue<CaseBatchEntry> caseBatchQueue = new LinkedBlockingQueue<>();
+
+    /** 盒码批次计数器：每次盒码相机触发自增，从 1 开始 */
+    private final AtomicInteger boxBatchCounter  = new AtomicInteger(0);
+    /** 箱码批次计数器：每次箱码相机触发自增，从 1 开始；与盒码批次计数器顺序对应 */
+    private final AtomicInteger caseBatchCounter = new AtomicInteger(0);
+
+    /** 批次匹配锁：保证 peek+poll 操作的原子性 */
+    private final Object matchLock = new Object();
 
     // -------- 事件列表（前端轮询） --------
-    private final Deque<CaptureEvent>  recentEvents = new ArrayDeque<>(MAX_EVENTS);
-    private final AtomicLong           eventSeq     = new AtomicLong(0);
-    private final Object               eventLock    = new Object();
+    private final Deque<CaptureEvent> recentEvents = new ArrayDeque<>(MAX_EVENTS);
+    private final AtomicLong          eventSeq     = new AtomicLong(0);
+    private final Object              eventLock    = new Object();
 
     // -------- 采集线程 --------
-    private Thread boxReceiverThread;
-    private Thread caseReceiverThread;
-    /** 保存 socket 引用用于 stop 时强制关闭 */
+    private Thread          boxReceiverThread;
+    private Thread          caseReceiverThread;
     private volatile Socket boxSocket;
     private volatile Socket caseSocket;
 
@@ -103,11 +106,8 @@ public class ShiwanM2TcpCaptureService {
      * @return null 表示成功，否则返回错误说明。
      */
     public synchronized String start(String orderNo, String productNo, int boxesPerCase, int boxesPerPallet) {
-        if (active) {
-            return "TCP采集已在运行中";
-        }
+        if (active) return "TCP采集已在运行中";
 
-        // 查找设备配置
         IoDeviceDTO boxDev  = findDevice(BOX_CATEGORY);
         IoDeviceDTO caseDev = findDevice(CASE_CATEGORY);
         if (boxDev  == null) return "未找到盒码采集相机配置（设备类型=盒码采集），请在系统设置→IO设备管理中添加";
@@ -123,14 +123,14 @@ public class ShiwanM2TcpCaptureService {
         this.boxesPerPallet   = boxesPerPallet > 0 ? boxesPerPallet : 70;
 
         // 重置状态
-        boxCodeQueue.clear();
-        pendingCaseCodes.clear();
-        pendingFailedBoxes.clear();
+        boxBatchQueue.clear();
+        caseBatchQueue.clear();
+        boxBatchCounter.set(0);
+        caseBatchCounter.set(0);
         currentCasesInPallet.set(0);
 
         active = true;
 
-        // 启动守护线程（盒码/箱码收到即落库或触发关联，不再使用独立匹配线程）
         boxReceiverThread  = newDaemonThread(() -> receiveLoop(boxDev,  true),  "tcp-box-receiver");
         caseReceiverThread = newDaemonThread(() -> receiveLoop(caseDev, false), "tcp-case-receiver");
         boxReceiverThread.start();
@@ -142,7 +142,7 @@ public class ShiwanM2TcpCaptureService {
         return null;
     }
 
-    /** 停止 TCP 采集（关闭 Socket → receiver 线程自动退出）。 */
+    /** 停止 TCP 采集。 */
     public synchronized void stop() {
         active = false;
         closeSocket(boxSocket);
@@ -156,44 +156,22 @@ public class ShiwanM2TcpCaptureService {
     }
 
     /**
-     * 从数据库恢复未关联盒码到内存队列（用于软件重启后继续采集）。
-     * 仅在采集服务启动后（active=true）调用才有效。
-     * 查询条件：OrderNo=? AND Status=0 AND BigSerialNumber='' AND VirtualSerialNumber='' AND IsDel=0
-     * @return 恢复的盒码数量
+     * 批次模式下不支持从数据库恢复盒码队列（无法还原原始批次分组），返回 0。
+     * 软件重启后如有未关联盒码，需重新扫描。
      */
     public int restoreBoxQueueFromDb(String orderNo) {
-        if (orderNo == null || orderNo.trim().isEmpty()) return 0;
-        try {
-            List<String> pending = jdbcTemplate().queryForList(
-                    "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
-                    "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
-                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') " +
-                    "ORDER BY MIN(ID) ASC",
-                    String.class, orderNo.trim());
-            int count = 0;
-            for (String code : pending) {
-                if (code != null && !code.isEmpty()) {
-                    boxCodeQueue.offer(code);
-                    count++;
-                }
-            }
-            if (count > 0) {
-                log.info("[队列恢复] 从数据库恢复 {} 个盒码到内存队列，订单号：{}", count, orderNo);
-            }
-            return count;
-        } catch (Exception e) {
-            log.warn("[队列恢复] 恢复盒码队列失败：{}", e.getMessage());
-            return 0;
-        }
+        log.info("[队列恢复] 批次匹配模式下不支持从数据库恢复盒码队列，请重新扫描（订单：{}）", orderNo);
+        return 0;
     }
 
     /** 当前运行状态（供 Controller 查询）。 */
     public Map<String, Object> getStatus() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("active",               active);
-        m.put("pendingBoxCodes",      boxCodeQueue.size());
-        m.put("pendingCaseCodes",     pendingCaseCodes.size());
+        m.put("pendingBoxBatches",    boxBatchQueue.size());
+        m.put("pendingCaseBatches",   caseBatchQueue.size());
+        m.put("boxBatchCounter",      boxBatchCounter.get());
+        m.put("caseBatchCounter",     caseBatchCounter.get());
         m.put("currentCasesInPallet", currentCasesInPallet.get());
         m.put("totalAssociations",    totalAssociations.get());
         m.put("boxesPerCase",         boxesPerCase);
@@ -203,7 +181,6 @@ public class ShiwanM2TcpCaptureService {
 
     /**
      * 获取 seq > lastSeq 的事件列表（前端增量轮询）。
-     * 每个 Map 包含 seq / type / message / time / data(可选)。
      */
     public List<Map<String, Object>> getEvents(long lastSeq) {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -230,9 +207,7 @@ public class ShiwanM2TcpCaptureService {
     // ================================================================
 
     /**
-     * TCP 接收循环：连接相机 → 原始字节读取 → 按 \n 拆包（无 \n 时立即触发）→ 放入队列。
-     * 参照致美斋 TcpConnectionService 实现，支持不带换行符的相机数据格式。
-     * 断线后休眠 RECONNECT_MS 再重连（active=false 时退出）。
+     * TCP 接收循环：连接相机 → 原始字节读取 → 按 \n 拆包（无 \n 时立即触发）→ 调用 onCodeReceived。
      */
     private void receiveLoop(IoDeviceDTO device, boolean isBoxCamera) {
         String name    = device.getDeviceName();
@@ -251,8 +226,7 @@ public class ShiwanM2TcpCaptureService {
                 log.info("[{}] 正在连接 {}:{}", name, address, port);
                 sock = new Socket();
                 sock.setTcpNoDelay(true);
-                sock.connect(new InetSocketAddress(address, port), 5000); // 5s 连接超时
-                // 不设置 setSoTimeout：读取阻塞等待数据，与致美斋保持一致
+                sock.connect(new InetSocketAddress(address, port), 5000);
                 if (isBoxCamera) boxSocket  = sock;
                 else             caseSocket = sock;
 
@@ -260,15 +234,15 @@ public class ShiwanM2TcpCaptureService {
                         name + " 连接成功 (" + address + ":" + port + ")", null);
                 log.info("[{}] 连接成功", name);
 
-                InputStream is = sock.getInputStream();
+                InputStream   is      = sock.getInputStream();
                 byte[]        buffer  = new byte[1024];
                 StringBuilder msgBuf  = new StringBuilder();
 
                 while (active) {
                     int n = is.read(buffer);
-                    if (n == -1) break; // 服务端关闭连接
+                    if (n == -1) break;
 
-                    String chunk      = new String(buffer, 0, n, StandardCharsets.UTF_8);
+                    String  chunk      = new String(buffer, 0, n, StandardCharsets.UTF_8);
                     boolean hasNewline = chunk.contains("\n");
 
                     for (char c : chunk.toCharArray()) {
@@ -280,15 +254,11 @@ public class ShiwanM2TcpCaptureService {
                             msgBuf.append(c);
                         }
                     }
-
-                    // 无换行符时立即触发（兼容不以 \n 结尾的相机数据格式）
                     if (!hasNewline && msgBuf.length() > 0) {
                         String code = msgBuf.toString().trim();
                         if (!code.isEmpty()) onCodeReceived(code, isBoxCamera);
                         msgBuf.setLength(0);
                     }
-
-                    // 防止缓冲区积压
                     if (msgBuf.length() >= 1024) {
                         String code = msgBuf.toString().trim();
                         if (!code.isEmpty()) onCodeReceived(code, isBoxCamera);
@@ -318,11 +288,24 @@ public class ShiwanM2TcpCaptureService {
         log.info("[{}] 接收线程退出", name);
     }
 
+    // ================================================================
+    //  核心处理
+    // ================================================================
+
     /**
-     * 盒码收到：按 ";" 分隔提取并去重，校验位数及数量，若不通过则暂存到 pendingFailedBoxes；
-     * 通过后逐一进行业务校验，校验通过放入内存队列。
-     * 箱码收到：先校验位数；若有 pendingFailedBoxes 且有效盒码不足则触发剔除（ASSOC_FAIL）；
-     * 否则从内存队列取 N 个盒码做关联。
+     * 收到原始码数据后的处理入口。
+     *
+     * 盒码相机：
+     *   1. 按 ";" 分隔、去重
+     *   2. 对每个码做位数校验（仅展示结果，不阻止入队）
+     *   3. 检查数量是否与 boxesPerCase 相符（仅展示结果）
+     *   4. 整批封装为 BoxBatchEntry（含批号、各码校验状态）放入 boxBatchQueue
+     *   5. 调用 tryMatchAndAssociate()
+     *
+     * 箱码相机：
+     *   1. 对箱码做位数校验（仅展示结果）
+     *   2. 封装为 CaseBatchEntry（含批号、校验状态）放入 caseBatchQueue
+     *   3. 调用 tryMatchAndAssociate()
      */
     private void onCodeReceived(String rawCode, boolean isBoxCamera) {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
@@ -331,188 +314,245 @@ public class ShiwanM2TcpCaptureService {
         int largeDigits  = digitsCfg != null ? digitsCfg.getLargeCodeDigits()  : -1;
 
         if (isBoxCamera) {
-            // 去重：保留首次出现顺序
+            // 盒码批次计数
+            int batchNo = boxBatchCounter.incrementAndGet();
+
+            // 去重（保留首次出现顺序）
             String[] parts = rawCode.split(";");
-            List<String> uniqueCodes = new ArrayList<>();
-            java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
-            for (String part : parts) {
-                String code = part.trim();
-                if (!code.isEmpty()) seen.add(code);
-            }
-            uniqueCodes.addAll(seen);
+            LinkedHashSet<String> seen = new LinkedHashSet<>();
+            for (String p : parts) { String c = p.trim(); if (!c.isEmpty()) seen.add(c); }
+            List<String> uniqueCodes = new ArrayList<>(seen);
 
-            // 位数校验：盒码位数与系统设置中的中码位数对比
-            if (mediumDigits > 0) {
-                List<String> digitMismatch = new ArrayList<>();
-                for (String code : uniqueCodes) {
-                    if (code.length() != mediumDigits) digitMismatch.add(code);
-                }
-                if (!digitMismatch.isEmpty()) {
-                    String desc = "[盒码相机] 盒码位数不符（期望" + mediumDigits + "位），不通过的码：" + digitMismatch;
-                    addEvent("BOX_FAIL", desc, null);
-                    log.warn("[盒码] 位数不符：期望{}位，不通过={}", mediumDigits, digitMismatch);
-                    for (String code : uniqueCodes) {
-                        pendingFailedBoxes.offer(new FailedBoxEntry(code, "位数不符", code));
-                    }
-                    return;
-                }
-            }
-
-            int expected = boxesPerCase;
-            // 超码/缺码时全部暂存到 pendingFailedBoxes，等箱码到来时写剔除记录
-            if (uniqueCodes.size() != expected) {
-                String reason = uniqueCodes.size() < expected ? "缺码" : "超码";
-                String desc = "[盒码相机] 一次读取到 " + uniqueCodes.size()
-                        + " 个盒码（去重后），期望 " + expected + " 个，原因：" + reason;
-                addEvent("BOX_FAIL", desc, null);
-                log.warn("[盒码] 数量不符：期望{}个，实际{}个，原因：{}", expected, uniqueCodes.size(), reason);
-                for (String code : uniqueCodes) {
-                    pendingFailedBoxes.offer(new FailedBoxEntry(code, reason, code));
-                }
-                return;
-            }
-
+            // 位数校验
+            List<BoxCodeItem> items = new ArrayList<>();
+            List<String> digitFailCodes = new ArrayList<>();
             for (String code : uniqueCodes) {
-                addEvent("BOX_RECV", "[盒码相机] 接收数据：" + code, null);
-                // 检查该盒码是否有 Status=4（M1同步时热表校验不通过）的关联记录
-                try {
-                    boolean hasStatus4 = boxCaseService.checkAndWriteRejectsForStatus4(currentOrderNo, code);
-                    if (hasStatus4) {
-                        addEvent("BOX_FAIL", "盒码 " + code + " 对应瓶盒关联数据热表校验不通过（待剔除），已写入剔除记录", null);
-                        log.warn("[盒码] {} 存在 Status=4 记录，跳过入队", code);
-                        pendingFailedBoxes.offer(new FailedBoxEntry(code, "码包热表校验不通过", code));
-                        continue;
-                    }
-                } catch (Exception ex) {
-                    log.warn("[盒码] {} Status=4 检查异常: {}", code, ex.getMessage());
-                }
-                ApiResult<Void> res = boxCaseService.validateBoxCodeForReceive(
-                        currentOrderNo, currentProductNo, code, REQUIRED_ROWS_PER_BOX);
-                if (res != null && res.getCode() != null && res.getCode() == 200) {
-                    boxCodeQueue.offer(code);
-                    addEvent("BOX_CODE", "盒码采集成功：" + code + "（队列=" + boxCodeQueue.size() + "）", null);
-                    log.debug("[盒码] {} 校验通过，已入队列，队列长={}", code, boxCodeQueue.size());
-                    tryConsumePendingCaseCode();
-                } else {
-                    String errMsg = res != null ? res.getMessage() : "服务返回null";
-                    addEvent("BOX_FAIL", "盒码采集失败：" + code + "，原因：" + errMsg, null);
-                    log.warn("[盒码] {} 校验失败: {}", code, errMsg);
-                    // 箱码此时尚未到达，无法写剔除记录（需箱码必填）；暂存，待箱码到来时统一写入
-                    pendingFailedBoxes.offer(new FailedBoxEntry(code, parseBoxRejectReason(errMsg), code));
-                }
+                boolean digitOk = (mediumDigits <= 0) || (code.length() == mediumDigits);
+                String  reason  = digitOk ? null
+                        : "盒码位数不符（期望" + mediumDigits + "位，实际" + code.length() + "位）";
+                if (!digitOk) digitFailCodes.add(code);
+                items.add(new BoxCodeItem(code, digitOk, reason));
             }
+
+            // 数量校验
+            boolean countOk = (uniqueCodes.size() == boxesPerCase);
+
+            // 数据接收区展示
+            addEvent("BOX_RECV",
+                    "[盒码相机] 批" + batchNo + " 接收到 " + uniqueCodes.size() + " 个盒码：" + uniqueCodes, null);
+            if (!digitFailCodes.isEmpty()) {
+                addEvent("BOX_FAIL",
+                        "[盒码相机] 批" + batchNo + " 位数不符（期望" + mediumDigits + "位），码：" + digitFailCodes, null);
+            }
+            if (!countOk) {
+                String countReason = uniqueCodes.size() < boxesPerCase ? "缺码" : "超码";
+                addEvent("BOX_FAIL",
+                        "[盒码相机] 批" + batchNo + " " + countReason
+                        + "（期望" + boxesPerCase + "个，实际" + uniqueCodes.size() + "个）", null);
+            }
+
+            boxBatchQueue.offer(new BoxBatchEntry(batchNo, items, countOk));
+            log.debug("[盒码] 批{} 入队 codes={} countOk={}", batchNo, uniqueCodes, countOk);
+            tryMatchAndAssociate();
+
         } else {
-            String code = rawCode.trim();
+            // 箱码批次计数
+            int    batchNo = caseBatchCounter.incrementAndGet();
+            String code    = rawCode.trim();
             if (code.isEmpty()) return;
 
-            // 位数校验：箱码位数与系统设置中的大码位数对比
-            if (largeDigits > 0 && code.length() != largeDigits) {
-                String desc = "[箱码相机] 箱码位数不符（期望" + largeDigits + "位，实际" + code.length() + "位）：" + code;
-                addEvent("BOX_FAIL", desc, null);
-                log.warn("[箱码] 位数不符：期望{}位，实际{}位，code={}", largeDigits, code.length(), code);
-                return;
+            // 位数校验
+            boolean digitOk = (largeDigits <= 0) || (code.length() == largeDigits);
+            String  reason  = digitOk ? null
+                    : "箱码位数不符（期望" + largeDigits + "位，实际" + code.length() + "位）";
+
+            // 数据接收区展示
+            addEvent("CASE_RECV", "[箱码相机] 批" + batchNo + " 接收数据：" + code, null);
+            if (!digitOk) {
+                addEvent("BOX_FAIL", "[箱码相机] 批" + batchNo + " " + reason, null);
             }
 
-            addEvent("CASE_RECV", "[箱码相机] 接收数据：" + code, null);
-            List<String> polled = new ArrayList<>(boxesPerCase);
-            for (int i = 0; i < boxesPerCase; i++) {
-                String b = boxCodeQueue.poll();
-                if (b == null) {
-                    // 有效盒码不足：若存在 pendingFailedBoxes 则触发剔除，否则进入 CASE_PENDING
-                    polled.forEach(boxCodeQueue::offer);
-                    if (!pendingFailedBoxes.isEmpty()) {
-                        // 将暂存的失败盒码连同此箱码一并写入剔除记录，触发 ASSOC_FAIL 让前端剔除数+1
-                        List<FailedBoxEntry> deferred = new ArrayList<>();
-                        pendingFailedBoxes.drainTo(deferred);
-                        for (FailedBoxEntry entry : deferred) {
-                            boxCaseService.insertRejectRecord(currentOrderNo, code,
-                                    entry.boxCode, null, entry.problemCode, entry.rejectReason);
-                        }
-                        List<String> deferredCodes = new ArrayList<>();
-                        for (FailedBoxEntry e : deferred) deferredCodes.add(e.boxCode);
-                        addEvent("ASSOC_FAIL", "关联失败（盒码校验不通过） 箱码:" + code
-                                + "，共" + deferred.size() + "个失败盒码已写入剔除记录",
-                                buildFailData(deferredCodes, code, "盒码校验失败"));
-                        log.warn("[箱码] {} 触发剔除：pendingFailedBoxes中{}个失败盒码已写入剔除记录", code, deferred.size());
-                    } else {
-                        pendingCaseCodes.offer(code);
-                        addEvent("CASE_PENDING", "箱码待处理：" + code + "，队列中盒码不足" + boxesPerCase + "条", null);
-                        log.debug("[箱码] {} 已入待处理列表", code);
-                    }
-                    return;
-                }
-                polled.add(b);
-            }
-            ApiResult<Map<String, Object>> res = boxCaseService.associateCaseCodeWithBoxCodes(
-                    currentOrderNo, currentProductNo, code, polled, boxesPerPallet);
-            if (res == null || res.getCode() == null || res.getCode() != 200) {
-                polled.forEach(boxCodeQueue::offer);
-                String errMsg = res != null ? res.getMessage() : "服务返回null";
-                addEvent("ASSOC_FAIL", "关联失败 箱码:" + code + "，原因：" + errMsg, buildFailData(polled, code, errMsg));
-                log.warn("箱码关联失败 caseCode={} boxCodes={} err={}", code, polled, errMsg);
-                writeRejectRecordsOnAssocFail(currentOrderNo, code, polled, errMsg);
-                return;
-            }
-            Map<String, Object> data = res.getData();
-            long assocNo = totalAssociations.incrementAndGet();
-            int cases = data != null && data.get("currentCaseCount") instanceof Number
-                    ? ((Number) data.get("currentCaseCount")).intValue() : currentCasesInPallet.get() + 1;
-            boolean fullPallet = data != null && Boolean.TRUE.equals(data.get("fullPallet"));
-            String palletCode = data != null ? (String) data.get("palletCode") : null;
-            if (fullPallet) currentCasesInPallet.set(0);
-            else currentCasesInPallet.set(cases);
-            Map<String, Object> evtData = new LinkedHashMap<>();
-            evtData.put("boxCodes", polled);
-            evtData.put("caseCode", code);
-            evtData.put("currentCaseCount", cases);
-            evtData.put("fullPallet", fullPallet);
-            if (palletCode != null) evtData.put("palletCode", palletCode);
-            addEvent("ASSOCIATED", "关联成功 #" + assocNo + " 箱码:" + code + " 盒码:[" + String.join(",", polled) + "]", evtData);
-            log.info("关联成功 #{} caseCode={} boxCodes={} cases={} fullPallet={}", assocNo, code, polled, cases, fullPallet);
-            // 关联成功：该箱通过，清空暂存失败盒码（物理上无需触发剔除）
-            pendingFailedBoxes.clear();
+            caseBatchQueue.offer(new CaseBatchEntry(batchNo, code, digitOk, reason));
+            log.debug("[箱码] 批{} 入队 code={} digitOk={}", batchNo, code, digitOk);
+            tryMatchAndAssociate();
         }
     }
 
-    /** 内存队列中盒码数≥N 且有待处理箱码时，取 N 个盒码与一条箱码做关联，成功后这 N 条盒码已从队列移除 */
-    private void tryConsumePendingCaseCode() {
-        if (boxCodeQueue.size() < boxesPerCase) return;
-        String caseCode = pendingCaseCodes.poll();
-        if (caseCode == null) return;
-        List<String> polled = new ArrayList<>(boxesPerCase);
-        for (int i = 0; i < boxesPerCase; i++) {
-            String b = boxCodeQueue.poll();
-            if (b == null) {
-                polled.forEach(boxCodeQueue::offer);
-                pendingCaseCodes.offer(caseCode);
+    /**
+     * 尝试匹配并触发关联：
+     * 当两个队列头部的 BatchNo 相同时，原子地弹出这两个批次，调用 processMatchedBatch。
+     * 处理完成后递归尝试下一对（应对连续多批积压的情况）。
+     */
+    private void tryMatchAndAssociate() {
+        BoxBatchEntry  boxBatch;
+        CaseBatchEntry caseBatch;
+        synchronized (matchLock) {
+            BoxBatchEntry  peekBox  = boxBatchQueue.peek();
+            CaseBatchEntry peekCase = caseBatchQueue.peek();
+            if (peekBox == null || peekCase == null) return;
+            if (peekBox.batchNo != peekCase.batchNo) {
+                log.debug("[批次匹配] 批号不一致：盒码队列头={}, 箱码队列头={}, 等待中",
+                        peekBox.batchNo, peekCase.batchNo);
                 return;
             }
-            polled.add(b);
+            boxBatch  = boxBatchQueue.poll();
+            caseBatch = caseBatchQueue.poll();
         }
-        ApiResult<Map<String, Object>> res = boxCaseService.associateCaseCodeWithBoxCodes(
-                currentOrderNo, currentProductNo, caseCode, polled, boxesPerPallet);
-        if (res == null || res.getCode() == null || res.getCode() != 200) {
-            polled.forEach(boxCodeQueue::offer);
-            pendingCaseCodes.offer(caseCode);
-            log.warn("待处理箱码关联失败 caseCode={} err={}", caseCode, res != null ? res.getMessage() : "null");
+        if (boxBatch == null || caseBatch == null) return;
+
+        processMatchedBatch(boxBatch, caseBatch);
+
+        // 递归：处理完当前批次后继续尝试下一批
+        tryMatchAndAssociate();
+    }
+
+    /**
+     * 处理已匹配的盒码批次与箱码批次。
+     *
+     * 校验顺序：
+     *   1. 重新校验箱码位数
+     *   2. 重新校验各盒码位数
+     *   3. 校验盒码数量是否与 boxesPerCase 相符
+     *   4. 检查位数通过的盒码在 CodeRelationUpload 中是否有 Status=4 记录
+     *
+     * 若步骤 1-4 中有任何问题 → 整批剔除：
+     *   - 将位数不符 / Status=4 的码写入 RejectRecord（箱码问题写 CaseCode，盒码问题写 BoxCode+BottleCode）
+     *   - 从 CodeRelationUpload 硬删除该批次所有盒码的未关联记录
+     *   - 发出 ASSOC_FAIL 事件
+     *
+     * 若全部通过 → 调用 associateCaseCodeWithBoxCodes 正常关联：
+     *   - 关联成功 → ASSOCIATED 事件
+     *   - 关联失败 → 写剔除记录 + 删除 CodeRelationUpload + ASSOC_FAIL 事件
+     */
+    private void processMatchedBatch(BoxBatchEntry boxBatch, CaseBatchEntry caseBatch) {
+        int    batchNo  = boxBatch.batchNo;
+        String caseCode = caseBatch.code;
+        List<BoxCodeItem> boxItems    = boxBatch.codes;
+        List<String>      allBoxCodes = boxItems.stream().map(i -> i.code).collect(Collectors.toList());
+
+        // 有问题的条目（写 RejectRecord 用）
+        List<RejectEntry> rejectEntries = new ArrayList<>();
+
+        // 1. 箱码位数校验
+        if (!caseBatch.digitOk) {
+            rejectEntries.add(new RejectEntry(caseCode, null, caseCode, caseBatch.reason));
+        }
+
+        // 2. 盒码位数校验
+        for (BoxCodeItem item : boxItems) {
+            if (!item.digitOk) {
+                rejectEntries.add(new RejectEntry(caseCode, item.code, item.code, item.reason));
+            }
+        }
+
+        // 3. 数量校验
+        boolean countOk = boxBatch.countOk;
+
+        // 4. Status=4 检查（仅对位数通过的盒码）
+        List<String> digitOkBoxCodes = boxItems.stream()
+                .filter(i -> i.digitOk).map(i -> i.code).collect(Collectors.toList());
+        List<String> status4Codes = Collections.emptyList();
+        if (!digitOkBoxCodes.isEmpty()) {
+            status4Codes = boxCaseService.getStatus4BoxCodes(digitOkBoxCodes);
+        }
+
+        boolean hasProblems = !rejectEntries.isEmpty() || !countOk || !status4Codes.isEmpty();
+
+        if (hasProblems) {
+            // --- 整批剔除 ---
+
+            // 写剔除记录：位数不符条目
+            for (RejectEntry re : rejectEntries) {
+                boxCaseService.insertRejectRecord(
+                        currentOrderNo, re.caseCode, re.boxCode, null, re.problemCode, re.reason);
+            }
+
+            // 写剔除记录：Status=4 条目（含瓶码）
+            for (String status4Box : status4Codes) {
+                boxCaseService.insertStatus4RejectRecordsForBox(currentOrderNo, caseCode, status4Box);
+            }
+
+            // 从 CodeRelationUpload 删除该批次所有盒码的未关联记录
+            if (!allBoxCodes.isEmpty()) {
+                int deleted = boxCaseService.deleteCodeRelationUploadByBoxCodes(allBoxCodes);
+                log.warn("[批{}] 整批剔除：从 CodeRelationUpload 删除 {} 条记录", batchNo, deleted);
+            }
+
+            // 构造问题摘要
+            StringBuilder summary = new StringBuilder();
+            if (!rejectEntries.isEmpty()) {
+                long digitFailBox  = rejectEntries.stream().filter(e -> e.boxCode != null).count();
+                boolean caseDigitFail = rejectEntries.stream().anyMatch(e -> e.boxCode == null);
+                if (caseDigitFail) summary.append("箱码位数不符；");
+                if (digitFailBox > 0) summary.append("盒码位数不符×").append(digitFailBox).append("；");
+            }
+            if (!countOk) {
+                String cr = boxBatch.codes.size() < boxesPerCase ? "缺码" : "超码";
+                summary.append("盒码").append(cr).append("（实际").append(boxBatch.codes.size())
+                        .append("个，期望").append(boxesPerCase).append("个）；");
+            }
+            if (!status4Codes.isEmpty()) {
+                summary.append("Status=4×").append(status4Codes.size()).append("；");
+            }
+
+            addEvent("ASSOC_FAIL",
+                    "[批" + batchNo + "] 整批剔除 箱码:" + caseCode + "，原因：" + summary,
+                    buildFailData(allBoxCodes, caseCode, summary.toString()));
+            log.warn("[批{}] 整批剔除 caseCode={} summary={}", batchNo, caseCode, summary);
             return;
         }
-        Map<String, Object> data = res.getData();
-        long assocNo = totalAssociations.incrementAndGet();
-        int cases = data != null && data.get("currentCaseCount") instanceof Number
+
+        // --- 全部通过，执行正常关联 ---
+        ApiResult<Map<String, Object>> res = boxCaseService.associateCaseCodeWithBoxCodes(
+                currentOrderNo, currentProductNo, caseCode, digitOkBoxCodes, boxesPerPallet);
+
+        if (res == null || res.getCode() == null || res.getCode() != 200) {
+            String errMsg = res != null ? res.getMessage() : "服务返回null";
+            // 关联失败：写剔除记录 + 删除 CodeRelationUpload 记录
+            String caseRejectReason = parseCaseRejectReason(errMsg);
+            if ("大标不通过".equals(caseRejectReason) || "重码".equals(caseRejectReason)) {
+                boxCaseService.insertRejectRecord(
+                        currentOrderNo, caseCode, null, null, caseCode, caseRejectReason);
+            } else {
+                for (String boxCode : digitOkBoxCodes) {
+                    boxCaseService.insertRejectRecord(
+                            currentOrderNo, caseCode, boxCode, null, null, "盒箱校验不通过");
+                }
+            }
+            if (!digitOkBoxCodes.isEmpty()) {
+                boxCaseService.deleteCodeRelationUploadByBoxCodes(digitOkBoxCodes);
+            }
+            addEvent("ASSOC_FAIL",
+                    "[批" + batchNo + "] 关联失败 箱码:" + caseCode + "，原因：" + errMsg,
+                    buildFailData(allBoxCodes, caseCode, errMsg));
+            log.warn("[批{}] 关联失败 caseCode={} err={}", batchNo, caseCode, errMsg);
+            return;
+        }
+
+        // 关联成功
+        Map<String, Object> data     = res.getData();
+        long    assocNo    = totalAssociations.incrementAndGet();
+        int     cases      = data != null && data.get("currentCaseCount") instanceof Number
                 ? ((Number) data.get("currentCaseCount")).intValue() : currentCasesInPallet.get() + 1;
         boolean fullPallet = data != null && Boolean.TRUE.equals(data.get("fullPallet"));
-        String palletCode = data != null ? (String) data.get("palletCode") : null;
+        String  palletCode = data != null ? (String) data.get("palletCode") : null;
+
         if (fullPallet) currentCasesInPallet.set(0);
-        else currentCasesInPallet.set(cases);
+        else            currentCasesInPallet.set(cases);
+
         Map<String, Object> evtData = new LinkedHashMap<>();
-        evtData.put("boxCodes", polled);
-        evtData.put("caseCode", caseCode);
-        evtData.put("currentCaseCount", cases);
-        evtData.put("fullPallet", fullPallet);
+        evtData.put("boxCodes",          digitOkBoxCodes);
+        evtData.put("caseCode",          caseCode);
+        evtData.put("currentCaseCount",  cases);
+        evtData.put("fullPallet",        fullPallet);
         if (palletCode != null) evtData.put("palletCode", palletCode);
-        addEvent("ASSOCIATED", "关联成功(待处理) #" + assocNo + " 箱码:" + caseCode + " 盒码:[" + String.join(",", polled) + "]", evtData);
-        log.info("待处理箱码关联成功 #{} caseCode={} boxCodes={}", assocNo, caseCode, polled);
+
+        addEvent("ASSOCIATED",
+                "[批" + batchNo + "] 关联成功 #" + assocNo
+                        + " 箱码:" + caseCode + " 盒码:[" + String.join(",", digitOkBoxCodes) + "]",
+                evtData);
+        log.info("[批{}] 关联成功 #{} caseCode={} boxCodes={} cases={} fullPallet={}",
+                batchNo, assocNo, caseCode, digitOkBoxCodes, cases, fullPallet);
     }
 
     // ================================================================
@@ -533,7 +573,7 @@ public class ShiwanM2TcpCaptureService {
     }
 
     private void addEvent(String type, String message, Map<String, Object> data) {
-        long seq  = eventSeq.incrementAndGet();
+        long seq = eventSeq.incrementAndGet();
         CaptureEvent evt = new CaptureEvent(seq, type, message,
                 LocalDateTime.now().format(TIME_FMT), data);
         synchronized (eventLock) {
@@ -543,42 +583,7 @@ public class ShiwanM2TcpCaptureService {
     }
 
     /**
-     * ASSOC_FAIL 时写剔除记录：
-     * <ol>
-     *   <li>根据错误信息确定剔除原因，决定是写"箱码级"还是"盒码级"记录；</li>
-     *   <li>排尽 {@link #pendingFailedBoxes}（BOX_FAIL 暂存），用本次失败箱码补全后写入。</li>
-     * </ol>
-     */
-    private void writeRejectRecordsOnAssocFail(String orderNo, String caseCode,
-                                               List<String> polledBoxCodes, String errMsg) {
-        String caseReason = parseCaseRejectReason(errMsg);
-
-        if ("大标不通过".equals(caseReason) || "重码".equals(caseReason)) {
-            // 箱码本身有问题：写一条记录，ProblemCode = 箱码
-            boxCaseService.insertRejectRecord(orderNo, caseCode, null, null, caseCode, caseReason);
-        } else {
-            // 盒箱校验不通过：按盒分条写入（便于核对 N 盒与箱码）
-            for (String boxCode : polledBoxCodes) {
-                boxCaseService.insertRejectRecord(orderNo, caseCode, boxCode, null, null, "盒箱校验不通过");
-            }
-        }
-
-        // 排尽暂存的 BOX_FAIL 失败盒码，用本次失败箱码补全后写入
-        List<FailedBoxEntry> deferred = new ArrayList<>();
-        pendingFailedBoxes.drainTo(deferred);
-        for (FailedBoxEntry entry : deferred) {
-            boxCaseService.insertRejectRecord(orderNo, caseCode,
-                    entry.boxCode, null, entry.problemCode, entry.rejectReason);
-        }
-    }
-
-    /**
      * 从 ASSOC_FAIL 错误信息推断箱码级剔除原因。
-     * <ul>
-     *   <li>"大标码包" → 大标不通过（箱码不在码包内）</li>
-     *   <li>"重码"     → 重码（箱码已被使用）</li>
-     *   <li>其他      → 盒箱校验不通过</li>
-     * </ul>
      */
     private static String parseCaseRejectReason(String errMsg) {
         if (errMsg == null) return "盒箱校验不通过";
@@ -587,26 +592,11 @@ public class ShiwanM2TcpCaptureService {
         return "盒箱校验不通过";
     }
 
-    /**
-     * 从 BOX_FAIL 错误信息推断盒码级剔除原因。
-     * <ul>
-     *   <li>"中标码包" → 中标不通过（盒码不在码包内）</li>
-     *   <li>"重码"     → 重码（盒码已被使用）</li>
-     *   <li>其他      → 盒箱校验不通过（如1号机已标记该盒码为异常）</li>
-     * </ul>
-     */
-    private static String parseBoxRejectReason(String errMsg) {
-        if (errMsg == null) return "盒箱校验不通过";
-        if (errMsg.contains("中标码包")) return "中标不通过";
-        if (errMsg.contains("重码"))     return "重码";
-        return "盒箱校验不通过";
-    }
-
     private static Map<String, Object> buildFailData(List<String> boxCodes, String caseCode, String reason) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("boxCodes",  boxCodes);
-        m.put("caseCode",  caseCode);
-        m.put("reason",    reason);
+        m.put("boxCodes", boxCodes);
+        m.put("caseCode", caseCode);
+        m.put("reason",   reason);
         return m;
     }
 
@@ -626,19 +616,67 @@ public class ShiwanM2TcpCaptureService {
     //  内部数据类
     // ================================================================
 
-    /** BOX_FAIL 暂存项：记录校验失败的盒码及其剔除原因，等待箱码到达后统一写入 RejectRecord。 */
-    private static class FailedBoxEntry {
-        final String boxCode;
-        final String rejectReason;
-        final String problemCode;
+    /** 盒码批次：含批号、该批次所有盒码及各码校验状态、数量是否符合规格。 */
+    private static class BoxBatchEntry {
+        final int            batchNo;
+        final List<BoxCodeItem> codes;
+        /** 该批次盒码数量是否与 boxesPerCase 相符 */
+        final boolean        countOk;
 
-        FailedBoxEntry(String boxCode, String rejectReason, String problemCode) {
-            this.boxCode      = boxCode;
-            this.rejectReason = rejectReason;
-            this.problemCode  = problemCode;
+        BoxBatchEntry(int batchNo, List<BoxCodeItem> codes, boolean countOk) {
+            this.batchNo  = batchNo;
+            this.codes    = codes;
+            this.countOk  = countOk;
         }
     }
 
+    /** 盒码批次中单个盒码的信息。 */
+    private static class BoxCodeItem {
+        final String  code;
+        /** 位数校验是否通过 */
+        final boolean digitOk;
+        /** 若不通过，记录原因（用于展示和写入 RejectRecord）*/
+        final String  reason;
+
+        BoxCodeItem(String code, boolean digitOk, String reason) {
+            this.code    = code;
+            this.digitOk = digitOk;
+            this.reason  = reason;
+        }
+    }
+
+    /** 箱码批次：含批号、箱码及位数校验状态。 */
+    private static class CaseBatchEntry {
+        final int     batchNo;
+        final String  code;
+        /** 位数校验是否通过 */
+        final boolean digitOk;
+        final String  reason;
+
+        CaseBatchEntry(int batchNo, String code, boolean digitOk, String reason) {
+            this.batchNo  = batchNo;
+            this.code     = code;
+            this.digitOk  = digitOk;
+            this.reason   = reason;
+        }
+    }
+
+    /** 剔除记录条目（仅在 processMatchedBatch 内部使用）。 */
+    private static class RejectEntry {
+        final String caseCode;
+        final String boxCode;       // null 表示是箱码本身的问题
+        final String problemCode;
+        final String reason;
+
+        RejectEntry(String caseCode, String boxCode, String problemCode, String reason) {
+            this.caseCode    = caseCode;
+            this.boxCode     = boxCode;
+            this.problemCode = problemCode;
+            this.reason      = reason;
+        }
+    }
+
+    /** 事件记录（前端轮询用）。 */
     private static class CaptureEvent {
         final long               seq;
         final String             type;

@@ -1875,7 +1875,23 @@ public class ShiwanM2MainController implements Initializable {
                 suppressProductSearch = true;
                 productItems.setAll(list);
                 if (currentValue != null && productComboBox.getValue() == null) {
-                    productComboBox.setValue(currentValue);
+                    // 优先在新列表中按 productNo 精确匹配真实条目（避免临时 fallback 对象游离在列表之外导致显示空白）
+                    ProductItem matched = null;
+                    String currentNo = currentValue.getNo();
+                    if (currentNo != null && !currentNo.isEmpty()) {
+                        for (ProductItem item : list) {
+                            if (currentNo.equals(item.getNo())) {
+                                matched = item;
+                                break;
+                            }
+                        }
+                    }
+                    productComboBox.setValue(matched != null ? matched : currentValue);
+                    if (matched != null) {
+                        productCodeLabel.setText(matched.getNo());
+                        productCodeRow.setVisible(true);
+                        productCodeRow.setManaged(true);
+                    }
                 }
                 suppressProductSearch = false;
             });
