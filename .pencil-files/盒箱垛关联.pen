@@ -4,8 +4,8 @@
     {
       "type": "frame",
       "id": "bi8Au",
-      "x": 1204,
-      "y": 53,
+      "x": 1190,
+      "y": 35,
       "name": "手工采集",
       "clip": true,
       "width": 1366,
@@ -484,13 +484,38 @@
                           "fontWeight": "600"
                         },
                         {
-                          "type": "text",
-                          "id": "OzkVJ",
-                          "fill": "#2563EB",
-                          "content": "瓶码 / 盒码",
-                          "fontFamily": "Microsoft YaHei",
-                          "fontSize": 44,
-                          "fontWeight": "700"
+                          "type": "frame",
+                          "id": "A3Om7",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "G7Jii",
+                              "fill": "#2563EB",
+                              "content": "瓶码",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 44,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "zzYS2",
+                              "fill": "#9CA3AF",
+                              "content": " / ",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 44,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "QkeuP",
+                              "fill": "#DC2626",
+                              "content": "盒码",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 44,
+                              "fontWeight": "700"
+                            }
+                          ]
                         }
                       ]
                     }
