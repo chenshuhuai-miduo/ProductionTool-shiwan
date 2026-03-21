@@ -38,9 +38,53 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     private Map<String, String> selectedProduct;
 
     @Override
+    @SuppressWarnings("deprecation")
     public void initialize(URL location, ResourceBundle resources) {
-        nameColumn.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue() != null ? c.getValue().get("name") : ""));
-        pronumberColumn.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue() != null ? c.getValue().get("pronumber") : ""));
+        // columnResizePolicy 不在 FXML 中设置（JavaFX 21 反射解析失败），改为代码设置
+        productTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        nameColumn.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                c.getValue() != null ? c.getValue().get("name") : ""));
+
+        pronumberColumn.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                c.getValue() != null ? c.getValue().get("pronumber") : ""));
+
+        // 列宽自动撑满表格，禁止横向滚动
+        productTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        // 产品编号列：选中时文字变蓝（#2563EB），未选中时灰色（#6B7280）
+        // 通过监听 tableRowProperty 的 selectedProperty 确保状态同步
+        pronumberColumn.setCellFactory(col -> new TableCell<Map<String, String>, String>() {
+            {
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                    if (newRow != null) {
+                        newRow.selectedProperty().addListener((o, wasSelected, isNowSelected) -> applyStyle(isNowSelected));
+                    }
+                });
+            }
+
+            private void applyStyle(boolean selected) {
+                if (getItem() != null && !isEmpty()) {
+                    setStyle(selected
+                            ? "-fx-text-fill: #2563EB; -fx-font-weight: bold; -fx-alignment: CENTER;"
+                            : "-fx-text-fill: #6B7280; -fx-font-weight: normal; -fx-alignment: CENTER;");
+                }
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    boolean selected = getTableRow() != null && getTableRow().isSelected();
+                    applyStyle(selected);
+                }
+            }
+        });
+
         productTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         loadPage(1);
     }

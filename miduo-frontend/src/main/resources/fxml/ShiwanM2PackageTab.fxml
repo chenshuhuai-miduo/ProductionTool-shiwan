@@ -25,33 +25,23 @@
 
     <!-- 过滤栏（两行） -->
     <VBox styleClass="sw2-filter-bar" spacing="10">
-        <!-- 第一行：关键词 + 导入时间 + 导入方式 -->
+        <!-- 第一行：关键词 + 导入时间 -->
         <HBox spacing="10" alignment="CENTER_LEFT">
             <Label text="关键词：" styleClass="sw2-filter-label"/>
             <TextField fx:id="keywordField" promptText="模糊匹配码包名称..."
-                       styleClass="sw2-filter-input" prefWidth="200" prefHeight="40"/>
+                       styleClass="sw2-filter-input" prefWidth="280" prefHeight="40"/>
             <Label text="导入时间：" styleClass="sw2-filter-label"/>
             <DatePicker fx:id="startDatePicker" styleClass="sw2-filter-combo"
-                        prefWidth="145" prefHeight="40"/>
+                        prefWidth="260" prefHeight="40"/>
             <Label text="-" style="-fx-text-fill: #9CA3AF;"/>
             <DatePicker fx:id="endDatePicker" styleClass="sw2-filter-combo"
-                        prefWidth="145" prefHeight="40"/>
-            <Label text="导入方式：" styleClass="sw2-filter-label"/>
-            <ComboBox fx:id="importTypeCombo" styleClass="sw2-filter-combo"
-                      prefWidth="130" prefHeight="40">
-                <items><FXCollections fx:factory="observableArrayList">
-                    <String fx:value="全部"/>
-                    <String fx:value="在线"/>
-                    <String fx:value="本地"/>
-                </FXCollections></items>
-                <value><String fx:value="全部"/></value>
-            </ComboBox>
+                        prefWidth="260" prefHeight="40"/>
         </HBox>
-        <!-- 第二行：码包类型 + 状态 + 搜索/重置 -->
+        <!-- 第二行：码包类型 + 导入方式 + 搜索/重置 -->
         <HBox spacing="10" alignment="CENTER_LEFT">
             <Label text="码包类型：" styleClass="sw2-filter-label"/>
             <ComboBox fx:id="packageTypeCombo" styleClass="sw2-filter-combo"
-                      prefWidth="130" prefHeight="40">
+                      prefWidth="160" prefHeight="40">
                 <items><FXCollections fx:factory="observableArrayList">
                     <String fx:value="全部"/>
                     <String fx:value="盖外码小标"/>
@@ -60,13 +50,13 @@
                 </FXCollections></items>
                 <value><String fx:value="全部"/></value>
             </ComboBox>
-            <Label text="状态：" styleClass="sw2-filter-label"/>
-            <ComboBox fx:id="statusCombo" styleClass="sw2-filter-combo"
-                      prefWidth="130" prefHeight="40">
+            <Label text="导入方式：" styleClass="sw2-filter-label"/>
+            <ComboBox fx:id="importTypeCombo" styleClass="sw2-filter-combo"
+                      prefWidth="160" prefHeight="40">
                 <items><FXCollections fx:factory="observableArrayList">
                     <String fx:value="全部"/>
-                    <String fx:value="正常"/>
-                    <String fx:value="已删除"/>
+                    <String fx:value="在线"/>
+                    <String fx:value="本地"/>
                 </FXCollections></items>
                 <value><String fx:value="全部"/></value>
             </ComboBox>
@@ -79,7 +69,7 @@
 
     <!-- 表格卡片（填充剩余高度）-->
     <VBox styleClass="sw2-table-card" VBox.vgrow="ALWAYS">
-        <TableView fx:id="packageTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+        <TableView fx:id="packageTable" VBox.vgrow="ALWAYS" styleClass="sw2-table,sw2-table-no-select">
             <columns>
                 <TableColumn fx:id="colType"       text="码包类型"       prefWidth="110" minWidth="90"/>
                 <TableColumn fx:id="colName"       text="码包名称"       prefWidth="160" minWidth="120"/>

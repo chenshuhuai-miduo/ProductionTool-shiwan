@@ -77,6 +77,9 @@ public class ShiwanM2QueryController implements Initializable {
     }
 
     private void setupColumns() {
+        // 列宽自动撑满表格，禁止横向滚动
+        resultTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
         // 序号列：居中、灰色
         colSeq.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().seq));
         colSeq.setCellFactory(col -> new TableCell<>() {
@@ -114,13 +117,13 @@ public class ShiwanM2QueryController implements Initializable {
                 super.updateItem(item, empty);
                 if (empty || item == null || item.isEmpty()) {
                     setText(null);
-                    setStyle("-fx-font-size: 15px;");
+                    setStyle("-fx-font-size: 15px; -fx-alignment: CENTER;");
                 } else {
                     setText(item);
                     if (!inputCode.isEmpty() && item.equals(inputCode)) {
-                        setStyle("-fx-text-fill: #F44336; -fx-font-weight: bold; -fx-font-size: 15px;");
+                        setStyle("-fx-text-fill: #F44336; -fx-font-weight: bold; -fx-font-size: 15px; -fx-alignment: CENTER;");
                     } else {
-                        setStyle("-fx-font-size: 15px; -fx-text-fill: #1F2937;");
+                        setStyle("-fx-font-size: 15px; -fx-text-fill: #1F2937; -fx-alignment: CENTER;");
                     }
                 }
             }

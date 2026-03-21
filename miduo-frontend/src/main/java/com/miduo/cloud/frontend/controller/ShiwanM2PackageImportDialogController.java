@@ -4,15 +4,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageImportVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageLocalImportRequest;
+import com.miduo.cloud.frontend.util.FxToast;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -26,21 +27,42 @@ import java.util.List;
  */
 public class ShiwanM2PackageImportDialogController {
 
+    @FXML private HBox       titleBar;
     @FXML private ComboBox<String> packageTypeCombo;
-    @FXML private TextField selectedFileField;
+    @FXML private TextField  selectedFileField;
+    @FXML private TextArea   remarkField;
     @FXML private PasswordField passwordField;
-    @FXML private Label tipsLabel;
+    @FXML private Label      tipsLabel;
 
     private File selectedFile;
     private Runnable onImportSuccess;
+
+    /** 拖拽偏移量 */
+    private double dragOffsetX, dragOffsetY;
 
     @FXML
     public void initialize() {
         packageTypeCombo.getItems().setAll("盖外码小标", "盒外码中标", "箱外码大标");
         packageTypeCombo.setPromptText("请选择");
-        selectedFileField.setEditable(false);
-        selectedFileField.setPromptText("未选择文件");
         tipsLabel.setText("");
+
+        // 备注最多 50 字限制
+        remarkField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && newVal.length() > 50) {
+                remarkField.setText(oldVal);
+            }
+        });
+
+        // 标题栏拖拽
+        titleBar.setOnMousePressed(e -> {
+            dragOffsetX = e.getSceneX();
+            dragOffsetY = e.getSceneY();
+        });
+        titleBar.setOnMouseDragged(e -> {
+            Stage stage = (Stage) titleBar.getScene().getWindow();
+            stage.setX(e.getScreenX() - dragOffsetX);
+            stage.setY(e.getScreenY() - dragOffsetY);
+        });
     }
 
     public void setOnImportSuccess(Runnable onImportSuccess) {
@@ -91,6 +113,8 @@ public class ShiwanM2PackageImportDialogController {
                 request.setPackageName(selectedFile.getName());
                 request.setFileName(selectedFile.getName());
                 request.setPassword(password);
+                String remark = remarkField.getText() != null ? remarkField.getText().trim() : "";
+                if (!remark.isEmpty()) request.setRemark(remark);
                 request.setCodes(lines);
 
                 String responseJson = HttpUtil.doPost("/api/code-package/import/local", request);
@@ -99,11 +123,13 @@ public class ShiwanM2PackageImportDialogController {
 
                 Platform.runLater(() -> {
                     if (result != null && result.getCode() == 200) {
-                        showAlert(Alert.AlertType.INFORMATION, "导入成功", "码包导入成功。");
                         if (onImportSuccess != null) {
                             onImportSuccess.run();
                         }
+                        // 先拿到父窗口引用，再关闭弹窗，最后在父窗口上显示 Toast
+                        javafx.stage.Window owner = getStage().getOwner();
                         getStage().close();
+                        FxToast.success(owner, "码包导入成功");
                     } else {
                         tipsLabel.setText(result == null ? "导入失败" : result.getMessage());
                     }
@@ -131,12 +157,4 @@ public class ShiwanM2PackageImportDialogController {
         return (Stage) packageTypeCombo.getScene().getWindow();
     }
 
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
-    }
 }

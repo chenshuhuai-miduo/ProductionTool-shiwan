@@ -1,7 +1,10 @@
 package com.miduo.cloud.frontend.controller;
 
 import javafx.animation.Animation;
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -160,6 +163,12 @@ public class ShiwanM2MainController implements Initializable {
     /** 触发/收回剔除切换按钮（初始文字：触发剔除） */
     @FXML private Button rejectToggleBtn;
 
+    /** 强制满垛按钮（采集停止时置灰） */
+    @FXML private Button forcePalletBtn;
+
+    /** 提取工单未成垛按钮（采集进行中时置灰，停止后恢复） */
+    @FXML private Button extractUnfinishedBtn;
+
     /** 测试报警灯亮/灭按钮（初始文字：测试报警灯亮） */
     @FXML private Button alarmLightTestBtn;
 
@@ -184,8 +193,17 @@ public class ShiwanM2MainController implements Initializable {
     /** 许可证状态文本 */
     @FXML private Label licenseStatusLabel;
 
-    /** 采集运行状态标签 */
-    @FXML private Label runningStatusLabel;
+    /** 采集中脉冲灯容器 */
+    @FXML private HBox runningStatusBox;
+
+    /** 采集中脉冲灯外层脉冲环 */
+    @FXML private Region runningPulseRing;
+
+    /** 采集中脉冲灯内层实心点 */
+    @FXML private Region runningDot;
+
+    /** 脉冲动画（Timeline：雷达扩散环 + 内点心跳弹跳） */
+    private Animation runningPulseAnim;
 
     /** 当前时间标签 */
     @FXML private Label currentTimeLabel;
@@ -266,6 +284,10 @@ public class ShiwanM2MainController implements Initializable {
         registerDeviceDataHandler();
         setupTabLazyLoad();
         initOrderNumField();
+        // 初始未采集：强制满垛/收回剔除置灰，提取工单未成垛可用
+        forcePalletBtn.setDisable(true);
+        rejectToggleBtn.setDisable(true);
+        extractUnfinishedBtn.setDisable(false);
         Platform.runLater(() -> {
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
@@ -728,39 +750,49 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onSystemConfig() {
-        // 密码验证：每次打开均需重新输入
-        TextInputDialog pwdDialog = new TextInputDialog();
-        pwdDialog.setTitle("系统密码验证");
-        pwdDialog.setHeaderText("请输入系统密码以访问系统设置");
-        pwdDialog.setContentText("密码：");
-        pwdDialog.getEditor().setPromptText("请输入密码");
+        try {
+            FXMLLoader pwdLoader = new FXMLLoader(getClass().getResource("/fxml/ShiwanM2PasswordDialog.fxml"));
+            Parent pwdRoot = pwdLoader.load();
+            ShiwanM2PasswordDialogController pwdCtrl = pwdLoader.getController();
 
-        // 将密码框设置为隐藏输入
-        javafx.scene.control.PasswordField pwdField = new javafx.scene.control.PasswordField();
-        pwdField.setPromptText("请输入密码");
-        pwdDialog.getDialogPane().setContent(pwdField);
-        pwdDialog.getDialogPane().lookupButton(ButtonType.OK).disableProperty()
-                .bind(pwdField.textProperty().isEmpty());
-        pwdDialog.setOnShown(e -> Platform.runLater(pwdField::requestFocus));
+            Stage pwdStage = new Stage();
+            pwdStage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+            pwdStage.initModality(Modality.APPLICATION_MODAL);
+            Scene pwdScene = new Scene(pwdRoot);
+            pwdScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            pwdStage.setScene(pwdScene);
+            pwdStage.setResizable(false);
+            pwdStage.showAndWait();
 
-        // 点击确认时取密码框值
-        pwdDialog.setResultConverter(btn -> {
-            if (btn == ButtonType.OK) return pwdField.getText();
-            return null;
-        });
+            if (!pwdCtrl.isConfirmed()) return;
 
-        Optional<String> result = pwdDialog.showAndWait();
-        if (result.isEmpty()) return;
+            String expectedPwd = ShiwanM2SettingsStore.get().getSystemSettingsPassword();
+            if (expectedPwd == null) expectedPwd = "123456";
+            if (!expectedPwd.equals(pwdCtrl.getPassword())) {
+                // 密码错误：重新弹窗并显示错误提示
+                FXMLLoader errLoader = new FXMLLoader(getClass().getResource("/fxml/ShiwanM2PasswordDialog.fxml"));
+                Parent errRoot = errLoader.load();
+                ShiwanM2PasswordDialogController errCtrl = errLoader.getController();
+                errCtrl.showError("密码错误，请重新输入");
 
-        String expectedPwd = ShiwanM2SettingsStore.get().getSystemSettingsPassword();
-        if (expectedPwd == null) expectedPwd = "123456";
-        if (!expectedPwd.equals(result.get())) {
-            Alert errAlert = new Alert(Alert.AlertType.ERROR);
-            errAlert.setTitle("密码错误");
-            errAlert.setHeaderText(null);
-            errAlert.setContentText("密码错误，请重新输入。");
-            ShiwanM2AlertUtil.applyStyle(errAlert);
-            errAlert.showAndWait();
+                Stage errStage = new Stage();
+                errStage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+                errStage.initModality(Modality.APPLICATION_MODAL);
+                Scene errScene = new Scene(errRoot);
+                errScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+                errStage.setScene(errScene);
+                errStage.setResizable(false);
+                errStage.showAndWait();
+
+                if (!errCtrl.isConfirmed()) return;
+                if (!expectedPwd.equals(errCtrl.getPassword())) {
+                    showWarn("密码错误", "密码错误，已取消操作。");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showWarn("弹窗错误", "无法打开密码验证弹窗：" + e.getMessage());
             return;
         }
 
@@ -923,10 +955,11 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     private void doOpenProductSelectDialog() {
-        try (InputStream is = getClass().getResourceAsStream("/fxml/ShiwanM2ProductSelectDialog.fxml")) {
-            if (is == null) return;
-            FXMLLoader loader = new FXMLLoader();
-            Parent root = loader.load(is);
+        try {
+            java.net.URL fxmlUrl = getClass().getResource("/fxml/ShiwanM2ProductSelectDialog.fxml");
+            if (fxmlUrl == null) return;
+            FXMLLoader loader = new FXMLLoader(fxmlUrl); // 必须传 URL，否则 FXML 中的 @css 相对路径无法解析
+            Parent root = loader.load();
             ShiwanM2ProductSelectDialogController ctrl = loader.getController();
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
@@ -1315,14 +1348,25 @@ public class ShiwanM2MainController implements Initializable {
      */
     private void showConfirmAndStartCapture(String orderNo, String productNo, String product, int m, int n) {
         resetStartCaptureBtn();
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("开始采集确认");
-        confirm.setHeaderText("确认开始生产？");
-        confirm.setContentText("产品：" + product + "\n生产单号：" + orderNo
-                + "\n1垛 " + m + " 箱  |  1箱 " + n + " 盒");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ShiwanM2StartCaptureConfirmDialog.fxml"));
+            Parent root = loader.load();
+            ShiwanM2StartCaptureConfirmDialogController dialogCtrl = loader.getController();
+            dialogCtrl.setInfo(orderNo, productNo, product, m, n);
+
+            javafx.stage.Stage dialogStage = new javafx.stage.Stage();
+            dialogStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
+            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            dialogStage.setScene(new Scene(root));
+            dialogStage.setResizable(false);
+            dialogStage.showAndWait();
+
+            if (!dialogCtrl.isConfirmed()) return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            showWarn("弹窗错误", "无法打开开始采集确认弹窗：" + e.getMessage());
+            return;
+        }
 
         startCaptureBtn.setDisable(true);
         startCaptureBtn.setText("启动中...");
@@ -1367,11 +1411,50 @@ public class ShiwanM2MainController implements Initializable {
         boxesPerCaseField.setEditable(false);
         productComboBox.setDisable(true);
         orderNumField.setEditable(false);
+        // 采集进行中：提取工单未成垛 置灰不可点击；强制满垛 和 收回剔除 恢复可用
+        extractUnfinishedBtn.setDisable(true);
+        forcePalletBtn.setDisable(false);
+        rejectToggleBtn.setDisable(false);
         startStatsRefresh(orderNo);
 
-        runningStatusLabel.setVisible(true);
-        runningStatusLabel.setManaged(true);
-        runningStatusLabel.setText("采集中");
+        runningStatusBox.setVisible(true);
+        runningStatusBox.setManaged(true);
+        // 启动脉冲动画（单 Timeline 精确控制：雷达扩散环 + 内点心跳弹跳）
+        if (runningPulseAnim == null) {
+            Timeline t = new Timeline(
+                // t=0ms：环归位（小 + 可见），点归位（正常大小）
+                new KeyFrame(javafx.util.Duration.ZERO,
+                    new KeyValue(runningPulseRing.scaleXProperty(), 0.3),
+                    new KeyValue(runningPulseRing.scaleYProperty(), 0.3),
+                    new KeyValue(runningPulseRing.opacityProperty(), 0.85),
+                    new KeyValue(runningDot.scaleXProperty(), 1.0),
+                    new KeyValue(runningDot.scaleYProperty(), 1.0)
+                ),
+                // t=130ms：点轻微弹跳（模拟心跳）
+                new KeyFrame(javafx.util.Duration.millis(130),
+                    new KeyValue(runningDot.scaleXProperty(), 1.35, Interpolator.EASE_OUT),
+                    new KeyValue(runningDot.scaleYProperty(), 1.35, Interpolator.EASE_OUT)
+                ),
+                // t=380ms：点回弹恢复正常，环已扩散到中途
+                new KeyFrame(javafx.util.Duration.millis(380),
+                    new KeyValue(runningDot.scaleXProperty(), 1.0, Interpolator.EASE_IN),
+                    new KeyValue(runningDot.scaleYProperty(), 1.0, Interpolator.EASE_IN)
+                ),
+                // t=1100ms：环完全扩散（2.5x）并完全消隐
+                new KeyFrame(javafx.util.Duration.millis(1100),
+                    new KeyValue(runningPulseRing.scaleXProperty(), 2.5, Interpolator.EASE_OUT),
+                    new KeyValue(runningPulseRing.scaleYProperty(), 2.5, Interpolator.EASE_OUT),
+                    new KeyValue(runningPulseRing.opacityProperty(), 0.0, Interpolator.EASE_IN)
+                ),
+                // t=1800ms：停顿等待，保持透明（周期结束后 INDEFINITE 重置到 t=0 开启下一轮）
+                new KeyFrame(javafx.util.Duration.millis(1800),
+                    new KeyValue(runningPulseRing.opacityProperty(), 0.0)
+                )
+            );
+            t.setCycleCount(Animation.INDEFINITE);
+            runningPulseAnim = t;
+        }
+        runningPulseAnim.play();
 
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  开始采集 - 产品：" + product + "，生产单：" + orderNo, LogType.INFO);
@@ -1874,10 +1957,11 @@ public class ShiwanM2MainController implements Initializable {
                 ProductItem currentValue = productComboBox.getValue();
                 suppressProductSearch = true;
                 productItems.setAll(list);
-                if (currentValue != null && productComboBox.getValue() == null) {
-                    // 优先在新列表中按 productNo 精确匹配真实条目（避免临时 fallback 对象游离在列表之外导致显示空白）
-                    ProductItem matched = null;
+                // setAll 后 value 引用可能仍非 null 但已不在新列表中（fallback 对象），
+                // 所以不能只判断 getValue()==null，需检查 value 是否真正在新列表中
+                if (currentValue != null) {
                     String currentNo = currentValue.getNo();
+                    ProductItem matched = null;
                     if (currentNo != null && !currentNo.isEmpty()) {
                         for (ProductItem item : list) {
                             if (currentNo.equals(item.getNo())) {
@@ -1886,11 +1970,15 @@ public class ShiwanM2MainController implements Initializable {
                             }
                         }
                     }
-                    productComboBox.setValue(matched != null ? matched : currentValue);
                     if (matched != null) {
+                        // 用新列表中的真实对象替换（避免 fallback 游离导致显示空白）
+                        productComboBox.setValue(matched);
                         productCodeLabel.setText(matched.getNo());
                         productCodeRow.setVisible(true);
                         productCodeRow.setManaged(true);
+                    } else if (productComboBox.getValue() == null) {
+                        // 新列表中无匹配项且 value 已被清空，保留原 fallback 对象
+                        productComboBox.setValue(currentValue);
                     }
                 }
                 suppressProductSearch = false;
@@ -1918,6 +2006,10 @@ public class ShiwanM2MainController implements Initializable {
         boxesPerCaseField.setEditable(true);
         productComboBox.setDisable(false);
         orderNumField.setEditable(true);
+        // 停止采集：提取工单未成垛 恢复可用；强制满垛 和 收回剔除 置灰（仅运行时有意义）
+        extractUnfinishedBtn.setDisable(false);
+        forcePalletBtn.setDisable(true);
+        rejectToggleBtn.setDisable(true);
         // 停止采集时若"无需采集码"模式开启，重置其状态
         if (noCodeNeededMode) {
             noCodeNeededMode = false;
@@ -1926,8 +2018,9 @@ public class ShiwanM2MainController implements Initializable {
             noCodeNeededBtn.getStyleClass().add("shiwan-m2-ctrl-btn-outline-blue");
         }
 
-        runningStatusLabel.setVisible(false);
-        runningStatusLabel.setManaged(false);
+        runningStatusBox.setVisible(false);
+        runningStatusBox.setManaged(false);
+        if (runningPulseAnim != null) runningPulseAnim.stop();
 
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  停止采集，未满垛数据已保留（" + currentCases + "箱）", LogType.INFO);
@@ -2187,22 +2280,10 @@ public class ShiwanM2MainController implements Initializable {
     private void onExtractUnfinished() {
         addOpLog(LocalDateTime.now().format(TIME_FMT) + "  [操作] 点击提取工单未成垛", LogType.INFO);
         Stage dialog = new Stage();
+        dialog.initStyle(javafx.stage.StageStyle.UNDECORATED);
         dialog.initModality(Modality.WINDOW_MODAL);
         dialog.initOwner(orderNumField.getScene().getWindow());
-        dialog.setTitle("提取工单未成垛");
         dialog.setResizable(false);
-
-        // ── 标题栏 ──────────────────────────────────────────────
-        Label titleLbl = new Label("提取工单未成垛");
-        titleLbl.setStyle("-fx-font-size:18px;-fx-font-weight:600;-fx-text-fill:#1F2937;");
-        Region titleSpacer = new Region();
-        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
-        Button titleCloseBtn = new Button("✕");
-        titleCloseBtn.setStyle("-fx-background-color:transparent;-fx-border-width:0;-fx-font-size:20px;-fx-text-fill:#6B7280;-fx-cursor:hand;");
-        titleCloseBtn.setOnAction(e -> dialog.close());
-        HBox titleBar = new HBox(8, titleLbl, titleSpacer, titleCloseBtn);
-        titleBar.setAlignment(Pos.CENTER_LEFT);
-        titleBar.setStyle("-fx-background-color:#F5F7FA;-fx-border-color:transparent transparent #E5E7EB transparent;-fx-border-width:0 0 1 0;-fx-padding:0 24 0 24;-fx-min-height:56;");
 
         // ── 说明文字 ─────────────────────────────────────────────
         Label descLbl = new Label("请输入或扫描未完成垛中的任意一个箱码，系统将查出对应的生产订单数据。");
@@ -2225,8 +2306,8 @@ public class ShiwanM2MainController implements Initializable {
         // ── 查询结果区（初始隐藏）────────────────────────────────
         Label resultHeader = new Label("查询结果");
         resultHeader.setMaxWidth(Double.MAX_VALUE);
-        resultHeader.setStyle("-fx-background-color:#F9FAFB;-fx-border-color:transparent transparent #E5E7EB transparent;-fx-border-width:0 0 1 0;-fx-padding:10 16;-fx-font-size:14px;-fx-font-weight:600;-fx-text-fill:#374151;");
-        VBox resultInfo = new VBox(8);
+        resultHeader.setStyle("-fx-background-color:#F9FAFB;-fx-border-color:transparent transparent #E5E7EB transparent;-fx-border-width:0 0 1 0;-fx-padding:10 16;-fx-font-size:14px;-fx-font-weight:600;-fx-text-fill:#374151;-fx-font-family:'Microsoft YaHei';");
+        VBox resultInfo = new VBox(12);
         resultInfo.setStyle("-fx-padding:16;");
         VBox resultArea = new VBox(resultHeader, resultInfo);
         resultArea.setStyle("-fx-border-color:#E5E7EB;-fx-border-width:1;-fx-border-radius:8;-fx-background-radius:8;-fx-background-color:white;");
@@ -2299,37 +2380,59 @@ public class ShiwanM2MainController implements Initializable {
                         foundCasesPerPallet[0] = casesPerPallet;
                         foundBoxesPerCase[0]   = boxesPerCase;
                         Platform.runLater(() -> {
-                            // 生产信息分组
+                            // 生产信息 小节标题
                             Label prodInfoHeader = new Label("生产信息");
-                            prodInfoHeader.setStyle("-fx-font-size:13px;-fx-font-weight:600;-fx-text-fill:#2563EB;");
-                            VBox prodInfoSection = new VBox(8,
-                                    prodInfoHeader,
-                                    buildResultRow("产品名称", productName.isEmpty() ? "—" : productName),
-                                    buildResultRow("产品编号", productNo.isEmpty() ? "—" : productNo),
-                                    buildResultRow("生产单号", orderNo.isEmpty() ? "—" : orderNo));
+                            prodInfoHeader.setStyle("-fx-font-size:14px;-fx-font-weight:600;-fx-text-fill:#2563EB;-fx-font-family:'Microsoft YaHei';");
 
-                            // 采集规格分组
+                            // 分隔线（生产信息与采集规格之间）
+                            javafx.scene.layout.Region divider = new javafx.scene.layout.Region();
+                            divider.setMaxWidth(Double.MAX_VALUE);
+                            divider.setPrefHeight(1);
+                            divider.setMaxHeight(1);
+                            divider.setStyle("-fx-background-color:#E5E7EB;");
+
+                            // 采集规格 小节标题
                             Label specHeader = new Label("采集规格");
-                            specHeader.setStyle("-fx-font-size:13px;-fx-font-weight:600;-fx-text-fill:#2563EB;");
-                            String specText = (casesPerPallet > 0 ? "1垛" + casesPerPallet + "箱" : "1垛—箱")
-                                    + "，" + (boxesPerCase > 0 ? "1箱" + boxesPerCase + "盒" : "1箱—盒");
-                            Label specVal = new Label(specText);
-                            specVal.setStyle("-fx-font-size:14px;-fx-text-fill:#1F2937;");
-                            VBox specSection = new VBox(8, specHeader, specVal);
+                            specHeader.setStyle("-fx-font-size:14px;-fx-font-weight:600;-fx-text-fill:#2563EB;-fx-font-family:'Microsoft YaHei';");
+
+                            // 采集规格文案：1垛 m 箱，1箱 n 盒（数字加粗 16px）
+                            String mStr = casesPerPallet > 0 ? String.valueOf(casesPerPallet) : "—";
+                            String nStr = boxesPerCase   > 0 ? String.valueOf(boxesPerCase)   : "—";
+                            Label s1 = new Label("1垛");
+                            Label s2 = new Label(mStr);
+                            Label s3 = new Label("箱，1箱");
+                            Label s4 = new Label(nStr);
+                            Label s5 = new Label("盒");
+                            String normalSpec = "-fx-font-size:16px;-fx-font-weight:normal;-fx-text-fill:#1F2937;-fx-font-family:'Microsoft YaHei';";
+                            String boldSpec   = "-fx-font-size:16px;-fx-font-weight:600;-fx-text-fill:#1F2937;-fx-font-family:'Microsoft YaHei';";
+                            s1.setStyle(normalSpec); s2.setStyle(boldSpec);
+                            s3.setStyle(normalSpec); s4.setStyle(boldSpec); s5.setStyle(normalSpec);
+                            HBox specRow = new HBox(4, s1, s2, s3, s4, s5);
+                            specRow.setAlignment(Pos.CENTER_LEFT);
 
                             // 已关联箱数
                             Label linkedLabel = new Label("已关联箱数：");
-                            linkedLabel.setStyle("-fx-font-size:14px;-fx-text-fill:#6B7280;-fx-min-width:80;");
+                            linkedLabel.setStyle("-fx-font-size:15px;-fx-font-weight:600;-fx-text-fill:#6B7280;-fx-font-family:'Microsoft YaHei';");
                             Label linkedVal = new Label(boxCount + " 箱");
-                            linkedVal.setStyle("-fx-font-size:14px;-fx-font-weight:700;-fx-text-fill:#F97316;");
-                            HBox linkedRow = new HBox(4, linkedLabel, linkedVal);
+                            linkedVal.setStyle("-fx-font-size:15px;-fx-font-weight:600;-fx-text-fill:#2563EB;-fx-font-family:'Microsoft YaHei';");
+                            HBox linkedRow = new HBox(8, linkedLabel, linkedVal);
                             linkedRow.setAlignment(Pos.CENTER_LEFT);
 
-                            resultInfo.getChildren().setAll(prodInfoSection, specSection, linkedRow);
+                            // 扁平结构填入 resultInfo（gap 已在创建时设为 12）
+                            resultInfo.getChildren().setAll(
+                                    prodInfoHeader,
+                                    buildResultRow("产品名称", productName.isEmpty() ? "—" : productName),
+                                    buildResultRow("产品编号", productNo.isEmpty() ? "—" : productNo),
+                                    buildResultRow("生产单号", orderNo.isEmpty() ? "—" : orderNo),
+                                    divider,
+                                    specHeader,
+                                    specRow,
+                                    linkedRow
+                            );
                             resultArea.setVisible(true);
                             resultArea.setManaged(true);
                             confirmBtn.setDisable(false);
-                            confirmBtn.setStyle("-fx-background-color:#2563EB;-fx-border-width:0;-fx-background-radius:8;-fx-font-size:16px;-fx-font-weight:600;-fx-text-fill:white;-fx-cursor:hand;-fx-min-height:40;-fx-min-width:90;");
+                            confirmBtn.setStyle("-fx-background-color:#2563EB;-fx-border-width:0;-fx-background-radius:8;-fx-font-size:16px;-fx-font-weight:600;-fx-text-fill:white;-fx-font-family:'Microsoft YaHei';-fx-cursor:hand;-fx-min-height:40;-fx-min-width:90;");
                             dialog.sizeToScene();
                         });
                     } else {
@@ -2420,9 +2523,26 @@ public class ShiwanM2MainController implements Initializable {
             dialog.close();
         });
 
+        // ── 自定义标题栏（可拖拽）────────────────────────────────
+        Label titleLbl = new Label("提取工单未成垛");
+        titleLbl.setStyle("-fx-font-size:18px;-fx-font-weight:bold;-fx-text-fill:#1F2937;-fx-font-family:'Microsoft YaHei';");
+        Region titleSpacer = new Region();
+        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
+        Button titleCloseBtn = new Button("×");
+        titleCloseBtn.setStyle("-fx-background-color:transparent;-fx-border-width:0;-fx-font-size:26px;-fx-text-fill:#9CA3AF;-fx-cursor:hand;-fx-min-width:44;-fx-min-height:44;-fx-background-radius:6;-fx-effect:null;-fx-padding:0;");
+        titleCloseBtn.setOnAction(e -> dialog.close());
+        HBox titleBar = new HBox(8, titleLbl, titleSpacer, titleCloseBtn);
+        titleBar.setAlignment(Pos.CENTER_LEFT);
+        titleBar.setStyle("-fx-background-color:#F5F7FA;-fx-border-color:transparent transparent #E5E7EB transparent;-fx-border-width:0 0 1 0;-fx-padding:0 8 0 24;-fx-min-height:56;-fx-pref-height:56;");
+
+        // 拖拽支持
+        final double[] dragOffset = {0, 0};
+        titleBar.setOnMousePressed(e -> { dragOffset[0] = e.getSceneX(); dragOffset[1] = e.getSceneY(); });
+        titleBar.setOnMouseDragged(e -> { dialog.setX(e.getScreenX() - dragOffset[0]); dialog.setY(e.getScreenY() - dragOffset[1]); });
+
         // ── 组装场景 ─────────────────────────────────────────────
         VBox root = new VBox(titleBar, content, bottomBar);
-        root.setStyle("-fx-background-color:white;");
+        root.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EC;-fx-border-width:1;");
         dialog.setScene(new Scene(root, 560, -1));
         dialog.show();
         boxCodeInput.requestFocus();
@@ -2431,10 +2551,10 @@ public class ShiwanM2MainController implements Initializable {
     /** 构建查询结果行（标签 + 值） */
     private HBox buildResultRow(String label, String value) {
         Label lbl = new Label(label + "：");
-        lbl.setStyle("-fx-font-size:14px;-fx-text-fill:#6B7280;-fx-min-width:80;");
+        lbl.setStyle("-fx-font-size:15px;-fx-font-weight:600;-fx-text-fill:#6B7280;-fx-font-family:'Microsoft YaHei';");
         Label val = new Label(value);
-        val.setStyle("-fx-font-size:14px;-fx-font-weight:600;-fx-text-fill:#1F2937;");
-        HBox row = new HBox(4, lbl, val);
+        val.setStyle("-fx-font-size:15px;-fx-font-weight:normal;-fx-text-fill:#1F2937;-fx-font-family:'Microsoft YaHei';");
+        HBox row = new HBox(8, lbl, val);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -2703,11 +2823,13 @@ public class ShiwanM2MainController implements Initializable {
             label.setMaxWidth(Double.MAX_VALUE);
             label.setWrapText(true);
             label.getStyleClass().add("log-cell-label");
-            HBox.setHgrow(label, Priority.ALWAYS);
-            // 将 label 宽度绑定到 ListView 宽度，保证超长内容换行而非横向滚动
+            // prefWidth=0 使 cell 自动跟随 ListView 宽度分配，避免 cell 撑出横向滚动条
+            setPrefWidth(0);
+            setMaxWidth(Double.MAX_VALUE);
+            // 将 label 宽度绑定到 ListView 宽度（减去左右 padding 16 + 竖向滚动条约 14px）
             listViewProperty().addListener((obs, oldLv, newLv) -> {
                 if (newLv != null) {
-                    label.prefWidthProperty().bind(newLv.widthProperty().subtract(16));
+                    label.prefWidthProperty().bind(newLv.widthProperty().subtract(30));
                 }
             });
         }

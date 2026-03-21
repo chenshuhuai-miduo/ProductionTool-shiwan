@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2StartCaptureConfirmDialogController"
+      prefWidth="500"
+      style="-fx-background-color: white;
+             -fx-border-color: #D9E1EC;
+             -fx-border-width: 1px;">
+
+    <!-- 自定义标题栏（可拖拽） -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT"
+          style="-fx-background-color: #F5F7FA;
+                 -fx-border-color: transparent transparent #E5E7EB transparent;
+                 -fx-border-width: 0 0 1 0;
+                 -fx-padding: 0 8 0 24;
+                 -fx-min-height: 56; -fx-pref-height: 56;">
+        <Label text="开始采集确认"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;
+                      -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="closeBtn" text="×" onAction="#onClose"
+                style="-fx-background-color: transparent;
+                       -fx-text-fill: #9CA3AF; -fx-font-size: 26px;
+                       -fx-cursor: hand; -fx-min-width: 44; -fx-min-height: 44;
+                       -fx-border-width: 0; -fx-background-radius: 6;
+                       -fx-effect: null; -fx-padding: 0;"/>
+    </HBox>
+
+    <!-- 内容区 -->
+    <VBox spacing="16" style="-fx-padding: 24px;">
+
+        <!-- 生产信息 小节标题 -->
+        <Label text="生产信息"
+               style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2563EB; -fx-font-family: 'Microsoft YaHei';"/>
+
+        <!-- 产品名称 -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="产品名称："
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="productNameLabel" text="--"
+                   style="-fx-font-size: 15px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        </HBox>
+
+        <!-- 产品编号 -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="产品编号："
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="productNoLabel" text="--"
+                   style="-fx-font-size: 15px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        </HBox>
+
+        <!-- 生产单号 -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="生产单号："
+                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="orderNoLabel" text="--"
+                   style="-fx-font-size: 15px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        </HBox>
+
+        <!-- 分隔线 -->
+        <Region prefHeight="1" maxHeight="1"
+                style="-fx-background-color: #E5E7EB;" maxWidth="Infinity"/>
+
+        <!-- 采集规格 小节标题 -->
+        <Label text="采集规格"
+               style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2563EB; -fx-font-family: 'Microsoft YaHei';"/>
+
+        <!-- 规格文案：1垛 m 箱，1箱 n 盒 -->
+        <HBox spacing="4" alignment="CENTER_LEFT">
+            <Label text="1垛"
+                   style="-fx-font-size: 16px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="palletBoxesLabel" text="--"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label text="箱，1箱"
+                   style="-fx-font-size: 16px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="boxUnitsLabel" text="--"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label text="盒"
+                   style="-fx-font-size: 16px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        </HBox>
+
+    </VBox>
+
+    <!-- 底部按钮区 -->
+    <HBox spacing="12" alignment="CENTER"
+          style="-fx-background-color: #F9FAFB;
+                 -fx-border-color: #E5E7EB transparent transparent transparent;
+                 -fx-border-width: 1px 0 0 0;
+                 -fx-padding: 16px 24px;
+                 -fx-min-height: 72px;">
+        <Button fx:id="cancelButton" text="取消" onAction="#onCancel"
+                style="-fx-min-width: 90px; -fx-pref-width: 90px;
+                       -fx-min-height: 40px; -fx-pref-height: 40px;
+                       -fx-background-color: #F3F4F6;
+                       -fx-text-fill: #374151;
+                       -fx-font-size: 16px; -fx-font-weight: bold;
+                       -fx-font-family: 'Microsoft YaHei';
+                       -fx-background-radius: 8px;
+                       -fx-cursor: hand; -fx-effect: null;"/>
+        <Button fx:id="confirmButton" text="确定" onAction="#onConfirm"
+                style="-fx-min-width: 90px; -fx-pref-width: 90px;
+                       -fx-min-height: 40px; -fx-pref-height: 40px;
+                       -fx-background-color: #2563EB;
+                       -fx-text-fill: white;
+                       -fx-font-size: 16px; -fx-font-weight: bold;
+                       -fx-font-family: 'Microsoft YaHei';
+                       -fx-background-radius: 8px;
+                       -fx-cursor: hand; -fx-effect: null;"/>
+    </HBox>
+
+</VBox>

@@ -4402,24 +4402,50 @@
                       "justifyContent": "center",
                       "children": [
                         {
-                          "type": "text",
-                          "id": "lkXqH",
-                          "name": "r1ViewBtn",
-                          "fill": "#2563EB",
-                          "content": "查看",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "type": "frame",
+                          "id": "dNtYf",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 6,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "C56cx",
+                              "fill": "#2563EB",
+                              "content": "查看",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
                         },
                         {
-                          "type": "text",
-                          "id": "BjxYb",
-                          "name": "r1DeleteBtn",
-                          "fill": "#EF4444",
-                          "content": "删除",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "type": "frame",
+                          "id": "YrYWE",
+                          "fill": "#FEF2F2",
+                          "cornerRadius": 6,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "y973L",
+                              "fill": "#EF4444",
+                              "content": "删除",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -4546,24 +4572,50 @@
                       "justifyContent": "center",
                       "children": [
                         {
-                          "type": "text",
-                          "id": "LQU8T",
-                          "name": "r2ViewBtn",
-                          "fill": "#2563EB",
-                          "content": "查看",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "type": "frame",
+                          "id": "6MWCT",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 6,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "mp4tg",
+                              "fill": "#2563EB",
+                              "content": "查看",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
                         },
                         {
-                          "type": "text",
-                          "id": "ufnU2",
-                          "name": "r2DeleteBtn",
-                          "fill": "#EF4444",
-                          "content": "删除",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "type": "frame",
+                          "id": "379O2",
+                          "fill": "#FEF2F2",
+                          "cornerRadius": 6,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "9nZIE",
+                              "fill": "#EF4444",
+                              "content": "删除",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -4690,24 +4742,50 @@
                       "justifyContent": "center",
                       "children": [
                         {
-                          "type": "text",
-                          "id": "79J8W",
-                          "name": "r3ViewBtn",
-                          "fill": "#2563EB",
-                          "content": "查看",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "type": "frame",
+                          "id": "RHG84",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 6,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "AjOcg",
+                              "fill": "#2563EB",
+                              "content": "查看",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
                         },
                         {
-                          "type": "text",
-                          "id": "X2QpR",
-                          "name": "r3DeleteBtn",
-                          "fill": "#EF4444",
-                          "content": "删除",
-                          "fontFamily": "Arial",
-                          "fontSize": 16,
-                          "fontWeight": "600"
+                          "type": "frame",
+                          "id": "SJPKA",
+                          "fill": "#FEF2F2",
+                          "cornerRadius": 6,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "jLnli",
+                              "fill": "#EF4444",
+                              "content": "删除",
+                              "fontFamily": "Arial",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -7637,6 +7715,8 @@
                       "id": "rR4iz",
                       "name": "th1",
                       "fill": "#374151",
+                      "textGrowth": "fixed-width",
+                      "width": 480,
                       "content": "产品名称",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7647,6 +7727,8 @@
                       "id": "MNmVz",
                       "name": "th2",
                       "fill": "#374151",
+                      "textGrowth": "fixed-width",
+                      "width": 224,
                       "content": "产品编号",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7678,6 +7760,8 @@
                       "id": "OhGQi",
                       "name": "td1_1",
                       "fill": "#1F2937",
+                      "textGrowth": "fixed-width",
+                      "width": 480,
                       "content": "五粮液52度浓香型白酒500ml",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7688,6 +7772,8 @@
                       "id": "n1SBP",
                       "name": "td1_2",
                       "fill": "#6B7280",
+                      "textGrowth": "fixed-width",
+                      "width": 224,
                       "content": "WLY-52-500",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7719,6 +7805,8 @@
                       "id": "thtJp",
                       "name": "td2_1",
                       "fill": "#1F2937",
+                      "textGrowth": "fixed-width",
+                      "width": 480,
                       "content": "五粮液39度绵柔型白酒500ml",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7729,6 +7817,8 @@
                       "id": "oANGg",
                       "name": "td2_2",
                       "fill": "#6B7280",
+                      "textGrowth": "fixed-width",
+                      "width": 224,
                       "content": "WLY-39-500",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7761,6 +7851,8 @@
                       "id": "y1OyO",
                       "name": "td3_1",
                       "fill": "#1F2937",
+                      "textGrowth": "fixed-width",
+                      "width": 480,
                       "content": "茅台53度酱香型白酒500ml",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -7771,6 +7863,8 @@
                       "id": "0sV1J",
                       "name": "td3_2",
                       "fill": "#2563EB",
+                      "textGrowth": "fixed-width",
+                      "width": 224,
                       "content": "MT-53-500",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
@@ -11610,7 +11704,10 @@
                               "id": "MXCEW",
                               "name": "th1",
                               "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 50,
                               "content": "序号",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -11620,7 +11717,10 @@
                               "id": "1HTmE",
                               "name": "th2",
                               "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 208,
                               "content": "第一层(瓶码)",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -11630,7 +11730,10 @@
                               "id": "CV2bK",
                               "name": "th3",
                               "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 208,
                               "content": "第二层(盒码)",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -11640,7 +11743,10 @@
                               "id": "wvvKS",
                               "name": "th4",
                               "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 162,
                               "content": "第三层(箱码)",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -11650,7 +11756,10 @@
                               "id": "7GwIQ",
                               "name": "th5",
                               "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 150,
                               "content": "第四层(垛码)",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -11683,7 +11792,10 @@
                               "id": "uwMJg",
                               "name": "r1_1",
                               "fill": "#999999",
+                              "textGrowth": "fixed-width",
+                              "width": 50,
                               "content": "8",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 20,
                               "fontWeight": "normal"
@@ -11693,7 +11805,10 @@
                               "id": "3Yc2a",
                               "name": "r1_2",
                               "fill": "#1F2937",
+                              "textGrowth": "fixed-width",
+                              "width": 208,
                               "content": "20241201001",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11703,7 +11818,10 @@
                               "id": "EA8M3",
                               "name": "r1_3",
                               "fill": "#1F2937",
+                              "textGrowth": "fixed-width",
+                              "width": 208,
                               "content": "20241201002",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11713,7 +11831,10 @@
                               "id": "AH877",
                               "name": "r1_4",
                               "fill": "#1F2937",
-                              "content": "11",
+                              "textGrowth": "fixed-width",
+                              "width": 162,
+                              "content": "XA2024120101",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11723,7 +11844,10 @@
                               "id": "akv29",
                               "name": "r1_5",
                               "fill": "#1F2937",
+                              "textGrowth": "fixed-width",
+                              "width": 150,
                               "content": "P20241201",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11749,7 +11873,10 @@
                               "id": "dvTiF",
                               "name": "r2_1",
                               "fill": "#999999",
+                              "textGrowth": "fixed-width",
+                              "width": 50,
                               "content": "11",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 20,
                               "fontWeight": "normal"
@@ -11759,7 +11886,10 @@
                               "id": "af0Ns",
                               "name": "r2_2",
                               "fill": "#1F2937",
+                              "textGrowth": "fixed-width",
+                              "width": 208,
                               "content": "20241201013",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11769,7 +11899,10 @@
                               "id": "UbpHa",
                               "name": "r2_3",
                               "fill": "#1F2937",
+                              "textGrowth": "fixed-width",
+                              "width": 208,
                               "content": "20241201002",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11779,7 +11912,10 @@
                               "id": "qzp4n",
                               "name": "r2_4",
                               "fill": "#F44336",
-                              "content": "11",
+                              "textGrowth": "fixed-width",
+                              "width": 162,
+                              "content": "XA2024120102",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "600"
@@ -11789,7 +11925,10 @@
                               "id": "jXor6",
                               "name": "r2_5",
                               "fill": "#1F2937",
+                              "textGrowth": "fixed-width",
+                              "width": 150,
                               "content": "P20241201",
+                              "textAlign": "center",
                               "fontFamily": "Inter",
                               "fontSize": 16,
                               "fontWeight": "normal"
@@ -11871,7 +12010,17 @@
                           "id": "7frqO",
                           "name": "d1c",
                           "fill": "#1F2937",
-                          "content": "箱码: 11  垛码: P20241201",
+                          "content": "箱码: XA2024120101",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "RaJ15",
+                          "name": "palletRow",
+                          "fill": "#1F2937",
+                          "content": "垛码: P20241201",
                           "fontFamily": "Inter",
                           "fontSize": 16,
                           "fontWeight": "normal"
@@ -12225,7 +12374,7 @@
                       "fill": "#2563EB",
                       "content": "生产信息",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
+                      "fontSize": 14,
                       "fontWeight": "600"
                     },
                     {
@@ -12240,9 +12389,9 @@
                           "type": "text",
                           "id": "beT5p",
                           "fill": "#6B7280",
-                          "content": "产品名称",
+                          "content": "产品名称：",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         },
                         {
@@ -12251,7 +12400,7 @@
                           "fill": "#1F2937",
                           "content": "石湾玉冰烧酒 500ml",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -12268,9 +12417,9 @@
                           "type": "text",
                           "id": "y6zrL",
                           "fill": "#6B7280",
-                          "content": "产品编号",
+                          "content": "产品编号：",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         },
                         {
@@ -12279,7 +12428,7 @@
                           "fill": "#1F2937",
                           "content": "SW-YBS-500",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -12296,9 +12445,9 @@
                           "type": "text",
                           "id": "aStrG",
                           "fill": "#6B7280",
-                          "content": "生产单号",
+                          "content": "生产单号：",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         },
                         {
@@ -12307,7 +12456,7 @@
                           "fill": "#1F2937",
                           "content": "PO2024120100156",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -12327,7 +12476,7 @@
                       "fill": "#2563EB",
                       "content": "采集规格",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
+                      "fontSize": 14,
                       "fontWeight": "600"
                     },
                     {
@@ -12344,7 +12493,7 @@
                           "fill": "#1F2937",
                           "content": "1垛",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 16,
                           "fontWeight": "normal"
                         },
                         {
@@ -12354,7 +12503,7 @@
                           "fill": "#1F2937",
                           "content": "70",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 16,
                           "fontWeight": "600"
                         },
                         {
@@ -12364,7 +12513,7 @@
                           "fill": "#1F2937",
                           "content": "箱，1箱",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 16,
                           "fontWeight": "normal"
                         },
                         {
@@ -12374,7 +12523,7 @@
                           "fill": "#1F2937",
                           "content": "4",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 16,
                           "fontWeight": "600"
                         },
                         {
@@ -12384,7 +12533,7 @@
                           "fill": "#1F2937",
                           "content": "盒",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 16,
                           "fontWeight": "normal"
                         }
                       ]
@@ -12401,9 +12550,9 @@
                           "type": "text",
                           "id": "4emmj",
                           "fill": "#6B7280",
-                          "content": "已关联箱数",
+                          "content": "已关联箱数：",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         },
                         {
@@ -12412,7 +12561,7 @@
                           "fill": "#2563EB",
                           "content": "7 箱",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -12845,7 +12994,7 @@
               "fill": "#2563EB",
               "content": "生产信息",
               "fontFamily": "Microsoft YaHei",
-              "fontSize": 13,
+              "fontSize": 14,
               "fontWeight": "600"
             },
             {
@@ -12860,9 +13009,9 @@
                   "type": "text",
                   "id": "S29De",
                   "fill": "#6B7280",
-                  "content": "产品名称",
+                  "content": "产品名称：",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 15,
                   "fontWeight": "600"
                 },
                 {
@@ -12871,7 +13020,7 @@
                   "fill": "#1F2937",
                   "content": "石湾头曲 52度 500ml",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 15,
                   "fontWeight": "normal"
                 }
               ]
@@ -12888,9 +13037,9 @@
                   "type": "text",
                   "id": "YqdfL",
                   "fill": "#6B7280",
-                  "content": "产品编号",
+                  "content": "产品编号：",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 15,
                   "fontWeight": "600"
                 },
                 {
@@ -12899,7 +13048,7 @@
                   "fill": "#1F2937",
                   "content": "SW-TC-52-500",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 15,
                   "fontWeight": "normal"
                 }
               ]
@@ -12916,9 +13065,9 @@
                   "type": "text",
                   "id": "2n1Ak",
                   "fill": "#6B7280",
-                  "content": "生产单号",
+                  "content": "生产单号：",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 15,
                   "fontWeight": "600"
                 },
                 {
@@ -12927,7 +13076,7 @@
                   "fill": "#1F2937",
                   "content": "20260319001",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 15,
                   "fontWeight": "normal"
                 }
               ]
@@ -12947,7 +13096,7 @@
               "fill": "#2563EB",
               "content": "采集规格",
               "fontFamily": "Microsoft YaHei",
-              "fontSize": 13,
+              "fontSize": 14,
               "fontWeight": "600"
             },
             {
@@ -12963,7 +13112,7 @@
                   "fill": "#1F2937",
                   "content": "1垛",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "normal"
                 },
                 {
@@ -12972,7 +13121,7 @@
                   "fill": "#1F2937",
                   "content": "70",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "600"
                 },
                 {
@@ -12981,7 +13130,7 @@
                   "fill": "#1F2937",
                   "content": "箱，1箱",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "normal"
                 },
                 {
@@ -12990,7 +13139,7 @@
                   "fill": "#1F2937",
                   "content": "4",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "600"
                 },
                 {
@@ -12999,7 +13148,7 @@
                   "fill": "#1F2937",
                   "content": "盒",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 14,
+                  "fontSize": 16,
                   "fontWeight": "normal"
                 }
               ]

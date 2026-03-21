@@ -24,6 +24,8 @@
                 onAction="#onClear"
                 minHeight="40" prefHeight="40" style="-fx-padding:0 14px;"/>
         <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
+        <!-- 右侧占位，与输入框同优先级平分剩余空间，使输入框约占 50% 宽 -->
+        <Region HBox.hgrow="ALWAYS"/>
     </HBox>
 
     <!-- 主内容区：左右分栏 -->
@@ -51,16 +53,11 @@
                        styleClass="sw2-table" fixedCellSize="52"
                        visible="false" managed="false">
                 <columns>
-                    <TableColumn fx:id="colSeq" text="序号"
-                                 prefWidth="60" minWidth="50" maxWidth="70"/>
-                    <TableColumn fx:id="colL1"  text="第一层（瓶码）"
-                                 prefWidth="210" minWidth="130"/>
-                    <TableColumn fx:id="colL2"  text="第二层（盒码）"
-                                 prefWidth="210" minWidth="130"/>
-                    <TableColumn fx:id="colL3"  text="第三层（箱码）"
-                                 prefWidth="160" minWidth="100"/>
-                    <TableColumn fx:id="colL4"  text="第四层（垛码）"
-                                 prefWidth="160" minWidth="100"/>
+                    <TableColumn fx:id="colSeq" text="序号"  prefWidth="55"/>
+                    <TableColumn fx:id="colL1"  text="第一层（瓶码）" prefWidth="220"/>
+                    <TableColumn fx:id="colL2"  text="第二层（盒码）" prefWidth="160"/>
+                    <TableColumn fx:id="colL3"  text="第三层（箱码）" prefWidth="120"/>
+                    <TableColumn fx:id="colL4"  text="第四层（垛码）" prefWidth="120"/>
                 </columns>
                 <placeholder>
                     <Label text="暂无数据" style="-fx-text-fill:#9CA3AF; -fx-font-size:16px;"/>

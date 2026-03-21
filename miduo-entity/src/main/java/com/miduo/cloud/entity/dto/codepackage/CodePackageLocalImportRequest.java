@@ -14,5 +14,6 @@ public class CodePackageLocalImportRequest {
     private String packageName;
     private String fileName;
     private String password;
+    private String remark;
     private List<String> codes;
 }

@@ -25,16 +25,39 @@
         </VBox>
 
         <!-- 开始采集提示（填充剩余空间）-->
-        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="0">
+        <VBox styleClass="shiwan-m2-card" VBox.vgrow="ALWAYS" spacing="12">
             <Label text="开始采集提示" styleClass="shiwan-m2-card-title"/>
-            <!-- 提示区居中 -->
-            <VBox VBox.vgrow="ALWAYS" alignment="CENTER" spacing="16">
+
+            <!-- 码输入区：输入框 + 加入按钮 -->
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <TextField fx:id="codeInput"
+                           promptText="扫描或输入瓶码"
+                           onAction="#onCodeInputSubmit"
+                           disable="true"
+                           HBox.hgrow="ALWAYS"
+                           style="-fx-min-height: 44px; -fx-font-size: 15px;
+                                  -fx-border-color: #D1D5DB; -fx-border-radius: 8;
+                                  -fx-background-radius: 8; -fx-background-color: #F9FAFB;
+                                  -fx-padding: 0 12; -fx-font-family: 'Microsoft YaHei';"/>
+                <Button fx:id="addBtn" text="加入"
+                        onAction="#onCodeInputSubmit"
+                        disable="true"
+                        style="-fx-min-height: 44px; -fx-min-width: 72px; -fx-pref-width: 72px;
+                               -fx-background-color: #D1D5DB; -fx-text-fill: white;
+                               -fx-font-size: 15px; -fx-font-weight: bold;
+                               -fx-background-radius: 8; -fx-border-width: 0;
+                               -fx-effect: null; -fx-font-family: 'Microsoft YaHei';"/>
+            </HBox>
+
+            <!-- 当前应扫提示（蓝底圆角卡片，固定高度）-->
+            <VBox alignment="CENTER" spacing="12" prefHeight="120" minHeight="120" maxHeight="120"
+                  style="-fx-background-color: #EEF5FF;
+                         -fx-background-radius: 10;
+                         -fx-border-color: #C7DBFF;
+                         -fx-border-radius: 10;
+                         -fx-padding: 18 22;">
                 <Label text="当前应扫" styleClass="sw2-prompt-main"/>
-                <HBox alignment="CENTER" spacing="12">
-                    <Label fx:id="promptCode1" text="瓶码" styleClass="sw2-prompt-code-active"/>
-                    <Label text="/" styleClass="sw2-prompt-divider"/>
-                    <Label fx:id="promptCode2" text="盒码" styleClass="sw2-prompt-code-wait"/>
-                </HBox>
+                <Label fx:id="promptCodeLabel" text="瓶码" styleClass="sw2-prompt-code-active"/>
             </VBox>
         </VBox>
     </VBox>

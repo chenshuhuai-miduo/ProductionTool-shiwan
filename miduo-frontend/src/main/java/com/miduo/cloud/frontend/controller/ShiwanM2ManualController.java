@@ -53,8 +53,9 @@ public class ShiwanM2ManualController implements Initializable {
     // ==================== FXML 注入 ====================
 
     @FXML private TextField bottlesPerBoxField;
-    @FXML private Label     promptCode1;
-    @FXML private Label     promptCode2;
+    @FXML private TextField codeInput;
+    @FXML private Button    addBtn;
+    @FXML private Label     promptCodeLabel;
     @FXML private ListView<ShiwanM2MainController.LogEntry> dataLogList;
     @FXML private ListView<ShiwanM2MainController.LogEntry> opLogList;
     @FXML private Label     currentCountLabel;
@@ -118,19 +119,17 @@ public class ShiwanM2ManualController implements Initializable {
 
     private void refreshPrompt() {
         if (waitingBottle) {
-            promptCode1.getStyleClass().remove("sw2-prompt-code-wait");
-            promptCode1.getStyleClass().add("sw2-prompt-code-active");
-            promptCode2.getStyleClass().remove("sw2-prompt-code-active");
-            promptCode2.getStyleClass().add("sw2-prompt-code-wait");
-            promptCode1.setText("瓶码");
-            promptCode2.setText("盒码");
+            promptCodeLabel.setText("瓶码");
+            promptCodeLabel.getStyleClass().remove("sw2-prompt-code-red");
+            if (!promptCodeLabel.getStyleClass().contains("sw2-prompt-code-active"))
+                promptCodeLabel.getStyleClass().add("sw2-prompt-code-active");
+            if (codeInput != null) codeInput.setPromptText("扫描或输入瓶码");
         } else {
-            promptCode1.getStyleClass().remove("sw2-prompt-code-active");
-            promptCode1.getStyleClass().add("sw2-prompt-code-wait");
-            promptCode2.getStyleClass().remove("sw2-prompt-code-wait");
-            promptCode2.getStyleClass().add("sw2-prompt-code-active");
-            promptCode1.setText("瓶码");
-            promptCode2.setText("盒码");
+            promptCodeLabel.setText("盒码");
+            promptCodeLabel.getStyleClass().remove("sw2-prompt-code-active");
+            if (!promptCodeLabel.getStyleClass().contains("sw2-prompt-code-red"))
+                promptCodeLabel.getStyleClass().add("sw2-prompt-code-red");
+            if (codeInput != null) codeInput.setPromptText("扫描或输入盒码");
         }
     }
 
@@ -212,6 +211,12 @@ public class ShiwanM2ManualController implements Initializable {
 
         bottlesPerBoxField.setEditable(false);
 
+        codeInput.setDisable(false);
+        addBtn.setDisable(false);
+        addBtn.setStyle(addBtn.getStyle()
+                .replace("-fx-background-color: #D1D5DB", "-fx-background-color: #2563EB"));
+        Platform.runLater(() -> codeInput.requestFocus());
+
         String now = now();
         addOpLog(now + "  手工采集已启动，请按提示扫码", ShiwanM2MainController.LogType.INFO);
         addDataLog(now + "  系统就绪，请扫描第1个瓶码", ShiwanM2MainController.LogType.INFO);
@@ -228,12 +233,45 @@ public class ShiwanM2ManualController implements Initializable {
         startBtn.getStyleClass().remove("running");
 
         bottlesPerBoxField.setEditable(true);
+
+        codeInput.setDisable(true);
+        codeInput.clear();
+        addBtn.setDisable(true);
+        addBtn.setStyle(addBtn.getStyle()
+                .replace("-fx-background-color: #2563EB", "-fx-background-color: #D1D5DB"));
+
+        // 丢弃未完成关联的临时瓶码，重置计数和阶段
+        if (currentBottles > 0) {
+            addOpLog(now() + "  已丢弃未完成关联的 " + currentBottles + " 个瓶码，下次从瓶码重新开始",
+                    ShiwanM2MainController.LogType.INFO);
+        }
+        currentBottles = 0;
+        pendingBottleCodes.clear();
+        waitingBottle = true;
+        currentCountLabel.setText("0");
+        refreshPrompt();
+
         addOpLog(now() + "  手工采集已停止", ShiwanM2MainController.LogType.INFO);
         OperateLogBuilder.create()
                 .module(ModuleNameEnum.MANUAL_COLLECT)
                 .operateType(OperateTypeEnum.STOP)
                 .content("手工采集已停止，累计完成盒关联：" + totalBoxes + " 盒")
                 .saveAsync();
+    }
+
+    /**
+     * 码输入框按 Enter 键或点击「加入」按钮时触发。
+     * 提交后：清空输入框、保持焦点，路由到 onScanCode 执行校验逻辑。
+     */
+    @FXML
+    private void onCodeInputSubmit() {
+        if (!isRunning) return;
+        String code = codeInput.getText() != null ? codeInput.getText().trim() : "";
+        codeInput.clear();
+        codeInput.requestFocus();
+        if (!code.isEmpty()) {
+            onScanCode(code);
+        }
     }
 
     @FXML

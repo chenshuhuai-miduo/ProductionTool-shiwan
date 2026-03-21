@@ -54,7 +54,6 @@ public class ShiwanM2PackageController implements Initializable {
     @FXML private DatePicker startDatePicker;
     @FXML private DatePicker endDatePicker;
     @FXML private ComboBox<String> importTypeCombo;
-    @FXML private ComboBox<String> statusCombo;
     @FXML private ComboBox<String> packageTypeCombo;
 
     @FXML private TableView<PackageRow> packageTable;
@@ -116,25 +115,23 @@ public class ShiwanM2PackageController implements Initializable {
 
         colStatus.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().statusName));
         colStatus.setCellFactory(col -> new TableCell<>() {
-            private final Label badge = new Label();
             @Override
             protected void updateItem(String status, boolean empty) {
                 super.updateItem(status, empty);
+                setGraphic(null);
                 if (empty || status == null) {
-                    setGraphic(null);
+                    setText(null);
+                    setStyle("");
                     return;
                 }
-                badge.setText(status);
-                badge.getStyleClass().removeAll("sw2-badge-green", "sw2-badge-gray", "sw2-badge-orange");
+                setText(status);
                 if ("正常".equals(status)) {
-                    badge.getStyleClass().add("sw2-badge-green");
+                    setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
                 } else if ("已删除".equals(status)) {
-                    badge.getStyleClass().add("sw2-badge-gray");
+                    setStyle("-fx-text-fill: #9CA3AF;");
                 } else {
-                    badge.getStyleClass().add("sw2-badge-orange");
+                    setStyle("-fx-text-fill: #D97706;");
                 }
-                setGraphic(badge);
-                setText(null);
             }
         });
 
@@ -143,7 +140,7 @@ public class ShiwanM2PackageController implements Initializable {
             private final Button deleteBtn = new Button("删除");
             private final HBox box = new HBox(6, viewBtn, deleteBtn);
             {
-                box.setAlignment(Pos.CENTER_LEFT);
+                box.setAlignment(Pos.CENTER);
                 viewBtn.getStyleClass().add("sw2-btn-sm-blue");
                 deleteBtn.getStyleClass().add("sw2-btn-sm-red");
                 viewBtn.setOnAction(event -> {
@@ -162,6 +159,7 @@ public class ShiwanM2PackageController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
+                setAlignment(Pos.CENTER);
                 if (empty) {
                     setGraphic(null);
                     return;
@@ -196,7 +194,7 @@ public class ShiwanM2PackageController implements Initializable {
             controller.setOnImportSuccess(() -> loadPage(1));
 
             Stage stage = new Stage();
-            stage.setTitle("码包导入");
+            stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
             stage.setScene(new Scene(root));
             stage.initModality(Modality.WINDOW_MODAL);
             stage.initOwner(packageTable.getScene().getWindow());
@@ -219,7 +217,6 @@ public class ShiwanM2PackageController implements Initializable {
         startDatePicker.setValue(null);
         endDatePicker.setValue(null);
         importTypeCombo.setValue("全部");
-        statusCombo.setValue("全部");
         packageTypeCombo.setValue("全部");
         pageSizeCombo.setValue("20");
         pageSize = 20;
@@ -338,7 +335,7 @@ public class ShiwanM2PackageController implements Initializable {
     private void loadPage(int targetPage) {
         String keyword = trimToNull(keywordField.getText());
         Integer importSource = resolveImportSource(importTypeCombo.getValue());
-        Integer status = resolveStatus(statusCombo.getValue());
+        Integer status = null; // 状态筛选已移除，默认查全部
         Integer packageType = resolvePackageType(packageTypeCombo.getValue());
         LocalDateTime startTime = startDatePicker.getValue() == null ? null
                 : LocalDateTime.of(startDatePicker.getValue(), LocalTime.MIN);

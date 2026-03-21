@@ -389,7 +389,18 @@
     -fx-background-insets: 0;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
-    -fx-hbar-policy: never;
+}
+
+/* 强制隐藏日志 ListView 横向滚动条（-fx-hbar-policy 对 ListView 无效，需直接操作内部节点） */
+.shiwan-m2-log-list .scroll-bar:horizontal,
+.shiwan-m2-log-list .scroll-bar:horizontal .track,
+.shiwan-m2-log-list .scroll-bar:horizontal .thumb,
+.shiwan-m2-log-list .scroll-bar:horizontal .increment-button,
+.shiwan-m2-log-list .scroll-bar:horizontal .decrement-button {
+    -fx-max-height: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    visibility: hidden;
 }
 
 .shiwan-m2-log-list .list-cell {
@@ -406,55 +417,40 @@
     -fx-background-color: #F3F4F6;
 }
 
-/* 日志条目标签 */
+/* 日志条目标签：无背景无边框，仅文字颜色区分（文档规定） */
 .log-cell-label {
     -fx-wrap-text: true;
     -fx-padding: 3px 8px 3px 10px;
-    -fx-background-radius: 0 4px 4px 0;
     -fx-font-size: 16px;
     -fx-max-width: Infinity;
-}
-
-/* 数据 - 黑字灰边 */
-.log-cell-data {
-    -fx-text-fill: #1F2937;
-    -fx-border-color: transparent transparent transparent #D1D5DB;
-    -fx-border-width: 0 0 0 3px;
     -fx-background-color: transparent;
 }
 
-/* 成功 - 绿字绿边 */
+/* 数据接收区 普通数据 - 黑色文字 */
+.log-cell-data {
+    -fx-text-fill: #1F2937;
+}
+
+/* 数据接收区 成功（盒码/箱码关联、满垛）- 绿色文字 */
 .log-cell-success {
     -fx-text-fill: #16A34A;
-    -fx-border-color: transparent transparent transparent #16A34A;
-    -fx-border-width: 0 0 0 3px;
-    -fx-background-color: #F0FDF4;
     -fx-font-weight: bold;
 }
 
-/* 警告 - 黄字黄边 */
+/* 警告 - 橙黄色文字 */
 .log-cell-warn {
-    -fx-text-fill: #92400E;
-    -fx-border-color: transparent transparent transparent #F59E0B;
-    -fx-border-width: 0 0 0 3px;
-    -fx-background-color: #FFFBEB;
+    -fx-text-fill: #B45309;
 }
 
-/* 错误/报警 - 红字红边 */
+/* 报警信息区 错误/报警 - 红色文字 */
 .log-cell-error {
     -fx-text-fill: #DC2626;
-    -fx-border-color: transparent transparent transparent #DC2626;
-    -fx-border-width: 0 0 0 3px;
-    -fx-background-color: #FEF2F2;
     -fx-font-weight: bold;
 }
 
-/* 操作日志 - 信息类 */
+/* 操作日志 信息类 - 深灰色文字 */
 .log-cell-info {
     -fx-text-fill: #374151;
-    -fx-border-color: transparent transparent transparent #9CA3AF;
-    -fx-border-width: 0 0 0 3px;
-    -fx-background-color: #F9FAFB;
 }
 
 /* ============================================================
@@ -710,10 +706,32 @@
     -fx-font-weight: bold;
 }
 
-.shiwan-m2-running-label {
+/* 采集中脉冲灯 — 外层脉冲环（Timeline 动画控制，初始透明） */
+.shiwan-m2-running-pulse-ring {
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+    -fx-max-width: 16px;
+    -fx-max-height: 16px;
+    -fx-background-color: #22C55E;
+    -fx-background-radius: 8px;
+    -fx-opacity: 0;
+}
+
+/* 采集中脉冲灯 — 内层实心点 */
+.shiwan-m2-running-dot {
+    -fx-min-width: 8px;
+    -fx-min-height: 8px;
+    -fx-max-width: 8px;
+    -fx-max-height: 8px;
+    -fx-background-color: #22C55E;
+    -fx-background-radius: 4px;
+}
+
+/* 采集中文字 */
+.shiwan-m2-running-text {
     -fx-text-fill: #16A34A;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
 }
 
 /* ============================================================
@@ -990,12 +1008,16 @@
     -fx-alignment: CENTER;
 }
 
+.sw2-table .table-row-cell {
+    -fx-background-color: white;
+}
+
 .sw2-table .table-row-cell:odd {
     -fx-background-color: white;
 }
 
 .sw2-table .table-row-cell:even {
-    -fx-background-color: #FAFAFA;
+    -fx-background-color: white;
 }
 
 .sw2-table .table-row-cell:selected {
@@ -1004,10 +1026,29 @@
 
 .sw2-table .table-row-cell:selected .table-cell {
     -fx-text-fill: #1F2937;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent transparent #BFDBFE transparent;
 }
 
-.sw2-table .table-row-cell:hover {
-    -fx-background-color: #F9FAFB;
+/* 码包管理表格专用：禁用行选中高亮（操作列按钮触发，不需要选中态） */
+.sw2-table-no-select .table-row-cell:selected {
+    -fx-background-color: transparent;
+}
+
+.sw2-table-no-select .table-row-cell:selected .table-cell {
+    -fx-text-fill: #374151;
+    -fx-font-weight: normal;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+}
+
+.sw2-table .table-row-cell:hover:!selected {
+    -fx-background-color: #F5F9FF;
+}
+
+/* 产品编号列选中时蓝色，由 cell factory 通过 style-class 控制 */
+.sw2-pronumber-selected {
+    -fx-text-fill: #2563EB;
+    -fx-font-weight: bold;
 }
 
 /* ---- 分页栏 ---- */
@@ -1148,6 +1189,7 @@
 /* ---- 手工采集 提示区 ---- */
 .sw2-prompt-main       { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #374151; }
 .sw2-prompt-code-active{ -fx-font-size: 44px; -fx-font-weight: bold; -fx-text-fill: #2563EB; }
+.sw2-prompt-code-red   { -fx-font-size: 44px; -fx-font-weight: bold; -fx-text-fill: #DC2626; }
 .sw2-prompt-code-wait  { -fx-font-size: 44px; -fx-font-weight: bold; -fx-text-fill: #D1D5DB; }
 .sw2-prompt-divider    { -fx-font-size: 32px; -fx-text-fill: #9CA3AF; }
 

@@ -85,7 +85,6 @@
                                     <Label text="生产单号" styleClass="shiwan-m2-form-label-small"
                                            minWidth="68"/>
                                     <TextField fx:id="orderNumField"
-                                               text="20241201001"
                                                styleClass="shiwan-m2-order-input"
                                                prefHeight="40" minHeight="40" maxHeight="40"
                                                HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
@@ -251,13 +250,13 @@
                                             onAction="#onToggleAlarm"
                                             maxWidth="Infinity"
                                             GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                                    <Button text="强制满垛"
+                                    <Button fx:id="forcePalletBtn" text="强制满垛"
                                             styleClass="shiwan-m2-ctrl-btn-green"
                                             onAction="#onForcePallet"
                                             maxWidth="Infinity"
                                             GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
-                                    <Button text="提取工单未成垛"
+                                    <Button fx:id="extractUnfinishedBtn" text="提取工单未成垛"
                                             styleClass="shiwan-m2-ctrl-btn-primary"
                                             onAction="#onExtractUnfinished"
                                             maxWidth="Infinity"
@@ -332,18 +331,23 @@
             <!-- 弹性空白 -->
             <Region HBox.hgrow="ALWAYS"/>
 
+            <!-- 采集中脉冲动画（采集时可见，位于授权标签左边） -->
+            <HBox fx:id="runningStatusBox" alignment="CENTER" spacing="6"
+                  visible="false" managed="false">
+                <!-- StackPane：外层脉冲环 + 内层实心点叠放（不限 max 允许脉冲环视觉溢出） -->
+                <StackPane prefWidth="16" prefHeight="16">
+                    <Region fx:id="runningPulseRing" styleClass="shiwan-m2-running-pulse-ring"/>
+                    <Region fx:id="runningDot" styleClass="shiwan-m2-running-dot"/>
+                </StackPane>
+                <Label text="采集中" styleClass="shiwan-m2-running-text"/>
+            </HBox>
+
             <!-- 许可证状态 -->
             <HBox fx:id="licenseStatusBox" styleClass="license-status-box" alignment="CENTER" spacing="5"
                   onMouseClicked="#onLicenseStatusClick">
                 <Region fx:id="licenseStatusDot" styleClass="license-status-dot"/>
                 <Label fx:id="licenseStatusLabel" text="许可证：未激活" styleClass="license-status-text"/>
             </HBox>
-
-            <!-- 运行状态 -->
-            <Label fx:id="runningStatusLabel"
-                   text="待机"
-                   styleClass="shiwan-m2-running-label"
-                   visible="false" managed="false"/>
 
             <!-- 当前时间 -->
             <Label fx:id="currentTimeLabel"

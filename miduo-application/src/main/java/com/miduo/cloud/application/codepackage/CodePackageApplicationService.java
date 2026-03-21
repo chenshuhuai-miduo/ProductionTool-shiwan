@@ -197,6 +197,14 @@ public class CodePackageApplicationService {
                     true
             );
             CodePackageImportPO importPO = codePackageImportMapper.selectById(persistResult.getImportId());
+            // 将用户手动填写的备注拼接到自动生成的过滤信息前面
+            String userRemark = request.getRemark() != null ? request.getRemark().trim() : "";
+            if (!userRemark.isEmpty()) {
+                String autoRemark = importPO.getRemark() != null ? importPO.getRemark() : "";
+                String combined = autoRemark.isEmpty() ? userRemark : userRemark + "；" + autoRemark;
+                importPO.setRemark(combined);
+                codePackageImportMapper.updateById(importPO);
+            }
             return ApiResult.success("本地导入成功", convertToImportVO(importPO));
         } catch (Exception e) {
             e.printStackTrace();
