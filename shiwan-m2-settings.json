@@ -47,7 +47,24 @@
   "alarm" : {
     "soundAlarmEnabled" : true,
     "alarmDelayMs" : 100,
-    "alarmIntervalMs" : 2000
+    "alarmIntervalMs" : 2000,
+    "rejectTriggerDelayMs" : 0,
+    "rejectRetractTimeMs" : 2000
+  },
+  "deviceSignal" : {
+    "cmdAllOff" : "21 0F 00 00 00 08 01 00 FC 8D",
+    "cmdNormalOn" : "21 0F 00 00 00 08 01 04 FD 4E",
+    "cmdNormalWithReject" : "21 0F 00 00 00 08 01 05 3C 8E",
+    "cmdUploadSuccess" : "21 0F 00 00 00 08 01 06 7C 8F",
+    "cmdUploadSuccessWithReject" : "21 0F 00 00 00 08 01 07 BD 4F",
+    "cmdUploadFail" : "21 0F 00 00 00 08 01 0C FC 88",
+    "cmdUploadFailWithReject" : "21 0F 00 00 00 08 01 0D 3D 48",
+    "alarmOpenHex" : "",
+    "alarmCloseHex" : "",
+    "alarmLightOnHex" : "",
+    "alarmLightOffHex" : "",
+    "rejectTriggerHex" : "",
+    "rejectRetractHex" : ""
   },
   "api" : {
     "baseUrl" : "https://openapi.t.miduonet.com",
@@ -58,7 +75,7 @@
     "getSyncResultPath" : "/api/sign/md.fc.Store/v1/GetSyncCodeAndVirtualRelationResult",
     "codePackageQueryPath" : "/api/sign/md.fc.LevelPackage/v1/querycompleted",
     "productsListPath" : "/api/sign/md.shop.products/v1/list",
-    "codeSubstitutionPath" : "/api/v2/CodeRelation/CodeSubstitution",
+    "codeSubstitutionPath" : "/api/sign/md.fc.store/v1/CodeSubstitution",
     "appId" : "m8FKmNPfSWuQ7U4LtZNYpYRb"
   },
   "warehouseNo" : "001",

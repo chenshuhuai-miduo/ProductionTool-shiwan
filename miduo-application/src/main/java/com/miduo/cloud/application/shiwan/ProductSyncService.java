@@ -110,44 +110,65 @@ public class ProductSyncService {
     public int syncProducts() {
         try {
             ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
-            // 准备请求数据
-            String queryJson = "{\"prostate\":\"0\",\"noprotype\":\"0\"}";
-            Integer page = 1;
-            Integer pageSize = 1000;
-            String sort = "";
-            Map<String, Object> requestData = new HashMap<>();
-            requestData.put("page", page);
-            requestData.put("pagesize", pageSize);
-            requestData.put("query", queryJson);
-            requestData.put("sort", sort);
-
-            // 获取时间戳
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-            String time = sdf.format(new Date());
-            String nonce = "123";
-
-            // 生成签名
-            String sign = getSign(time, nonce, trim(cfg.getApi().getAppSecret()), requestData);
-
-            // 设置请求头
-            Map<String, String> headers = new HashMap<>();
-            headers.put("timestamp", time);
-            headers.put("appid", trim(cfg.getApi().getAppId()));
-            headers.put("nonce", nonce);
-            headers.put("sign", sign);
-            headers.put("Content-type", "application/json");
-
-            // 发送请求
             String baseUrl = trim(cfg.getApi().getBaseUrl());
             String path = trim(cfg.getApi().getProductsListPath());
             if (baseUrl == null || path == null) {
                 throw new RuntimeException("缺少开放平台配置：baseUrl 或 appId/appSecret 或 productsListPath");
             }
             String url = baseUrl + path;
-            String jsonStr = MAPPER.writeValueAsString(requestData);
-            String response = sendPostRequest(url, headers, jsonStr);
-            System.out.println("Response: " + response);
-            return parseAndPersist(response);
+            String queryJson = "{\"prostate\":\"0\",\"noprotype\":\"0\"}";
+            int pageSize = 1000;
+            String sort = "";
+
+            // 分页循环拉取：每次取 1000 条，若返回条数等于 1000 则继续拉下一页，直到返回条数 < 1000 为止
+            List<ProductInfoPO> allItems = new ArrayList<>();
+            int currentPage = 1;
+            while (true) {
+                Map<String, Object> requestData = new HashMap<>();
+                requestData.put("page", currentPage);
+                requestData.put("pagesize", pageSize);
+                requestData.put("query", queryJson);
+                requestData.put("sort", sort);
+
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+                String time = sdf.format(new Date());
+                String nonce = "123";
+                String sign = getSign(time, nonce, trim(cfg.getApi().getAppSecret()), requestData);
+
+                Map<String, String> headers = new HashMap<>();
+                headers.put("timestamp", time);
+                headers.put("appid", trim(cfg.getApi().getAppId()));
+                headers.put("nonce", nonce);
+                headers.put("sign", sign);
+                headers.put("Content-type", "application/json");
+
+                String jsonStr = MAPPER.writeValueAsString(requestData);
+                String response = sendPostRequest(url, headers, jsonStr);
+                System.out.println("[产品同步] 第" + currentPage + "页响应: " + response);
+
+                List<ProductInfoPO> pageItems = parseItems(response);
+                allItems.addAll(pageItems);
+
+                if (pageItems.size() < pageSize) {
+                    // 返回条数小于 pageSize，说明已是最后一页
+                    break;
+                }
+                currentPage++;
+            }
+
+            if (allItems.isEmpty()) return 0;
+
+            // 全量覆盖：先清空本地产品表，再写入所有页汇总数据
+            productInfoMapper.delete(new QueryWrapper<>());
+            int total = 0;
+            int batchSize = 500;
+            for (int i = 0; i < allItems.size(); i += batchSize) {
+                List<ProductInfoPO> sub = allItems.subList(i, Math.min(i + batchSize, allItems.size()));
+                productInfoMapper.batchUpsert(sub);
+                total += sub.size();
+            }
+            System.out.println("[产品同步] 共同步 " + total + " 条产品数据（共" + (currentPage) + "页）");
+            return total;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -199,9 +220,10 @@ public class ProductSyncService {
         return result;
     }
 
-    private int parseAndPersist(String json) throws Exception {
+    /** 解析单页接口响应，返回产品列表（不落库），供分页循环调用 */
+    private List<ProductInfoPO> parseItems(String json) throws Exception {
         JsonNode root = MAPPER.readTree(json);
-        if (root == null) return 0;
+        if (root == null) return Collections.emptyList();
         if (root.has("return_code")) {
             String code = root.get("return_code").asText();
             if (!"0".equals(code)) {
@@ -209,26 +231,24 @@ public class ProductSyncService {
                 throw new RuntimeException(msg);
             }
         } else if (root.has("error_code") && root.get("error_code").asInt() != 0) {
-            // 兼容旧返回格式
             String msg = root.has("error_msg") ? root.get("error_msg").asText() : "接口返回错误";
             throw new RuntimeException(msg);
         }
         JsonNode data = root.has("return_data") ? root.get("return_data") : null;
         JsonNode list = data != null ? data.get("data_list") : null;
         if (list == null && data != null) {
-            // 兼容旧字段名
             list = data.get("datalist");
         }
-        if (list == null) return 0;
-        List<JsonNode> items = new ArrayList<>();
+        if (list == null) return Collections.emptyList();
+        List<JsonNode> nodes = new ArrayList<>();
         if (list.isArray()) {
-            list.forEach(items::add);
+            list.forEach(nodes::add);
         } else if (list.isObject()) {
-            items.add(list);
+            nodes.add(list);
         }
-        List<ProductInfoPO> batch = new ArrayList<>(items.size());
+        List<ProductInfoPO> batch = new ArrayList<>(nodes.size());
         LocalDateTime now = LocalDateTime.now();
-        for (JsonNode node : items) {
+        for (JsonNode node : nodes) {
             String productNo = getText(node, "pronumber", getText(node, "productno", null));
             if (productNo == null || productNo.isEmpty()) continue;
             ProductInfoPO po = new ProductInfoPO();
@@ -241,18 +261,7 @@ public class ProductSyncService {
             po.setUpdatedAt(now);
             batch.add(po);
         }
-        if (batch.isEmpty()) return 0;
-        // 全量覆盖：先清空本地产品表，再写入最新数据
-        productInfoMapper.delete(new QueryWrapper<>());
-        // 每批 500 条，避免单条 SQL 过长
-        int total = 0;
-        int batchSize = 500;
-        for (int i = 0; i < batch.size(); i += batchSize) {
-            List<ProductInfoPO> sub = batch.subList(i, Math.min(i + batchSize, batch.size()));
-            productInfoMapper.batchUpsert(sub);
-            total += sub.size();
-        }
-        return total;
+        return batch;
     }
 
     private String getText(JsonNode n, String field, String def) {

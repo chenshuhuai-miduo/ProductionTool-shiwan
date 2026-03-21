@@ -445,6 +445,122 @@
                     </VBox>
                 </Tab>
 
+                <!-- 设备信号配置 -->
+                <Tab text="设备信号">
+                    <ScrollPane fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER">
+                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
+                            <Label text="设备控制信号配置"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+                            <Label text="16进制格式，支持：01 0A FF  或  010AFF  或  01:0A:FF（空格可选，不区分大小写）"
+                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <!-- 业务状态指令（系统自动发送，已预置协议值） -->
+                            <Label text="一、业务状态指令（系统自动发送至报警器设备，已预置协议值）"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="全关" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdAllOffField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="正常运行（工控机灯+龙门架灯）" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdNormalOnField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="正常运行+剔除中" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdNormalWithRejectField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="上传成功（三灯，1分钟后切回正常）" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdUploadSuccessField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="上传成功期间+剔除" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdUploadSuccessWithRejectField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="上传失败报警（红灯蜂鸣）" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdUploadFailField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="上传失败报警+剔除" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="cmdUploadFailWithRejectField" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+
+                            <!-- 剔除时序配置 -->
+                            <Label text="二、剔除时序配置"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="触发剔除延时（ms）" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="rejectTriggerDelayField" promptText="0" HBox.hgrow="ALWAYS" maxWidth="120"/>
+                                <Label text="检测到需要剔除后，等待该时间再发送信号"
+                                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="剔除收回时间（ms）" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="rejectRetractTimeField" promptText="2000" HBox.hgrow="ALWAYS" maxWidth="120"/>
+                                <Label text="发送剔除信号后，等待该时间自动发送收回信号"
+                                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+
+                            <!-- 手动按钮信号 -->
+                            <Label text="三、主界面手动按钮信号（用户自定义）"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="「打开报警」按钮信号" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="alarmOpenHexField" promptText="如 01 0A" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="「关闭报警」按钮信号" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="alarmCloseHexField" promptText="如 00" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="「测试报警灯亮」按钮信号" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="alarmLightOnHexField" promptText="如 02" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="「测试报警灯灭」按钮信号" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="alarmLightOffHexField" promptText="如 00" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="「触发剔除」按钮信号" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="rejectTriggerHexField" promptText="如 01" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="「收回剔除」按钮信号" minWidth="200"
+                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="rejectRetractHexField" promptText="如 00" HBox.hgrow="ALWAYS" maxWidth="400"/>
+                            </HBox>
+
+                            <HBox>
+                                <Button text="保存设备信号配置"
+                                        styleClass="primary-button"
+                                        onAction="#onSaveDeviceSignalConfig"/>
+                            </HBox>
+                        </VBox>
+                    </ScrollPane>
+                </Tab>
 
             </TabPane>
         </Tab>

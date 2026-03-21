@@ -246,9 +246,9 @@
         maxWidth="Infinity"
         GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
-                                    <Button text="关闭报警"
+                                    <Button fx:id="alarmToggleBtn" text="关闭报警"
                                             styleClass="shiwan-m2-ctrl-btn-red"
-                                            onAction="#onCloseAlarm"
+                                            onAction="#onToggleAlarm"
                                             maxWidth="Infinity"
                                             GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                                     <Button text="强制满垛"
@@ -262,9 +262,9 @@
                                             onAction="#onExtractUnfinished"
                                             maxWidth="Infinity"
                                             GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                                    <Button text="收回剔除"
+                                    <Button fx:id="rejectToggleBtn" text="收回剔除"
                                             styleClass="shiwan-m2-ctrl-btn-outline-blue"
-                                            onAction="#onRetractReject"
+                                            onAction="#onToggleReject"
                                             maxWidth="Infinity"
                                             GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 

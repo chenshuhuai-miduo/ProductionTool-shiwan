@@ -1,5 +1,8 @@
 package com.miduo.cloud.frontend.service;
 
+import com.miduo.cloud.frontend.config.ShiwanM2Settings;
+import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -115,8 +118,30 @@ public class ShiwanM2HardwareService {
     /** 继电器板在 DeviceConnectionManager 中的类别代码 */
     private static final int CATEGORY_RELAY_BOARD  = 8;
 
-    /** 绿灯自动熄灭延时（秒），文档规定 1 分钟 */
-    private static final long GREEN_AUTO_OFF_SECONDS = 60;
+    /** 上传成功灯自动恢复正常的延时（秒），文档规定 1 分钟 */
+    private static final long UPLOAD_SUCCESS_REVERT_SECONDS = 60;
+
+    // ==================== 状态机 ====================
+
+    /** 设备整体基础状态枚举 */
+    public enum BaseState {
+        /** 正常运行（工控机灯+龙门架灯亮） */
+        NORMAL,
+        /** 上传成功（三灯亮，60秒后自动切回 NORMAL） */
+        UPLOAD_SUCCESS,
+        /** 上传失败报警（红灯+蜂鸣，持续到手动关闭） */
+        UPLOAD_FAIL
+    }
+
+    /** 当前基础状态 */
+    private volatile BaseState currentBaseState = BaseState.NORMAL;
+    /** 剔除是否激活（激活时发送含剔除位的组合命令） */
+    private volatile boolean rejectActive = false;
+
+    /** 上传成功灯自动恢复计时器 */
+    private ScheduledFuture<?> uploadSuccessRevertFuture;
+    /** 剔除自动收回计时器 */
+    private ScheduledFuture<?> rejectRetractFuture;
 
     // ==================== 单例 ====================
 
@@ -129,9 +154,6 @@ public class ShiwanM2HardwareService {
                 t.setDaemon(true);
                 return t;
             });
-
-    /** 正在运行的绿灯熄灭计时器（非 null 时取消旧计时再启新计时） */
-    private ScheduledFuture<?> greenOffFuture;
 
     private ShiwanM2HardwareService() {
         this.deviceManager = DeviceConnectionManager.getInstance();
@@ -146,70 +168,228 @@ public class ShiwanM2HardwareService {
         return INSTANCE;
     }
 
-    // ==================== 报警灯控制 ====================
+    // ==================== 状态机核心方法 ====================
 
     /**
-     * 绿灯常亮（上传成功）。
-     * 60 秒后自动调用 {@link #allLightsOff()} 熄灭。
+     * 进入正常运行状态（工控机灯+龙门架灯亮）。
+     * 适用场景：开始采集、收回剔除后、关闭报警恢复正常。
      */
-    public void greenLightOn() {
-        cancelGreenOffTimer();
-        boolean sent = send(CATEGORY_ALARM, CMD_GREEN_ON, "绿灯亮");
-        send(CATEGORY_RELAY_BOARD, RELAY_CMD_GREEN_ON, "继电器板绿灯亮");
-        if (sent) {
-            greenOffFuture = scheduler.schedule(() -> {
-                System.out.println("[硬件] 绿灯自动熄灭（60s）");
-                send(CATEGORY_ALARM, CMD_ALL_OFF, "绿灯自动熄灭");
-                send(CATEGORY_RELAY_BOARD, RELAY_CMD_ALARM_OFF, "继电器板绿灯自动熄灭");
-            }, GREEN_AUTO_OFF_SECONDS, TimeUnit.SECONDS);
+    public void enterNormalState() {
+        cancelUploadSuccessTimer();
+        currentBaseState = BaseState.NORMAL;
+        sendCurrentState("进入正常状态");
+    }
+
+    /**
+     * 上传成功：发送上传成功命令（三灯亮），60秒后自动恢复正常状态。
+     */
+    public void onUploadSuccess() {
+        cancelUploadSuccessTimer();
+        currentBaseState = BaseState.UPLOAD_SUCCESS;
+        sendCurrentState("上传成功");
+        uploadSuccessRevertFuture = scheduler.schedule(() -> {
+            if (currentBaseState == BaseState.UPLOAD_SUCCESS) {
+                System.out.println("[硬件] 上传成功灯60秒自动恢复正常状态");
+                currentBaseState = BaseState.NORMAL;
+                sendCurrentState("上传成功60s自动恢复");
+            }
+        }, UPLOAD_SUCCESS_REVERT_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 上传失败报警：发送上传失败命令（红灯+蜂鸣），持续直到手动调用 {@link #enterNormalState()}。
+     */
+    public void onUploadFail() {
+        cancelUploadSuccessTimer();
+        currentBaseState = BaseState.UPLOAD_FAIL;
+        sendCurrentState("上传失败报警");
+    }
+
+    /**
+     * 触发剔除装置。
+     * <p>流程：等待 rejectTriggerDelayMs → 发送当前状态+剔除命令 →
+     * 等待 rejectRetractTimeMs → 自动发送当前状态（无剔除）命令完成收回。
+     */
+    public void triggerRejection() {
+        int delayMs   = getAlarmConfig().getRejectTriggerDelayMs();
+        int retractMsRaw = getAlarmConfig().getRejectRetractTimeMs();
+        final int retractMs = retractMsRaw <= 0 ? 2000 : retractMsRaw;
+
+        Runnable doTrigger = () -> {
+            rejectActive = true;
+            sendCurrentState("触发剔除");
+            cancelRejectRetractTimer();
+            final int retract = retractMs;
+            rejectRetractFuture = scheduler.schedule(() -> {
+                System.out.println("[硬件] 剔除自动收回（" + retract + "ms）");
+                rejectActive = false;
+                sendCurrentState("剔除自动收回");
+            }, retract, TimeUnit.MILLISECONDS);
+        };
+
+        if (delayMs > 0) {
+            scheduler.schedule(doTrigger, delayMs, TimeUnit.MILLISECONDS);
+        } else {
+            doTrigger.run();
         }
     }
 
     /**
-     * 红灯常亮 + 蜂鸣（上传失败 / 关联失败）。
-     * 同时向继电器板发送吸合指令（继电器1=红灯长亮，继电器2=蜂鸣器）。
-     * 需要用户手动点击「关闭报警」按钮才能停止。
-     */
-    public void redLightAndBuzzer() {
-        cancelGreenOffTimer();
-        send(CATEGORY_ALARM, CMD_RED_BUZZ, "红灯+蜂鸣");
-        send(CATEGORY_RELAY_BOARD, RELAY_CMD_ALARM_ON, "继电器板报警吸合（红灯+蜂鸣）");
-    }
-
-    /**
-     * 黄灯常亮（盒码校验失败等采集级告警）。
-     * 同时向继电器板发送黄灯吸合指令（继电器3）。
-     */
-    public void yellowLightOn() {
-        cancelGreenOffTimer();
-        send(CATEGORY_ALARM, CMD_YELLOW_ON, "黄灯亮");
-        send(CATEGORY_RELAY_BOARD, RELAY_CMD_YELLOW_ON, "继电器板黄灯亮");
-    }
-
-    /**
-     * 关闭所有灯光及蜂鸣（「关闭报警」按钮/绿灯定时熄灭均调用此方法）。
-     * 同时向继电器板发送断开所有继电器指令，确保报警灯和蜂鸣器完全停止。
-     */
-    public void allLightsOff() {
-        cancelGreenOffTimer();
-        send(CATEGORY_ALARM, CMD_ALL_OFF, "关闭所有灯光");
-        send(CATEGORY_RELAY_BOARD, RELAY_CMD_ALARM_OFF, "继电器板断开所有（关闭报警）");
-    }
-
-    // ==================== 剔除装置控制 ====================
-
-    /**
-     * 触发剔除装置推出问题箱（盒箱关联失败时自动调用）。
-     */
-    public void triggerRejection() {
-        send(CATEGORY_REJECT, CMD_REJECT_TRIGGER, "触发剔除");
-    }
-
-    /**
-     * 复位/收回剔除装置（「收回剔除」按钮调用）。
+     * 手动收回剔除装置（取消自动收回计时，立即恢复当前基础状态）。
      */
     public void retractRejection() {
-        send(CATEGORY_REJECT, CMD_REJECT_RESET, "收回剔除");
+        cancelRejectRetractTimer();
+        rejectActive = false;
+        sendCurrentState("手动收回剔除");
+    }
+
+    /**
+     * 全部关闭：发送全关命令，重置状态机，用于退出软件时调用。
+     */
+    public void allOff() {
+        cancelUploadSuccessTimer();
+        cancelRejectRetractTimer();
+        rejectActive = false;
+        currentBaseState = BaseState.NORMAL;
+        byte[] bytes = hexStringToBytes(getSignalConfig().getCmdAllOff());
+        if (bytes != null) {
+            send(CATEGORY_ALARM, bytes, "全关");
+        }
+    }
+
+    /**
+     * 根据当前基础状态和剔除激活状态，选择并发送对应命令。
+     */
+    private void sendCurrentState(String desc) {
+        ShiwanM2Settings.DeviceSignalConfig sig = getSignalConfig();
+        String hex;
+        switch (currentBaseState) {
+            case UPLOAD_SUCCESS:
+                hex = rejectActive ? sig.getCmdUploadSuccessWithReject() : sig.getCmdUploadSuccess();
+                break;
+            case UPLOAD_FAIL:
+                hex = rejectActive ? sig.getCmdUploadFailWithReject() : sig.getCmdUploadFail();
+                break;
+            default: // NORMAL
+                hex = rejectActive ? sig.getCmdNormalWithReject() : sig.getCmdNormalOn();
+        }
+        byte[] bytes = hexStringToBytes(hex);
+        if (bytes != null) {
+            send(CATEGORY_ALARM, bytes, desc + " [" + currentBaseState + " reject=" + rejectActive + "]");
+        } else {
+            System.err.printf("[硬件] [%s] 对应hex未配置，跳过发送%n", desc);
+        }
+    }
+
+    // ==================== 旧接口（保持兼容，委托到状态机）====================
+
+    /** @deprecated 委托到 {@link #onUploadSuccess()} */
+    public void greenLightOn() {
+        onUploadSuccess();
+    }
+
+    /** @deprecated 委托到 {@link #onUploadFail()} */
+    public void redLightAndBuzzer() {
+        onUploadFail();
+    }
+
+    /**
+     * 黄灯告警（盒码校验失败等采集级告警，不改变整体状态）。
+     * 当前场景待确认，暂不改变状态机状态。
+     */
+    public void yellowLightOn() {
+        // TODO: 此场景信号待用户确认后映射到状态机，当前暂不发送串口命令
+        System.out.println("[硬件] [黄灯告警] 盒码校验失败场景，信号待配置");
+    }
+
+    /** @deprecated 委托到 {@link #enterNormalState()} */
+    public void allLightsOff() {
+        enterNormalState();
+    }
+
+    // ==================== 手动按钮信号（读取配置中的手动信号字段）====================
+
+    /** 主界面"打开报警"按钮：发送 alarmOpenHex 信号 */
+    public void openAlarm() {
+        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getAlarmOpenHex(), "手动打开报警");
+    }
+
+    /** 主界面"关闭报警"按钮：发送 alarmCloseHex 信号 */
+    public void closeAlarm() {
+        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getAlarmCloseHex(), "手动关闭报警");
+    }
+
+    /** 主界面"测试报警灯亮"按钮：发送 alarmLightOnHex 信号 */
+    public void alarmLightOn() {
+        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getAlarmLightOnHex(), "测试报警灯亮");
+    }
+
+    /** 主界面"测试报警灯灭"按钮：发送 alarmLightOffHex 信号 */
+    public void alarmLightOff() {
+        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getAlarmLightOffHex(), "测试报警灯灭");
+    }
+
+    /** 主界面"触发剔除"手动按钮：发送 rejectTriggerHex 信号 */
+    public void triggerRejectCustom() {
+        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getRejectTriggerHex(), "手动触发剔除");
+    }
+
+    /** 主界面"收回剔除"手动按钮：发送 rejectRetractHex 信号 */
+    public void retractRejectCustom() {
+        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getRejectRetractHex(), "手动收回剔除");
+    }
+
+    // ==================== 内部工具 ====================
+
+    private ShiwanM2Settings.DeviceSignalConfig getSignalConfig() {
+        ShiwanM2Settings.DeviceSignalConfig cfg = ShiwanM2SettingsStore.get().getDeviceSignal();
+        return cfg != null ? cfg : new ShiwanM2Settings.DeviceSignalConfig();
+    }
+
+    private ShiwanM2Settings.AlarmConfig getAlarmConfig() {
+        ShiwanM2Settings.AlarmConfig cfg = ShiwanM2SettingsStore.get().getAlarm();
+        return cfg != null ? cfg : new ShiwanM2Settings.AlarmConfig();
+    }
+
+    private void sendConfigSignal(int categoryCode, String hexStr, String desc) {
+        byte[] bytes = hexStringToBytes(hexStr);
+        if (bytes == null) {
+            System.err.printf("[硬件] [%s] 自定义信号未配置（hex为空），请在系统设置-设备信号中填写%n", desc);
+            return;
+        }
+        send(categoryCode, bytes, desc);
+    }
+
+    private void cancelUploadSuccessTimer() {
+        if (uploadSuccessRevertFuture != null && !uploadSuccessRevertFuture.isDone()) {
+            uploadSuccessRevertFuture.cancel(false);
+            uploadSuccessRevertFuture = null;
+        }
+    }
+
+    private void cancelRejectRetractTimer() {
+        if (rejectRetractFuture != null && !rejectRetractFuture.isDone()) {
+            rejectRetractFuture.cancel(false);
+            rejectRetractFuture = null;
+        }
+    }
+
+    /**
+     * 将16进制字符串解析为字节数组。
+     * 支持带空格（"01 0A FF"）、无分隔符（"010AFF"）、冒号（"01:0A:FF"）等格式。
+     *
+     * @return 字节数组；字符串为空或null时返回null
+     */
+    public static byte[] hexStringToBytes(String hex) {
+        if (hex == null) return null;
+        hex = hex.replaceAll("[^0-9A-Fa-f]", "");
+        if (hex.isEmpty()) return null;
+        if (hex.length() % 2 != 0) hex = "0" + hex;
+        byte[] bytes = new byte[hex.length() / 2];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+        }
+        return bytes;
     }
 
     // ==================== 内部工具 ====================
@@ -230,13 +410,6 @@ public class ShiwanM2HardwareService {
             System.err.printf("[硬件] [%s] 发送失败（设备未连接或串口异常）%n", desc);
         }
         return ok;
-    }
-
-    private void cancelGreenOffTimer() {
-        if (greenOffFuture != null && !greenOffFuture.isDone()) {
-            greenOffFuture.cancel(false);
-            greenOffFuture = null;
-        }
     }
 
     private static String bytesToHex(byte[] bytes) {

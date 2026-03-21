@@ -85,6 +85,17 @@ public class ShiwanM2StatsController implements Initializable {
         endDate.setValue(LocalDate.now());
         uploadStartDate.setValue(LocalDate.now().withDayOfMonth(1));
         uploadEndDate.setValue(LocalDate.now());
+        // 日期组件只允许通过弹出日历选择，禁止手动键入
+        startDate.setEditable(false);
+        endDate.setEditable(false);
+        uploadStartDate.setEditable(false);
+        uploadEndDate.setEditable(false);
+        // 生产单号输入框只允许输入数字
+        orderNoField.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty() || newText.matches("\\d+")) return change;
+            return null;
+        }));
         setupColumns();
     }
 
@@ -101,6 +112,13 @@ public class ShiwanM2StatsController implements Initializable {
         upColTime.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().uploadTime));
         upColReason.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().reason));
         upColStatus.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().status));
+        // 禁止列拖动重排
+        upColPallet.setReorderable(false);
+        upColCases.setReorderable(false);
+        upColOrder.setReorderable(false);
+        upColTime.setReorderable(false);
+        upColStatus.setReorderable(false);
+        upColReason.setReorderable(false);
         upColStatus.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -123,6 +141,12 @@ public class ShiwanM2StatsController implements Initializable {
 
     @FXML
     private void onQuery() {
+        LocalDate start = startDate.getValue();
+        LocalDate end   = endDate.getValue();
+        if (start != null && end != null && end.isBefore(start)) {
+            showWarn("结束日期不能早于开始日期");
+            return;
+        }
         String url = "/api/shiwan-m2/stats/production-summary?startDate=" + getDateText(startDate)
                 + "&endDate=" + getDateText(endDate)
                 + "&orderNo=" + encode(orderNoField.getText());
@@ -147,6 +171,12 @@ public class ShiwanM2StatsController implements Initializable {
 
     @FXML
     private void onUploadQuery() {
+        LocalDate start = uploadStartDate.getValue();
+        LocalDate end   = uploadEndDate.getValue();
+        if (start != null && end != null && end.isBefore(start)) {
+            showWarn("结束日期不能早于开始日期");
+            return;
+        }
         currentPage = 1;
         loadUploadPage();
     }

@@ -1,6 +1,8 @@
 package com.miduo.cloud.application.shiwan;
 
 import com.miduo.cloud.application.device.DeviceApplicationService;
+import com.miduo.cloud.common.config.ShiwanM2SettingsDto;
+import com.miduo.cloud.common.config.ShiwanM2SettingsFileLoader;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import org.slf4j.Logger;
@@ -317,11 +319,17 @@ public class ShiwanM2TcpCaptureService {
     }
 
     /**
-     * 盒码收到：按 ";" 分隔提取并去重，若数量不等于 boxesPerCase 则全部写入剔除记录（超码/缺码）；
-     * 数量正确时逐一校验后放入内存队列。
-     * 箱码收到：从内存队列取 N（boxesPerCase）个盒码做关联，不足则箱码入待处理列表。
+     * 盒码收到：按 ";" 分隔提取并去重，校验位数及数量，若不通过则暂存到 pendingFailedBoxes；
+     * 通过后逐一进行业务校验，校验通过放入内存队列。
+     * 箱码收到：先校验位数；若有 pendingFailedBoxes 且有效盒码不足则触发剔除（ASSOC_FAIL）；
+     * 否则从内存队列取 N 个盒码做关联。
      */
     private void onCodeReceived(String rawCode, boolean isBoxCamera) {
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        ShiwanM2SettingsDto.CodeDigitsConfig digitsCfg = cfg != null ? cfg.getCodeDigits() : null;
+        int mediumDigits = digitsCfg != null ? digitsCfg.getMediumCodeDigits() : -1;
+        int largeDigits  = digitsCfg != null ? digitsCfg.getLargeCodeDigits()  : -1;
+
         if (isBoxCamera) {
             // 去重：保留首次出现顺序
             String[] parts = rawCode.split(";");
@@ -333,8 +341,25 @@ public class ShiwanM2TcpCaptureService {
             }
             uniqueCodes.addAll(seen);
 
+            // 位数校验：盒码位数与系统设置中的中码位数对比
+            if (mediumDigits > 0) {
+                List<String> digitMismatch = new ArrayList<>();
+                for (String code : uniqueCodes) {
+                    if (code.length() != mediumDigits) digitMismatch.add(code);
+                }
+                if (!digitMismatch.isEmpty()) {
+                    String desc = "[盒码相机] 盒码位数不符（期望" + mediumDigits + "位），不通过的码：" + digitMismatch;
+                    addEvent("BOX_FAIL", desc, null);
+                    log.warn("[盒码] 位数不符：期望{}位，不通过={}", mediumDigits, digitMismatch);
+                    for (String code : uniqueCodes) {
+                        pendingFailedBoxes.offer(new FailedBoxEntry(code, "位数不符", code));
+                    }
+                    return;
+                }
+            }
+
             int expected = boxesPerCase;
-            // 超码/缺码时全部写入剔除记录
+            // 超码/缺码时全部暂存到 pendingFailedBoxes，等箱码到来时写剔除记录
             if (uniqueCodes.size() != expected) {
                 String reason = uniqueCodes.size() < expected ? "缺码" : "超码";
                 String desc = "[盒码相机] 一次读取到 " + uniqueCodes.size()
@@ -344,7 +369,6 @@ public class ShiwanM2TcpCaptureService {
                 for (String code : uniqueCodes) {
                     pendingFailedBoxes.offer(new FailedBoxEntry(code, reason, code));
                 }
-                // 无箱码时无法写剔除记录，留在 pendingFailedBoxes 等 ASSOC_FAIL 时统一写入
                 return;
             }
 
@@ -373,22 +397,48 @@ public class ShiwanM2TcpCaptureService {
                     String errMsg = res != null ? res.getMessage() : "服务返回null";
                     addEvent("BOX_FAIL", "盒码采集失败：" + code + "，原因：" + errMsg, null);
                     log.warn("[盒码] {} 校验失败: {}", code, errMsg);
-                    // 箱码此时尚未到达，无法写剔除记录（需箱码必填）；暂存，待 ASSOC_FAIL 时统一写入
+                    // 箱码此时尚未到达，无法写剔除记录（需箱码必填）；暂存，待箱码到来时统一写入
                     pendingFailedBoxes.offer(new FailedBoxEntry(code, parseBoxRejectReason(errMsg), code));
                 }
             }
         } else {
             String code = rawCode.trim();
             if (code.isEmpty()) return;
+
+            // 位数校验：箱码位数与系统设置中的大码位数对比
+            if (largeDigits > 0 && code.length() != largeDigits) {
+                String desc = "[箱码相机] 箱码位数不符（期望" + largeDigits + "位，实际" + code.length() + "位）：" + code;
+                addEvent("BOX_FAIL", desc, null);
+                log.warn("[箱码] 位数不符：期望{}位，实际{}位，code={}", largeDigits, code.length(), code);
+                return;
+            }
+
             addEvent("CASE_RECV", "[箱码相机] 接收数据：" + code, null);
             List<String> polled = new ArrayList<>(boxesPerCase);
             for (int i = 0; i < boxesPerCase; i++) {
                 String b = boxCodeQueue.poll();
                 if (b == null) {
+                    // 有效盒码不足：若存在 pendingFailedBoxes 则触发剔除，否则进入 CASE_PENDING
                     polled.forEach(boxCodeQueue::offer);
-                    pendingCaseCodes.offer(code);
-                    addEvent("CASE_PENDING", "箱码待处理：" + code + "，队列中盒码不足" + boxesPerCase + "条", null);
-                    log.debug("[箱码] {} 已入待处理列表", code);
+                    if (!pendingFailedBoxes.isEmpty()) {
+                        // 将暂存的失败盒码连同此箱码一并写入剔除记录，触发 ASSOC_FAIL 让前端剔除数+1
+                        List<FailedBoxEntry> deferred = new ArrayList<>();
+                        pendingFailedBoxes.drainTo(deferred);
+                        for (FailedBoxEntry entry : deferred) {
+                            boxCaseService.insertRejectRecord(currentOrderNo, code,
+                                    entry.boxCode, null, entry.problemCode, entry.rejectReason);
+                        }
+                        List<String> deferredCodes = new ArrayList<>();
+                        for (FailedBoxEntry e : deferred) deferredCodes.add(e.boxCode);
+                        addEvent("ASSOC_FAIL", "关联失败（盒码校验不通过） 箱码:" + code
+                                + "，共" + deferred.size() + "个失败盒码已写入剔除记录",
+                                buildFailData(deferredCodes, code, "盒码校验失败"));
+                        log.warn("[箱码] {} 触发剔除：pendingFailedBoxes中{}个失败盒码已写入剔除记录", code, deferred.size());
+                    } else {
+                        pendingCaseCodes.offer(code);
+                        addEvent("CASE_PENDING", "箱码待处理：" + code + "，队列中盒码不足" + boxesPerCase + "条", null);
+                        log.debug("[箱码] {} 已入待处理列表", code);
+                    }
                     return;
                 }
                 polled.add(b);
