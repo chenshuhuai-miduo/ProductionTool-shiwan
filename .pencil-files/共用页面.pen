@@ -4831,6 +4831,184 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "XVbsB",
+      "x": 2114,
+      "y": -1543,
+      "name": "系统密码输入弹窗",
+      "width": 400,
+      "fill": "#FFFFFF",
+      "cornerRadius": 16,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#E5E7EB"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "NfDyX",
+          "name": "内容区",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            40,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "zuegP",
+              "width": "fill_container",
+              "gap": 10,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "iwpod",
+                  "width": 22,
+                  "height": 22,
+                  "iconFontName": "lock",
+                  "iconFontFamily": "lucide",
+                  "fill": "#1F2937"
+                },
+                {
+                  "type": "text",
+                  "id": "6OyWq",
+                  "fill": "#1F2937",
+                  "content": "请输入系统密码",
+                  "fontFamily": "Microsoft YaHei",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "UWJXm",
+              "name": "sub",
+              "fill": "#6B7280",
+              "content": "此操作受密码保护，请输入系统管理密码以确认操作。",
+              "textAlign": "center",
+              "fontFamily": "Microsoft YaHei",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "kH0zK",
+              "name": "密码输入框",
+              "width": "fill_container",
+              "height": 52,
+              "fill": "#FFFFFF",
+              "cornerRadius": 10,
+              "stroke": {
+                "align": "inside",
+                "thickness": 2,
+                "fill": "#2563EB"
+              },
+              "padding": [
+                0,
+                14
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0PQyr",
+                  "fill": "#374151",
+                  "content": "••••••••",
+                  "fontFamily": "Microsoft YaHei",
+                  "fontSize": 18,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "zSusp",
+                  "name": "eyeBtn",
+                  "width": 28,
+                  "height": 28,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "ZMkW8",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "eye-off",
+                      "iconFontFamily": "lucide",
+                      "fill": "#9CA3AF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qzTPr",
+              "name": "底部按钮区",
+              "width": "fill_container",
+              "gap": 12,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Nh70F",
+                  "name": "取消按钮",
+                  "width": 110,
+                  "height": 44,
+                  "fill": "#6B7280",
+                  "cornerRadius": 10,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VbHsx",
+                      "fill": "#FFFFFF",
+                      "content": "取消",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uFKic",
+                  "name": "确认按钮",
+                  "width": 110,
+                  "height": 44,
+                  "fill": "#2563EB",
+                  "cornerRadius": 10,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wzj4r",
+                      "fill": "#FFFFFF",
+                      "content": "确认",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {

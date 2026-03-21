@@ -346,21 +346,44 @@ body {
 /* 密码弹窗 */
 .pwd-box {
   background: #fff;
-  border-radius: 12px;
-  width: 380px;
-  padding: 32px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-  border: 1px solid #D9E1EC;
+  border-radius: 16px;
+  width: 400px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  overflow: hidden;
 }
-.pwd-title { font-size: 18px; font-weight: 700; color: #1F2937; margin-bottom: 20px; text-align: center; }
+.pwd-content { padding: 40px 32px 32px; display: flex; flex-direction: column; gap: 24px; }
+.pwd-header { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pwd-title-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.pwd-title { font-size: 18px; font-weight: 600; color: #1F2937; font-family: 'Microsoft YaHei', sans-serif; }
+.pwd-subtitle { font-size: 13px; color: #6B7280; text-align: center; font-family: 'Microsoft YaHei', sans-serif; line-height: 1.6; }
+.pwd-input-wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 52px; border-radius: 10px; background: #fff;
+  border: 2px solid #2563EB; padding: 0 14px; gap: 8px;
+}
 .pwd-input {
-  width: 100%; height: 48px;
-  border: 1px solid #D1D5DB; border-radius: 8px;
-  padding: 0 16px; font-size: 18px; font-family: inherit;
-  outline: none; text-align: center; letter-spacing: 4px; margin-bottom: 8px;
+  flex: 1; height: 100%; border: none; outline: none;
+  font-size: 18px; font-family: 'Microsoft YaHei', sans-serif;
+  color: #374151; background: transparent; letter-spacing: 3px;
 }
-.pwd-input:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
-.pwd-error { color: #DC2626; font-size: 13px; text-align: center; min-height: 20px; margin-bottom: 16px; }
+.pwd-eye-btn {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer; flex-shrink: 0; color: #9CA3AF;
+  padding: 0;
+}
+.pwd-error { color: #DC2626; font-size: 13px; text-align: center; min-height: 18px; margin-top: -12px; font-family: 'Microsoft YaHei', sans-serif; }
+.pwd-btn-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.pwd-btn-cancel {
+  width: 110px; height: 44px; border-radius: 10px; border: none;
+  background: #6B7280; color: #fff; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: 'Microsoft YaHei', sans-serif;
+}
+.pwd-btn-confirm {
+  width: 110px; height: 44px; border-radius: 10px; border: none;
+  background: #2563EB; color: #fff; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: 'Microsoft YaHei', sans-serif;
+}
 
 /* 确认弹窗 */
 .confirm-box {
@@ -742,7 +765,7 @@ body {
   gap: 8px;
 }
 .prompt-main { font-size: 18px; font-weight: 600; color: #374151; font-family:'Microsoft YaHei',sans-serif; }
-.prompt-code-big { font-size: 44px; font-weight: 700; color: #2563EB; font-family:'Microsoft YaHei',sans-serif; line-height: 1.1; }
+.prompt-code-big { font-size: 44px; font-weight: 700; color: #2563EB; font-family:'Microsoft YaHei',sans-serif; line-height: 1.1; transition: color 0.2s; }
 
 /* 手工采集 - 右侧单位实时统计、任务控制 参考 pen */
 .manual-stats-card { padding: 14px 14px 24px 14px; }
@@ -2311,12 +2334,30 @@ body {
 <!-- 密码弹窗 -->
 <div class="modal-overlay" id="pwdOverlay" onclick="if(event.target===this)closePwd()">
   <div class="pwd-box" onclick="event.stopPropagation()">
-    <div class="pwd-title">🔒 请输入系统密码</div>
-    <input type="password" class="pwd-input" id="pwdInput" placeholder="••••••" maxlength="12" onkeydown="if(event.key==='Enter')verifyPwd()">
-    <div class="pwd-error" id="pwdError"></div>
-    <div style="display:flex; gap:12px;">
-      <button class="btn btn-secondary" style="flex:1; height:44px; font-size:15px;" onclick="closePwd()">取消</button>
-      <button class="btn btn-primary" style="flex:1; height:44px; font-size:15px;" onclick="verifyPwd()">确认</button>
+    <div class="pwd-content">
+      <!-- 标题 -->
+      <div class="pwd-header">
+        <div class="pwd-title-row">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="pwd-title">请输入系统密码</span>
+        </div>
+        <span class="pwd-subtitle">此操作受密码保护，请输入系统管理密码以确认操作。</span>
+      </div>
+      <!-- 密码输入框 -->
+      <div class="pwd-input-wrap">
+        <input type="password" class="pwd-input" id="pwdInput" placeholder="请输入密码" maxlength="12"
+          onkeydown="if(event.key==='Enter')verifyPwd()">
+        <button class="pwd-eye-btn" id="pwdEyeBtn" onclick="togglePwdEye()" tabindex="-1" title="显示/隐藏密码">
+          <svg id="pwdEyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+      <!-- 错误提示 -->
+      <div class="pwd-error" id="pwdError"></div>
+      <!-- 按钮 -->
+      <div class="pwd-btn-row">
+        <button class="pwd-btn-cancel" onclick="closePwd()">取消</button>
+        <button class="pwd-btn-confirm" onclick="verifyPwd()">确认</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3367,9 +3408,11 @@ function updateManualPrompt() {
   const input = document.getElementById('manualCodeInput');
   if(manualPhase === 'bottle') {
     el.textContent = '瓶码';
+    el.style.color = '#2563EB';
     input.placeholder = '扫描或输入瓶码';
   } else {
     el.textContent = '盒码';
+    el.style.color = '#DC2626';
     input.placeholder = '扫描或输入盒码';
   }
 }
@@ -4359,23 +4402,40 @@ function setUploaded() {
 
 // 密码验证
 function openSysSettings() {
-  document.getElementById('pwdInput').value = '';
+  const input = document.getElementById('pwdInput');
+  input.value = '';
+  input.type = 'password';
   document.getElementById('pwdError').textContent = '';
+  // 重置眼睛图标为隐藏状态
+  document.getElementById('pwdEyeIcon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
   document.getElementById('pwdOverlay').classList.add('active');
-  setTimeout(() => document.getElementById('pwdInput').focus(), 100);
+  setTimeout(() => input.focus(), 100);
 }
 
 function closePwd() { document.getElementById('pwdOverlay').classList.remove('active'); }
 
-function verifyPwd() {
-  if(document.getElementById('pwdInput').value === '123456') {
-    closePwd();
-    document.getElementById('sysOverlay').classList.add('active');
+function togglePwdEye() {
+  const input = document.getElementById('pwdInput');
+  const icon = document.getElementById('pwdEyeIcon');
+  if(input.type === 'password') {
+    input.type = 'text';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
   } else {
-    document.getElementById('pwdError').textContent = '密码错误，请重新输入';
-    document.getElementById('pwdInput').value = '';
-    document.getElementById('pwdInput').focus();
+    input.type = 'password';
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
   }
+}
+
+function verifyPwd() {
+  const pwd = document.getElementById('pwdInput').value;
+  if(!pwd) {
+    document.getElementById('pwdError').textContent = '请输入密码';
+    document.getElementById('pwdInput').focus();
+    return;
+  }
+  // 原型演示：任意非空密码均可进入系统设置
+  closePwd();
+  document.getElementById('sysOverlay').classList.add('active');
 }
 
 function openLicenseInfo2() {
