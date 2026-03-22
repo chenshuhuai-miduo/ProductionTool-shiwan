@@ -1254,22 +1254,22 @@
 
 /* ---- 数据替换 ---- */
 .sw2-replace-result-ok {
-    -fx-background-color: #F0FDF4;
-    -fx-border-color: #86EFAC;
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D1FAE5;
     -fx-border-width: 1px;
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
-    -fx-padding: 12px 14px;
+    -fx-padding: 16px;
     -fx-spacing: 6px;
 }
 
 .sw2-replace-result-err {
-    -fx-background-color: #FEF2F2;
-    -fx-border-color: #FCA5A5;
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #FEE2E2;
     -fx-border-width: 1px;
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
-    -fx-padding: 12px 14px;
+    -fx-padding: 16px;
     -fx-spacing: 6px;
 }
 

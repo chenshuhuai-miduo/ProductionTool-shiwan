@@ -2863,26 +2863,37 @@ public class ShiwanM2MainController implements Initializable {
      */
     static class UploadItemCell extends ListCell<UploadItem> {
 
-        private final VBox  root       = new VBox(4);
-        private final HBox  topRow     = new HBox();
-        private final Label palletLbl  = new Label();
+        private final VBox  root        = new VBox(4);
+        private final HBox  bottomRow   = new HBox();
+        private final Label palletLbl   = new Label();
         private final Label statusBadge = new Label();
         private final Label boxCountLbl = new Label();
 
         UploadItemCell() {
-            topRow.setAlignment(Pos.CENTER_LEFT);
-            topRow.setSpacing(8);
+            // 垛码独占第一行，超长时截断，不撑宽
+            palletLbl.getStyleClass().add("shiwan-m2-upload-pallet-code");
+            palletLbl.setMaxWidth(Double.MAX_VALUE);
+            palletLbl.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
+
+            // 第二行：N箱（左） + 状态标签（右），两端对齐
+            boxCountLbl.getStyleClass().add("shiwan-m2-upload-box-count");
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
-            topRow.getChildren().addAll(palletLbl, spacer, statusBadge);
+            bottomRow.setAlignment(Pos.CENTER_LEFT);
+            bottomRow.setMaxWidth(Double.MAX_VALUE);
+            bottomRow.getChildren().addAll(boxCountLbl, spacer, statusBadge);
 
-            palletLbl.getStyleClass().add("shiwan-m2-upload-pallet-code");
-            boxCountLbl.getStyleClass().add("shiwan-m2-upload-box-count");
-
-            root.getChildren().addAll(topRow, boxCountLbl);
+            root.getChildren().addAll(palletLbl, bottomRow);
             root.getStyleClass().add("shiwan-m2-upload-item");
             root.setPadding(new Insets(10, 12, 10, 12));
             root.setMaxWidth(Double.MAX_VALUE);
+
+            // 绑定 cell 根节点宽度 = ListView 宽度 - 垂直滚动条预留，防止水平溢出
+            listViewProperty().addListener((obs, old, lv) -> {
+                if (lv != null) {
+                    root.prefWidthProperty().bind(lv.widthProperty().subtract(20));
+                }
+            });
         }
 
         @Override

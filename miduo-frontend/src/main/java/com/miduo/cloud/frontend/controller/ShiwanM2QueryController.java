@@ -261,12 +261,25 @@ public class ShiwanM2QueryController implements Initializable {
         detBox.setText(row.boxCode.isEmpty() ? "—" : row.boxCode);
         detCase.setText(row.caseCode.isEmpty() ? "—" : row.caseCode);
         detPallet.setText(row.palletCode.isEmpty() ? "—" : row.palletCode);
-        detTime.setText(row.collectTime.isEmpty() ? "-" : row.collectTime);
-        detLinked.setText("已关联");
-        detLinked.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#059669;");
-        detProductCode.setText(row.productNo.isEmpty() ? "-" : row.productNo);
-        detProductName.setText(row.productName.isEmpty() ? "-" : row.productName);
-        detOrderNo.setText(row.orderNo.isEmpty() ? "-" : row.orderNo);
+
+        // 格式化采集时间：ISO 格式 "2026-03-21T22:53:57" → "2026-03-21 22:53:57"
+        String t = row.collectTime;
+        if (!t.isEmpty()) {
+            t = t.replace("T", " ");
+            if (t.length() > 19) t = t.substring(0, 19);
+        }
+        detTime.setText(t.isEmpty() ? "—" : t);
+
+        // 是否关联：有箱码或垛码视为已关联，否则显示未关联
+        boolean linked = !row.caseCode.isEmpty() || !row.palletCode.isEmpty();
+        detLinked.setText(linked ? "已关联" : "未关联");
+        detLinked.setStyle(linked
+                ? "-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"
+                : "-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+
+        detProductCode.setText(row.productNo.isEmpty() ? "—" : row.productNo);
+        detProductName.setText(row.productName.isEmpty() ? "—" : row.productName);
+        detOrderNo.setText(row.orderNo.isEmpty() ? "—" : row.orderNo);
     }
 
     private void setStatus(String type, String text) {

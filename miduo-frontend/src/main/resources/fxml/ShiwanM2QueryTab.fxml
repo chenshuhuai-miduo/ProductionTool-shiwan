@@ -53,11 +53,11 @@
                        styleClass="sw2-table" fixedCellSize="52"
                        visible="false" managed="false">
                 <columns>
-                    <TableColumn fx:id="colSeq" text="序号"  prefWidth="55"/>
-                    <TableColumn fx:id="colL1"  text="第一层（瓶码）" prefWidth="220"/>
-                    <TableColumn fx:id="colL2"  text="第二层（盒码）" prefWidth="160"/>
-                    <TableColumn fx:id="colL3"  text="第三层（箱码）" prefWidth="120"/>
-                    <TableColumn fx:id="colL4"  text="第四层（垛码）" prefWidth="120"/>
+                    <TableColumn fx:id="colSeq" text="序号"  prefWidth="36"/>
+                    <TableColumn fx:id="colL1"  text="第一层（瓶码）" prefWidth="260"/>
+                    <TableColumn fx:id="colL2"  text="第二层（盒码）" prefWidth="180"/>
+                    <TableColumn fx:id="colL3"  text="第三层（箱码）" prefWidth="130"/>
+                    <TableColumn fx:id="colL4"  text="第四层（垛码）" prefWidth="130"/>
                 </columns>
                 <placeholder>
                     <Label text="暂无数据" style="-fx-text-fill:#9CA3AF; -fx-font-size:16px;"/>
@@ -65,14 +65,9 @@
             </TableView>
         </VBox>
 
-        <!-- 右侧：具体信息（固定宽度）-->
-        <VBox prefWidth="300" minWidth="260" maxWidth="360"
+        <!-- 右侧：具体信息（固定宽度，与设计稿对齐 420px）-->
+        <VBox prefWidth="420" minWidth="380"
               styleClass="sw2-result-panel" spacing="0">
-
-            <HBox alignment="CENTER_LEFT" minHeight="48"
-                  style="-fx-padding: 8px 16px 8px 16px; -fx-border-color: transparent transparent #E5E7EB transparent; -fx-border-width: 0 0 1px 0;">
-                <Label text="具体信息" styleClass="sw2-result-header" style="-fx-border-width:0;"/>
-            </HBox>
 
             <!-- 右侧空状态 -->
             <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS"
@@ -87,78 +82,87 @@
             <ScrollPane fx:id="detailScrollPane" VBox.vgrow="ALWAYS"
                         fitToWidth="true" visible="false" managed="false"
                         style="-fx-background-color:transparent; -fx-background:transparent; -fx-border-width:0;">
-                <VBox spacing="16" style="-fx-padding: 12px 16px 16px 16px;">
+                <VBox spacing="16" style="-fx-padding: 24;">
+
+                    <!-- 主标题 -->
+                    <Label text="具体信息"
+                           style="-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#1F2937;"/>
 
                     <!-- 码详细信息 -->
-                    <VBox spacing="8">
-                        <Label text="码详细信息"
-                               style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
-                        <Separator/>
-                        <GridPane hgap="8" vgap="10">
-                            <columnConstraints>
-                                <ColumnConstraints minWidth="72" maxWidth="72"/>
-                                <ColumnConstraints hgrow="ALWAYS"/>
-                            </columnConstraints>
-                            <Label text="瓶码" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                            <Label fx:id="detBottle" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                            <Label text="盒码" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                            <Label fx:id="detBox" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                            <Label text="箱码" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                            <Label fx:id="detCase" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                            <Label text="垛码" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                            <Label fx:id="detPallet" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-                            <Label text="采集时间" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-                            <Label fx:id="detTime" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-                            <Label text="是否关联" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-                            <Label fx:id="detLinked" text="—"
-                                   style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#059669;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-                        </GridPane>
-                    </VBox>
+                    <Label text="码详细信息"
+                           style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
+
+                    <GridPane hgap="8" vgap="12">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="80" maxWidth="80"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+                        <Label text="瓶码"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <Label fx:id="detBottle" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                        <Label text="盒码"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <Label fx:id="detBox" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                        <Label text="箱码"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <Label fx:id="detCase" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        <Label text="垛码"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <Label fx:id="detPallet" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                        <Label text="采集时间"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <Label fx:id="detTime" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#4B5563;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                        <Label text="是否关联"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                        <Label fx:id="detLinked" text="—"
+                               style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                    </GridPane>
 
                     <!-- 产品信息 -->
-                    <VBox spacing="8">
-                        <Label text="产品信息"
-                               style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
-                        <Separator/>
-                        <GridPane hgap="8" vgap="10">
-                            <columnConstraints>
-                                <ColumnConstraints minWidth="72" maxWidth="72"/>
-                                <ColumnConstraints hgrow="ALWAYS"/>
-                            </columnConstraints>
-                            <Label text="产品编号" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                            <Label fx:id="detProductCode" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                            <Label text="产品名称" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                            <Label fx:id="detProductName" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                            <Label text="生产单号" styleClass="sw2-field-label"
-                                   GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                            <Label fx:id="detOrderNo" text="—"
-                                   style="-fx-font-size:15px; -fx-text-fill:#1F2937;"
-                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                        </GridPane>
-                    </VBox>
+                    <Label text="产品信息"
+                           style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
+
+                    <GridPane hgap="8" vgap="12">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="80" maxWidth="80"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+                        <Label text="产品编号"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <Label fx:id="detProductCode" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#4B5563;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                        <Label text="产品名称"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <Label fx:id="detProductName" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#4B5563; -fx-wrap-text:true;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                        <Label text="生产单号"
+                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                               GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <Label fx:id="detOrderNo" text="—"
+                               style="-fx-font-size:16px; -fx-text-fill:#4B5563; -fx-wrap-text:true;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                    </GridPane>
 
                 </VBox>
             </ScrollPane>

@@ -2,23 +2,23 @@ package com.miduo.cloud.frontend.controller;
 
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
@@ -105,56 +105,25 @@ public class ShiwanM2ReplaceController implements Initializable {
     // ==================== 替换确认弹窗 ====================
 
     private void openReplaceConfirmDialog(String orig, String newCode, String reason) {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("确认码替换");
-        dialog.setHeaderText(null);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        dialog.getDialogPane().lookupButton(ButtonType.OK).setStyle(
-                "-fx-background-color:#DC2626; -fx-text-fill:white; -fx-font-weight:bold;");
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/ShiwanM2ReplaceConfirmDialog.fxml"));
+            Parent root = loader.load();
+            ShiwanM2ReplaceConfirmDialogController ctrl = loader.getController();
+            ctrl.setReplaceInfo(orig, newCode, reason, OPERATOR_PASSWORD);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
+            Stage stage = new Stage();
+            stage.initStyle(StageStyle.UNDECORATED);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.setResizable(false);
+            stage.showAndWait();
 
-        Label title = new Label("请确认替换信息：");
-        title.setStyle("-fx-font-size:15px; -fx-font-weight:bold;");
-
-        VBox infoBox = new VBox(6);
-        infoBox.setStyle("-fx-background-color:#F3F4F6; -fx-border-radius:6px; -fx-background-radius:6px; -fx-padding:12px;");
-        infoBox.getChildren().addAll(
-                rowLabel("原码值：", orig),
-                rowLabel("新码值：", newCode),
-                rowLabel("替换原因：", reason.isEmpty() ? "（未填写）" : reason)
-        );
-
-        Label pwdLabel   = new Label("* 密码");
-        pwdLabel.setStyle("-fx-font-weight:bold;");
-        PasswordField pwd = new PasswordField();
-        pwd.setPromptText("请输入系统密码");
-        pwd.setStyle("-fx-border-radius:6px; -fx-background-radius:6px; -fx-border-color:#D1D5DB; -fx-border-width:1px; -fx-min-height:40px; -fx-padding:0 12px;");
-
-        Label warn = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
-        warn.setStyle("-fx-text-fill:#DC2626; -fx-font-size:13px; -fx-font-weight:bold;");
-
-        VBox content = new VBox(12, title, infoBox, pwdLabel, pwd, warn);
-        content.setPrefWidth(400);
-        dialog.getDialogPane().setContent(content);
-
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            if (!OPERATOR_PASSWORD.equals(pwd.getText())) {
-                showWarn("密码错误", "密码不正确，替换操作已取消。");
-                return;
-            }
+            if (!ctrl.isConfirmed()) return;
             executeReplace(orig, newCode, reason);
+        } catch (Exception ex) {
+            showWarn("系统错误", "无法打开确认弹窗：" + ex.getMessage());
         }
-    }
-
-    private Label rowLabel(String key, String val) {
-        Label l = new Label(key + val);
-        l.setStyle("-fx-font-size:14px;");
-        return l;
     }
 
     // ==================== 替换执行 ====================
@@ -166,31 +135,46 @@ public class ShiwanM2ReplaceController implements Initializable {
         emptyResultLabel.setVisible(false);
         emptyResultLabel.setManaged(false);
 
-        VBox card = new VBox(6);
-        if (success) {
-            card.getStyleClass().add("sw2-replace-result-ok");
-            Label titleLbl = new Label("✔ 码替换成功！");
-            titleLbl.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#15803D;");
-            card.getChildren().addAll(
-                    titleLbl,
-                    infoLine("原码：", orig),
-                    infoLine("新码：", newCode),
-                    infoLine("替换原因：", reason.isEmpty() ? "—" : reason),
-                    infoLine("操作时间：", time));
-        } else {
-            card.getStyleClass().add("sw2-replace-result-err");
-            Label titleLbl = new Label("✘ 码替换失败！");
-            titleLbl.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
-            Label reasonLbl = new Label("失败原因：新码已存在");
-            reasonLbl.setStyle("-fx-text-fill:#DC2626; -fx-font-size:13px;");
-            card.getChildren().addAll(
-                    titleLbl, reasonLbl,
-                    infoLine("原码：", orig),
-                    infoLine("新码：", newCode),
-                    infoLine("操作时间：", time));
-        }
+        VBox card = new VBox(12);
+        card.getStyleClass().add(success ? "sw2-replace-result-ok" : "sw2-replace-result-err");
 
+        // 圆形图标 + 标题行
+        String iconColor = success ? "#10B981" : "#EF4444";
+        String titleText = success ? "码替换成功！" : "码替换失败！";
+
+        Label iconLbl = new Label(success ? "✔" : "✘");
+        iconLbl.setMinSize(28, 28);
+        iconLbl.setMaxSize(28, 28);
+        iconLbl.setAlignment(javafx.geometry.Pos.CENTER);
+        iconLbl.setStyle(String.format(
+                "-fx-background-color:%s; -fx-background-radius:14;" +
+                "-fx-text-fill:white; -fx-font-size:13px; -fx-font-weight:bold;", iconColor));
+
+        Label titleLbl = new Label(titleText);
+        titleLbl.setStyle(String.format(
+                "-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:%s;", iconColor));
+
+        javafx.scene.layout.HBox headerRow = new javafx.scene.layout.HBox(8, iconLbl, titleLbl);
+        headerRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        // 详情区
+        VBox detailBox = new VBox(8);
+        if (!success) {
+            Label failReasonLbl = new Label("失败原因：新码已存在");
+            failReasonLbl.setStyle("-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+            detailBox.getChildren().add(failReasonLbl);
+        }
+        detailBox.getChildren().addAll(
+                infoLine("原码：", orig),
+                infoLine("新码：", newCode));
+        if (success && !reason.isEmpty()) {
+            detailBox.getChildren().add(infoLine("替换原因：", reason));
+        }
+        detailBox.getChildren().add(timeLine("操作时间：", time));
+
+        card.getChildren().addAll(headerRow, detailBox);
         resultContainer.getChildren().add(0, card);
+
         if (success) {
             origCodeField.clear();
             newCodeField.clear();
@@ -200,7 +184,13 @@ public class ShiwanM2ReplaceController implements Initializable {
 
     private Label infoLine(String key, String val) {
         Label l = new Label(key + val);
-        l.setStyle("-fx-font-size:14px; -fx-text-fill:#374151;");
+        l.setStyle("-fx-font-size:16px; -fx-text-fill:#374151;");
+        return l;
+    }
+
+    private Label timeLine(String key, String val) {
+        Label l = new Label(key + val);
+        l.setStyle("-fx-font-size:16px; -fx-text-fill:#6B7280;");
         return l;
     }
 
