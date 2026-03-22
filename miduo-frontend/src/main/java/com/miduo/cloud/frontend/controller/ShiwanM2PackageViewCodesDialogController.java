@@ -31,14 +31,18 @@ public class ShiwanM2PackageViewCodesDialogController {
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    @FXML private javafx.scene.layout.HBox titleBar;
     @FXML private Label titleLabel;
+    @FXML private Label packageTypeLabel;
+    @FXML private Label packageNameLabel;
     @FXML private TextField keywordField;
     @FXML private TableView<ViewCodeRow> codeTable;
     @FXML private TableColumn<ViewCodeRow, String> codeValueColumn;
     @FXML private TableColumn<ViewCodeRow, String> associatedStatusColumn;
     @FXML private TableColumn<ViewCodeRow, String> associatedTimeColumn;
     @FXML private Label totalLabel;
-    @FXML private Label pageLabel;
+    @FXML private TextField pageInputField;
+    @FXML private Label totalPagesLabel;
     @FXML private ComboBox<String> pageSizeCombo;
 
     private final ObservableList<ViewCodeRow> rows = FXCollections.observableArrayList();
@@ -47,12 +51,44 @@ public class ShiwanM2PackageViewCodesDialogController {
     private int currentPage = 1;
     private int totalPages = 1;
     private int pageSize = 20;
+    private double dragOffsetX, dragOffsetY;
 
     @FXML
     public void initialize() {
+        // 拖拽支持
+        titleBar.setOnMousePressed(e -> {
+            dragOffsetX = e.getSceneX();
+            dragOffsetY = e.getSceneY();
+        });
+        titleBar.setOnMouseDragged(e -> {
+            Stage stage = getStage();
+            stage.setX(e.getScreenX() - dragOffsetX);
+            stage.setY(e.getScreenY() - dragOffsetY);
+        });
+
+        codeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
         codeValueColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().codeValue));
-        associatedStatusColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().associatedStatus));
         associatedTimeColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().associatedTime));
+
+        // 关联状态列着色：已关联绿色，未关联灰色
+        associatedStatusColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().associatedStatus));
+        associatedStatusColumn.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("已关联".equals(item)
+                            ? "-fx-text-fill:#16A34A; -fx-font-weight:bold; -fx-alignment:CENTER;"
+                            : "-fx-text-fill:#9CA3AF; -fx-alignment:CENTER;");
+                }
+            }
+        });
+
         codeTable.setItems(rows);
         pageSizeCombo.setValue("20条");
         pageSizeCombo.setOnAction(event -> {
@@ -62,9 +98,26 @@ public class ShiwanM2PackageViewCodesDialogController {
         });
     }
 
-    public void setContext(Long importId, String packageName) {
+    @FXML
+    private void onPageInput() {
+        try {
+            int p = Integer.parseInt(pageInputField.getText().trim());
+            if (p >= 1 && p <= totalPages) {
+                currentPage = p;
+                loadData();
+            } else {
+                pageInputField.setText(String.valueOf(currentPage));
+            }
+        } catch (NumberFormatException ex) {
+            pageInputField.setText(String.valueOf(currentPage));
+        }
+    }
+
+    public void setContext(Long importId, String packageName,
+                           String typeName, Integer codeCount, String statusName, boolean statusNormal) {
         this.importId = importId;
-        titleLabel.setText("查看码包: " + packageName);
+        packageTypeLabel.setText(typeName == null ? "—" : typeName);
+        packageNameLabel.setText(packageName == null ? "—" : packageName);
         currentPage = 1;
         loadData();
     }
@@ -119,7 +172,8 @@ public class ShiwanM2PackageViewCodesDialogController {
                     if (result == null || result.getCode() != 200 || result.getData() == null) {
                         rows.clear();
                         totalLabel.setText("共 0 条");
-                        pageLabel.setText("第 1 / 1 页");
+                        pageInputField.setText("1");
+                        totalPagesLabel.setText("/ 1 页");
                         if (result != null && result.getMessage() != null) {
                             showAlert("查询失败", result.getMessage());
                         }
@@ -131,7 +185,8 @@ public class ShiwanM2PackageViewCodesDialogController {
                     currentPage = pageOutput.getCurrent() == null ? 1 : pageOutput.getCurrent().intValue();
                     totalPages = pageOutput.getPages() == null || pageOutput.getPages() <= 0 ? 1 : pageOutput.getPages().intValue();
                     totalLabel.setText("共 " + (pageOutput.getTotal() == null ? 0 : pageOutput.getTotal()) + " 条");
-                    pageLabel.setText("第 " + currentPage + " / " + totalPages + " 页");
+                    pageInputField.setText(String.valueOf(currentPage));
+                    totalPagesLabel.setText("/ " + totalPages + " 页");
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showAlert("查询异常", e.getMessage()));
@@ -150,7 +205,7 @@ public class ShiwanM2PackageViewCodesDialogController {
     }
 
     private Stage getStage() {
-        return (Stage) titleLabel.getScene().getWindow();
+        return (Stage) titleBar.getScene().getWindow();
     }
 
     private void showAlert(String title, String message) {

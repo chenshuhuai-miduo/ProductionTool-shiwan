@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.collections.FXCollections?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import java.lang.String?>
@@ -8,93 +7,206 @@
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2RejectRecordsController"
-      spacing="10" prefWidth="1120" prefHeight="760"
-      styleClass="sw2-tab-content"
-      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
-    <padding>
-        <Insets top="16" right="16" bottom="16" left="16"/>
-    </padding>
+      prefWidth="1200" prefHeight="700"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css"
+      style="-fx-background-color:white; -fx-border-color:#D9E1EC; -fx-border-width:1;">
 
-    <HBox alignment="CENTER_LEFT">
-        <Label text="剔除记录" styleClass="sw2-section-title"/>
+    <!-- 标题栏 -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT"
+          style="-fx-background-color:#F5F7FA;
+                 -fx-border-color:transparent transparent #E5E7EB transparent;
+                 -fx-border-width:0 0 1 0;
+                 -fx-padding:0 8 0 24;
+                 -fx-min-height:56; -fx-pref-height:56;">
+        <Label text="剔除记录"
+               style="-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button text="关闭" styleClass="sw2-btn-outline" onAction="#onClose"/>
+        <Button text="×" onAction="#onClose"
+                style="-fx-background-color:transparent; -fx-text-fill:#9CA3AF; -fx-font-size:26px;
+                       -fx-cursor:hand; -fx-min-width:44; -fx-min-height:44;
+                       -fx-border-width:0; -fx-background-radius:6; -fx-effect:null; -fx-padding:0;"/>
     </HBox>
 
-    <HBox spacing="8" alignment="CENTER_LEFT">
-        <TextField fx:id="caseCodeField" promptText="请输入箱码" styleClass="sw2-field-input" HBox.hgrow="ALWAYS"/>
-        <Button text="筛选" styleClass="sw2-btn-primary" onAction="#onSearch"/>
-        <Button text="重置" styleClass="sw2-btn-outline" onAction="#onReset"/>
-    </HBox>
+    <!-- 内容区 -->
+    <VBox spacing="16" VBox.vgrow="ALWAYS" style="-fx-padding:24;">
 
-    <HBox spacing="12" VBox.vgrow="ALWAYS">
-        <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="sw2-table-card">
-            <Label text="码关联信息（剔除记录）" styleClass="shiwan-m2-card-title"/>
-            <TableView fx:id="rejectTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
-                <columns>
-                    <TableColumn fx:id="seqCol" text="序号" prefWidth="70"/>
-                    <TableColumn fx:id="bottleCol" text="第一层(瓶码)" prefWidth="230"/>
-                    <TableColumn fx:id="boxCol" text="第二层(盒码)" prefWidth="230"/>
-                    <TableColumn fx:id="caseCol" text="第三层(箱码)" prefWidth="180"/>
-                    <TableColumn fx:id="reasonCol" text="剔除原因" prefWidth="180"/>
-                </columns>
-            </TableView>
-        </VBox>
+        <!-- 搜索行 -->
+        <HBox spacing="12" alignment="CENTER_LEFT">
+            <TextField fx:id="caseCodeField" promptText="请输入箱码"
+                       prefWidth="300" minWidth="300" maxWidth="300"
+                       style="-fx-font-size:16px; -fx-background-color:#FFFFFF;
+                              -fx-border-color:#D1D5DB; -fx-border-width:1;
+                              -fx-border-radius:8; -fx-background-radius:8;
+                              -fx-min-height:40; -fx-pref-height:40; -fx-padding:0 16;
+                              -fx-font-family:'Microsoft YaHei';"/>
+            <Button text="筛选" onAction="#onSearch"
+                    style="-fx-min-width:80; -fx-pref-width:80; -fx-min-height:40; -fx-pref-height:40;
+                           -fx-font-size:16px; -fx-font-weight:bold; -fx-background-color:#2563EB;
+                           -fx-text-fill:white; -fx-background-radius:8; -fx-border-width:0;
+                           -fx-cursor:hand; -fx-effect:null; -fx-font-family:'Microsoft YaHei';"/>
+            <Button text="重置" onAction="#onReset"
+                    style="-fx-min-width:80; -fx-pref-width:80; -fx-min-height:40; -fx-pref-height:40;
+                           -fx-font-size:16px; -fx-font-weight:bold; -fx-background-color:#F3F4F6;
+                           -fx-text-fill:#374151; -fx-background-radius:8;
+                           -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-border-radius:8;
+                           -fx-cursor:hand; -fx-effect:null; -fx-font-family:'Microsoft YaHei';"/>
+        </HBox>
 
-        <VBox spacing="8" prefWidth="320" minWidth="300" styleClass="shiwan-m2-card">
-            <Label text="具体信息" styleClass="shiwan-m2-card-title"/>
+        <!-- 左右分栏 -->
+        <HBox spacing="16" VBox.vgrow="ALWAYS">
 
-            <VBox fx:id="detailEmptyPane" spacing="4" alignment="CENTER" VBox.vgrow="ALWAYS">
-                <Label text="请点击左侧记录查看详细信息" style="-fx-text-fill:#9CA3AF;"/>
+            <!-- 左侧表格区（固定宽度） -->
+            <VBox spacing="8" prefWidth="800" minWidth="720" maxWidth="860"
+                  style="-fx-background-color:#F9FAFB; -fx-border-color:#E5E7EB;
+                         -fx-border-width:1; -fx-border-radius:8; -fx-background-radius:8;
+                         -fx-padding:16;">
+
+                <!-- 表格 -->
+                <TableView fx:id="rejectTable" VBox.vgrow="ALWAYS"
+                           styleClass="sw2-wrap-table">
+                    <columns>
+                        <TableColumn fx:id="seqCol"    text="序号"       prefWidth="60"  minWidth="60"  maxWidth="60"/>
+                        <TableColumn fx:id="bottleCol" text="第一层(瓶码)" prefWidth="180" minWidth="180" maxWidth="180"/>
+                        <TableColumn fx:id="boxCol"    text="第二层(盒码)" prefWidth="140" minWidth="140" maxWidth="140"/>
+                        <TableColumn fx:id="caseCol"   text="第三层(箱码)" prefWidth="140" minWidth="140" maxWidth="140"/>
+                        <TableColumn fx:id="reasonCol" text="剔除原因"    prefWidth="180"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="无匹配数据"
+                               style="-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';"/>
+                    </placeholder>
+                </TableView>
+
+                <!-- 分页 -->
+                <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-min-height:40;">
+                    <Label fx:id="totalLabel" text="共 0 条"
+                           style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="每页"
+                           style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
+                    <ComboBox fx:id="pageSizeCombo" prefWidth="90"
+                              style="-fx-font-size:14px; -fx-pref-height:32; -fx-min-height:32;">
+                        <items><FXCollections fx:factory="observableArrayList">
+                            <String fx:value="10条"/>
+                            <String fx:value="20条"/>
+                            <String fx:value="50条"/>
+                            <String fx:value="100条"/>
+                        </FXCollections></items>
+                        <value><String fx:value="20条"/></value>
+                    </ComboBox>
+                    <Button fx:id="prevBtn" text="上一页" onAction="#onPrevPage"
+                            style="-fx-min-width:64; -fx-pref-width:64; -fx-min-height:32; -fx-pref-height:32;
+                                   -fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#6B7280;
+                                   -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-background-radius:6;
+                                   -fx-border-radius:6; -fx-cursor:hand; -fx-effect:null;"/>
+                    <Label text="第"
+                           style="-fx-font-size:14px; -fx-text-fill:#374151; -fx-font-family:'Microsoft YaHei';"/>
+                    <TextField fx:id="pageInputField" text="1" prefWidth="48"
+                               onAction="#onPageInput"
+                               style="-fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#374151;
+                                      -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-border-radius:6;
+                                      -fx-background-radius:6; -fx-min-height:32; -fx-pref-height:32;
+                                      -fx-alignment:CENTER; -fx-padding:0 8; -fx-font-family:'Microsoft YaHei';"/>
+                    <Label fx:id="totalPagesLabel" text="/ 1 页"
+                           style="-fx-font-size:14px; -fx-text-fill:#374151; -fx-font-family:'Microsoft YaHei';"/>
+                    <Button fx:id="nextBtn" text="下一页" onAction="#onNextPage"
+                            style="-fx-min-width:64; -fx-pref-width:64; -fx-min-height:32; -fx-pref-height:32;
+                                   -fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#6B7280;
+                                   -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-background-radius:6;
+                                   -fx-border-radius:6; -fx-cursor:hand; -fx-effect:null;"/>
+                </HBox>
             </VBox>
 
-            <VBox fx:id="detailPane" spacing="10" visible="false" managed="false">
-                <HBox spacing="8">
-                    <Label text="问题码：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detProblemCode" style="-fx-text-fill:#F44336; -fx-font-weight:bold;"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Label text="箱码：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detCaseCode"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Label text="剔除原因：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detReason"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Label text="剔除时间：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detTime"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Label text="产品编号：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detProductNo"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Label text="产品名称：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detProductName" wrapText="true"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Label text="生产单号：" styleClass="sw2-filter-label"/>
-                    <Label fx:id="detOrderNo"/>
-                </HBox>
-            </VBox>
-        </VBox>
-    </HBox>
+            <!-- 右侧详情卡片 -->
+            <VBox HBox.hgrow="ALWAYS" minWidth="260" maxWidth="380"
+                  style="-fx-background-color:white; -fx-border-color:#D9E1EC;
+                         -fx-border-width:1; -fx-border-radius:12; -fx-background-radius:12;
+                         -fx-padding:24;">
+                <Label text="具体信息"
+                       style="-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#1F2937;
+                              -fx-font-family:'Microsoft YaHei'; -fx-padding:0 0 8 0;"/>
 
-    <HBox styleClass="sw2-pagination-bar" spacing="8" alignment="CENTER_LEFT">
-        <Label fx:id="totalLabel" text="共 0 条" styleClass="sw2-page-info"/>
-        <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="prevBtn" text="上一页" styleClass="sw2-page-btn" onAction="#onPrevPage"/>
-        <Label fx:id="pageLabel" text="第 1 / 1 页" styleClass="sw2-page-info"/>
-        <Button fx:id="nextBtn" text="下一页" styleClass="sw2-page-btn" onAction="#onNextPage"/>
-        <ComboBox fx:id="pageSizeCombo" styleClass="sw2-filter-combo" prefWidth="80">
-            <items><FXCollections fx:factory="observableArrayList">
-                <String fx:value="10"/>
-                <String fx:value="20"/>
-                <String fx:value="50"/>
-                <String fx:value="100"/>
-            </FXCollections></items>
-            <value><String fx:value="20"/></value>
-        </ComboBox>
-    </HBox>
+                <!-- 空状态 -->
+                <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS" alignment="CENTER">
+                    <Label text="请点击左侧记录查看详细信息"
+                           style="-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';"/>
+                </VBox>
+
+                <!-- 详情内容 -->
+                <VBox fx:id="detailPane" spacing="10" visible="false" managed="false">
+                    <Label text="剔除汇总"
+                           style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;
+                                  -fx-font-family:'Microsoft YaHei';"/>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="问题码："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detProblemCode"
+                               style="-fx-font-size:14px; -fx-text-fill:#F44336; -fx-font-weight:bold;
+                                      -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="箱码："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detCaseCode"
+                               style="-fx-font-size:14px; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="剔除原因："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detReason"
+                               style="-fx-font-size:14px; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="剔除时间："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detTime"
+                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+
+                    <Label text="产品信息"
+                           style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;
+                                  -fx-font-family:'Microsoft YaHei'; -fx-padding:4 0 0 0;"/>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="产品编号："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detProductNo"
+                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="产品名称："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detProductName"
+                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="4" alignment="TOP_LEFT">
+                        <Label text="生产单号："
+                               minWidth="76" prefWidth="76"
+                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
+                                      -fx-alignment:CENTER_RIGHT;"/>
+                        <Label fx:id="detOrderNo"
+                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
+                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+        </HBox>
+    </VBox>
 </VBox>

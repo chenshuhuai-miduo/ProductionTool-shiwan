@@ -1,5 +1,8 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.entity.enums.ModuleNameEnum;
+import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -179,6 +182,26 @@ public class ShiwanM2ReplaceController implements Initializable {
             origCodeField.clear();
             newCodeField.clear();
             reasonField.clear();
+
+            OperateLogBuilder.create()
+                    .module(ModuleNameEnum.CODE_REPLACE)
+                    .operateType(OperateTypeEnum.REPLACE)
+                    .target(orig, newCode)
+                    .content("石湾M2数据替换: " + orig + " -> " + newCode)
+                    .beforeData(orig)
+                    .afterData(newCode)
+                    .remark(reason)
+                    .deviceInfo("石湾M2-数据替换")
+                    .saveAsync();
+        } else {
+            OperateLogBuilder.create()
+                    .module(ModuleNameEnum.CODE_REPLACE)
+                    .operateType(OperateTypeEnum.REPLACE)
+                    .target(orig, newCode)
+                    .content("石湾M2数据替换失败: " + orig + " -> " + newCode)
+                    .failReason("新码已存在")
+                    .deviceInfo("石湾M2-数据替换")
+                    .saveAsync();
         }
     }
 

@@ -37,7 +37,7 @@
                            HBox.hgrow="ALWAYS"
                            style="-fx-min-height: 44px; -fx-font-size: 15px;
                                   -fx-border-color: #D1D5DB; -fx-border-radius: 8;
-                                  -fx-background-radius: 8; -fx-background-color: #F9FAFB;
+                                  -fx-background-radius: 8; -fx-background-color: white;
                                   -fx-padding: 0 12; -fx-font-family: 'Microsoft YaHei';"/>
                 <Button fx:id="addBtn" text="加入"
                         onAction="#onCodeInputSubmit"

@@ -12,7 +12,16 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -36,13 +45,15 @@ public class ShiwanM2CancelAssociationController {
     // ===== FXML 注入 =====
     @FXML private TextField  codeInputField;
     @FXML private ListView<PendingItem>       pendingList;
-    @FXML private ToggleGroup cancelScopeGroup;
-    @FXML private RadioButton scopeOneRadio;
-    @FXML private RadioButton scopeAllRadio;
+    @FXML private Button      scopeOneBtn;
+    @FXML private Button      scopeAllBtn;
     @FXML private Button      confirmCancelButton;
     @FXML private Label       identifySummaryLabel;
     @FXML private ListView<IdentifyItem>      identifyResultList;
     @FXML private ListView<CancelRecord>      cancelRecordList;
+
+    // ===== 内部状态：取消范围 =====
+    private boolean modeAll = false;
 
     // ===== 内部状态 =====
     /** 待取消列表（保持插入顺序）key=码值 */
@@ -71,13 +82,82 @@ public class ShiwanM2CancelAssociationController {
         identifyResultList.setCellFactory(lv -> new IdentifyCell());
         cancelRecordList.setCellFactory(lv -> new CancelRecordCell());
 
-        // 切换取消范围时刷新识别结果显示
-        cancelScopeGroup.selectedToggleProperty().addListener((obs, o, n) -> refreshIdentifyDisplay());
+        updateScopeStyle();
 
         // 回车加入列表
         codeInputField.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) onAddToList();
         });
+    }
+
+    // ===== 取消范围切换 =====
+
+    // 两种状态统一 2px 边框 + 固定尺寸，文字样式由 graphic 内的 Label 控制
+    private static final String SCOPE_SEL_STYLE =
+            "-fx-background-color:#EFF6FF; -fx-border-color:#2563EB; " +
+            "-fx-border-width:2; -fx-border-radius:8; -fx-background-radius:8; " +
+            "-fx-padding:0 16; -fx-min-height:40; -fx-pref-height:40; " +
+            "-fx-min-width:120; -fx-pref-width:120; " +
+            "-fx-cursor:hand; -fx-effect:null;";
+    private static final String SCOPE_NRM_STYLE =
+            "-fx-background-color:white; -fx-border-color:#D1D5DB; " +
+            "-fx-border-width:2; -fx-border-radius:8; -fx-background-radius:8; " +
+            "-fx-padding:0 16; -fx-min-height:40; -fx-pref-height:40; " +
+            "-fx-min-width:120; -fx-pref-width:120; " +
+            "-fx-cursor:hand; -fx-effect:null;";
+
+    @FXML
+    private void onScopeOne() {
+        modeAll = false;
+        updateScopeStyle();
+        refreshIdentifyDisplay();
+    }
+
+    @FXML
+    private void onScopeAll() {
+        modeAll = true;
+        updateScopeStyle();
+        refreshIdentifyDisplay();
+    }
+
+    private void updateScopeStyle() {
+        if (scopeOneBtn != null) {
+            scopeOneBtn.setText("");
+            scopeOneBtn.setGraphic(makeScopeGraphic("只解一层", !modeAll));
+            scopeOneBtn.setStyle(modeAll ? SCOPE_NRM_STYLE : SCOPE_SEL_STYLE);
+        }
+        if (scopeAllBtn != null) {
+            scopeAllBtn.setText("");
+            scopeAllBtn.setGraphic(makeScopeGraphic("全部解除", modeAll));
+            scopeAllBtn.setStyle(modeAll ? SCOPE_SEL_STYLE : SCOPE_NRM_STYLE);
+        }
+    }
+
+    /**
+     * 构造选项 graphic：用 Region 元素画圆圈 + Label 显示文字，
+     * 确保圆圈大小完全由样式控制，与字体无关。
+     */
+    private static HBox makeScopeGraphic(String text, boolean selected) {
+        // 圆圈：固定 10×10，selected=实心蓝，unselected=空心灰
+        Region circle = new Region();
+        circle.setMinSize(10, 10);
+        circle.setPrefSize(10, 10);
+        circle.setMaxSize(10, 10);
+        circle.setStyle(selected
+                ? "-fx-background-color:#2563EB; -fx-background-radius:50%;"
+                : "-fx-background-color:transparent; " +
+                  "-fx-border-color:#9CA3AF; -fx-border-width:1.5; " +
+                  "-fx-border-radius:50%; -fx-background-radius:50%;");
+
+        // 文字
+        Label label = new Label(text);
+        label.setStyle(selected
+                ? "-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#1D4ED8;"
+                : "-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#9CA3AF;");
+
+        HBox box = new HBox(8, circle, label);
+        box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        return box;
     }
 
     // ===== 帮助 =====
@@ -345,87 +425,54 @@ public class ShiwanM2CancelAssociationController {
 
     private boolean showPasswordConfirm(boolean modeAll, int execCount, int totalRelations,
                                         int skipCount, List<IdentifyItem> uploadedPallets) {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("取消关联确认");
-        ButtonType confirmType = new ButtonType("确认", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelType  = new ButtonType("取消", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(confirmType, cancelType);
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/fxml/ShiwanM2CancelConfirmDialog.fxml"));
+            javafx.scene.Parent root = loader.load();
+            ShiwanM2CancelConfirmDialogController ctrl = loader.getController();
 
-        // 信息盒
-        VBox infoBox = new VBox(6);
-        infoBox.setStyle("-fx-background-color:#EFF6FF; -fx-border-color:#BFDBFE; " +
-                "-fx-border-radius:8; -fx-background-radius:8; -fx-padding:12;");
-        Label scopeLabel = new Label("取消范围：" + (modeAll ? "全部解除" : "只解一层"));
-        scopeLabel.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#1D4ED8;");
-        Label execLabel  = new Label("本次将执行 " + execCount + " 个可解除项，共涉及 " + totalRelations + " 条关联");
-        execLabel.setStyle("-fx-font-size:14px;");
-        infoBox.getChildren().addAll(scopeLabel, execLabel);
-        if (skipCount > 0) {
-            Label skipLabel = new Label(skipCount + " 个不可解除项将被跳过");
-            skipLabel.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280;");
-            infoBox.getChildren().add(skipLabel);
-        }
-
-        VBox content = new VBox(16, infoBox);
-
-        // 云端影响盒
-        if (!uploadedPallets.isEmpty()) {
-            VBox cloudBox = new VBox(8);
-            cloudBox.setStyle("-fx-background-color:#FEF3C7; -fx-border-color:#F59E0B; " +
-                    "-fx-border-radius:8; -fx-background-radius:8; -fx-padding:12;");
-            Label cloudTitle = new Label("⚠ 云端影响：以下垛码已上传云端，执行将先取消整垛云端数据");
-            cloudTitle.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#92400E;");
-            cloudTitle.setWrapText(true);
-            cloudBox.getChildren().add(cloudTitle);
+            List<String> uploadedCodes = new java.util.ArrayList<>();
             for (IdentifyItem item : uploadedPallets) {
-                Label l = new Label("· 垛码 " + item.code);
-                l.setStyle("-fx-font-size:13px; -fx-text-fill:#92400E;");
-                cloudBox.getChildren().add(l);
+                uploadedCodes.add(item.code);
             }
-            Separator sep = new Separator();
-            Label warnLabel = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
-            warnLabel.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#B91C1C;");
-            cloudBox.getChildren().addAll(sep, warnLabel);
-            content.getChildren().add(cloudBox);
-        } else {
-            Label warnLabel = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
-            warnLabel.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#B91C1C;");
-            content.getChildren().add(warnLabel);
+            ctrl.setInfo(modeAll, execCount, totalRelations, skipCount, uploadedCodes, FIXED_PASSWORD);
+
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
+            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.setResizable(false);
+            stage.showAndWait();
+
+            return ctrl.isConfirmed();
+        } catch (Exception ex) {
+            // 降级：原生 Dialog
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("取消关联确认");
+            ButtonType confirmType = new ButtonType("确认取消", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancelType  = new ButtonType("取消", ButtonBar.ButtonData.CANCEL_CLOSE);
+            dialog.getDialogPane().getButtonTypes().addAll(confirmType, cancelType);
+            VBox content = new VBox(12);
+            content.setPadding(new Insets(20));
+            Label info = new Label("取消范围：" + (modeAll ? "全部解除" : "只解一层")
+                    + "，执行 " + execCount + " 项，共 " + totalRelations + " 条关联");
+            PasswordField pwdField = new PasswordField();
+            pwdField.setPromptText("请输入密码");
+            Label pwdErr = new Label();
+            pwdErr.setStyle("-fx-text-fill:#EF4444;");
+            content.getChildren().addAll(info, pwdField, pwdErr);
+            dialog.getDialogPane().setContent(content);
+            Button confirmBtn = (Button) dialog.getDialogPane().lookupButton(confirmType);
+            confirmBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+                if (!FIXED_PASSWORD.equals(pwdField.getText())) {
+                    pwdErr.setText("密码错误，请重新输入");
+                    pwdField.clear();
+                    ev.consume();
+                }
+            });
+            Optional<ButtonType> result = dialog.showAndWait();
+            return result.isPresent() && result.get() == confirmType;
         }
-
-        // 密码框
-        VBox pwdBox = new VBox(6);
-        Label pwdLabel = new Label("* 密码");
-        pwdLabel.setStyle("-fx-font-weight:bold; -fx-font-size:16px;");
-        PasswordField pwdField = new PasswordField();
-        pwdField.setPromptText("请输入密码");
-        pwdField.setStyle("-fx-min-height:44px; -fx-font-size:16px;");
-        Label pwdErr = new Label();
-        pwdErr.setStyle("-fx-text-fill:#EF4444; -fx-font-size:13px;");
-        pwdBox.getChildren().addAll(pwdLabel, pwdField, pwdErr);
-        content.getChildren().add(pwdBox);
-
-        content.setPrefWidth(480);
-        content.setPadding(new Insets(20));
-        dialog.getDialogPane().setContent(content);
-
-        Button confirmBtn = (Button) dialog.getDialogPane().lookupButton(confirmType);
-        confirmBtn.setStyle("-fx-background-color:#EF4444; -fx-text-fill:white; " +
-                "-fx-font-weight:bold; -fx-min-width:100px;");
-        Button cancelBtn = (Button) dialog.getDialogPane().lookupButton(cancelType);
-        cancelBtn.setStyle("-fx-background-color:#6B7280; -fx-text-fill:white; -fx-min-width:80px;");
-
-        // 密码验证：密码错误不关闭对话框
-        confirmBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            if (!FIXED_PASSWORD.equals(pwdField.getText())) {
-                pwdErr.setText("密码错误，请重新输入");
-                pwdField.clear();
-                ev.consume();
-            }
-        });
-
-        Optional<ButtonType> result = dialog.showAndWait();
-        return result.isPresent() && result.get() == confirmType;
     }
 
     // ===== 日志 =====
@@ -454,7 +501,7 @@ public class ShiwanM2CancelAssociationController {
     // ===== 工具方法 =====
 
     private boolean isModeAll() {
-        return scopeAllRadio != null && scopeAllRadio.isSelected();
+        return modeAll;
     }
 
     private static String codeTypeName(String codeType) {
@@ -630,7 +677,7 @@ public class ShiwanM2CancelAssociationController {
 
             int idx = getIndex() + 1;
             Label text = new Label(idx + ". " + item);
-            text.setStyle("-fx-font-size:14px;");
+            text.setStyle("-fx-font-size:16px;");
             HBox.setHgrow(text, Priority.ALWAYS);
             text.setMaxWidth(Double.MAX_VALUE);
 
@@ -669,18 +716,18 @@ public class ShiwanM2CancelAssociationController {
                 card.setStyle("-fx-border-color: #16A34A transparent transparent transparent; " +
                         "-fx-border-width: 3 0 0 0;");
                 Label title = new Label("✓ " + typeName + " " + item.code + "，可解除");
-                title.setStyle("-fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:#15803D;");
+                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#10B981;");
                 Label detail = new Label("   " + item.detailText());
-                detail.setStyle("-fx-font-size:13px; -fx-text-fill:#374151;");
+                detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280;");
                 detail.setWrapText(true);
                 card.getChildren().addAll(title, detail);
             } else {
                 card.setStyle("-fx-border-color: #DC2626 transparent transparent transparent; " +
                         "-fx-border-width: 3 0 0 0;");
                 Label title = new Label("✗ " + typeName + " " + item.code + "，不可解除");
-                title.setStyle("-fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
                 Label detail = new Label("   " + item.detailText());
-                detail.setStyle("-fx-font-size:13px; -fx-text-fill:#6B7280;");
+                detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280;");
                 detail.setWrapText(true);
                 card.getChildren().addAll(title, detail);
             }
@@ -697,8 +744,8 @@ public class ShiwanM2CancelAssociationController {
             super.updateItem(item, empty);
             if (empty || item == null) { setGraphic(null); setText(null); return; }
             Label label = new Label(item.toString());
-            label.setStyle("-fx-font-size:13px; -fx-text-fill:" +
-                    (item.success ? "#15803D" : "#DC2626") + ";");
+            label.setStyle("-fx-font-size:16px; -fx-text-fill:" +
+                    (item.success ? "#10B981" : "#DC2626") + ";");
             label.setWrapText(true);
             setGraphic(label);
             setText(null);

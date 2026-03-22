@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2SpecChangeDialogController"
+      prefWidth="520"
+      style="-fx-background-color: white;
+             -fx-border-color: #D9E1EC;
+             -fx-border-width: 1;">
+
+    <!-- 标题栏 -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT"
+          style="-fx-background-color: #F5F7FA;
+                 -fx-border-color: transparent transparent #E5E7EB transparent;
+                 -fx-border-width: 0 0 1 0;
+                 -fx-padding: 0 8 0 24;
+                 -fx-min-height: 56; -fx-pref-height: 56;">
+        <Label text="采集规格变更确认"
+               style="-fx-font-size: 17px; -fx-font-weight: bold;
+                      -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="×" onAction="#onCancel"
+                style="-fx-background-color: transparent; -fx-text-fill: #9CA3AF;
+                       -fx-font-size: 22px; -fx-cursor: hand;
+                       -fx-min-width: 44; -fx-min-height: 44;
+                       -fx-border-width: 0; -fx-background-radius: 6;
+                       -fx-effect: null; -fx-padding: 0;"/>
+    </HBox>
+
+    <!-- 内容区 -->
+    <VBox spacing="16" style="-fx-padding: 20 24 24 24;">
+
+        <!-- 警告横幅 -->
+        <HBox spacing="12" alignment="CENTER_LEFT"
+              style="-fx-background-color: #FFFBEB;
+                     -fx-border-color: #FDE68A; -fx-border-width: 1;
+                     -fx-border-radius: 8; -fx-background-radius: 8;
+                     -fx-padding: 14 16;">
+            <Label text="⚠"
+                   style="-fx-font-size: 16px; -fx-text-fill: #D97706;"/>
+            <Label text="检测到已保存的采集规格与当前输入不一致"
+                   style="-fx-font-size: 14px; -fx-font-weight: bold;
+                          -fx-text-fill: #92400E; -fx-font-family: 'Microsoft YaHei';"
+                   wrapText="true"/>
+        </HBox>
+
+        <!-- 规格对比区 -->
+        <VBox spacing="10"
+              style="-fx-background-color: #F9FAFB;
+                     -fx-border-color: #E5E7EB; -fx-border-width: 1;
+                     -fx-border-radius: 8; -fx-background-radius: 8;
+                     -fx-padding: 16 20;">
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="已保存："
+                       style="-fx-font-size: 15px; -fx-font-weight: bold;
+                              -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                <Label fx:id="savedSpecLabel" text="—"
+                       style="-fx-font-size: 15px; -fx-text-fill: #374151;
+                              -fx-font-family: 'Microsoft YaHei';"/>
+            </HBox>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="当前："
+                       style="-fx-font-size: 15px; -fx-font-weight: bold;
+                              -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
+                <Label fx:id="currentSpecLabel" text="—"
+                       style="-fx-font-size: 15px; -fx-font-weight: bold;
+                              -fx-text-fill: #2563EB; -fx-font-family: 'Microsoft YaHei';"/>
+            </HBox>
+        </VBox>
+
+        <!-- 确认问题 -->
+        <Label text="是否覆盖保存为当前规格？"
+               style="-fx-font-size: 15px; -fx-text-fill: #374151;
+                      -fx-font-family: 'Microsoft YaHei';"/>
+    </VBox>
+
+    <!-- 底部按钮区 -->
+    <HBox alignment="CENTER" spacing="12"
+          style="-fx-background-color: #F9FAFB;
+                 -fx-border-color: #E5E7EB transparent transparent transparent;
+                 -fx-border-width: 1 0 0 0;
+                 -fx-min-height: 72; -fx-pref-height: 72;">
+        <Button text="取消" onAction="#onCancel"
+                style="-fx-min-width: 90; -fx-pref-width: 90;
+                       -fx-min-height: 40; -fx-pref-height: 40;
+                       -fx-font-size: 15px; -fx-font-weight: bold;
+                       -fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                       -fx-background-radius: 8; -fx-border-width: 0;
+                       -fx-effect: null; -fx-cursor: hand;
+                       -fx-font-family: 'Microsoft YaHei';"/>
+        <Button text="确定" onAction="#onConfirm"
+                style="-fx-min-width: 90; -fx-pref-width: 90;
+                       -fx-min-height: 40; -fx-pref-height: 40;
+                       -fx-font-size: 15px; -fx-font-weight: bold;
+                       -fx-background-color: #2563EB; -fx-text-fill: white;
+                       -fx-background-radius: 8; -fx-border-width: 0;
+                       -fx-effect: null; -fx-cursor: hand;
+                       -fx-font-family: 'Microsoft YaHei';"/>
+    </HBox>
+</VBox>

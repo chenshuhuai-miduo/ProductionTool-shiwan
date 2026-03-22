@@ -4766,11 +4766,15 @@
           "type": "frame",
           "id": "iEuRP",
           "name": "内容区",
+          "clip": true,
           "width": "fill_container",
-          "height": 480,
-          "layout": "vertical",
-          "gap": 12,
-          "padding": 24,
+          "height": 380,
+          "padding": [
+            16,
+            0,
+            16,
+            24
+          ],
           "children": [
             {
               "type": "frame",
@@ -4825,6 +4829,30 @@
                   "fontFamily": "Inter",
                   "fontSize": 16,
                   "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nRMOL",
+              "name": "滚动条区域",
+              "width": 14,
+              "height": "fill_container",
+              "fill": "#F1F5F9",
+              "layout": "vertical",
+              "padding": [
+                8,
+                4
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tCkzR",
+                  "name": "滚动条轨道",
+                  "width": "fill_container",
+                  "height": 72,
+                  "fill": "#94A3B8",
+                  "cornerRadius": 4
                 }
               ]
             }
@@ -5003,6 +5031,498 @@
                       "fontWeight": "600"
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fcAh5",
+      "x": 2594,
+      "y": -1714,
+      "name": "通用确认弹窗",
+      "reusable": true,
+      "width": 400,
+      "fill": "#FFFFFF",
+      "cornerRadius": 16,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#E5E7EB"
+      },
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "enabled": false,
+        "color": "#0000001A",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "jNX4D",
+          "name": "标题栏",
+          "width": "fill_container",
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "npWqA",
+              "name": "标题组",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "aSxSQ",
+                  "name": "图标背景",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#FEF3C7",
+                  "cornerRadius": 14,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "PnsSr",
+                      "name": "警告图标",
+                      "fill": "#D97706",
+                      "content": "!",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "z8YZv",
+                  "name": "标题文本",
+                  "fill": "#111827",
+                  "content": "确认操作",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "JHIhp",
+          "name": "分割线",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "#F3F4F6"
+        },
+        {
+          "type": "frame",
+          "id": "p1B1b",
+          "name": "内容区",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            20,
+            24,
+            28,
+            24
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "6eGXL",
+              "name": "内容文本",
+              "fill": "#4B5563",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "此操作将永久删除文件，无法撤销。是否继续？",
+              "lineHeight": 1.7,
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vpdyb",
+          "name": "底部按钮区",
+          "width": "fill_container",
+          "gap": 12,
+          "padding": [
+            16,
+            24,
+            28,
+            24
+          ],
+          "justifyContent": "end",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "7JeSa",
+              "name": "取消按钮",
+              "width": 96,
+              "height": 40,
+              "fill": "#FFFFFF",
+              "cornerRadius": 8,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "#D1D5DB"
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "TzWSC",
+                  "name": "cancelText",
+                  "fill": "#374151",
+                  "content": "取消",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "189Lg",
+              "name": "确认按钮",
+              "width": 96,
+              "height": 40,
+              "fill": "#2563EB",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BQoyB",
+                  "name": "confirmText",
+                  "fill": "#FFFFFF",
+                  "content": "确定",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "CvaNt",
+      "x": 2594,
+      "y": -1235,
+      "name": "通用提示弹窗",
+      "reusable": true,
+      "width": 400,
+      "fill": "#FFFFFF",
+      "cornerRadius": 16,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#E5E7EB"
+      },
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#0000001A",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "zTss3",
+          "name": "标题栏",
+          "width": "fill_container",
+          "gap": 10,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Y9Xf1",
+              "name": "图标背景",
+              "width": 28,
+              "height": 28,
+              "fill": "#DBEAFE",
+              "cornerRadius": 14,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "uhkpu",
+                  "name": "信息图标",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "info",
+                  "iconFontFamily": "lucide",
+                  "fill": "#2563EB"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "P7STy",
+              "name": "标题文本",
+              "fill": "#111827",
+              "content": "操作提示",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "EAiww",
+          "name": "分割线",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "#F3F4F6"
+        },
+        {
+          "type": "frame",
+          "id": "5FHwB",
+          "name": "内容区",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            20,
+            24,
+            8,
+            24
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "G2ZkM",
+              "name": "内容文本",
+              "fill": "#4B5563",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "操作已完成，请知悉。",
+              "lineHeight": 1.7,
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "DLEsM",
+          "name": "底部按钮区",
+          "width": "fill_container",
+          "padding": [
+            16,
+            24,
+            28,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "81Kh8",
+              "name": "确定按钮",
+              "width": 160,
+              "height": 44,
+              "fill": "#2563EB",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "c9WeN",
+                  "name": "confirmText",
+                  "fill": "#FFFFFF",
+                  "content": "确定",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "85YAH",
+      "x": 2594,
+      "y": -1235,
+      "name": "通用提示弹窗",
+      "reusable": true,
+      "width": 400,
+      "fill": "#FFFFFF",
+      "cornerRadius": 16,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#E5E7EB"
+      },
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "enabled": false,
+        "color": "#0000001A",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 24
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "NcXhC",
+          "name": "标题栏",
+          "width": "fill_container",
+          "gap": 10,
+          "padding": [
+            20,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "UHUQv",
+              "name": "图标背景",
+              "width": 28,
+              "height": 28,
+              "fill": "#DBEAFE",
+              "cornerRadius": 14,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apihJ",
+                  "name": "信息图标",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "info",
+                  "iconFontFamily": "lucide",
+                  "fill": "#2563EB"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "oANfw",
+              "name": "标题文本",
+              "fill": "#111827",
+              "content": "操作提示",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "NhaZq",
+          "name": "分割线",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "#F3F4F6"
+        },
+        {
+          "type": "frame",
+          "id": "Up3sH",
+          "name": "内容区",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            20,
+            24,
+            8,
+            24
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "Ryz2J",
+              "name": "内容文本",
+              "fill": "#4B5563",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "操作已完成，请知悉。",
+              "lineHeight": 1.7,
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "k0YvQ",
+          "name": "底部按钮区",
+          "width": "fill_container",
+          "padding": [
+            28,
+            24,
+            32,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "wpPgw",
+              "name": "确定按钮",
+              "width": 160,
+              "height": 44,
+              "fill": "#2563EB",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qU5ZK",
+                  "name": "confirmText",
+                  "fill": "#FFFFFF",
+                  "content": "确定",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
                 }
               ]
             }

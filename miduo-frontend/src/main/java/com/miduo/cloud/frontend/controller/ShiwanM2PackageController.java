@@ -31,6 +31,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -400,15 +401,17 @@ public class ShiwanM2PackageController implements Initializable {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ShiwanM2PackageViewCodesDialog.fxml"));
             Parent root = loader.load();
             ShiwanM2PackageViewCodesDialogController controller = loader.getController();
-            controller.setContext(row.id, row.packageName);
+            controller.setContext(row.id, row.packageName,
+                    row.typeName, row.codeCount, row.statusName,
+                    row.status != null && row.status == 1);
 
             Stage stage = new Stage();
-            stage.setTitle("查看码包");
-            stage.setScene(new Scene(root));
+            stage.initStyle(StageStyle.UNDECORATED);
             stage.initModality(Modality.WINDOW_MODAL);
             stage.initOwner(packageTable.getScene().getWindow());
-            stage.setMinWidth(720);
-            stage.setMinHeight(520);
+            stage.setScene(new Scene(root));
+            stage.setMinWidth(640);
+            stage.setMinHeight(540);
             stage.showAndWait();
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "打开失败", "无法打开查看窗口：" + e.getMessage());

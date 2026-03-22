@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2CancelConfirmDialogController"
+      prefWidth="520"
+      style="-fx-background-color: white; -fx-border-color: #D9E1EC; -fx-border-width: 1;">
+
+    <!-- 标题栏 -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT"
+          style="-fx-background-color: #F5F7FA;
+                 -fx-border-color: transparent transparent #E5E7EB transparent;
+                 -fx-border-width: 0 0 1 0;
+                 -fx-padding: 0 8 0 24;
+                 -fx-min-height: 56; -fx-pref-height: 56;">
+        <Label text="取消关联"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;
+                      -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="×" onAction="#onCancel"
+                style="-fx-background-color: transparent; -fx-text-fill: #9CA3AF;
+                       -fx-font-size: 22px; -fx-cursor: hand;
+                       -fx-min-width: 44; -fx-min-height: 44;
+                       -fx-border-width: 0; -fx-background-radius: 6;
+                       -fx-effect: null; -fx-padding: 0;"/>
+    </HBox>
+
+    <!-- 内容区 -->
+    <VBox spacing="16" style="-fx-padding: 20 24 24 24;">
+
+        <!-- 信息盒：取消范围 + 执行数量 + 跳过数量 -->
+        <VBox spacing="8"
+              style="-fx-background-color: #F9FAFB;
+                     -fx-border-color: #E5E7EB; -fx-border-width: 1;
+                     -fx-border-radius: 8; -fx-background-radius: 8;
+                     -fx-padding: 14 16;">
+            <Label fx:id="infoScopeLabel" text="取消范围：只解一层"
+                   maxWidth="Infinity"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;
+                          -fx-text-fill: #2563EB; -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="infoExecLabel" text="本次将执行 0 个可解除项，共涉及 0 条关联"
+                   maxWidth="Infinity"
+                   style="-fx-font-size: 16px; -fx-text-fill: #374151;
+                          -fx-font-family: 'Microsoft YaHei';"/>
+            <Label fx:id="infoSkipLabel" text=""
+                   maxWidth="Infinity" visible="false" managed="false"
+                   style="-fx-font-size: 16px; -fx-text-fill: #6B7280;
+                          -fx-font-family: 'Microsoft YaHei';"/>
+        </VBox>
+
+        <!-- 云端影响区（有已上传垛码时显示）-->
+        <VBox fx:id="cloudWarningBox" spacing="12" visible="false" managed="false">
+            <Label fx:id="cloudTitleLabel"
+                   text="⚠ 云端影响：以下垛码已上传云端，执行将先取消整垛云端数据"
+                   wrapText="true" maxWidth="Infinity"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;
+                          -fx-text-fill: #92400E; -fx-font-family: 'Microsoft YaHei';"/>
+            <VBox fx:id="cloudPalletList" spacing="4"/>
+        </VBox>
+
+        <!-- 密码 -->
+        <VBox spacing="6">
+            <HBox spacing="4" alignment="CENTER_LEFT">
+                <Label text="*"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #EF4444;"/>
+                <Label text="密码"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold;
+                              -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+            </HBox>
+            <StackPane>
+                <PasswordField fx:id="passwordField" promptText="请输入密码"
+                               style="-fx-min-height: 42px; -fx-font-size: 16px;
+                                      -fx-background-color: white;
+                                      -fx-border-color: #D1D5DB; -fx-border-radius: 8;
+                                      -fx-background-radius: 8; -fx-padding: 0 44 0 14;"/>
+                <TextField fx:id="plainField" promptText="请输入密码"
+                           visible="false" managed="false"
+                           style="-fx-min-height: 42px; -fx-font-size: 16px;
+                                  -fx-background-color: white;
+                                  -fx-border-color: #D1D5DB; -fx-border-radius: 8;
+                                  -fx-background-radius: 8; -fx-padding: 0 44 0 14;"/>
+                <HBox alignment="CENTER_RIGHT" style="-fx-padding: 0 12 0 0;" pickOnBounds="false">
+                    <Button onAction="#onToggleVisible"
+                            style="-fx-background-color: transparent; -fx-border-width: 0;
+                                   -fx-effect: null; -fx-cursor: hand; -fx-padding: 4;">
+                        <graphic>
+                            <Label fx:id="eyeIcon" text="&#x1F441;"
+                                   style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;
+                                          -fx-text-fill: #9CA3AF;"/>
+                        </graphic>
+                    </Button>
+                </HBox>
+            </StackPane>
+            <Label fx:id="pwdErrorLabel" text=""
+                   visible="false" managed="false"
+                   style="-fx-font-size: 13px; -fx-text-fill: #EF4444;
+                          -fx-font-family: 'Microsoft YaHei';"/>
+        </VBox>
+
+        <!-- 底部警告 -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="⚠"
+                   style="-fx-font-size: 14px; -fx-text-fill: #DC2626;"/>
+            <Label text="此操作不可恢复，请仔细核对后确认！"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;
+                          -fx-text-fill: #DC2626; -fx-font-family: 'Microsoft YaHei';"/>
+        </HBox>
+    </VBox>
+
+    <!-- 底部按钮 -->
+    <HBox alignment="CENTER" spacing="12"
+          style="-fx-background-color: #F9FAFB;
+                 -fx-border-color: #E5E7EB transparent transparent transparent;
+                 -fx-border-width: 1 0 0 0;
+                 -fx-min-height: 72; -fx-pref-height: 72;">
+        <Button text="取消" onAction="#onCancel"
+                style="-fx-min-width: 90; -fx-pref-width: 90;
+                       -fx-min-height: 40; -fx-pref-height: 40;
+                       -fx-font-size: 18px; -fx-font-weight: bold;
+                       -fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                       -fx-background-radius: 8; -fx-border-width: 0;
+                       -fx-effect: null; -fx-cursor: hand;
+                       -fx-font-family: 'Microsoft YaHei';"/>
+        <Button text="确认取消" onAction="#onConfirm"
+                style="-fx-min-width: 104; -fx-pref-width: 104;
+                       -fx-min-height: 40; -fx-pref-height: 40;
+                       -fx-font-size: 18px; -fx-font-weight: bold;
+                       -fx-background-color: #EF4444; -fx-text-fill: white;
+                       -fx-background-radius: 8; -fx-border-width: 0;
+                       -fx-effect: null; -fx-cursor: hand;
+                       -fx-font-family: 'Microsoft YaHei';"/>
+    </HBox>
+</VBox>

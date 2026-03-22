@@ -28,6 +28,7 @@ import java.util.ResourceBundle;
 
 public class ShiwanM2PalletListController implements Initializable {
 
+    @FXML private javafx.scene.layout.HBox titleBar;
     @FXML private TextField palletCodeField;
     @FXML private TableView<PalletRow> palletTable;
     @FXML private TableColumn<PalletRow, String> palletCodeCol;
@@ -35,10 +36,13 @@ public class ShiwanM2PalletListController implements Initializable {
     @FXML private TableColumn<PalletRow, String> orderNoCol;
     @FXML private TableColumn<PalletRow, String> associateTimeCol;
     @FXML private Label totalLabel;
-    @FXML private Label pageLabel;
+    @FXML private TextField pageInputField;
+    @FXML private Label totalPagesLabel;
     @FXML private ComboBox<String> pageSizeCombo;
     @FXML private Button prevBtn;
     @FXML private Button nextBtn;
+
+    private double dragOffsetX, dragOffsetY;
 
     private final ObservableList<PalletRow> rows = FXCollections.observableArrayList();
     private String startDate = "";
@@ -50,6 +54,19 @@ public class ShiwanM2PalletListController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // 拖拽支持
+        titleBar.setOnMousePressed(e -> {
+            dragOffsetX = e.getSceneX();
+            dragOffsetY = e.getSceneY();
+        });
+        titleBar.setOnMouseDragged(e -> {
+            Stage stage = (Stage) titleBar.getScene().getWindow();
+            stage.setX(e.getScreenX() - dragOffsetX);
+            stage.setY(e.getScreenY() - dragOffsetY);
+        });
+
+        palletTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
         palletCodeCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().palletCode));
         caseCountCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().caseCount));
         orderNoCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().orderNo));
@@ -60,6 +77,21 @@ public class ShiwanM2PalletListController implements Initializable {
             page = 1;
             loadData();
         });
+    }
+
+    @FXML
+    private void onPageInput() {
+        try {
+            int p = Integer.parseInt(pageInputField.getText().trim());
+            if (p >= 1 && p <= pages) {
+                page = p;
+                loadData();
+            } else {
+                pageInputField.setText(String.valueOf(page));
+            }
+        } catch (NumberFormatException ex) {
+            pageInputField.setText(String.valueOf(page));
+        }
     }
 
     public void setContext(String startDate, String endDate, String orderNo) {
@@ -101,7 +133,7 @@ public class ShiwanM2PalletListController implements Initializable {
 
     @FXML
     private void onClose() {
-        ((Stage) palletTable.getScene().getWindow()).close();
+        ((Stage) titleBar.getScene().getWindow()).close();
     }
 
     private void loadData() {
@@ -129,7 +161,8 @@ public class ShiwanM2PalletListController implements Initializable {
                 pages = Math.max(1, (int) num(data.get("pages")));
                 page = Math.max(1, Math.min(page, pages));
                 totalLabel.setText("共 " + total + " 条");
-                pageLabel.setText("第 " + page + " / " + pages + " 页");
+                pageInputField.setText(String.valueOf(page));
+                totalPagesLabel.setText("/ " + pages + " 页");
                 prevBtn.setDisable(page <= 1);
                 nextBtn.setDisable(page >= pages);
             } catch (Exception ex) {
@@ -149,7 +182,7 @@ public class ShiwanM2PalletListController implements Initializable {
 
     private int parsePageSize(String value) {
         try {
-            return Integer.parseInt(value);
+            return Integer.parseInt(value == null ? "20" : value.replace("条", "").trim());
         } catch (Exception ex) {
             return 20;
         }

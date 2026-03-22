@@ -9,6 +9,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.text.Font;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -17,6 +20,8 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.application.Platform;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -30,6 +35,7 @@ import java.util.ResourceBundle;
 
 public class ShiwanM2RejectRecordsController implements Initializable {
 
+    @FXML private HBox titleBar;
     @FXML private TextField caseCodeField;
     @FXML private TableView<RejectRow> rejectTable;
     @FXML private TableColumn<RejectRow, String> seqCol;
@@ -38,7 +44,8 @@ public class ShiwanM2RejectRecordsController implements Initializable {
     @FXML private TableColumn<RejectRow, String> caseCol;
     @FXML private TableColumn<RejectRow, String> reasonCol;
     @FXML private Label totalLabel;
-    @FXML private Label pageLabel;
+    @FXML private TextField pageInputField;
+    @FXML private Label totalPagesLabel;
     @FXML private ComboBox<String> pageSizeCombo;
     @FXML private Button prevBtn;
     @FXML private Button nextBtn;
@@ -60,21 +67,98 @@ public class ShiwanM2RejectRecordsController implements Initializable {
     private int page = 1;
     private int pageSize = 20;
     private int pages = 1;
+    private double dragOffsetX, dragOffsetY;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // 拖拽支持
+        titleBar.setOnMousePressed(e -> {
+            dragOffsetX = e.getSceneX();
+            dragOffsetY = e.getSceneY();
+        });
+        titleBar.setOnMouseDragged(e -> {
+            Stage stage = (Stage) titleBar.getScene().getWindow();
+            stage.setX(e.getScreenX() - dragOffsetX);
+            stage.setY(e.getScreenY() - dragOffsetY);
+        });
+
+        // 列自适应，禁止水平滚动条
+        rejectTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // 行高随内容自动撑开
+        rejectTable.setFixedCellSize(-1);
+
+        // 序号列（居中，不换行，固定最小行高 44px）
         seqCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().seq));
+        seqCol.setCellFactory(col -> new TableCell<>() {
+            private final Label label = new Label();
+            {
+                label.setFont(Font.font("Microsoft YaHei", 14));
+                label.setStyle("-fx-text-fill:#1F2937;");
+                label.setAlignment(Pos.CENTER);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+            }
+            @Override
+            protected double computePrefHeight(double width) { return 44; }
+            @Override
+            protected void layoutChildren() {
+                label.resizeRelocate(0, 0, getWidth(), getHeight());
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                label.setText(empty || item == null ? null : item);
+            }
+        });
+
+        // 码列（自动换行 + 问题码红色高亮）
         bottleCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().bottleCode));
         boxCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().boxCode));
         caseCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().caseCode));
-        reasonCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().rejectReason));
+        applyWrapHighlightCellFactory(bottleCol);
+        applyWrapHighlightCellFactory(boxCol);
+        applyWrapHighlightCellFactory(caseCol);
 
-        applyProblemHighlight(bottleCol);
-        applyProblemHighlight(boxCol);
-        applyProblemHighlight(caseCol);
+        // 剔除原因列（自动换行，行高自适应）
+        reasonCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().rejectReason));
+        reasonCol.setCellFactory(col -> new TableCell<>() {
+            private final Label label = new Label();
+            {
+                label.setWrapText(true);
+                label.setFont(Font.font("Microsoft YaHei", 14));
+                label.setStyle("-fx-text-fill:#1F2937;");
+                label.setAlignment(Pos.CENTER);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+            }
+            @Override
+            protected double computePrefHeight(double width) {
+                String text = label.getText();
+                if (text == null || text.isEmpty()) return 44;
+                // width=-1 表示 JavaFX 还未分配列宽，用列的当前宽度兜底
+                double w = width > 0 ? width : col.getWidth();
+                double lw = Math.max(0, w - 16);
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            }
+            @Override
+            protected void layoutChildren() {
+                double lw = Math.max(0, getWidth() - 16);
+                label.resize(lw, label.prefHeight(lw));
+                label.relocate(8, 8);
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                label.setText(empty || item == null ? null : item);
+            }
+        });
 
         rejectTable.setItems(rows);
         rejectTable.getSelectionModel().selectedItemProperty().addListener((obs, old, row) -> showDetail(row));
+
+        pageSizeCombo.setValue("20条");
         pageSizeCombo.setOnAction(e -> {
             pageSize = parsePageSize(pageSizeCombo.getValue());
             page = 1;
@@ -121,8 +205,23 @@ public class ShiwanM2RejectRecordsController implements Initializable {
     }
 
     @FXML
+    private void onPageInput() {
+        try {
+            int p = Integer.parseInt(pageInputField.getText().trim());
+            if (p >= 1 && p <= pages) {
+                page = p;
+                loadData();
+            } else {
+                pageInputField.setText(String.valueOf(page));
+            }
+        } catch (NumberFormatException ex) {
+            pageInputField.setText(String.valueOf(page));
+        }
+    }
+
+    @FXML
     private void onClose() {
-        ((Stage) rejectTable.getScene().getWindow()).close();
+        ((Stage) titleBar.getScene().getWindow()).close();
     }
 
     private void loadData() {
@@ -148,11 +247,14 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                     mapped.add(RejectRow.from(i + 1 + (page - 1) * pageSize, records.get(i)));
                 }
                 rows.setAll(mapped);
+                // 数据设置后列宽已确定，延迟一帧刷新让 VirtualFlow 用正确列宽重算行高
+                Platform.runLater(() -> rejectTable.refresh());
                 long total = num(data.get("total"));
                 pages = Math.max(1, (int) num(data.get("pages")));
                 page = Math.max(1, Math.min(page, pages));
                 totalLabel.setText("共 " + total + " 条");
-                pageLabel.setText("第 " + page + " / " + pages + " 页");
+                pageInputField.setText(String.valueOf(page));
+                totalPagesLabel.setText("/ " + pages + " 页");
                 prevBtn.setDisable(page <= 1);
                 nextBtn.setDisable(page >= pages);
                 showDetail(null);
@@ -179,22 +281,51 @@ public class ShiwanM2RejectRecordsController implements Initializable {
         detOrderNo.setText(safeDash(row.orderNo));
     }
 
-    private void applyProblemHighlight(TableColumn<RejectRow, String> col) {
+    private void applyWrapHighlightCellFactory(TableColumn<RejectRow, String> col) {
         col.setCellFactory(c -> new TableCell<>() {
+            private final Label label = new Label();
+            {
+                label.setWrapText(true);
+                // 显式设置字体，保证 prefHeight() 计算时字体度量正确
+                label.setFont(Font.font("Microsoft YaHei", 14));
+                label.setAlignment(Pos.CENTER);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+            }
+
+            /** JavaFX 询问行高时，依据换行后的真实文字高度返回，不再截断 */
+            @Override
+            protected double computePrefHeight(double width) {
+                String text = label.getText();
+                if (text == null || text.isEmpty()) return 44;
+                // width=-1 表示列宽还未确定，用列的当前宽度兜底
+                double w = width > 0 ? width : col.getWidth();
+                double lw = Math.max(0, w - 16);
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            }
+
+            @Override
+            protected void layoutChildren() {
+                double lw = Math.max(0, getWidth() - 16);
+                label.resize(lw, label.prefHeight(lw));
+                label.relocate(8, 8);
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null || item.isEmpty()) {
-                    setText(null);
-                    setStyle("");
-                    return;
-                }
-                setText(item);
-                RejectRow row = getTableRow() == null ? null : getTableRow().getItem();
-                if (row != null && item.equals(row.problemCode)) {
-                    setStyle("-fx-text-fill: #F44336; -fx-font-weight: bold;");
+                if (empty || item == null) {
+                    label.setText(null);
+                    label.setStyle("");
                 } else {
-                    setStyle("");
+                    label.setText(item);
+                    RejectRow row = getTableRow() == null ? null : getTableRow().getItem();
+                    if (row != null && !item.isEmpty() && item.equals(row.problemCode)) {
+                        label.setStyle("-fx-text-fill:#F44336; -fx-font-weight:bold;");
+                    } else {
+                        label.setStyle("-fx-text-fill:#1F2937;");
+                    }
                 }
             }
         });
@@ -211,7 +342,7 @@ public class ShiwanM2RejectRecordsController implements Initializable {
 
     private int parsePageSize(String value) {
         try {
-            return Integer.parseInt(value);
+            return Integer.parseInt(value == null ? "20" : value.replace("条", "").trim());
         } catch (Exception ex) {
             return 20;
         }

@@ -290,7 +290,7 @@
 
                 <!-- ========== Tab 4: 数据替换 ========== -->
                 <Tab text="数据替换">
-                    <fx:include source="ShiwanM2DataReplacePane.fxml"/>
+                    <fx:include source="ShiwanM2ReplaceTab.fxml"/>
                 </Tab>
 
                 <!-- ========== Tab 5: 生产统计 ========== -->

@@ -39,6 +39,7 @@ import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
@@ -1158,19 +1159,44 @@ public class ShiwanM2MainController implements Initializable {
         int savedM = settings != null && settings.getBoxesPerPallet() != null ? settings.getBoxesPerPallet() : m;
         int savedN = settings != null && settings.getBoxesPerCase()   != null ? settings.getBoxesPerCase()   : n;
         if (m != savedM || n != savedN) {
-            Alert specAlert = new Alert(Alert.AlertType.CONFIRMATION);
-            specAlert.setTitle("采集规格变更确认");
-            specAlert.setHeaderText("检测到已保存的采集规格与当前输入不一致");
-            specAlert.setContentText("已保存：1垛 " + savedM + " 箱 / 1箱 " + savedN + " 盒\n"
-                    + "当前：1垛 " + m + " 箱 / 1箱 " + n + " 盒\n是否覆盖保存为当前规格？");
-            ShiwanM2AlertUtil.applyStyle(specAlert);
-            Optional<ButtonType> specResult = specAlert.showAndWait();
-            if (specResult.isEmpty() || specResult.get() != ButtonType.OK) {
-                m = savedM; n = savedN;
-                casesPerPalletField.setText(String.valueOf(m));
-                boxesPerCaseField.setText(String.valueOf(n));
-            } else {
-                persistSpec(m, n);
+            try {
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/fxml/ShiwanM2SpecChangeDialog.fxml"));
+                Parent specRoot = loader.load();
+                ShiwanM2SpecChangeDialogController specCtrl = loader.getController();
+                specCtrl.setSpec(
+                        "1垛 " + savedM + " 箱，1箱 " + savedN + " 盒",
+                        "1垛 " + m + " 箱，1箱 " + n + " 盒");
+
+                javafx.stage.Stage specStage = new javafx.stage.Stage();
+                specStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
+                specStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+                specStage.setScene(new Scene(specRoot));
+                specStage.setResizable(false);
+                specStage.showAndWait();
+
+                if (!specCtrl.isConfirmed()) {
+                    m = savedM; n = savedN;
+                    casesPerPalletField.setText(String.valueOf(m));
+                    boxesPerCaseField.setText(String.valueOf(n));
+                } else {
+                    persistSpec(m, n);
+                }
+            } catch (Exception ex) {
+                // 降级：仍使用原生弹窗
+                Alert specAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                specAlert.setTitle("采集规格变更确认");
+                specAlert.setContentText("已保存：1垛 " + savedM + " 箱 / 1箱 " + savedN + " 盒\n"
+                        + "当前：1垛 " + m + " 箱 / 1箱 " + n + " 盒\n是否覆盖保存为当前规格？");
+                ShiwanM2AlertUtil.applyStyle(specAlert);
+                Optional<ButtonType> specResult = specAlert.showAndWait();
+                if (specResult.isEmpty() || specResult.get() != ButtonType.OK) {
+                    m = savedM; n = savedN;
+                    casesPerPalletField.setText(String.valueOf(m));
+                    boxesPerCaseField.setText(String.valueOf(n));
+                } else {
+                    persistSpec(m, n);
+                }
             }
         }
 
@@ -2581,15 +2607,17 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onTaskHelp() {
-        showInfo("任务控制 - 功能说明",
-                "● 开始/停止采集：系统检测硬件后开始采集；再次点击停止，未满垛数据保留。\n" +
-                "● 无需采集码：当天不生产五码合一产品时开启，所有读码设备不工作。\n" +
-                "● 打开/关闭报警：切换按钮，发送系统设置中配置的打开/关闭报警自定义信号。\n" +
-                "● 强制满垛：未达到设定箱数也强制结束当前垛，生成虚拟垛标并重置计数。\n" +
-                "● 提取工单未成垛：弹窗输入/扫描垛内任一箱码，查出对应生产订单继续生产。\n" +
-                "● 触发/收回剔除：切换按钮，发送系统设置中配置的触发剔除/收回剔除自定义信号。\n" +
-                "● 剔除数清零：将总剔除数重置为0。\n" +
-                "● 测试报警灯亮/灭：切换按钮，发送系统设置中配置的报警灯亮/灭信号（用于调试）。");
+        FxHelpDialog.show(
+                currentTimeLabel.getScene().getWindow(),
+                "任务控制 - 功能说明",
+                "- **开始/停止采集**：点击开始后系统检测硬件设备，检测通过后开始采集工作；再次点击停止采集，未满垛数据会保留",
+                "- **无需采集码**：当天不生产五码合一产品时开启，所有读码设备不工作，不采集任何数据",
+                "- **关闭报警**：当自动上传异常触发报警时，点击此按钮可重置三色声光报警灯（停止灯光和蜂鸣）",
+                "- **强制满垛**：未达到设定箱数也强制结束当前垛，生成虚拟垛标并重置计数",
+                "- **提取工单未成垛**：停止采集时可用。弹窗输入或扫描未完成垛中的任一箱码，查出生产信息、采集规格和当前箱数后确认，回显主页面并自动开始采集",
+                "- **收回剔除**：当剔除设备进行剔除动作后没有自动收回时，点击此按钮让剔除设备收回当前剔除动作",
+                "- **剔除数清零**：将总剔除数重置为0（总剔除数显示在单位实时统计区域）"
+        );
     }
 
     // ==================== 外部调用接口（业务服务调用）====================

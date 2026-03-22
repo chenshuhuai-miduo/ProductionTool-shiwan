@@ -26,6 +26,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.net.URL;
 import java.net.URLEncoder;
@@ -256,10 +257,12 @@ public class ShiwanM2StatsController implements Initializable {
             ShiwanM2PalletListController controller = loader.getController();
             controller.setContext(getDateText(startDate), getDateText(endDate), safe(orderNoField.getText()));
             Stage stage = new Stage();
+            stage.initStyle(StageStyle.UNDECORATED);
             stage.initOwner(palletCard.getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setTitle("垛码列表");
             stage.setScene(new Scene(root));
+            stage.setMinWidth(800);
+            stage.setMinHeight(650);
             stage.showAndWait();
         } catch (Exception ex) {
             showWarn("打开垛码列表失败：" + ex.getMessage());
@@ -274,10 +277,12 @@ public class ShiwanM2StatsController implements Initializable {
             ShiwanM2RejectRecordsController controller = loader.getController();
             controller.setContext(getDateText(startDate), getDateText(endDate), safe(orderNoField.getText()));
             Stage stage = new Stage();
+            stage.initStyle(StageStyle.UNDECORATED);
             stage.initOwner(rejectCard.getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setTitle("剔除记录");
             stage.setScene(new Scene(root));
+            stage.setMinWidth(1200);
+            stage.setMinHeight(700);
             stage.showAndWait();
         } catch (Exception ex) {
             showWarn("打开剔除记录失败：" + ex.getMessage());

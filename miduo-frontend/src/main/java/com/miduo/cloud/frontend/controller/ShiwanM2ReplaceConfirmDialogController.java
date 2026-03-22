@@ -1,22 +1,28 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.FxToast;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
+import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 public class ShiwanM2ReplaceConfirmDialogController {
 
-    @FXML private HBox          titleBar;
-    @FXML private Label         origCodeLabel;
-    @FXML private Label         newCodeLabel;
-    @FXML private Label         reasonLabel;
+    @FXML private HBox  titleBar;
+    @FXML private javafx.scene.control.Label origCodeValue;
+    @FXML private javafx.scene.control.Label newCodeValue;
+    @FXML private HBox  reasonRow;
+    @FXML private javafx.scene.control.Label reasonValue;
     @FXML private PasswordField passwordField;
-    @FXML private Label         errorLabel;
+    @FXML private TextField     plainPasswordField;
+    @FXML private Button        eyeToggleBtn;
 
-    private double dragOffsetX, dragOffsetY;
-    private boolean confirmed = false;
+    private double  dragOffsetX, dragOffsetY;
+    private boolean confirmed        = false;
+    private boolean passwordVisible  = false;
     private String  expectedPassword = "";
 
     @FXML
@@ -31,19 +37,51 @@ public class ShiwanM2ReplaceConfirmDialogController {
             stage.setY(e.getScreenY() - dragOffsetY);
         });
         passwordField.setOnAction(e -> onConfirm());
+        plainPasswordField.setOnAction(e -> onConfirm());
+
+        // 明文框与密码框保持同步
+        passwordField.textProperty().addListener((obs, o, n) -> {
+            if (!passwordVisible) plainPasswordField.setText(n);
+        });
+        plainPasswordField.textProperty().addListener((obs, o, n) -> {
+            if (passwordVisible) passwordField.setText(n);
+        });
     }
 
     /** 由外部调用初始化替换信息和预期密码 */
     public void setReplaceInfo(String orig, String newCode, String reason, String password) {
-        origCodeLabel.setText("原码值：" + orig);
-        newCodeLabel.setText("新码值：" + newCode);
+        origCodeValue.setText(orig);
+        newCodeValue.setText(newCode);
         if (reason == null || reason.isEmpty()) {
-            reasonLabel.setVisible(false);
-            reasonLabel.setManaged(false);
+            reasonRow.setVisible(false);
+            reasonRow.setManaged(false);
         } else {
-            reasonLabel.setText("替换原因：" + reason);
+            reasonValue.setText(reason);
         }
         this.expectedPassword = password;
+    }
+
+    @FXML
+    private void onTogglePassword() {
+        passwordVisible = !passwordVisible;
+        if (passwordVisible) {
+            plainPasswordField.setText(passwordField.getText());
+            passwordField.setVisible(false);
+            passwordField.setManaged(false);
+            plainPasswordField.setVisible(true);
+            plainPasswordField.setManaged(true);
+            plainPasswordField.requestFocus();
+            plainPasswordField.positionCaret(plainPasswordField.getText().length());
+            eyeToggleBtn.setText("🔒");  // 密码可见时显示锁，点击可隐藏
+        } else {
+            passwordField.setText(plainPasswordField.getText());
+            plainPasswordField.setVisible(false);
+            plainPasswordField.setManaged(false);
+            passwordField.setVisible(true);
+            passwordField.setManaged(true);
+            passwordField.requestFocus();
+            eyeToggleBtn.setText("👁");  // 密码隐藏时显示眼睛，点击可显示
+        }
     }
 
     @FXML
@@ -54,7 +92,7 @@ public class ShiwanM2ReplaceConfirmDialogController {
 
     @FXML
     private void onConfirm() {
-        String pwd = passwordField.getText();
+        String pwd = passwordVisible ? plainPasswordField.getText() : passwordField.getText();
         if (pwd == null || pwd.isEmpty()) {
             showError("请输入密码");
             return;
@@ -62,7 +100,12 @@ public class ShiwanM2ReplaceConfirmDialogController {
         if (!expectedPassword.equals(pwd)) {
             showError("密码不正确，请重新输入");
             passwordField.clear();
-            passwordField.requestFocus();
+            plainPasswordField.clear();
+            if (passwordVisible) {
+                plainPasswordField.requestFocus();
+            } else {
+                passwordField.requestFocus();
+            }
             return;
         }
         confirmed = true;
@@ -70,9 +113,8 @@ public class ShiwanM2ReplaceConfirmDialogController {
     }
 
     private void showError(String msg) {
-        errorLabel.setText(msg);
-        errorLabel.setVisible(true);
-        errorLabel.setManaged(true);
+        Window window = titleBar.getScene().getWindow();
+        FxToast.error(window, msg);
     }
 
     public boolean isConfirmed() {
