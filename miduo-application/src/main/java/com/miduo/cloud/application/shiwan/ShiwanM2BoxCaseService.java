@@ -1186,16 +1186,16 @@ public class ShiwanM2BoxCaseService {
         if (hitLayers == 0) return ApiResult.error(404, "原码不存在：" + oldV);
         if (hitLayers > 1)  return ApiResult.error(400, "原码命中多个层级，不允许替换：" + oldV);
 
-        // 3. 确定层级、列名和云端码类型（0=小标/瓶码, 1=中标/盒码, 2=大标/箱码）
+        // 3. 确定层级、列名和云端码类型（0=大标/箱码, 1=中标/盒码, 2=小标）
         int    packageType;
         String column;
         int    codeType;
         if (smallCnt > 0) {
-            packageType = 1; column = "SmallSerialNumber";  codeType = 0;
+            packageType = 1; column = "SmallSerialNumber";  codeType = 2;
         } else if (mediumCnt > 0) {
             packageType = 2; column = "MediumSerialNumber"; codeType = 1;
         } else {
-            packageType = 3; column = "BigSerialNumber";    codeType = 2;
+            packageType = 3; column = "BigSerialNumber";    codeType = 0;
         }
 
         // 4. 校验新码：必须在对应码包热表中且未被使用
@@ -1288,9 +1288,9 @@ public class ShiwanM2BoxCaseService {
 
             Map<String, Object> requestData = new LinkedHashMap<>();
             requestData.put("Memberlogin", memberlogin != null ? memberlogin : "");
-            requestData.put("oldCode", oldV);
-            requestData.put("newCode", newV);
-            requestData.put("codeType", codeType);
+            requestData.put("oldcode", oldV);
+            requestData.put("newcode", newV);
+            requestData.put("codetype", codeType);
 
             String sign = palletSign(time, nonce, appSecret, requestData);
 
@@ -1305,12 +1305,12 @@ public class ShiwanM2BoxCaseService {
             log.info("[码替换云端] oldCode={} newCode={} codeType={} 响应: {}", oldV, newV, codeType, response);
 
             JsonNode root = MAPPER.readTree(response);
-            int returnCode = root.path("Return_code").asInt(-1);
+            int returnCode = root.path("return_code").asInt(-1);
             if (returnCode != 0) {
-                String msg = root.path("Return_msg").asText("未知错误");
+                String msg = root.path("return_msg").asText("未知错误");
                 return ApiResult.error(500, "云端替换失败：" + msg);
             }
-            JsonNode dataArr = root.path("Return_data");
+            JsonNode dataArr = root.path("return_data");
             if (dataArr.isArray() && dataArr.size() > 0) {
                 int status = dataArr.get(0).path("status").asInt(-1);
                 if (status != 0) {
@@ -1605,6 +1605,25 @@ public class ShiwanM2BoxCaseService {
                 "DELETE FROM CodePackageItemCold WHERE PackageType = ? AND CodeValue = ?",
                 packageType, codeValue);
         log.debug("[回迁] 完成 packageType={} code={}", packageType, codeValue);
+    }
+
+    /**
+     * 按产品编号查询产品名称（供数据查询详情面板兜底使用）。
+     * LEFT JOIN 未能返回 productName 时，前端可单独调此接口补查。
+     */
+    public String getProductName(String productNo) {
+        if (productNo == null || productNo.trim().isEmpty()) return null;
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT ProductName FROM ProductInfo WHERE ProductNo = ? LIMIT 1",
+                    productNo.trim());
+            if (rows.isEmpty() || rows.get(0).get("ProductName") == null) return null;
+            String name = rows.get(0).get("ProductName").toString().trim();
+            return name.isEmpty() ? null : name;
+        } catch (Exception e) {
+            log.warn("[产品名称查询] 异常 productNo={}: {}", productNo, e.getMessage());
+            return null;
+        }
     }
 
     private long countByColumn(String column, String value) {

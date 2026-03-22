@@ -345,7 +345,15 @@ public class ShiwanM2ManualController implements Initializable {
                 }
             }
 
-            // 2. 后端校验：热表 + CodeRelationUpload 重码
+            // 2. 本批次内瓶码重复检查（本地，快速，无需网络）
+            if (packageType == 1 && pendingBottleCodes.contains(trimmedCode)) {
+                log.warn("[手工采集] 瓶码重复 code={} 已在本批次中", trimmedCode);
+                addDataLog(now + "  【瓶码重复】" + trimmedCode + " 已在本批次中，该码不计入，请重新扫码",
+                        ShiwanM2MainController.LogType.ERROR);
+                return;
+            }
+
+            // 3. 后端校验：热表 + CodeRelationUpload 重码
             isValidating = true;
             String reqBody = "{\"code\":\"" + trimmedCode + "\",\"packageType\":" + packageType + "}";
             HttpUtil.asyncPost(
