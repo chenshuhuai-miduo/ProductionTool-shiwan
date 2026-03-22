@@ -1,6 +1,7 @@
 package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
@@ -267,7 +268,25 @@ public class ShiwanM2QueryController implements Initializable {
                 : "-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
 
         detProductCode.setText(row.productNo.isEmpty() ? "—" : row.productNo);
-        detProductName.setText(row.productName.isEmpty() ? "—" : row.productName);
+        // 优先使用查询时 LEFT JOIN 已带出的产品名称；若为空且有产品编号，则异步补查产品表
+        if (!row.productName.isEmpty()) {
+            detProductName.setText(row.productName);
+        } else if (!row.productNo.isEmpty()) {
+            detProductName.setText("—");
+            String productNameUrl = "/api/shiwan-m2/product/name?productNo="
+                    + URLEncoder.encode(row.productNo, StandardCharsets.UTF_8);
+            HttpUtil.asyncGet(productNameUrl, resp -> {
+                try {
+                    JsonNode node = HttpUtil.getObjectMapper().readTree(resp);
+                    if (node != null && node.has("data") && !node.get("data").isNull()) {
+                        String name = node.get("data").asText("").trim();
+                        detProductName.setText(name.isEmpty() ? "—" : name);
+                    }
+                } catch (Exception ignored) {}
+            }, err -> {});
+        } else {
+            detProductName.setText("—");
+        }
         detOrderNo.setText(row.orderNo.isEmpty() ? "—" : row.orderNo);
     }
 

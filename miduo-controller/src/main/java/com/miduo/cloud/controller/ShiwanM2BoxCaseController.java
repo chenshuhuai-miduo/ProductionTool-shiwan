@@ -140,6 +140,19 @@ public class ShiwanM2BoxCaseController {
     }
 
     /**
+     * 数据查询详情面板：按产品编号查询产品名称（ProductInfo 表兜底查询）。
+     * GET /api/shiwan-m2/product/name?productNo=xxx
+     */
+    @GetMapping("/product/name")
+    public ApiResult<String> getProductName(@RequestParam String productNo) {
+        if (productNo == null || productNo.trim().isEmpty()) {
+            return ApiResult.success("ok", null);
+        }
+        String name = shiwanM2BoxCaseService.getProductName(productNo.trim());
+        return ApiResult.success("ok", name);
+    }
+
+    /**
      * P02-07 生产统计汇总（垛数/箱数/盒数/剔除数）。
      * GET /api/shiwan-m2/stats/production-summary
      */

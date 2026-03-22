@@ -72,7 +72,7 @@ public class HttpUtil {
      */
     private static final RequestConfig requestConfig = RequestConfig.custom()
             .setConnectTimeout(5000)        // 连接超时5秒
-            .setSocketTimeout(10000)        // 读取超时10秒
+            .setSocketTimeout(30000)        // 读取超时30秒（生产统计等聚合查询耗时较长）
             .setConnectionRequestTimeout(3000)  // 从连接池获取连接超时3秒
             .build();
     
