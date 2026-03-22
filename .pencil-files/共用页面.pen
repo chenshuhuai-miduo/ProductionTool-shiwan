@@ -212,7 +212,7 @@
                       "id": "dWvPO",
                       "name": "cat4Text",
                       "fill": "#374151",
-                      "content": "四、功能说明",
+                      "content": "四、各功能说明",
                       "fontFamily": "Inter",
                       "fontSize": 16,
                       "fontWeight": "normal"
@@ -235,22 +235,12 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "Nvnys",
-                      "name": "sub1",
-                      "fill": "#6B7280",
-                      "content": "├ 数据采集",
-                      "fontFamily": "Inter",
-                      "fontSize": 15,
-                      "fontWeight": "normal"
-                    },
-                    {
-                      "type": "text",
                       "id": "EotZc",
                       "name": "sub2",
                       "fill": "#6B7280",
-                      "content": "├ 手工采集",
+                      "content": "↳ 手工采集",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     },
                     {
@@ -258,9 +248,9 @@
                       "id": "Njg5f",
                       "name": "sub3",
                       "fill": "#6B7280",
-                      "content": "├ 码包管理",
+                      "content": "↳ 码包管理",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     },
                     {
@@ -268,9 +258,9 @@
                       "id": "ebFCZ",
                       "name": "sub4",
                       "fill": "#6B7280",
-                      "content": "├ 数据查询",
+                      "content": "↳ 数据查询",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     },
                     {
@@ -278,9 +268,9 @@
                       "id": "0PzuC",
                       "name": "sub5",
                       "fill": "#6B7280",
-                      "content": "├ 数据替换",
+                      "content": "↳ 数据替换",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     },
                     {
@@ -288,9 +278,9 @@
                       "id": "5EXuS",
                       "name": "sub6",
                       "fill": "#6B7280",
-                      "content": "├ 取消关联",
+                      "content": "↳ 取消关联",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     },
                     {
@@ -298,9 +288,9 @@
                       "id": "RxUfx",
                       "name": "sub7",
                       "fill": "#6B7280",
-                      "content": "├ 生产统计",
+                      "content": "↳ 生产统计",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     },
                     {
@@ -308,9 +298,9 @@
                       "id": "c1E3D",
                       "name": "sub8",
                       "fill": "#6B7280",
-                      "content": "└ 数据上传",
+                      "content": "↳ 数据上传",
                       "fontFamily": "Inter",
-                      "fontSize": 15,
+                      "fontSize": 13,
                       "fontWeight": "normal"
                     }
                   ]

@@ -2,6 +2,7 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.miduo.cloud.application.shiwan.UploadLogBus;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
@@ -96,9 +97,11 @@ public class ShiwanM2UploadController implements Initializable {
 
     @FXML
     private void onHelp() {
-        showInfo("手动上传说明", "手动上传：批量上传所有未上传的垛数据。\n\n" +
-                "系统将按队列顺序逐垛调用上传接口，每垛发起后 5 分钟自动查询上传结果。\n" +
-                "上传进度和结果将实时显示在下方日志区。");
+        FxHelpDialog.show(
+                uploadLogList.getScene().getWindow(),
+                "数据上传 - 手动上传说明",
+                "- **手动上传**：批量上传所有未上传的垛数据，按队列顺序逐垛调用上传接口；上传进度和结果实时显示在下方日志区"
+        );
     }
 
     // ==================== 右侧：垛码查询与状态管理 ====================
@@ -191,10 +194,13 @@ public class ShiwanM2UploadController implements Initializable {
 
     @FXML
     private void onStatusHelp() {
-        showInfo("状态管理说明",
-                "查询状态：查询指定垛码的上传状态详情（垛码、状态、上传时间、箱数、失败原因）。\n\n" +
-                "设为未上传：将垛码状态重置为待上传，用于数据修复后重新补传。\n\n" +
-                "设为已上传：手动标记为已上传，避免系统重复上传此垛。");
+        FxHelpDialog.show(
+                palletCodeField.getScene().getWindow(),
+                "数据上传 - 状态管理说明",
+                "- **查询状态**：查询指定垛码的上传状态详情（垛码、状态、上传时间、箱数、失败原因）",
+                "- **设为未上传**：将垛码状态重置为未上传，用于数据修复后重新补传",
+                "- **设为已上传**：手动标记为已上传，避免系统重复上传此垛"
+        );
     }
 
     // ==================== 查询结果展示 ====================

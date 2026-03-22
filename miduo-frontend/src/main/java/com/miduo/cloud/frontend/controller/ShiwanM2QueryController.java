@@ -2,6 +2,7 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -162,27 +163,15 @@ public class ShiwanM2QueryController implements Initializable {
 
     @FXML
     private void onHelp() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("数据查询帮助");
-        alert.setHeaderText(null);
-        alert.setContentText(
-                "一、查询方式\n" +
-                "─────────────────────────────────────────\n" +
-                "输入码后执行查询，查出该码所属垛的全部数据。\n" +
-                "例如输入箱码，显示该垛下所有箱及各自的盒、瓶。\n\n" +
-                "左侧表格按层级分列展示：\n" +
-                "  第一层（瓶码）、第二层（盒码）、第三层（箱码）、第四层（垛码）\n\n" +
-                "与输入的码对应的单元格红色字体显示；\n" +
-                "点击某行，右侧展示该行的具体信息。\n\n" +
-                "二、包装层级\n" +
-                "─────────────────────────────────────────\n" +
-                "四级包装结构：瓶 → 盒 → 箱 → 垛\n\n" +
-                "三、操作方式\n" +
-                "─────────────────────────────────────────\n" +
-                "输入：手动输入码值 或 扫码枪扫描\n" +
-                "查询：点击「查询」按钮 或 回车键");
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxHelpDialog.show(
+                queryInput.getScene().getWindow(),
+                "数据查询 - 功能说明",
+                "- **查询方式**：输入码后执行查询，查出该码所属垛的全部数据（垛-箱-盒-瓶）；输入任意层级码均显示该码所属垛内的所有数据",
+                "- **分层展示**：左侧表格按层级分列——第一层（瓶码）、第二层（盒码）、第三层（箱码）、第四层（垛码）；与输入码对应的单元格以红色字体显示，便于快速定位",
+                "- **详情联动**：点击左侧表格某行，右侧展示该行的具体信息（码、采集时间、产品编号、产品名称、生产单号）",
+                "- **包装层级**：四级包装结构：瓶 → 盒 → 箱 → 垛",
+                "- **操作方式**：手动输入码值或使用扫码枪扫描（自动触发查询）；按回车键或点击「查询」按钮执行查询"
+        );
     }
 
     // ==================== 查询逻辑 ====================

@@ -39,6 +39,7 @@ import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
@@ -50,8 +51,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
@@ -724,13 +729,12 @@ public class ShiwanM2MainController implements Initializable {
                 return;
             }
         } else {
-            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            confirm.setTitle("退出确认");
-            confirm.setHeaderText(null);
-            confirm.setContentText("确认退出石湾2号机盒箱垛关联系统？");
-            ShiwanM2AlertUtil.applyStyle(confirm);
-            Optional<ButtonType> result = confirm.showAndWait();
-            if (result.isEmpty() || result.get() != ButtonType.OK) return;
+            boolean ok = FxDialog.confirm(
+                    mainTabPane.getScene().getWindow(),
+                    "退出确认",
+                    "确认退出石湾2号机盒箱垛关联系统？"
+            );
+            if (!ok) return;
         }
         doExit();
     }
@@ -892,13 +896,33 @@ public class ShiwanM2MainController implements Initializable {
             Parent root = loader.load();
 
             Stage helpStage = new Stage();
-            helpStage.setTitle("操作帮助");
-            helpStage.setScene(new Scene(root));
+            helpStage.initStyle(StageStyle.TRANSPARENT);
             helpStage.initModality(Modality.WINDOW_MODAL);
             helpStage.initOwner(currentTimeLabel.getScene().getWindow());
-            helpStage.setResizable(true);
-            helpStage.setMinWidth(700);
-            helpStage.setMinHeight(500);
+            helpStage.setResizable(false);
+
+            ShiwanM2HelpController ctrl = loader.getController();
+            ctrl.initDrag(helpStage);
+
+            DropShadow shadow = new DropShadow();
+            shadow.setColor(Color.web("#000000", 0.15));
+            shadow.setRadius(24);
+            shadow.setOffsetY(8);
+            root.setEffect(shadow);
+
+            StackPane wrapper = new StackPane(root);
+            wrapper.setStyle("-fx-background-color: transparent;");
+            wrapper.setPadding(new Insets(20));
+
+            Scene scene = new Scene(wrapper);
+            scene.setFill(Color.TRANSPARENT);
+            helpStage.setScene(scene);
+
+            helpStage.setOnShown(e -> {
+                javafx.stage.Window owner = currentTimeLabel.getScene().getWindow();
+                helpStage.setX(owner.getX() + (owner.getWidth()  - helpStage.getWidth())  / 2.0);
+                helpStage.setY(owner.getY() + (owner.getHeight() - helpStage.getHeight()) / 2.0);
+            });
             helpStage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -908,7 +932,11 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onAbout() {
-        showInfo("关于系统", "米多赋码采集关联系统 v1.2\n关联模式：盒箱垛关联\n部署站点：石湾产线\n版权所有 © 米多科技");
+        FxDialog.alert(
+                mainTabPane.getScene().getWindow(),
+                "关于系统",
+                "米多赋码采集关联系统 v1.2\n关联模式：盒箱垛关联\n部署站点：石湾产线\n版权所有 © 米多科技"
+        );
     }
 
     // ==================== 产品选择 ====================
@@ -2764,21 +2792,11 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     private void showInfo(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.alert(mainTabPane.getScene().getWindow(), title, content);
     }
 
     private void showWarn(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.warn(mainTabPane.getScene().getWindow(), title, content);
     }
 
     // ==================== 枚举与数据模型 ====================

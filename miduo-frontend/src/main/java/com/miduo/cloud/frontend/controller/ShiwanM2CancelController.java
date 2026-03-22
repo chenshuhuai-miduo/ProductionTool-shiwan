@@ -1,5 +1,6 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -109,11 +110,16 @@ public class ShiwanM2CancelController implements Initializable {
 
     @FXML
     private void onHelp() {
-        showInfo("取消关联说明",
-                "单码取消：输入1个下级码（瓶/盒），识别后系统显示其上级关联链路。\n" +
-                "  有上级关联时必须先从垛开始逐级解除；无上级后方可取消。\n\n" +
-                "多码取消：输入盒/箱/垛码，可添加多个混合层级，识别后批量取消。\n\n" +
-                "通用：取消顺序垛→箱→盒→瓶；已上传须先取消云端；操作不可逆，需密码 123456。");
+        FxHelpDialog.show(
+                singleModeBtn.getScene().getWindow(),
+                "取消关联 - 操作说明",
+                "- **输入码**：支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码；不知道码时可前往「数据查询」查询归属链路",
+                "- **只解一层（默认）**：只取消该码层级的直接关联，下一层保留。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒；适用于归错垛/箱、换箱体等场景",
+                "- **全部解除**：取消该码层级及以下所有关联。垛码受层级限制仍只断箱-垛；箱码断盒-箱+瓶-盒，所有码回迁热表；盒码与只解一层等价；适用于需彻底清除箱内所有关联的场景",
+                "- **有上级时**：若码已关联至上级（如盒已在箱内），须先取消上级才能取消该码；识别结果会提示上级码值，将上级码加入列表后执行即可",
+                "- **已上传**：若涉及码所在的垛已上传云端，系统先调用云端接口取消整垛数据，成功后再取消本地，保证两端一致",
+                "- **密码**：操作需要密码验证"
+        );
     }
 
     // ==================== 单码识别 ====================

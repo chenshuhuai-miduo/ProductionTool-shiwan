@@ -2,6 +2,7 @@ package com.miduo.cloud.frontend.controller;
 
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.fxml.FXML;
@@ -62,16 +63,23 @@ public class ShiwanM2ReplaceController implements Initializable {
 
     @FXML
     private void onOrigCodeHelp() {
-        showInfo("原码说明", "请输入需要替换的原码，该码必须已在系统中存在关联关系。");
+        FxHelpDialog.show(
+                origCodeField.getScene().getWindow(),
+                "原码说明",
+                "- **原码**：请输入需要替换的原码，该码必须已在系统中存在关联关系"
+        );
     }
 
     @FXML
     private void onNewCodeHelp() {
-        showInfo("新码说明",
-                "新码必须同时满足：\n" +
-                "  ✅ 在导入的码包范围内\n" +
-                "  ✅ 未被使用过（系统中无关联关系）\n" +
-                "  ✅ 格式有效，且不能与原码相同");
+        FxHelpDialog.show(
+                newCodeField.getScene().getWindow(),
+                "新码说明",
+                "- **层级一致**：新码必须与原码属于同一层级（瓶→瓶、盒→盒、箱→箱）",
+                "- **码包范围**：新码必须在已导入的对应层级码包范围内",
+                "- **未被使用**：新码不能已存在关联关系（系统中无该码的任何关联）",
+                "- **不能相同**：新码不能与原码相同"
+        );
     }
 
     @FXML

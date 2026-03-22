@@ -7,7 +7,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -28,6 +27,7 @@ import java.util.ResourceBundle;
  */
 public class ShiwanM2HelpController implements Initializable {
 
+    @FXML private HBox titleBar;
     @FXML private Button closeBtn;
     @FXML private VBox tocContainer;
     @FXML private VBox contentContainer;
@@ -91,16 +91,17 @@ public class ShiwanM2HelpController implements Initializable {
     }
 
     private void applyTocStyle(Button btn, boolean sub, boolean active) {
-        String base = "-fx-text-fill: " + (active ? "#2563EB" : (sub ? "#6B7280" : "#374151")) + ";"
-            + "-fx-font-size: " + (sub ? "13" : "14") + "px;"
+        String base = "-fx-text-fill: " + (active ? "white" : (sub ? "#6B7280" : "#374151")) + ";"
+            + "-fx-font-size: " + (sub ? "13" : "16") + "px;"
             + "-fx-font-family: 'Microsoft YaHei';"
-            + "-fx-background-color: " + (active ? "#EFF6FF" : "transparent") + ";"
-            + "-fx-border-color: transparent transparent transparent " + (active ? "#2563EB" : "transparent") + ";"
-            + "-fx-border-width: 0 0 0 3px;"
+            + "-fx-background-color: " + (active ? "#2563EB" : "transparent") + ";"
+            + "-fx-background-radius: 6px;"
+            + "-fx-border-width: 0;"
             + "-fx-alignment: CENTER_LEFT;"
-            + "-fx-padding: " + (sub ? "6px 16px 6px 28px" : "8px 16px") + ";"
+            + "-fx-padding: " + (sub ? "4px 12px 4px 16px" : "0 12px") + ";"
+            + "-fx-min-height: " + (sub ? "28" : "40") + "px;"
             + "-fx-cursor: hand;"
-            + (active ? "-fx-font-weight: bold;" : "");
+            + (active && !sub ? "-fx-font-weight: bold;" : "");
         btn.setStyle(base);
     }
 
@@ -286,15 +287,17 @@ public class ShiwanM2HelpController implements Initializable {
     // ---- 4.1 手工采集 ----
     private void buildSection41Manual() {
         VBox sec = newSection();
-        addH2(sec, "4.1 手工采集（1号机相机损坏时使用，仅支持瓶盒关联）");
+        addH2(sec, "4.1 手工采集（瓶盒采集相机损坏时使用，人工扫码补录瓶盒关联）");
         addOrdered(sec, new String[]{
             "点击「手工采集」Tab",
-            "设置采集规格（1盒 [6]瓶，6可修改）；采集开始后不可修改",
-            "点击「开始采集」按钮，按钮变为「停止采集」",
-            "按左侧「开始采集提示」顺序用扫码枪扫码：先扫瓶码（足够数量后）→ 扫盒码",
-            "左侧开始采集提示区文字随进度变化，告知当前应扫瓶码或盒码",
-            "扫码完成后自动完成瓶盒关联，当前已读数量归零，继续下一组"
+            "设置采集规格（每盒瓶数，采集开始后不可修改）",
+            "点击「开始采集」，系统自动检测码包是否已导入；未导入时会提示，须先完成码包导入再重试",
+            "采集中，参照左侧颜色提示：「当前应扫：瓶码」时层级名称为蓝色，「当前应扫：盒码」时层级名称为红色",
+            "扫码方式任选其一：扫码枪对准码直接扫（自动提交）；手动输入码值后按 Enter；手动输入码值后点击「加入」按钮",
+            "中间数据接收区实时显示扫码结果：绿色表示关联成功，红色表示码异常（请重新扫码）",
+            "扫够规格数量的瓶码后再扫盒码，自动完成本组瓶盒关联，当前已读归零，继续下一组"
         });
+        addWarnLine(sec, "⚠ 点击「停止采集」结束；已扫但尚未完成关联的瓶码将被丢弃，下次从头开始计数");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -307,12 +310,13 @@ public class ShiwanM2HelpController implements Initializable {
         addTable(sec,
             new String[]{"操作", "步骤"},
             new String[][]{
-                {"启动时在线导入", "软件启动时自动执行，仅拉取盖外码小标、箱外码大标"},
-                {"在线更新", "点击「在线更新」→ 仅拉取瓶码（盖外码小标）、箱码（箱外码大标）"},
-                {"本地导入", "点击「本地导入」→ 选码包类型 → 选TXT文件 → 输入密码123456 → 确认解析入库"},
-                {"查看码包", "点击操作列「查看」→ 弹窗显示该码包所有码，支持搜索与分页"},
-                {"删除码包", "仅当该码包内无已关联码时允许删除；有则禁止并提示。删除为逻辑删除"},
+                {"启动时在线导入", "软件启动时自动执行，仅拉取盖外码小标；盒外码中标、箱外码大标不参与"},
+                {"在线更新", "点击「在线更新」→ 仅拉取盖外码小标（盒外码中标、箱外码大标不参与，均需本地导入）"},
+                {"本地导入", "点击「本地导入」→ 先选码包类型（盖外码小标/盒外码中标/箱外码大标）→ 选TXT文件 → 输入密码 → 确认解析入库"},
+                {"查看码包", "点击操作列「查看」→ 弹窗显示该码包所有码，支持搜索"},
+                {"删除码包", "仅当该码包内无已关联码时允许删除；有则禁止并提示。确认后逻辑删除"},
             });
+        addSmallNote(sec, "码包格式：TXT 文件，每行一个码（盖外码小标=瓶码，盒外码中标=盒码，箱外码大标=箱码）");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -330,18 +334,18 @@ public class ShiwanM2HelpController implements Initializable {
     // ---- 4.4 数据替换 ----
     private void buildSection44Replace() {
         VBox sec = newSection();
-        addH2WithBadge(sec, "4.4 数据替换", "需要密码 123456");
-        addPara(sec, "用途：码损坏或码错误时，将旧码替换为新码。");
+        addH2WithBadge(sec, "4.4 数据替换", "需要密码");
+        addPara(sec, "用途：码损坏或码错误时，将旧码替换为新码（仅操作外码：瓶码/盒码/箱码）。");
         addOrdered(sec, new String[]{
             "输入原码（待替换）",
             "输入新码（替换后）",
             "输入替换原因（可选）",
-            "点击「确认替换」→ 弹窗核对信息 → 输入密码 123456 → 确认执行"
+            "点击「确认替换」→ 弹窗核对信息 → 输入密码 → 确认执行"
         });
         addPara(sec, "新码要求（需同时满足）：");
         addBullets(sec, new String[]{
-            "✅ 在导入的码包范围内",
-            "✅ 未被使用过（系统中无关联关系）",
+            "✅ 与原码同层级（瓶码只能替换瓶码，盒码只能替换盒码，箱码只能替换箱码）",
+            "✅ 在对应层级码包中，且从未使用过（系统中不存在该码的关联记录）",
             "✅ 格式有效，且不能与原码相同"
         });
         addWarnLine(sec, "⚠ 替换操作不可恢复，请务必核对无误再执行");
@@ -352,26 +356,24 @@ public class ShiwanM2HelpController implements Initializable {
     // ---- 4.5 取消关联 ----
     private void buildSection45Cancel() {
         VBox sec = newSection();
-        addH2WithBadge(sec, "4.5 取消关联", "需要密码 123456");
-        addPara(sec, "用途：解除码的关联关系（如数据错误、产品需要重新处理时）。");
+        addH2WithBadge(sec, "4.5 取消关联", "需要密码");
+        addPara(sec, "用途：取消码的关联关系（如数据错误、产品需要重新处理时）。");
         addInfoBox(sec, "重要规则：\n"
-            + "• 必须从上级起逐级取消（垛 → 箱 → 盒 → 瓶），不可跳过上级直接取消下级\n"
-            + "• 系统自动检查上级关联状态，有上级时「确认」按钮禁用，提示先取消上级\n"
-            + "• 系统自动检查云端数据并先取消云端关联，确保数据一致");
-        addStepTitle(sec, "单码取消操作步骤：");
-        addOrdered(sec, new String[]{
-            "选择「单码取消」模式",
-            "输入或扫描1个码（瓶/盒，不支持箱码/垛码）",
-            "点击「识别」→ 右侧显示识别结果（上级单元、取消范围、上级关联链路）",
-            "如有上级关联，先从垛开始逐级取消上级，再回来取消当前级",
-            "无上级关联后，点击「确认取消关联」→ 输入密码 123456 → 确认执行"
+            + "• 不能跳过上级直接取消下级：若指定码有上级关联，系统在识别时标记为不可取消，须先将上级码加入列表处理\n"
+            + "• 已上传云端时，系统先取消云端（整垛为单位），成功后再取消本地，确保一致性");
+        addPara(sec, "取消范围（执行前选择）：");
+        addBullets(sec, new String[]{
+            "只解一层：垛码断箱-垛、箱码断盒-箱、盒码断瓶-盒，下一层保留",
+            "全部解除：箱码断盒-箱及瓶-盒（垛码受限等同只解一层）"
         });
-        addStepTitle(sec, "多码取消操作步骤：");
+        addStepTitle(sec, "操作步骤：");
         addOrdered(sec, new String[]{
-            "选择「多码取消」模式",
-            "逐一输入盒/箱/垛码 → 点击「添加」",
-            "点击「识别」→ 右侧显示所有包装单元的识别结果",
-            "处理有上级关联的单元后，点击「确认取消关联」→ 输入密码 123456 → 执行"
+            "输入盒/箱/垛码（支持扫瓶码，系统自动转换为盒码）→ 点击「加入列表」",
+            "可批量加入多个码到待取消列表",
+            "点击「识别」→ 右侧显示各码识别结果（✓ 可取消 / ✗ 不可取消并提示原因）",
+            "若有码标记为不可取消（有上级），将上级码也加入列表，再次点击「识别」",
+            "选择取消范围（只解一层 / 全部解除）",
+            "点击「确认取消关联」→ 输入密码 → 执行"
         });
         addWarnLine(sec, "⚠ 操作不可恢复，请确认无误后操作");
         sections.add(sec);
@@ -422,8 +424,8 @@ public class ShiwanM2HelpController implements Initializable {
     private void buildSection5Faq() {
         VBox sec = newSection();
         addH1(sec, "五、常见问题 & 异常处理");
-        addFaq(sec, "Q1：1号机显示红色码，怎么处理？",
-            "红色码 = 重码（已存在）或错码（格式错误）。系统自动标记待剔除，产线正常移动，下游龙门架按箱剔除，无需手动干预。");
+        addFaq(sec, "Q1：2号机提示码校验异常（重码/错码/超码/缺码），怎么处理？",
+            "2号机统一执行码包校验、重码检测和数量校验。检测到异常后，该箱数据标记无效并触发剔除装置，产线正常移动，无需手动干预。查看报警信息区了解具体原因，根据提示处理实物后重新上线。");
         addFaqOrdered(sec, "Q2：设备显示未连接怎么办？", new String[]{
             "检查读码器/相机的电源和网线是否插好",
             "重启设备后，查看连接状态是否恢复绿色",
@@ -445,15 +447,14 @@ public class ShiwanM2HelpController implements Initializable {
         addFaq(sec, "Q5：剔除装置剔出去后没有自动收回，怎么办？",
             "点击右侧「收回剔除」按钮，手动触发收回指令。");
         addFaq(sec, "Q6：忘记密码怎么办？",
-            "系统设置、码替换、取消关联的密码统一为：123456");
+            "系统设置、码替换、取消关联均需输入密码，密码请联系管理员获取。");
         addFaq(sec, "Q7：如何知道码属于哪一层级（瓶/盒/箱/垛）？",
             "在「数据查询」Tab 中输入码值，点击「查询」或回车，左侧表格按层级分列展示，点击某行右侧可查看该行的详细信息。");
-        addFaqOrdered(sec, "Q8：取消关联时提示「请先取消上级」，怎么操作？", new String[]{
-            "在「识别结果」中查看完整链路（如：垛码xxx → 箱码xxx → 盒码xxx）",
-            "先输入最顶层的垛码，执行取消关联",
-            "再输入箱码，执行取消关联",
-            "最后输入盒码，执行取消关联",
-            "每次取消都需要输入密码 123456"
+        addFaqOrdered(sec, "Q8：识别结果提示「不可取消，有上级关联」，怎么操作？", new String[]{
+            "在识别结果中找到标记 ✗ 的码，查看提示（如「已关联至垛码xxx，请先将垛码加入列表」）",
+            "将提示的上级码（垛码）也输入并「加入列表」",
+            "再次点击「识别」，上级码通过后该码变为 ✓ 可取消",
+            "确认无 ✗ 码后，点击「确认取消关联」→ 输入密码 → 执行"
         });
         sections.add(sec);
         contentContainer.getChildren().add(sec);
@@ -464,11 +465,11 @@ public class ShiwanM2HelpController implements Initializable {
         VBox sec = newSection();
         addH1(sec, "六、注意事项");
         addInfoBox(sec,
-            "1. 密码保护：系统设置、码替换、取消关联均需要密码 123456，请妥善保管\n"
+            "1. 密码保护：系统设置、码替换、取消关联均需要输入密码确认，密码请联系管理员获取\n"
             + "2. 不可恢复操作：码替换、取消关联执行后无法撤销，操作前请仔细核对\n"
             + "3. 包装比例：不可随意修改，如需变更请联系管理员\n"
             + "4. 生产前检查：每次开始生产前，确认码包已导入、设备连接正常\n"
-            + "5. 异常优先处理：发现报警信息（中间下方红色区域）应及时处理，避免影响数据准确性");
+            + "5. 异常优先处理：2号机发现报警信息（中间下方红色区域）应及时处理，避免影响数据准确性");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -647,50 +648,71 @@ public class ShiwanM2HelpController implements Initializable {
         sec.getChildren().add(box);
     }
 
-    /** 简单表格（GridPane 实现） */
+    /** 简单表格（VBox+HBox 实现，行高自适应，边框不错位） */
     private void addTable(VBox sec, String[] headers, String[][] rows) {
-        GridPane grid = new GridPane();
-        grid.setMaxWidth(Double.MAX_VALUE);
-        grid.setStyle("-fx-border-color: #E5E7EB; -fx-border-width: 1px; -fx-background-color: white;");
-        VBox.setMargin(grid, new Insets(6, 0, 6, 0));
+        VBox table = new VBox(0);
+        table.setMaxWidth(Double.MAX_VALUE);
+        table.setStyle("-fx-border-color: #E5E7EB; -fx-border-width: 1px; -fx-background-color: white;");
+        VBox.setMargin(table, new Insets(6, 0, 6, 0));
 
-        // 表头
-        for (int c = 0; c < headers.length; c++) {
-            Label h = new Label(headers[c]);
-            h.setMaxWidth(Double.MAX_VALUE);
-            h.setPadding(new Insets(8, 12, 8, 12));
-            h.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #374151;"
-                + "-fx-background-color: #F3F4F6; -fx-font-family: 'Microsoft YaHei';"
-                + "-fx-border-color: #E5E7EB; -fx-border-width: 0 " + (c < headers.length - 1 ? "1" : "0") + "px 1px 0;");
-            GridPane.setHgrow(h, Priority.ALWAYS);
-            grid.add(h, c, 0);
-        }
-
-        // 数据行
+        table.getChildren().add(buildTableRow(headers, true, -1));
         for (int r = 0; r < rows.length; r++) {
-            for (int c = 0; c < rows[r].length; c++) {
-                Label cell = new Label(rows[r][c]);
-                cell.setMaxWidth(Double.MAX_VALUE);
-                cell.setWrapText(true);
-                cell.setPadding(new Insets(8, 12, 8, 12));
-                String bg = (r % 2 == 0) ? "white" : "#FAFAFA";
-                cell.setStyle("-fx-font-size: 14px; -fx-text-fill: #374151; -fx-background-color: " + bg + ";"
-                    + "-fx-font-family: 'Microsoft YaHei';"
-                    + "-fx-border-color: #E5E7EB; -fx-border-width: 0 " + (c < rows[r].length - 1 ? "1" : "0") + "px 1px 0;");
-                GridPane.setHgrow(cell, Priority.ALWAYS);
-                grid.add(cell, c, r + 1);
+            table.getChildren().add(buildTableRow(rows[r], false, r));
+        }
+        sec.getChildren().add(table);
+    }
+
+    /** 构建表格单行：HBox 包裹各列 Label，列间用 Region 竖线撑满行高 */
+    private HBox buildTableRow(String[] cells, boolean header, int rowIdx) {
+        HBox row = new HBox(0);
+        row.setAlignment(javafx.geometry.Pos.TOP_LEFT);
+        row.setMaxWidth(Double.MAX_VALUE);
+        String bg = header ? "#F3F4F6" : (rowIdx % 2 == 0 ? "white" : "#FAFAFA");
+        String topBorder = header ? ""
+            : "-fx-border-color: #E5E7EB transparent transparent transparent; -fx-border-width: 1px 0 0 0;";
+        row.setStyle("-fx-background-color: " + bg + "; " + topBorder);
+
+        for (int c = 0; c < cells.length; c++) {
+            if (c > 0) {
+                Region vSep = new Region();
+                vSep.setPrefWidth(1);
+                vSep.setMinWidth(1);
+                vSep.setMaxWidth(1);
+                vSep.setStyle("-fx-background-color: #E5E7EB;");
+                row.getChildren().add(vSep);
             }
+            Label lbl = new Label(cells[c]);
+            lbl.setWrapText(true);
+            lbl.setPadding(new Insets(9, 12, 9, 12));
+            lbl.setStyle("-fx-font-size: " + (header ? "13" : "14") + "px;"
+                + "-fx-font-weight: " + (header ? "bold" : "normal") + ";"
+                + "-fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';");
+            if (c == 0 && cells.length > 1) {
+                lbl.setPrefWidth(140);
+                lbl.setMinWidth(140);
+                lbl.setMaxWidth(140);
+            } else {
+                HBox.setHgrow(lbl, Priority.ALWAYS);
+                lbl.setMaxWidth(Double.MAX_VALUE);
+            }
+            row.getChildren().add(lbl);
         }
+        return row;
+    }
 
-        // 设置列宽比例
-        for (int c = 0; c < headers.length; c++) {
-            javafx.scene.layout.ColumnConstraints cc = new javafx.scene.layout.ColumnConstraints();
-            cc.setPercentWidth(100.0 / headers.length);
-            cc.setHgrow(Priority.ALWAYS);
-            grid.getColumnConstraints().add(cc);
-        }
+    // ==================== 拖拽支持 ====================
 
-        sec.getChildren().add(grid);
+    /** 由外部调用，绑定标题栏拖拽移动窗口 */
+    public void initDrag(Stage stage) {
+        double[] offset = {0, 0};
+        titleBar.setOnMousePressed(e -> {
+            offset[0] = e.getScreenX() - stage.getX();
+            offset[1] = e.getScreenY() - stage.getY();
+        });
+        titleBar.setOnMouseDragged(e -> {
+            stage.setX(e.getScreenX() - offset[0]);
+            stage.setY(e.getScreenY() - offset[1]);
+        });
     }
 
     // ==================== 关闭事件 ====================
