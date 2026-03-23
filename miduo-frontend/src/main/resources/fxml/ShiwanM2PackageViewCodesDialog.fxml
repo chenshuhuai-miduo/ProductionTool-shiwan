@@ -53,7 +53,7 @@
         <HBox spacing="8" alignment="CENTER_LEFT">
             <TextField fx:id="keywordField" promptText="输入码值搜索..."
                        HBox.hgrow="ALWAYS"
-                       style="-fx-font-size:15px; -fx-background-color:#F9FAFB;
+                       style="-fx-font-size:15px; -fx-background-color:white;
                               -fx-border-color:#D1D5DB; -fx-border-width:1;
                               -fx-border-radius:8; -fx-background-radius:8;
                               -fx-min-height:40; -fx-pref-height:40; -fx-padding:0 12;

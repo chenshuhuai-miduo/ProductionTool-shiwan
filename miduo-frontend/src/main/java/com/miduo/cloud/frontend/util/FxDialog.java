@@ -17,7 +17,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 /**
- * 通用弹窗工具类，提供确认弹窗（双按钮）和提示弹窗（单按钮）两种类型，无需 FXML。
+ * 通用弹窗工具类，提供确认弹窗（双按钮）、提示弹窗（单按钮）和多选弹窗（任意按钮）三种类型，无需 FXML。
  *
  * <pre>
  * // 确认弹窗：返回 true 表示用户点击「确定」
@@ -28,22 +28,104 @@ import javafx.stage.Window;
  * FxDialog.alert(window,   "操作提示", "操作已完成，请知悉。");
  * FxDialog.success(window, "保存成功", "数据已保存至云端。");
  * FxDialog.warn(window,    "注意",     "当前存在未完成项。");
+ *
+ * // 多选弹窗：返回点击的按钮序号（0-based），关闭窗口返回 -1
+ * int idx = FxDialog.choice(window, "退出确认", "存在未满垛数据（1箱），是否退出？\n暂存后可通过「提取工单未成垛」继续生产。",
+ *     FxDialog.BtnDef.cancel("取消"),
+ *     FxDialog.BtnDef.primary("强制满垛"),
+ *     FxDialog.BtnDef.warn("暂存退出")
+ * );
+ * // idx == 0 → 取消，idx == 1 → 强制满垛，idx == 2 → 暂存退出，idx == -1 → 关闭窗口
  * </pre>
  */
 public class FxDialog {
 
     public enum Type { WARN, DANGER, INFO, SUCCESS }
 
+    // ── 按钮定义（用于 choice 多选弹窗）────────────────────────────────────
+
+    public static class BtnDef {
+        final String label;
+        final String bg;
+        final String fg;
+        final String border;
+
+        private BtnDef(String label, String bg, String fg, String border) {
+            this.label = label; this.bg = bg; this.fg = fg; this.border = border;
+        }
+
+        /** 灰色取消按钮（带边框） */
+        public static BtnDef cancel(String label) {
+            return new BtnDef(label, "#FFFFFF", "#374151", "#D1D5DB");
+        }
+        /** 蓝色主操作按钮 */
+        public static BtnDef primary(String label) {
+            return new BtnDef(label, "#2563EB", "#FFFFFF", null);
+        }
+        /** 红色危险操作按钮 */
+        public static BtnDef danger(String label) {
+            return new BtnDef(label, "#DC2626", "#FFFFFF", null);
+        }
+        /** 橙色警告操作按钮 */
+        public static BtnDef warn(String label) {
+            return new BtnDef(label, "#D97706", "#FFFFFF", null);
+        }
+        /** 绿色成功操作按钮 */
+        public static BtnDef success(String label) {
+            return new BtnDef(label, "#16A34A", "#FFFFFF", null);
+        }
+    }
+
     // ── 确认弹窗（双按钮，返回是否确认）────────────────────────────────────
 
     /** 警告类确认弹窗，橙色图标，蓝色确定按钮 */
     public static boolean confirm(Window owner, String title, String content) {
-        return showConfirm(owner, title, content, Type.WARN);
+        return showConfirm(owner, title, content, Type.WARN, "取 消", "确 定");
     }
 
     /** 危险操作确认弹窗，红色图标，红色确定按钮 */
     public static boolean danger(Window owner, String title, String content) {
-        return showConfirm(owner, title, content, Type.DANGER);
+        return showConfirm(owner, title, content, Type.DANGER, "取 消", "确 定");
+    }
+
+    /**
+     * 自定义按钮文字的确认弹窗（警告类，蓝色确定按钮）。
+     *
+     * @param confirmLabel 确定按钮文字，如「继续」「覆盖」「删除」
+     */
+    public static boolean confirm(Window owner, String title, String content, String confirmLabel) {
+        return showConfirm(owner, title, content, Type.WARN, "取 消", confirmLabel);
+    }
+
+    // ── 多选弹窗（任意按钮，返回点击序号，关闭窗口返回 -1）─────────────────
+
+    /**
+     * 多选弹窗，支持任意数量按钮。
+     *
+     * @param buttons 按钮定义，使用 {@link BtnDef} 工厂方法创建（cancel / primary / danger / warn / success）
+     * @return 点击的按钮序号（0-based）；用户关闭窗口时返回 -1
+     */
+    public static int choice(Window owner, String title, String content, BtnDef... buttons) {
+        int[] result = {-1};
+        Stage stage = createStage(owner);
+        VBox root = buildDialogRoot(Math.max(400, buttons.length * 110 + 80));
+
+        root.getChildren().add(buildHeader(title, Type.WARN));
+        root.getChildren().add(buildDivider());
+        root.getChildren().add(buildContent(content));
+
+        HBox footer = buildFooter(Pos.CENTER_RIGHT);
+        for (int i = 0; i < buttons.length; i++) {
+            BtnDef def = buttons[i];
+            final int idx = i;
+            Button btn = buildButton(def.label, def.bg, def.fg, def.border, 96, 40);
+            btn.setOnAction(e -> { result[0] = idx; stage.close(); });
+            footer.getChildren().add(btn);
+        }
+        root.getChildren().add(footer);
+
+        showStage(stage, root, owner);
+        return result[0];
     }
 
     // ── 提示弹窗（单按钮，阻塞直到用户关闭）────────────────────────────────
@@ -65,7 +147,8 @@ public class FxDialog {
 
     // ── 核心实现 ─────────────────────────────────────────────────────────
 
-    private static boolean showConfirm(Window owner, String title, String content, Type type) {
+    private static boolean showConfirm(Window owner, String title, String content,
+                                        Type type, String cancelLabel, String confirmLabel) {
         boolean[] result = {false};
         Stage stage = createStage(owner);
         VBox root = buildDialogRoot();
@@ -75,11 +158,11 @@ public class FxDialog {
         root.getChildren().add(buildContent(content));
 
         HBox footer = buildFooter(Pos.CENTER_RIGHT);
-        Button cancelBtn = buildButton("取 消", "#FFFFFF", "#374151", "#D1D5DB", 96, 40);
+        Button cancelBtn = buildButton(cancelLabel, "#FFFFFF", "#374151", "#D1D5DB", 96, 40);
         cancelBtn.setOnAction(e -> { result[0] = false; stage.close(); });
 
         String confirmBg = (type == Type.DANGER) ? "#DC2626" : "#2563EB";
-        Button confirmBtn = buildButton("确 定", confirmBg, "#FFFFFF", null, 96, 40);
+        Button confirmBtn = buildButton(confirmLabel, confirmBg, "#FFFFFF", null, 96, 40);
         confirmBtn.setOnAction(e -> { result[0] = true; stage.close(); });
 
         footer.getChildren().addAll(cancelBtn, confirmBtn);
@@ -118,8 +201,12 @@ public class FxDialog {
     }
 
     private static VBox buildDialogRoot() {
+        return buildDialogRoot(400);
+    }
+
+    private static VBox buildDialogRoot(double width) {
         VBox box = new VBox();
-        box.setPrefWidth(400);
+        box.setPrefWidth(width);
         box.setStyle(
                 "-fx-background-color: white;" +
                 "-fx-background-radius: 16;" +
@@ -183,7 +270,7 @@ public class FxDialog {
     private static VBox buildContent(String content) {
         Label text = new Label(content);
         text.setWrapText(true);
-        text.setMaxWidth(352); // 400 - 24*2
+        text.setMaxWidth(Double.MAX_VALUE);
         text.setStyle(
                 "-fx-font-size: 16px;" +
                 "-fx-text-fill: #4B5563;" +

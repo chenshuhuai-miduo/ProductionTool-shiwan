@@ -5,8 +5,8 @@ import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -148,31 +148,19 @@ public class ShiwanM2ManualController implements Initializable {
         // 前端校验：每盒N瓶必须是正整数
         String bpbText = bottlesPerBoxField.getText();
         if (bpbText == null || bpbText.trim().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("采集规格错误");
-            alert.setHeaderText(null);
-            alert.setContentText("请填写「每盒瓶数 N」（1盒N瓶），不能为空。");
-            ShiwanM2AlertUtil.applyStyle(alert);
-            alert.showAndWait();
+            FxDialog.warn(bottlesPerBoxField.getScene().getWindow(),
+                    "采集规格错误", "请填写「每盒瓶数 N」（1盒N瓶），不能为空。");
             return;
         }
         int bpbCheck;
         try { bpbCheck = Integer.parseInt(bpbText.trim()); } catch (NumberFormatException e) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("采集规格错误");
-            alert.setHeaderText(null);
-            alert.setContentText("每盒瓶数 N 必须是数字。");
-            ShiwanM2AlertUtil.applyStyle(alert);
-            alert.showAndWait();
+            FxDialog.warn(bottlesPerBoxField.getScene().getWindow(),
+                    "采集规格错误", "每盒瓶数 N 必须是数字。");
             return;
         }
         if (bpbCheck <= 0 || bpbCheck > 999) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("采集规格错误");
-            alert.setHeaderText(null);
-            alert.setContentText("每盒瓶数 N 必须在 1-999 之间。");
-            ShiwanM2AlertUtil.applyStyle(alert);
-            alert.showAndWait();
+            FxDialog.warn(bottlesPerBoxField.getScene().getWindow(),
+                    "采集规格错误", "每盒瓶数 N 必须在 1-999 之间。");
             return;
         }
 
@@ -186,22 +174,13 @@ public class ShiwanM2ManualController implements Initializable {
                     && root.get("data").get("passed").asBoolean();
             if (!passed) {
                 String msg = root != null && root.has("message") ? root.get("message").asText() : "请先导入码包";
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("码包未导入");
-                alert.setHeaderText(null);
-                alert.setContentText(msg);
-                ShiwanM2AlertUtil.applyStyle(alert);
-                alert.showAndWait();
+                FxDialog.warn(bottlesPerBoxField.getScene().getWindow(), "码包未导入", msg);
                 return;
             }
         } catch (Exception e) {
             log.warn("[手工采集] 码包检查失败: {}", e.getMessage());
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("码包检查失败");
-            alert.setHeaderText(null);
-            alert.setContentText("码包门禁检查失败，请确认后端服务正常：" + e.getMessage());
-            ShiwanM2AlertUtil.applyStyle(alert);
-            alert.showAndWait();
+            FxDialog.warn(bottlesPerBoxField.getScene().getWindow(),
+                    "码包检查失败", "码包门禁检查失败，请确认后端服务正常：" + e.getMessage());
             return;
         }
 
@@ -276,13 +255,12 @@ public class ShiwanM2ManualController implements Initializable {
 
     @FXML
     private void onReset() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("清零确认");
-        confirm.setHeaderText("确认将生产总数和当前读数清零？");
-        confirm.setContentText("此操作仅重置界面计数，不影响已关联数据。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        boolean ok = FxDialog.confirm(
+                bottlesPerBoxField.getScene().getWindow(),
+                "清零确认",
+                "确认将生产总数和当前读数清零？\n\n此操作仅重置界面计数，不影响已关联数据。"
+        );
+        if (ok) {
             currentBottles = 0;
             totalBoxes     = 0;
             pendingBottleCodes.clear();

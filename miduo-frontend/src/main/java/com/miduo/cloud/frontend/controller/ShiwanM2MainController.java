@@ -719,24 +719,21 @@ public class ShiwanM2MainController implements Initializable {
 
     public void requestExit() {
         if (currentCases > 0) {
-            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            confirm.setTitle("退出确认");
-            confirm.setHeaderText("存在未满垛数据（" + currentCases + "箱），是否退出？");
-            confirm.setContentText("暂存后可通过\"提取工单未成垛\"继续生产。");
-            confirm.getButtonTypes().setAll(
-                    new ButtonType("取消"),
-                    new ButtonType("强制满垛"),
-                    new ButtonType("暂存退出")
+            int idx = FxDialog.choice(
+                    mainTabPane.getScene().getWindow(),
+                    "退出确认",
+                    "存在未满垛数据（" + currentCases + "箱），是否退出？\n暂存后可通过「提取工单未成垛」继续生产。",
+                    FxDialog.BtnDef.cancel("取消"),
+                    FxDialog.BtnDef.primary("强制满垛"),
+                    FxDialog.BtnDef.warn("暂存退出")
             );
-            ShiwanM2AlertUtil.applyStyle(confirm);
-            Optional<ButtonType> result = confirm.showAndWait();
-            if (result.isEmpty() || result.get().getText().equals("取消")) return;
+            if (idx <= 0) return; // 取消或关闭窗口
             String orderNo = orderNumField.getText() != null ? orderNumField.getText().trim() : "";
-            if (result.get().getText().equals("强制满垛")) {
+            if (idx == 1) {
                 forceFullPalletBackend(orderNo, currentCases);
                 doExit();
                 return;
-            } else if (result.get().getText().equals("暂存退出")) {
+            } else if (idx == 2) {
                 markUnfinishedAndExit(orderNo);
                 return;
             }
@@ -1229,14 +1226,13 @@ public class ShiwanM2MainController implements Initializable {
                     persistSpec(m, n);
                 }
             } catch (Exception ex) {
-                // 降级：仍使用原生弹窗
-                Alert specAlert = new Alert(Alert.AlertType.CONFIRMATION);
-                specAlert.setTitle("采集规格变更确认");
-                specAlert.setContentText("已保存：1垛 " + savedM + " 箱 / 1箱 " + savedN + " 盒\n"
-                        + "当前：1垛 " + m + " 箱 / 1箱 " + n + " 盒\n是否覆盖保存为当前规格？");
-                ShiwanM2AlertUtil.applyStyle(specAlert);
-                Optional<ButtonType> specResult = specAlert.showAndWait();
-                if (specResult.isEmpty() || specResult.get() != ButtonType.OK) {
+                boolean specOk = FxDialog.confirm(
+                        mainTabPane.getScene().getWindow(),
+                        "采集规格变更确认",
+                        "已保存：1垛 " + savedM + " 箱 / 1箱 " + savedN + " 盒\n"
+                        + "当前：1垛 " + m + " 箱 / 1箱 " + n + " 盒\n\n是否覆盖保存为当前规格？"
+                );
+                if (!specOk) {
                     m = savedM; n = savedN;
                     casesPerPalletField.setText(String.valueOf(m));
                     boxesPerCaseField.setText(String.valueOf(n));
@@ -1357,18 +1353,13 @@ public class ShiwanM2MainController implements Initializable {
         if (orderExists) {
             final String finalOrderNo = orderNo;
             Platform.runLater(() -> {
-                Alert dupAlert = new Alert(Alert.AlertType.CONFIRMATION);
-                dupAlert.setTitle("生产单号已存在");
-                dupAlert.setHeaderText("生产单号 [" + finalOrderNo + "] 已存在生产记录");
-                dupAlert.setContentText("是否继续使用？选择「继续」将追加到原有记录。");
-                javafx.scene.control.ButtonBar.ButtonData cancelData =
-                        javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE;
-                ButtonType btnContinue = new ButtonType("继续");
-                ButtonType btnCancel  = new ButtonType("取消", cancelData);
-                dupAlert.getButtonTypes().setAll(btnContinue, btnCancel);
-                ShiwanM2AlertUtil.applyStyle(dupAlert);
-                Optional<ButtonType> r = dupAlert.showAndWait();
-                if (r.isPresent() && r.get() == btnContinue) {
+                boolean go = FxDialog.confirm(
+                        mainTabPane.getScene().getWindow(),
+                        "生产单号已存在",
+                        "生产单号 [" + finalOrderNo + "] 已存在生产记录\n\n是否继续使用？选择「继续」将追加到原有记录。",
+                        "继 续"
+                );
+                if (go) {
                     showConfirmAndStartCapture(orderNo, productNo, product, m, n);
                 } else {
                     resetStartCaptureBtn();
@@ -2242,13 +2233,12 @@ public class ShiwanM2MainController implements Initializable {
             showWarn("强制满垛", "当前没有待处理的箱数，无需强制满垛。");
             return;
         }
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("强制满垛确认");
-        confirm.setHeaderText("确认强制满垛？");
-        confirm.setContentText("当前箱数：" + currentCases + "箱\n强制满垛将生成虚拟垛标并重置计数。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        boolean ok = FxDialog.confirm(
+                mainTabPane.getScene().getWindow(),
+                "强制满垛确认",
+                "当前箱数：" + currentCases + " 箱\n\n强制满垛将生成虚拟垛标并重置计数，是否继续？"
+        );
+        if (ok) {
             forceFullPalletBackend(orderNumField.getText(), currentCases);
         }
     }
@@ -2623,13 +2613,12 @@ public class ShiwanM2MainController implements Initializable {
     @FXML
     private void onRetractReject() {
         addOpLog(LocalDateTime.now().format(TIME_FMT) + "  [操作] 点击收回剔除", LogType.INFO);
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("收回剔除");
-        confirm.setHeaderText("确认向剔除装置发送收回指令？");
-        confirm.setContentText("将通过串口向剔除装置发送收回动作指令。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        boolean ok = FxDialog.confirm(
+                mainTabPane.getScene().getWindow(),
+                "收回剔除",
+                "确认向剔除装置发送收回指令？\n\n将通过串口向剔除装置发送收回动作指令。"
+        );
+        if (ok) {
             ShiwanM2HardwareService.getInstance().retractRejection();
             addOpLog(LocalDateTime.now().format(TIME_FMT) + "  [剔除装置] 已发送收回指令", LogType.INFO);
         }
@@ -2638,13 +2627,12 @@ public class ShiwanM2MainController implements Initializable {
     @FXML
     private void onResetRejectCount() {
         addOpLog(LocalDateTime.now().format(TIME_FMT) + "  [操作] 点击剔除数清零", LogType.INFO);
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("剔除数清零");
-        confirm.setHeaderText("确认将总剔除数重置为0？");
-        confirm.setContentText("此操作仅重置界面计数，不影响数据库记录。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        boolean ok = FxDialog.confirm(
+                mainTabPane.getScene().getWindow(),
+                "剔除数清零",
+                "确认将总剔除数重置为0？\n\n此操作仅重置界面计数，不影响数据库记录。"
+        );
+        if (ok) {
             totalRejectCount = 0;
             rejectCountLabel.setText("0");
             addOpLog(LocalDateTime.now().format(TIME_FMT) + "  总剔除数已清零", LogType.INFO);

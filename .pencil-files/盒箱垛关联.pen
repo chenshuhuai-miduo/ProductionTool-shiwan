@@ -2684,23 +2684,41 @@
                           "children": [
                             {
                               "type": "frame",
-                              "id": "item1Row1",
+                              "id": "kAuw2",
+                              "name": "r1a",
+                              "width": "fill_container",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "98QGT",
+                                  "fill": "#1F2937",
+                                  "content": "垛 P20241201001",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 16,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "D3adW",
+                              "name": "r1b",
                               "width": "fill_container",
                               "justifyContent": "space_between",
                               "alignItems": "center",
                               "children": [
                                 {
                                   "type": "text",
-                                  "id": "item1Pallet",
-                                  "fill": "#1F2937",
-                                  "content": "垛 P20241201001",
+                                  "id": "0D79P",
+                                  "fill": "#4B5563",
+                                  "content": "70箱",
                                   "fontFamily": "Microsoft YaHei",
                                   "fontSize": 16,
-                                  "fontWeight": "600"
+                                  "fontWeight": "normal"
                                 },
                                 {
                                   "type": "frame",
-                                  "id": "pGXlx",
+                                  "id": "MnCQ1",
                                   "height": 26,
                                   "fill": "#EEF5FF",
                                   "cornerRadius": 12,
@@ -2718,7 +2736,7 @@
                                   "children": [
                                     {
                                       "type": "text",
-                                      "id": "yYKYn",
+                                      "id": "HJTvQ",
                                       "fill": "#2563EB",
                                       "content": "待上传",
                                       "fontFamily": "Microsoft YaHei",
@@ -2726,23 +2744,6 @@
                                       "fontWeight": "600"
                                     }
                                   ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "item1Row2",
-                              "width": "fill_container",
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "w0kHS",
-                                  "fill": "#4B5563",
-                                  "content": "70箱",
-                                  "fontFamily": "Microsoft YaHei",
-                                  "fontSize": 16,
-                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -2764,24 +2765,42 @@
                           "children": [
                             {
                               "type": "frame",
-                              "id": "item2Row1",
+                              "id": "Rh3E2",
+                              "name": "r2a",
+                              "width": "fill_container",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Egov9",
+                                  "fill": "#1F2937",
+                                  "content": "垛 P20241201002",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 16,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "yIfmW",
+                              "name": "r2b",
                               "width": "fill_container",
                               "justifyContent": "space_between",
                               "alignItems": "center",
                               "children": [
                                 {
                                   "type": "text",
-                                  "id": "item2Pallet",
-                                  "fill": "#1F2937",
-                                  "content": "垛 P20241201002",
+                                  "id": "GAOGp",
+                                  "fill": "#4B5563",
+                                  "content": "70箱",
                                   "fontFamily": "Microsoft YaHei",
                                   "fontSize": 16,
-                                  "fontWeight": "600"
+                                  "fontWeight": "normal"
                                 },
                                 {
                                   "type": "frame",
-                                  "id": "4sA5O",
-                                  "name": "tag2",
+                                  "id": "7lstX",
+                                  "height": 26,
                                   "fill": "#ECFDF5",
                                   "cornerRadius": 12,
                                   "stroke": {
@@ -2798,8 +2817,7 @@
                                   "children": [
                                     {
                                       "type": "text",
-                                      "id": "lEckA",
-                                      "name": "tag2Text",
+                                      "id": "adEkg",
                                       "fill": "#059669",
                                       "content": "已上传",
                                       "fontFamily": "Microsoft YaHei",
@@ -2807,24 +2825,6 @@
                                       "fontWeight": "600"
                                     }
                                   ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "item2Row2",
-                              "width": "fill_container",
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "jT314",
-                                  "name": "text2",
-                                  "fill": "#4B5563",
-                                  "content": "70箱",
-                                  "fontFamily": "Microsoft YaHei",
-                                  "fontSize": 16,
-                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -13851,7 +13851,7 @@
                       "fill": "#EF4444",
                       "content": "*",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
+                      "fontSize": 16,
                       "fontWeight": "600"
                     },
                     {
@@ -13860,8 +13860,8 @@
                       "fill": "#374151",
                       "content": "码包类型",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                      "fontSize": 16,
+                      "fontWeight": "600"
                     }
                   ]
                 },
@@ -13929,7 +13929,7 @@
                       "fill": "#EF4444",
                       "content": "*",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
+                      "fontSize": 16,
                       "fontWeight": "600"
                     },
                     {
@@ -13938,8 +13938,8 @@
                       "fill": "#374151",
                       "content": "选择文件",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                      "fontSize": 16,
+                      "fontWeight": "600"
                     }
                   ]
                 },
@@ -14017,7 +14017,7 @@
                   "fill": "#9CA3AF",
                   "content": "仅支持 .txt 格式，文件大小不超过 50MB",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 12,
+                  "fontSize": 14,
                   "fontWeight": "normal"
                 }
               ]
@@ -14043,8 +14043,8 @@
                       "fill": "#374151",
                       "content": "备注",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                      "fontSize": 16,
+                      "fontWeight": "600"
                     },
                     {
                       "type": "text",
@@ -14052,7 +14052,7 @@
                       "fill": "#9CA3AF",
                       "content": "最多 50 字",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 12,
+                      "fontSize": 14,
                       "fontWeight": "normal"
                     }
                   ]
@@ -14110,7 +14110,7 @@
                       "fill": "#EF4444",
                       "content": "*",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
+                      "fontSize": 16,
                       "fontWeight": "600"
                     },
                     {
@@ -14119,8 +14119,8 @@
                       "fill": "#374151",
                       "content": "密码",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                      "fontSize": 16,
+                      "fontWeight": "600"
                     }
                   ]
                 },

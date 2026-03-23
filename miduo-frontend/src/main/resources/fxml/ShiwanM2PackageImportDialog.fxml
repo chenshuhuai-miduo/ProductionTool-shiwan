@@ -37,28 +37,28 @@
         <!-- 码包类型 -->
         <VBox spacing="6">
             <HBox spacing="4" alignment="CENTER_LEFT">
-                <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-                <Label text="码包类型" style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <Label text="码包类型" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
             </HBox>
             <ComboBox fx:id="packageTypeCombo" maxWidth="Infinity"
                       style="-fx-min-height: 40px; -fx-font-size: 14px;
                              -fx-border-color: #D1D5DB; -fx-border-radius: 8;
-                             -fx-background-radius: 8; -fx-background-color: #F9FAFB;
+                             -fx-background-radius: 8; -fx-background-color: white;
                              -fx-font-family: 'Microsoft YaHei';"/>
         </VBox>
 
         <!-- 选择文件 -->
         <VBox spacing="6">
             <HBox spacing="4" alignment="CENTER_LEFT">
-                <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-                <Label text="选择文件" style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <Label text="选择文件" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
             </HBox>
             <HBox spacing="8" alignment="CENTER_LEFT">
                 <TextField fx:id="selectedFileField" editable="false" promptText="未选择文件"
                            HBox.hgrow="ALWAYS"
                            style="-fx-min-height: 40px; -fx-font-size: 14px;
                                   -fx-border-color: #D1D5DB; -fx-border-radius: 8;
-                                  -fx-background-radius: 8; -fx-background-color: #F9FAFB;
+                                  -fx-background-radius: 8; -fx-background-color: white;
                                   -fx-padding: 0 12; -fx-font-family: 'Microsoft YaHei';"/>
                 <Button text="浏览" onAction="#onBrowseFile"
                         style="-fx-min-height: 40px; -fx-pref-width: 88px;
@@ -70,37 +70,37 @@
                                -fx-font-family: 'Microsoft YaHei';"/>
             </HBox>
             <Label text="仅支持 .txt 格式，文件大小不超过 50MB"
-                   style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
+                   style="-fx-font-size: 14px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
         </VBox>
 
         <!-- 备注（选填） -->
         <VBox spacing="6">
             <HBox alignment="CENTER_LEFT">
                 <Label text="备注"
-                       style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                       style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="最多 50 字"
-                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
+                       style="-fx-font-size: 14px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
             </HBox>
             <TextArea fx:id="remarkField" promptText="选填，如：2024-12-01批次"
                       prefHeight="72" minHeight="72" maxHeight="72"
                       wrapText="true"
                       style="-fx-font-size: 14px;
                              -fx-border-color: #D1D5DB; -fx-border-radius: 8;
-                             -fx-background-radius: 8; -fx-background-color: #F9FAFB;
+                             -fx-background-radius: 8; -fx-background-color: white;
                              -fx-padding: 10 12; -fx-font-family: 'Microsoft YaHei';"/>
         </VBox>
 
         <!-- 密码 -->
         <VBox spacing="6">
             <HBox spacing="4" alignment="CENTER_LEFT">
-                <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-                <Label text="密码" style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <Label text="密码" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
             </HBox>
             <PasswordField fx:id="passwordField" promptText="请输入密码"
                            style="-fx-min-height: 40px; -fx-font-size: 14px;
                                   -fx-border-color: #D1D5DB; -fx-border-radius: 8;
-                                  -fx-background-radius: 8; -fx-background-color: #F9FAFB;
+                                  -fx-background-radius: 8; -fx-background-color: white;
                                   -fx-padding: 0 12; -fx-font-family: 'Microsoft YaHei';"/>
         </VBox>
 
