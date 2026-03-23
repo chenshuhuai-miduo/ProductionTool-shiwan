@@ -718,6 +718,14 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     public void requestExit() {
+        if (isRunning) {
+            FxDialog.warn(
+                    mainTabPane.getScene().getWindow(),
+                    "无法退出",
+                    "系统当前正在采集中，请先停止采集后再退出。"
+            );
+            return;
+        }
         if (currentCases > 0) {
             int idx = FxDialog.choice(
                     mainTabPane.getScene().getWindow(),
@@ -741,7 +749,7 @@ public class ShiwanM2MainController implements Initializable {
             boolean ok = FxDialog.confirm(
                     mainTabPane.getScene().getWindow(),
                     "退出确认",
-                    "确认退出石湾2号机盒箱垛关联系统？"
+                    "确认退出米多赋码采集关联系统？"
             );
             if (!ok) return;
         }
