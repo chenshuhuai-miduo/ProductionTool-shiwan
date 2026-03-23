@@ -19,6 +19,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -50,6 +54,8 @@ public class ShiwanM2TcpCaptureService {
     private static final int MAX_EVENTS    = 1000;
     /** 相机断线后重试间隔（ms） */
     private static final int RECONNECT_MS  = 3000;
+    /** 批次超时巡检间隔（ms） */
+    private static final int TIMEOUT_CHECK_INTERVAL_MS = 200;
 
     @Resource
     private ShiwanM2BoxCaseService boxCaseService;
@@ -96,6 +102,13 @@ public class ShiwanM2TcpCaptureService {
     private Thread          caseReceiverThread;
     private volatile Socket boxSocket;
     private volatile Socket caseSocket;
+    /** 批次超时巡检线程（用于“另一相机未在指定时间到达同批次”剔除） */
+    private final ScheduledExecutorService timeoutScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "tcp-batch-timeout-checker");
+        t.setDaemon(true);
+        return t;
+    });
+    private volatile ScheduledFuture<?> timeoutCheckFuture;
 
     // ================================================================
     //  对外接口
@@ -130,6 +143,7 @@ public class ShiwanM2TcpCaptureService {
         currentCasesInPallet.set(0);
 
         active = true;
+        startTimeoutChecker();
 
         boxReceiverThread  = newDaemonThread(() -> receiveLoop(boxDev,  true),  "tcp-box-receiver");
         caseReceiverThread = newDaemonThread(() -> receiveLoop(caseDev, false), "tcp-case-receiver");
@@ -151,6 +165,7 @@ public class ShiwanM2TcpCaptureService {
         caseSocket = null;
         if (boxReceiverThread  != null) boxReceiverThread.interrupt();
         if (caseReceiverThread != null) caseReceiverThread.interrupt();
+        stopTimeoutChecker();
         addEvent("STOPPED", "TCP采集已停止", null);
         log.info("TCP采集已停止");
     }
@@ -406,6 +421,8 @@ public class ShiwanM2TcpCaptureService {
         BoxBatchEntry  boxBatch;
         CaseBatchEntry caseBatch;
         synchronized (matchLock) {
+            // 先做“指定剔除延迟内未等到同批次”的超时剔除，再尝试正常批次匹配
+            expireAndRejectTimeoutBatchesLocked();
             BoxBatchEntry  peekBox  = boxBatchQueue.peek();
             CaseBatchEntry peekCase = caseBatchQueue.peek();
             if (peekBox == null || peekCase == null) return;
@@ -423,6 +440,119 @@ public class ShiwanM2TcpCaptureService {
 
         // 递归：处理完当前批次后继续尝试下一批
         tryMatchAndAssociate();
+    }
+
+    /** 启动批次超时巡检。 */
+    private synchronized void startTimeoutChecker() {
+        stopTimeoutChecker();
+        timeoutCheckFuture = timeoutScheduler.scheduleWithFixedDelay(() -> {
+            if (!active) return;
+            try {
+                tryMatchAndAssociate();
+            } catch (Exception e) {
+                log.warn("[批次超时巡检] 执行异常: {}", e.getMessage());
+            }
+        }, TIMEOUT_CHECK_INTERVAL_MS, TIMEOUT_CHECK_INTERVAL_MS, TimeUnit.MILLISECONDS);
+    }
+
+    /** 停止批次超时巡检。 */
+    private synchronized void stopTimeoutChecker() {
+        if (timeoutCheckFuture != null) {
+            timeoutCheckFuture.cancel(false);
+            timeoutCheckFuture = null;
+        }
+    }
+
+    /** 在批次匹配锁内执行超时剔除（仅剔除队列头，逐步推进）。 */
+    private void expireAndRejectTimeoutBatchesLocked() {
+        long timeoutMs = resolveRejectDelayMs();
+        if (timeoutMs <= 0) return;
+        long now = System.currentTimeMillis();
+
+        while (true) {
+            boolean handled = false;
+            BoxBatchEntry boxHead = boxBatchQueue.peek();
+            if (boxHead != null
+                    && now - boxHead.receivedAtMs >= timeoutMs
+                    && !containsCaseBatchNo(boxHead.batchNo)) {
+                boxBatchQueue.poll();
+                handleBoxBatchTimeoutReject(boxHead);
+                handled = true;
+            }
+            if (handled) continue;
+
+            CaseBatchEntry caseHead = caseBatchQueue.peek();
+            if (caseHead != null
+                    && now - caseHead.receivedAtMs >= timeoutMs
+                    && !containsBoxBatchNo(caseHead.batchNo)) {
+                caseBatchQueue.poll();
+                handleCaseBatchTimeoutReject(caseHead);
+                handled = true;
+            }
+            if (!handled) break;
+        }
+    }
+
+    private boolean containsCaseBatchNo(int batchNo) {
+        for (CaseBatchEntry entry : caseBatchQueue) {
+            if (entry != null && entry.batchNo == batchNo) return true;
+        }
+        return false;
+    }
+
+    private boolean containsBoxBatchNo(int batchNo) {
+        for (BoxBatchEntry entry : boxBatchQueue) {
+            if (entry != null && entry.batchNo == batchNo) return true;
+        }
+        return false;
+    }
+
+    /** 盒码批次超时（未等到同批次箱码）→ 整批剔除。 */
+    private void handleBoxBatchTimeoutReject(BoxBatchEntry boxBatch) {
+        String reason = "箱相机未在指定剔除延迟时间内采集到箱码，剔除整箱";
+        List<String> boxCodes = boxBatch.codes == null
+                ? Collections.emptyList()
+                : boxBatch.codes.stream().map(i -> i.code).filter(Objects::nonNull).collect(Collectors.toList());
+
+        // 落库：按盒码记录剔除条目（无箱码时 CaseCode 为空）
+        for (String boxCode : boxCodes) {
+            boxCaseService.insertRejectRecord(currentOrderNo, null, boxCode, null, boxCode, reason);
+        }
+        // 清理该批次盒码在关联表中的未关联记录
+        if (!boxCodes.isEmpty()) {
+            boxCaseService.deleteCodeRelationUploadByBoxCodes(boxCodes);
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("boxCodes", boxCodes);
+        data.put("caseCode", "");
+        data.put("reason", reason);
+        addEvent("ASSOC_FAIL", "[批" + boxBatch.batchNo + "] " + reason, data);
+        log.warn("[批{}] 超时剔除：盒码批次未匹配到箱码，boxCodes={}", boxBatch.batchNo, boxCodes);
+    }
+
+    /** 箱码批次超时（未等到同批次盒码）→ 整批剔除。 */
+    private void handleCaseBatchTimeoutReject(CaseBatchEntry caseBatch) {
+        String reason = "盒相机未在指定剔除延迟时间内采集到盒码，剔除整箱";
+        String caseCode = caseBatch.code != null ? caseBatch.code : "";
+
+        // 落库：按箱码记录剔除条目
+        boxCaseService.insertRejectRecord(currentOrderNo, caseCode, null, null, caseCode, reason);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("boxCodes", Collections.emptyList());
+        data.put("caseCode", caseCode);
+        data.put("reason", reason);
+        addEvent("ASSOC_FAIL", "[批" + caseBatch.batchNo + "] " + reason + "，箱码:" + caseCode, data);
+        log.warn("[批{}] 超时剔除：箱码批次未匹配到盒码，caseCode={}", caseBatch.batchNo, caseCode);
+    }
+
+    /** 读取系统设置中的“触发剔除延时（ms）”。 */
+    private long resolveRejectDelayMs() {
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        if (cfg == null || cfg.getSignalConfig() == null) return 0L;
+        int ms = cfg.getSignalConfig().getRejectTriggerDelayMs();
+        return Math.max(ms, 0);
     }
 
     /**
@@ -676,11 +806,14 @@ public class ShiwanM2TcpCaptureService {
         final List<BoxCodeItem> codes;
         /** 该批次盒码数量是否与 boxesPerCase 相符 */
         final boolean        countOk;
+        /** 批次入队时间（ms） */
+        final long           receivedAtMs;
 
         BoxBatchEntry(int batchNo, List<BoxCodeItem> codes, boolean countOk) {
             this.batchNo  = batchNo;
             this.codes    = codes;
             this.countOk  = countOk;
+            this.receivedAtMs = System.currentTimeMillis();
         }
     }
 
@@ -711,6 +844,8 @@ public class ShiwanM2TcpCaptureService {
         /** 是否与内存队列中的箱码重复 */
         final boolean queueDuplicate;
         final String  reason;
+        /** 批次入队时间（ms） */
+        final long    receivedAtMs;
 
         CaseBatchEntry(int batchNo, String code, boolean digitOk, boolean queueDuplicate, String reason) {
             this.batchNo  = batchNo;
@@ -718,6 +853,7 @@ public class ShiwanM2TcpCaptureService {
             this.digitOk  = digitOk;
             this.queueDuplicate = queueDuplicate;
             this.reason   = reason;
+            this.receivedAtMs = System.currentTimeMillis();
         }
     }
 
