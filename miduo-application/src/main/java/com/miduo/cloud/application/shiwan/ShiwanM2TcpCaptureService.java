@@ -324,14 +324,21 @@ public class ShiwanM2TcpCaptureService {
             List<String> uniqueCodes = new ArrayList<>(seen);
 
             // 位数校验
+            Set<String> queuedBoxCodes = snapshotQueuedBoxCodes();
             List<BoxCodeItem> items = new ArrayList<>();
             List<String> digitFailCodes = new ArrayList<>();
+            List<String> queueDuplicateCodes = new ArrayList<>();
             for (String code : uniqueCodes) {
                 boolean digitOk = (mediumDigits <= 0) || (code.length() == mediumDigits);
+                boolean queueDuplicate = queuedBoxCodes.contains(code);
                 String  reason  = digitOk ? null
                         : "盒码位数不符（期望" + mediumDigits + "位，实际" + code.length() + "位）";
+                if (digitOk && queueDuplicate) {
+                    reason = "检测到采集的码重复";
+                }
                 if (!digitOk) digitFailCodes.add(code);
-                items.add(new BoxCodeItem(code, digitOk, reason));
+                if (queueDuplicate) queueDuplicateCodes.add(code);
+                items.add(new BoxCodeItem(code, digitOk, queueDuplicate, reason));
             }
 
             // 数量校验
@@ -350,6 +357,10 @@ public class ShiwanM2TcpCaptureService {
                         "[盒码相机] 批" + batchNo + " " + countReason
                         + "（期望" + boxesPerCase + "个，实际" + uniqueCodes.size() + "个）", null);
             }
+            if (!queueDuplicateCodes.isEmpty()) {
+                addEvent("BOX_FAIL",
+                        "[盒码相机] 批" + batchNo + " 检测到采集的码重复：" + queueDuplicateCodes, null);
+            }
 
             boxBatchQueue.offer(new BoxBatchEntry(batchNo, items, countOk));
             log.debug("[盒码] 批{} 入队 codes={} countOk={}", batchNo, uniqueCodes, countOk);
@@ -363,17 +374,25 @@ public class ShiwanM2TcpCaptureService {
 
             // 位数校验
             boolean digitOk = (largeDigits <= 0) || (code.length() == largeDigits);
+            boolean queueDuplicate = snapshotQueuedCaseCodes().contains(code);
             String  reason  = digitOk ? null
                     : "箱码位数不符（期望" + largeDigits + "位，实际" + code.length() + "位）";
+            if (digitOk && queueDuplicate) {
+                reason = "检测到采集的码重复";
+            }
 
             // 数据接收区展示
             addEvent("CASE_RECV", "[箱码相机] 批" + batchNo + " 接收数据：" + code, null);
             if (!digitOk) {
                 addEvent("BOX_FAIL", "[箱码相机] 批" + batchNo + " " + reason, null);
             }
+            if (queueDuplicate) {
+                addEvent("BOX_FAIL", "[箱码相机] 批" + batchNo + " 检测到采集的码重复：" + code, null);
+            }
 
-            caseBatchQueue.offer(new CaseBatchEntry(batchNo, code, digitOk, reason));
-            log.debug("[箱码] 批{} 入队 code={} digitOk={}", batchNo, code, digitOk);
+            caseBatchQueue.offer(new CaseBatchEntry(batchNo, code, digitOk, queueDuplicate, reason));
+            log.debug("[箱码] 批{} 入队 code={} digitOk={} queueDuplicate={}",
+                    batchNo, code, digitOk, queueDuplicate);
             tryMatchAndAssociate();
         }
     }
@@ -434,13 +453,13 @@ public class ShiwanM2TcpCaptureService {
         List<RejectEntry> rejectEntries = new ArrayList<>();
 
         // 1. 箱码位数校验
-        if (!caseBatch.digitOk) {
+        if (!caseBatch.digitOk || caseBatch.queueDuplicate) {
             rejectEntries.add(new RejectEntry(caseCode, null, caseCode, caseBatch.reason));
         }
 
         // 2. 盒码位数校验
         for (BoxCodeItem item : boxItems) {
-            if (!item.digitOk) {
+            if (!item.digitOk || item.queueDuplicate) {
                 rejectEntries.add(new RejectEntry(caseCode, item.code, item.code, item.reason));
             }
         }
@@ -483,8 +502,18 @@ public class ShiwanM2TcpCaptureService {
             if (!rejectEntries.isEmpty()) {
                 long digitFailBox  = rejectEntries.stream().filter(e -> e.boxCode != null).count();
                 boolean caseDigitFail = rejectEntries.stream().anyMatch(e -> e.boxCode == null);
-                if (caseDigitFail) summary.append("箱码位数不符；");
-                if (digitFailBox > 0) summary.append("盒码位数不符×").append(digitFailBox).append("；");
+                long queueDupFail = rejectEntries.stream().filter(e -> "检测到采集的码重复".equals(e.reason)).count();
+                if (caseDigitFail && "检测到采集的码重复".equals(caseBatch.reason)) {
+                    summary.append("检测到采集的码重复；");
+                } else if (caseDigitFail) {
+                    summary.append("箱码位数不符；");
+                }
+                if (digitFailBox > 0) {
+                    summary.append("盒码异常×").append(digitFailBox).append("；");
+                }
+                if (queueDupFail > 0 && !(caseDigitFail && "检测到采集的码重复".equals(caseBatch.reason))) {
+                    summary.append("检测到采集的码重复×").append(queueDupFail).append("；");
+                }
             }
             if (!countOk) {
                 String cr = boxBatch.codes.size() < boxesPerCase ? "缺码" : "超码";
@@ -600,6 +629,31 @@ public class ShiwanM2TcpCaptureService {
         return m;
     }
 
+    /** 快照当前内存盒码队列中的所有盒码，用于重复校验。 */
+    private Set<String> snapshotQueuedBoxCodes() {
+        Set<String> codes = new HashSet<>();
+        for (BoxBatchEntry entry : boxBatchQueue) {
+            if (entry == null || entry.codes == null) continue;
+            for (BoxCodeItem item : entry.codes) {
+                if (item != null && item.code != null && !item.code.isEmpty()) {
+                    codes.add(item.code);
+                }
+            }
+        }
+        return codes;
+    }
+
+    /** 快照当前内存箱码队列中的所有箱码，用于重复校验。 */
+    private Set<String> snapshotQueuedCaseCodes() {
+        Set<String> codes = new HashSet<>();
+        for (CaseBatchEntry entry : caseBatchQueue) {
+            if (entry != null && entry.code != null && !entry.code.isEmpty()) {
+                codes.add(entry.code);
+            }
+        }
+        return codes;
+    }
+
     private static void closeSocket(Socket sock) {
         if (sock != null && !sock.isClosed()) {
             try { sock.close(); } catch (Exception ignored) {}
@@ -635,12 +689,15 @@ public class ShiwanM2TcpCaptureService {
         final String  code;
         /** 位数校验是否通过 */
         final boolean digitOk;
+        /** 是否与内存队列中的盒码重复 */
+        final boolean queueDuplicate;
         /** 若不通过，记录原因（用于展示和写入 RejectRecord）*/
         final String  reason;
 
-        BoxCodeItem(String code, boolean digitOk, String reason) {
+        BoxCodeItem(String code, boolean digitOk, boolean queueDuplicate, String reason) {
             this.code    = code;
             this.digitOk = digitOk;
+            this.queueDuplicate = queueDuplicate;
             this.reason  = reason;
         }
     }
@@ -651,12 +708,15 @@ public class ShiwanM2TcpCaptureService {
         final String  code;
         /** 位数校验是否通过 */
         final boolean digitOk;
+        /** 是否与内存队列中的箱码重复 */
+        final boolean queueDuplicate;
         final String  reason;
 
-        CaseBatchEntry(int batchNo, String code, boolean digitOk, String reason) {
+        CaseBatchEntry(int batchNo, String code, boolean digitOk, boolean queueDuplicate, String reason) {
             this.batchNo  = batchNo;
             this.code     = code;
             this.digitOk  = digitOk;
+            this.queueDuplicate = queueDuplicate;
             this.reason   = reason;
         }
     }

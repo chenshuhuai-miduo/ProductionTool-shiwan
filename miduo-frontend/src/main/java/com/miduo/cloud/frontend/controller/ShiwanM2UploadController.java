@@ -62,6 +62,11 @@ public class ShiwanM2UploadController implements Initializable {
         uploadLogList.setItems(logItems);
         uploadLogList.setCellFactory(lv -> new UploadLogCell());
 
+        // 失败原因区域固定在右半区内展示，避免超长文本撑开整体布局。
+        resultFailReason.setMinWidth(0);
+        resultFailReason.setPrefWidth(0);
+        resultFailReason.maxWidthProperty().bind(resultDetailPane.widthProperty().subtract(96));
+
         // 初始查询区状态
         showQueryState(QueryState.PROMPT, null, null);
     }
@@ -268,9 +273,33 @@ public class ShiwanM2UploadController implements Initializable {
                 resultBoxCount.setText(String.valueOf(boxCount));
 
                 String msg = data != null ? data.path("msg").asText("") : "";
-                resultFailReason.setText(isNullOrBlank(msg) ? "-" : msg);
+                resultFailReason.setText(isNullOrBlank(msg) ? "-" : softWrapLongToken(msg));
                 break;
         }
+    }
+
+    /**
+     * 为超长连续串（如超长垛标）插入零宽断点，避免撑开布局。
+     */
+    private static String softWrapLongToken(String text) {
+        if (text == null || text.isEmpty()) return text;
+        final int chunk = 12;
+        StringBuilder sb = new StringBuilder(text.length() + 16);
+        int run = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            sb.append(ch);
+            if (Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == ':') {
+                run++;
+                if (run >= chunk) {
+                    sb.append('\u200B');
+                    run = 0;
+                }
+            } else {
+                run = 0;
+            }
+        }
+        return sb.toString();
     }
 
     // ==================== 实时上传日志管理 ====================

@@ -6,6 +6,7 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -34,6 +35,11 @@ import java.util.ResourceBundle;
  * 输入码标识：与输入码对应的单元格以红色字体（#F44336）显示
  */
 public class ShiwanM2QueryController implements Initializable {
+    private static volatile ShiwanM2QueryController instance;
+
+    public static ShiwanM2QueryController getInstance() {
+        return instance;
+    }
 
     // ==================== FXML 注入 ====================
 
@@ -71,6 +77,7 @@ public class ShiwanM2QueryController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        instance = this;
         setupColumns();
         setupRowSelection();
         Label placeholder = new Label("未找到该码信息");
@@ -292,6 +299,19 @@ public class ShiwanM2QueryController implements Initializable {
 
     private void setStatus(String type, String text) {
         // 状态标签已移除，此处保留空实现供后续扩展
+    }
+
+    /**
+     * 扫码枪输入入口：自动回填查询框并触发查询。
+     */
+    public void onScanCode(String code) {
+        String c = code == null ? "" : code.trim();
+        if (c.isEmpty()) return;
+        Platform.runLater(() -> {
+            if (queryInput == null) return;
+            queryInput.setText(c);
+            onQuery();
+        });
     }
 
     private String encodeParam(String value) {

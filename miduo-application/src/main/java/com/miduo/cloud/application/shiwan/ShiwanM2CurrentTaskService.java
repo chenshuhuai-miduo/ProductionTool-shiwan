@@ -209,15 +209,24 @@ public class ShiwanM2CurrentTaskService {
     }
 
     /**
-     * 检查生产单号是否在 ProductionOrder 表中已有记录。
+     * 检查生产单号是否已有历史生产数据。
+     * 触发条件：
+     * 1) ProductionOrder 存在该 OrderNo；
+     * 2) CodeRelationUpload 存在该 OrderNo 且 IsDel=0 的记录。
      */
     public boolean existsOrderNo(String orderNo) {
         if (orderNo == null || orderNo.trim().isEmpty()) return false;
         try {
-            Long cnt = jdbcTemplate.queryForObject(
+            String orderNoTrim = orderNo.trim();
+            Long poCnt = jdbcTemplate.queryForObject(
                     "SELECT COUNT(1) FROM ProductionOrder WHERE OrderNo = ?",
-                    Long.class, orderNo.trim());
-            return cnt != null && cnt > 0;
+                    Long.class, orderNoTrim);
+            if (poCnt == null || poCnt <= 0) return false;
+
+            Long cruCnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0",
+                    Long.class, orderNoTrim);
+            return cruCnt != null && cruCnt > 0;
         } catch (Exception e) {
             return false;
         }
