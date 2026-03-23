@@ -991,7 +991,7 @@ public class ShiwanM2BoxCaseService {
         // 未找到
         r.put("codeType", "UNKNOWN");
         r.put("cancelable", false);
-        r.put("message", "该码未在关联表中，无需取消关联");
+        r.put("message", "该码未被关联，无需取消关联");
         return r;
     }
 

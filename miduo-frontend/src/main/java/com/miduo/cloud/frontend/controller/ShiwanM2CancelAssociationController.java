@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -27,6 +26,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -202,11 +202,11 @@ public class ShiwanM2CancelAssociationController {
     private void onAddToList() {
         String raw = normalize(codeInputField.getText());
         if (raw.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请输入码值");
+            FxDialog.warn(cancelAssocDialogOwner(), "提示", "请输入码值");
             return;
         }
         if (pendingMap.containsKey(raw)) {
-            showAlert(Alert.AlertType.WARNING, "提示", "该码已在列表中：" + raw);
+            FxDialog.warn(cancelAssocDialogOwner(), "提示", "该码已在列表中：" + raw);
             codeInputField.clear();
             return;
         }
@@ -223,14 +223,15 @@ public class ShiwanM2CancelAssociationController {
 
     private void handleAddResult(String raw, Map<String, Object> check) {
         if (check == null) {
-            showAlert(Alert.AlertType.ERROR, "错误", "识别请求失败，请检查网络连接");
+            FxDialog.warn(cancelAssocDialogOwner(), "提示", "识别请求失败，请检查网络连接");
             return;
         }
         String codeType = str(check, "codeType");
         String message  = str(check, "message");
 
         if ("UNKNOWN".equals(codeType)) {
-            showAlert(Alert.AlertType.WARNING, "提示", message != null ? message : "该码未在关联表中，无需取消关联");
+            FxDialog.warn(cancelAssocDialogOwner(), "提示", message != null ? message : "该码未被关联，无需取消关联");
+            codeInputField.clear();
             codeInputField.clear();
             return;
         }
@@ -238,20 +239,18 @@ public class ShiwanM2CancelAssociationController {
         if ("BOTTLE".equals(codeType)) {
             String boxCode = str(check, "boxCode");
             if (boxCode == null || boxCode.isEmpty()) {
-                showAlert(Alert.AlertType.WARNING, "提示", "瓶码 " + raw + " 未在关联表中，无需取消关联");
+                FxDialog.warn(cancelAssocDialogOwner(), "提示", "瓶码 " + raw + " 未被关联，无需取消关联");
+                codeInputField.clear();
                 codeInputField.clear();
                 return;
             }
-            // 弹出确认转换为盒码
-            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            confirm.setTitle("瓶码自动转换");
-            confirm.setHeaderText(null);
-            confirm.setContentText("瓶码 " + raw + " 属于盒码 " + boxCode + "\n已自动转换为盒码 " + boxCode + " 加入列表");
-            ShiwanM2AlertUtil.applyStyle(confirm);
-            Optional<ButtonType> btn = confirm.showAndWait();
-            if (btn.isPresent() && btn.get() == ButtonType.OK) {
+            boolean ok = FxDialog.confirm(
+                    cancelAssocDialogOwner(),
+                    "瓶码自动转换",
+                    "瓶码 " + raw + " 属于盒码 " + boxCode + "\n已自动转换为盒码 " + boxCode + " 加入列表");
+            if (ok) {
                 if (pendingMap.containsKey(boxCode)) {
-                    showAlert(Alert.AlertType.WARNING, "提示", "盒码 " + boxCode + " 已在列表中");
+                    FxDialog.warn(cancelAssocDialogOwner(), "提示", "盒码 " + boxCode + " 已在列表中");
                 } else {
                     addPending(boxCode, "盒码");
                 }
@@ -277,7 +276,7 @@ public class ShiwanM2CancelAssociationController {
     @FXML
     private void onIdentify() {
         if (pendingMap.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请先添加要识别的码");
+            FxDialog.warn(cancelAssocDialogOwner(), "提示", "请先添加要识别的码");
             return;
         }
         identifySummaryLabel.setText("识别中...");
@@ -344,7 +343,7 @@ public class ShiwanM2CancelAssociationController {
             else skippedItems.add(item);
         }
         if (cancelableItems.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "无可取消的码，请先执行识别");
+            FxDialog.warn(cancelAssocDialogOwner(), "提示", "无可取消的码，请先执行识别");
             return;
         }
 
@@ -617,13 +616,10 @@ public class ShiwanM2CancelAssociationController {
         return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+    private Window cancelAssocDialogOwner() {
+        return codeInputField != null && codeInputField.getScene() != null
+                ? codeInputField.getScene().getWindow()
+                : null;
     }
 
     /** 根据后端 check-cancel 响应构建识别项。若该码已上传则直接标记为不可解除。 */
