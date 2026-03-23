@@ -237,6 +237,8 @@ public class ShiwanM2MainController implements Initializable {
     private boolean isRunning   = false;
     private int currentCases    = 0;
     private int currentBoxes    = 0;
+    /** 最近一次收到“盒码批次（BOX_RECV）”后是否已经按批次去重数量写入 currentBoxes。 */
+    private boolean boxRecvCountSet = false;
     private int palletCount     = 0;
     private int totalRejectCount = 0;
     /** 当前采集参数，用于"无需采集码"关闭时重启TCP采集 */
@@ -279,6 +281,12 @@ public class ShiwanM2MainController implements Initializable {
 
     /** 扫码枪设备类别代码（与 DeviceConnectionManager.convertCategoryTextToCode 保持一致） */
     private static final int CATEGORY_SCANNER = 7;
+    /** “提取工单未成垛”弹窗打开期间的扫码输入回调（关闭弹窗时置空）。 */
+    private volatile Consumer<String> extractUnfinishedScannerConsumer;
+    private static final int TAB_IDX_MANUAL = 1;
+    private static final int TAB_IDX_QUERY = 2;
+    private static final int TAB_IDX_REPLACE = 3;
+    private static final int TAB_IDX_CANCEL = 6;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -330,29 +338,87 @@ public class ShiwanM2MainController implements Initializable {
 
     /**
      * 注册设备数据分发处理器：
-     * 所有设备收到的数据都写入数据接收区；
-     * category=7（扫码枪）→ 额外转发给手工采集控制器 {@link ShiwanM2ManualController#onScanCode}。
+     * 非扫码枪设备数据写入数据接收区；
+     * category=7（扫码枪）按当前场景路由到对应输入框，不写入数据接收区。
      */
     private void registerDeviceDataHandler() {
         DeviceConnectionManager.getInstance().setDataReceiveHandlerWithOrder((categoryCode, data) -> {
             log.info("[设备数据分发] category={} data={}", categoryCode, data);
+
+            // 扫码枪数据不写数据接收区，直接路由到各页面输入框
+            if (categoryCode == CATEGORY_SCANNER) {
+                dispatchScannerCode(data);
+                return;
+            }
 
             // 查询设备名称，写入数据接收区
             IoDeviceDTO device = DeviceConnectionManager.getInstance().getDeviceByCategory(categoryCode);
             String deviceLabel = device != null ? device.getDeviceName() : ("类别" + categoryCode);
             String now = LocalDateTime.now().format(TIME_FMT);
             addDataLog(now + "  [" + deviceLabel + "] 收到: " + data, LogType.DATA);
-
-            if (categoryCode == CATEGORY_SCANNER) {
-                ShiwanM2ManualController manualCtrl = ShiwanM2ManualController.getInstance();
-                if (manualCtrl != null) {
-                    log.info("[设备数据分发] 扫码枪数据 → 手工采集控制器: {}", data);
-                    manualCtrl.onScanCode(data);
-                } else {
-                    log.warn("[设备数据分发] 扫码枪数据到达但手工采集控制器未初始化: {}", data);
-                }
-            }
         });
+    }
+
+    /**
+     * 扫码枪数据路由：
+     * 1) 若“提取工单未成垛”弹窗打开，优先填入该弹窗输入框并触发查询；
+     * 2) 否则按当前活动窗口中的主界面当前页分发到手工采集/数据查询/数据替换/取消关联。
+     */
+    private void dispatchScannerCode(String raw) {
+        final String code = raw == null ? "" : raw.trim();
+        if (code.isEmpty()) return;
+
+        // 弹窗场景优先：提取工单未成垛
+        Consumer<String> popupConsumer = extractUnfinishedScannerConsumer;
+        if (popupConsumer != null) {
+            popupConsumer.accept(code);
+            log.info("[扫码枪路由] 提取未成垛弹窗接收 code={}", code);
+            return;
+        }
+
+        if (mainTabPane == null || mainTabPane.getScene() == null) return;
+        javafx.stage.Window mainWindow = mainTabPane.getScene().getWindow();
+        javafx.stage.Window focusedWindow = javafx.stage.Window.getWindows().stream()
+                .filter(javafx.stage.Window::isFocused)
+                .findFirst().orElse(null);
+        // 非主界面激活时，不抢占扫码数据（提取未成垛弹窗由 popupConsumer 优先处理）
+        if (focusedWindow != null && focusedWindow != mainWindow) {
+            log.info("[扫码枪路由] 当前焦点非主界面窗口，忽略 code={}", code);
+            return;
+        }
+
+        int selectedIdx = mainTabPane.getSelectionModel().getSelectedIndex();
+        if (selectedIdx == TAB_IDX_MANUAL) {
+            ShiwanM2ManualController manualCtrl = ShiwanM2ManualController.getInstance();
+            if (manualCtrl != null) {
+                manualCtrl.onScanCode(code);
+                log.info("[扫码枪路由] 手工采集页接收 code={}", code);
+            }
+            return;
+        }
+        if (selectedIdx == TAB_IDX_QUERY) {
+            ShiwanM2QueryController queryCtrl = ShiwanM2QueryController.getInstance();
+            if (queryCtrl != null) {
+                queryCtrl.onScanCode(code);
+                log.info("[扫码枪路由] 数据查询页接收 code={}", code);
+            }
+            return;
+        }
+        if (selectedIdx == TAB_IDX_REPLACE) {
+            ShiwanM2DataReplaceController replaceCtrl = ShiwanM2DataReplaceController.getInstance();
+            if (replaceCtrl != null) {
+                replaceCtrl.onScanCode(code);
+                log.info("[扫码枪路由] 数据替换页接收 code={}", code);
+            }
+            return;
+        }
+        if (selectedIdx == TAB_IDX_CANCEL) {
+            ShiwanM2CancelAssociationController cancelCtrl = ShiwanM2CancelAssociationController.getInstance();
+            if (cancelCtrl != null) {
+                cancelCtrl.onScanCode(code);
+                log.info("[扫码枪路由] 取消关联页接收 code={}", code);
+            }
+        }
     }
 
     /**
@@ -1511,6 +1577,7 @@ public class ShiwanM2MainController implements Initializable {
         if (pendingRestoreOrderNo == null || !pendingRestoreOrderNo.equals(orderNo)) {
             currentCases = 0;
             currentBoxes = 0;
+            boxRecvCountSet = false;
             curCasesLabel.setText("0");
             curBoxesLabel.setText("0");
         }
@@ -1559,7 +1626,7 @@ public class ShiwanM2MainController implements Initializable {
      * Timeline 事件轮询在 HTTP 响应返回后才启动。
      */
     private void startTcpCapture(String orderNo, String productNo, int boxesPerCase, int boxesPerPallet) {
-        lastCaptureEventSeq = 0;
+        // 不重置事件游标，避免停止后再次开始时重复消费历史事件（导致日志重复和统计回涨）。
         processingCaptureEvents.set(false);
         stopCaptureEventsTimeline();
 
@@ -1778,6 +1845,13 @@ public class ShiwanM2MainController implements Initializable {
             switch (type) {
                 case "BOX_RECV":
                     addDataLog(time + "  " + msg, LogType.DATA);
+                    // 统计：当前盒数 = 盒相机本批去重后的盒码数量
+                    int dedupCount = parseBoxRecvDedupCount(msg);
+                    if (dedupCount >= 0) {
+                        currentBoxes = dedupCount;
+                        curBoxesLabel.setText(String.valueOf(currentBoxes));
+                        boxRecvCountSet = true;
+                    }
                     break;
 
                 case "CASE_RECV":
@@ -1785,8 +1859,11 @@ public class ShiwanM2MainController implements Initializable {
                     break;
 
                 case "BOX_CODE":
-                    currentBoxes++;
-                    curBoxesLabel.setText(String.valueOf(currentBoxes));
+                    // 兼容其它采集模式：仅当 BOX_RECV 尚未设置时才累加
+                    if (!boxRecvCountSet) {
+                        currentBoxes++;
+                        curBoxesLabel.setText(String.valueOf(currentBoxes));
+                    }
                     addDataLog(time + "  " + msg, LogType.SUCCESS);
                     break;
 
@@ -1828,6 +1905,7 @@ public class ShiwanM2MainController implements Initializable {
                             .saveAsync();
 
                     currentBoxes = 0;
+                    boxRecvCountSet = false;
                     currentCases = cases;
                     curBoxesLabel.setText("0");
                     curCasesLabel.setText(String.valueOf(currentCases));
@@ -1868,9 +1946,10 @@ public class ShiwanM2MainController implements Initializable {
                             .saveAsync();
                     // 盒箱关联失败的盒码已写入剔除记录，从当前盒数中减去（不计入计数）
                     if (evtData != null && evtData.has("boxCodes") && evtData.get("boxCodes").isArray()) {
-                        int failedBoxCount = evtData.get("boxCodes").size();
-                        currentBoxes = Math.max(0, currentBoxes - failedBoxCount);
-                        curBoxesLabel.setText(String.valueOf(currentBoxes));
+                        // 整批剔除：本批去重后的盒码不再待关联，清零显示
+                        currentBoxes = 0;
+                        boxRecvCountSet = false;
+                        curBoxesLabel.setText("0");
                     }
                     // 文档：盒箱关联失败 → 触发剔除装置 + 红灯+蜂鸣
                     ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
@@ -1915,6 +1994,27 @@ public class ShiwanM2MainController implements Initializable {
             return String.join(", ", list);
         }
         return v.asText(defaultVal);
+    }
+
+    /**
+     * 解析 BOX_RECV 消息中的“本批去重后盒码数量”。
+     * 当前后端拼接格式示例：
+     *   [盒码相机] 批1 接收到 4 个盒码：[...]
+     */
+    private static int parseBoxRecvDedupCount(String msg) {
+        if (msg == null || msg.isEmpty()) return -1;
+        // 取 “接收到 X 个盒码” 里的 X
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("接收到\\s*(\\d+)\\s*个盒码")
+                .matcher(msg);
+        if (m.find()) {
+            try {
+                return Integer.parseInt(m.group(1));
+            } catch (Exception ignored) {
+                return -1;
+            }
+        }
+        return -1;
     }
 
     /** 通知后端启动 1 号机 T_Code 同步（后台线程执行，不阻塞 UI） */
@@ -2269,6 +2369,7 @@ public class ShiwanM2MainController implements Initializable {
         uploadItems.add(0, new UploadItem("垛 " + palletCode, caseCount + "箱", UploadStatus.PENDING));
         currentCases = 0;
         currentBoxes = 0;
+        boxRecvCountSet = false;
         curCasesLabel.setText("0");
         curBoxesLabel.setText("0");
     }
@@ -2482,6 +2583,14 @@ public class ShiwanM2MainController implements Initializable {
             }));
         };
 
+        // 弹窗打开期间：扫码枪读到的码直接填入箱码输入框并触发查询
+        extractUnfinishedScannerConsumer = scannedCode -> Platform.runLater(() -> {
+            if (!dialog.isShowing()) return;
+            boxCodeInput.setText(scannedCode);
+            doQuery.run();
+        });
+        dialog.setOnHidden(e -> extractUnfinishedScannerConsumer = null);
+
         queryBtn.setOnAction(e -> doQuery.run());
         boxCodeInput.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) doQuery.run();
@@ -2645,6 +2754,7 @@ public class ShiwanM2MainController implements Initializable {
             if (currentBoxes >= bpc) {
                 currentCases++;
                 currentBoxes = 0;
+                    boxRecvCountSet = false;
                 curCasesLabel.setText(String.valueOf(currentCases));
                 curBoxesLabel.setText("0");
 
@@ -2694,6 +2804,7 @@ public class ShiwanM2MainController implements Initializable {
 
             currentCases = 0;
             currentBoxes = 0;
+            boxRecvCountSet = false;
             curCasesLabel.setText("0");
             curBoxesLabel.setText("0");
         });

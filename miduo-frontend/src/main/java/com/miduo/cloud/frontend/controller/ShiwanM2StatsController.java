@@ -91,13 +91,21 @@ public class ShiwanM2StatsController implements Initializable {
         endDate.setEditable(false);
         uploadStartDate.setEditable(false);
         uploadEndDate.setEditable(false);
-        // 生产单号输入框只允许输入数字
-        orderNoField.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
-            String newText = change.getControlNewText();
-            if (newText.isEmpty() || newText.matches("\\d+")) return change;
-            return null;
-        }));
+        // 生产单号输入框：仅数字，最多16位
+        applyOrderNoFilter(orderNoField);
+        applyOrderNoFilter(uploadOrderField);
         setupColumns();
+    }
+
+    /** 生产单号输入限制：仅数字，最多16位。 */
+    private void applyOrderNoFilter(TextField field) {
+        if (field == null) return;
+        field.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty()) return change;
+            if (!newText.matches("\\d{0,16}")) return null;
+            return change;
+        }));
     }
 
     /** 首次切换到生产统计 Tab 时由主控制器调用，触发数据加载 */

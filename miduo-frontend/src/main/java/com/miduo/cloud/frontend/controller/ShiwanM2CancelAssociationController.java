@@ -39,6 +39,11 @@ import java.util.*;
  * 布局：左侧「输入→加入列表→识别→确认取消」；右侧「识别结果 + 取消记录」。
  */
 public class ShiwanM2CancelAssociationController {
+    private static volatile ShiwanM2CancelAssociationController instance;
+
+    public static ShiwanM2CancelAssociationController getInstance() {
+        return instance;
+    }
 
     private static final String FIXED_PASSWORD = "123456";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -70,6 +75,7 @@ public class ShiwanM2CancelAssociationController {
 
     @FXML
     public void initialize() {
+        instance = this;
         pendingList.setItems(pendingItems);
         identifyResultList.setItems(identifyItems);
         cancelRecordList.setItems(cancelRecordItems);
@@ -88,6 +94,19 @@ public class ShiwanM2CancelAssociationController {
         // 回车加入列表
         codeInputField.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) onAddToList();
+        });
+    }
+
+    /**
+     * 扫码枪输入入口：自动填入并加入待取消列表。
+     */
+    public void onScanCode(String code) {
+        String c = normalize(code);
+        if (c.isEmpty()) return;
+        Platform.runLater(() -> {
+            if (codeInputField == null || codeInputField.isDisabled()) return;
+            codeInputField.setText(c);
+            onAddToList();
         });
     }
 
@@ -168,12 +187,12 @@ public class ShiwanM2CancelAssociationController {
         FxHelpDialog.show(
                 codeInputField.getScene().getWindow(),
                 "取消关联 - 操作说明",
-                "- **输入码**：支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码。不知道盒/箱/垛码时，可先前往「数据查询」查询码的归属链路",
-                "- **只解一层（默认）**：只取消该码层级的直接关联，下一层保留。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒。适用于归错垛/箱（垛码）、换箱体（箱码，保留盒内结构）等场景。操作完成后将实物重新上产线重建关联，瓶-盒层级也可前往「手工采集」页手工重建",
-                "- **全部解除**：取消该码层级及以下所有关联。垛码受层级限制仍只断箱-垛（与只解一层等价）；箱码断盒-箱+瓶-盒，各层码均恢复可用、可重新关联；盒码与只解一层等价。适用于需要彻底清除箱内所有关联的场景（箱码）。召回/返工等需要从垛开始清除的场景，需先垛码断箱-垛，再批量输入箱码执行全部解除",
+                "- **输入码**：支持盒码、箱码、垛码；扫入瓶码时系统自动转换为其所在的盒码；不知道码时可前往「数据查询」查询归属链路",
+                "- **只解一层（默认）**：只取消该码层级的直接关联，下一层保留。垛码→断箱-垛；箱码→断盒-箱（瓶-盒保留）；盒码→断瓶-盒；适用于归错垛/箱、换箱体等场景",
+                "- **全部解除**：取消该码层级及以下所有关联。垛码受层级限制仍只断箱-垛；箱码断盒-箱+瓶-盒，所有码回迁热表；盒码与只解一层等价；适用于需彻底清除箱内所有关联的场景",
                 "- **有上级时**：若码已关联至上级（如盒已在箱内），须先取消上级才能取消该码；识别结果会提示上级码值，将上级码加入列表后执行即可",
-                "- **已上传**：云端数据以整垛为单位。若涉及码所在的垛已上传云端，系统先调用云端接口取消整垛数据，成功后再取消本地，保证两端一致",
-                "- **密码**：需要密码验证"
+                "- **已上传**：当前阶段已上传数据暂不允许取消关联",
+                "- **密码**：操作需要密码验证"
         );
     }
 
@@ -346,23 +365,46 @@ public class ShiwanM2CancelAssociationController {
             return;
         }
 
-        // 执行取消（按 垛→箱→盒 顺序）
-        cancelableItems.sort(Comparator.comparingInt(i -> codeTypeOrder(i.codeType)));
+        // 执行取消（支持“先取消上级后重判下级”）
         String mode = modeAll ? "ALL" : "ONE_LAYER";
         confirmCancelButton.setDisable(true);
 
         new Thread(() -> {
             List<String> successCodes = new ArrayList<>();
-            for (IdentifyItem item : cancelableItems) {
-                CancelRecord record = doCancel(item.code, mode);
-                Platform.runLater(() -> cancelRecordItems.add(0, record));
-                if (record.success) {
-                    successCodes.add(item.code);
-                    logSuccess(item.code);
-                } else {
-                    logFailure(item.code, record.message);
+            LinkedHashMap<String, IdentifyItem> latestMap = new LinkedHashMap<>(lastIdentifyMap);
+            List<String> pendingCodes = new ArrayList<>(latestMap.keySet());
+
+            while (true) {
+                // 每轮先按垛→箱→盒排序，确保上级优先
+                pendingCodes.sort(Comparator.comparingInt(code -> {
+                    IdentifyItem item = latestMap.get(code);
+                    return item == null ? 9 : codeTypeOrder(item.codeType);
+                }));
+
+                boolean progressed = false;
+                for (String code : new ArrayList<>(pendingCodes)) {
+                    Map<String, Object> check = doCheckCancel(code);
+                    IdentifyItem item = buildIdentifyItem(code, check, modeAll);
+                    latestMap.put(code, item);
+
+                    if (!item.cancelable) continue;
+
+                    CancelRecord record = doCancel(code, mode);
+                    Platform.runLater(() -> cancelRecordItems.add(0, record));
+                    if (record.success) {
+                        successCodes.add(code);
+                        pendingCodes.remove(code);
+                        latestMap.remove(code);
+                        progressed = true;
+                        logSuccess(code);
+                    } else {
+                        logFailure(code, record.message);
+                    }
                 }
+
+                if (!progressed) break;
             }
+
             Platform.runLater(() -> {
                 // 移除成功的码
                 for (String code : successCodes) {
@@ -371,8 +413,10 @@ public class ShiwanM2CancelAssociationController {
                     pendingItems.removeIf(p -> p.code.equals(code));
                     identifyItems.removeIf(i -> i.code.equals(code));
                 }
-                // 刷新汇总
-                if (!lastIdentifyMap.isEmpty()) {
+                // 用最终重判结果刷新识别区
+                if (!latestMap.isEmpty()) {
+                    lastIdentifyMap.clear();
+                    lastIdentifyMap.putAll(latestMap);
                     refreshIdentifyDisplay();
                 } else {
                     identifySummaryLabel.setText("执行完成");
@@ -580,7 +624,7 @@ public class ShiwanM2CancelAssociationController {
         // 已上传则不允许取消关联
         if (item.isUploaded) {
             item.cancelable = false;
-            item.message    = "该码已上传";
+            item.message    = "该码所在垛已上传云端，暂不支持取消关联";
         } else {
             item.cancelable = boolVal(check, "cancelable");
             item.message    = str(check, "message");

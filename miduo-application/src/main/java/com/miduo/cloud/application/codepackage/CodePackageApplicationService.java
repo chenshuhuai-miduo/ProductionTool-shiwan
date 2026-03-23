@@ -125,51 +125,42 @@ public class CodePackageApplicationService {
     public ApiResult<CodePackageOnlineImportResultVO> importOnline() {
         try {
             LocalDateTime defaultTime = parseTimeOrDefault(defaultPullStartTime, LocalDateTime.of(2024, 1, 1, 0, 0, 0));
-            // 各类型分别记录上次成功拉取时间，用于增量过滤
+            // 在线更新统一按小标（1）导入，按小标上次成功拉取时间做增量过滤
             LocalDateTime smallTypeStart = getLastOnlineImportCreateTime(1, defaultTime);
-            LocalDateTime bigTypeStart = getLastOnlineImportCreateTime(3, defaultTime);
-            Map<Integer, LocalDateTime> typeStartMap = new HashMap<>();
-            typeStartMap.put(1, smallTypeStart);
-            typeStartMap.put(3, bigTypeStart);
-            // 统一用最早的时间发一次请求，拿回全量增量数据后再按各类型时间二次过滤
-            LocalDateTime queryStart = smallTypeStart.isBefore(bigTypeStart) ? smallTypeStart : bigTypeStart;
+            LocalDateTime queryStart = smallTypeStart;
             LocalDateTime queryEnd = LocalDateTime.now().plusHours(6).toLocalDate().atTime(23, 59, 59);
 
             CodePackageOpenPlatformClient.QueryCompletedResponse response = openPlatformClient.queryCompleted(queryStart, queryEnd);
             CodePackageOnlineImportResultVO resultVO = new CodePackageOnlineImportResultVO();
+            final int targetPackageType = 1;
             for (CodePackageOpenPlatformClient.QueryCompletedItem item : response.getItems()) {
-                if (item == null || item.getRelationshipType() == null) {
+                if (item == null) {
                     continue;
                 }
-                if (item.getRelationshipType() != 1 && item.getRelationshipType() != 3) {
-                    continue;
-                }
-                // 按各类型自己的时间戳做二次过滤：跳过 upload_time 不晚于该类型上次成功拉取时间的条目
-                LocalDateTime typeStart = typeStartMap.get(item.getRelationshipType());
-                if (typeStart != null && StringUtils.hasText(item.getUploadTime())) {
+                // 按小标自己的时间戳做二次过滤：跳过 upload_time 不晚于上次成功拉取时间的条目
+                if (smallTypeStart != null && StringUtils.hasText(item.getUploadTime())) {
                     LocalDateTime itemUploadTime = parseTime(item.getUploadTime());
-                    if (itemUploadTime != null && !itemUploadTime.isAfter(typeStart)) {
+                    if (itemUploadTime != null && !itemUploadTime.isAfter(smallTypeStart)) {
                         continue;
                     }
                 }
                 resultVO.setTotalProcessed(resultVO.getTotalProcessed() + 1);
                 if (!StringUtils.hasText(item.getFileDownloadAddress())) {
-                    addOnlineFailed(resultVO, item.getRelationshipType(), item.getFileName(), "无可用下载地址");
                     continue;
                 }
                 try {
                     List<String> codeLines = openPlatformClient.downloadCodeLines(item.getFileDownloadAddress());
                     PersistResult persistResult = persistCodes(
-                            item.getRelationshipType(),
+                            targetPackageType,
                             item.getFileName(),
                             item.getFileName(),
                             CodePackageImportSourceEnum.ONLINE.getCode(),
                             codeLines,
                             true
                     );
-                    addOnlineSuccess(resultVO, item.getRelationshipType(), item.getFileName(), persistResult.getImportedCount());
+                    addOnlineSuccess(resultVO, targetPackageType, item.getFileName(), persistResult.getImportedCount());
                 } catch (Exception ex) {
-                    addOnlineFailed(resultVO, item.getRelationshipType(), item.getFileName(), ex.getMessage());
+                    addOnlineFailed(resultVO, targetPackageType, item.getFileName(), ex.getMessage());
                 }
             }
             return ApiResult.success("在线更新执行完成", resultVO);
@@ -579,9 +570,7 @@ public class CodePackageApplicationService {
             return -1;
         }
         switch (packageType) {
-            case 1: return cfg.getSmallCodeDigits();
-            case 2: return cfg.getMediumCodeDigits();
-            case 3: return cfg.getLargeCodeDigits();
+            case 2: return cfg.getSmallCodeDigits();
             default: return -1;
         }
     }

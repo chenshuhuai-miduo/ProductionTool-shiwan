@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 石湾 2 号机盒箱关联与成垛服务。
@@ -227,6 +228,7 @@ public class ShiwanM2BoxCaseService {
     @Transactional(rollbackFor = Exception.class)
     public ApiResult<Map<String, Object>> associateCaseCodeWithBoxCodes(String orderNo, String productNo,
                                                                         String caseCode, List<String> boxCodes, int boxesPerPallet) {
+        final int requiredRowsPerBox = 6;
         if (orderNo == null || orderNo.trim().isEmpty()) {
             return ApiResult.error(400, "订单号不能为空");
         }
@@ -238,6 +240,19 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "盒码列表不能为空");
         }
         try {
+            List<String> normalizedBoxCodes = boxCodes.stream()
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (normalizedBoxCodes.isEmpty()) {
+                return ApiResult.error(400, "盒码列表不能为空");
+            }
+            if (normalizedBoxCodes.size() != boxCodes.size()) {
+                return ApiResult.error(400, "盒码列表存在重复或空码");
+            }
+
             Map<String, Object> task = getCurrentTaskByOrderNo(orderNo);
             if (task == null) {
                 return ApiResult.error(400, "未找到进行中的任务或订单号不匹配");
@@ -250,25 +265,47 @@ public class ShiwanM2BoxCaseService {
             if (isCaseCodeAlreadyUsed(orderNo, caseCode)) {
                 return ApiResult.error(400, "箱码已使用（重码）：" + caseCode);
             }
+
+            // 采集态盒箱关联前强校验：每个盒码必须在 CodeRelationUpload 中存在且仅存在 6 条未关联记录
+            String verifyPlaceholders = String.join(",", Collections.nCopies(normalizedBoxCodes.size(), "?"));
+            List<Map<String, Object>> verifyRows = jdbcTemplate.queryForList(
+                    "SELECT MediumSerialNumber, COUNT(1) AS cnt FROM CodeRelationUpload " +
+                            "WHERE IsDel = 0 AND (BigSerialNumber IS NULL OR BigSerialNumber = '') " +
+                            "AND MediumSerialNumber IN (" + verifyPlaceholders + ") GROUP BY MediumSerialNumber",
+                    normalizedBoxCodes.toArray());
+            Map<String, Integer> boxRowCountMap = new HashMap<>();
+            for (Map<String, Object> row : verifyRows) {
+                String boxCode = toStr(row.get("MediumSerialNumber"));
+                int cnt = row.get("cnt") instanceof Number ? ((Number) row.get("cnt")).intValue() : 0;
+                boxRowCountMap.put(boxCode, cnt);
+            }
+            for (String boxCode : normalizedBoxCodes) {
+                int cnt = boxRowCountMap.getOrDefault(boxCode, 0);
+                if (cnt != requiredRowsPerBox) {
+                    return ApiResult.error(400, "盒码对应条数不符（需" + requiredRowsPerBox + "条）：" + boxCode + "，当前" + cnt + "条");
+                }
+            }
+
             String tagNo = getOrCreateCurrentTagNo(orderNo.trim());
-            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            String placeholders = String.join(",", Collections.nCopies(normalizedBoxCodes.size(), "?"));
             List<Object> args = new ArrayList<>();
             args.add(caseCode);
             args.add(orderNo.trim());
             args.add(useProductNo);
             args.add(tagNo);
-            args.addAll(boxCodes);
+            args.addAll(normalizedBoxCodes);
             int updated = jdbcTemplate.update(
                     "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = ? " +
                             "WHERE IsDel = 0 " +
                             "AND MediumSerialNumber IN (" + placeholders + ") AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
                     args.toArray());
-            if (updated <= 0) {
+            int expectedUpdated = normalizedBoxCodes.size() * requiredRowsPerBox;
+            if (updated != expectedUpdated) {
                 return ApiResult.error(400, "未找到可关联的盒码记录，箱码：" + caseCode);
             }
             // 落冷：箱码（大标）和盒码（中标）从热表迁移到冷表
             dropCodeToCold(3, caseCode);
-            for (String boxCode : boxCodes) {
+            for (String boxCode : normalizedBoxCodes) {
                 dropCodeToCold(2, boxCode);
             }
             int currentCaseCount = countCurrentCasesInPallet(orderNo);
@@ -281,7 +318,7 @@ public class ShiwanM2BoxCaseService {
             Map<String, Object> data = new HashMap<>();
             data.put("success", true);
             data.put("caseCode", caseCode);
-            data.put("boxCodes", boxCodes);
+            data.put("boxCodes", normalizedBoxCodes);
             data.put("currentCaseCount", currentCaseCount);
             data.put("boxesPerPallet", boxesPerPallet);
             data.put("fullPallet", fullPallet);
@@ -852,8 +889,9 @@ public class ShiwanM2BoxCaseService {
 
         // 1. 垛码（VirtualSerialNumber）
         if (countActiveBy("VirtualSerialNumber", c) > 0) {
+            boolean uploaded = isPalletUploaded(c);
             r.put("codeType", "PALLET");
-            r.put("cancelable", true);
+            r.put("cancelable", !uploaded);
             r.put("parentCode", null);
             Long caseCnt = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
@@ -862,7 +900,10 @@ public class ShiwanM2BoxCaseService {
             r.put("affectedOneLayer", affected);
             r.put("affectedAll", affected);
             r.put("palletCode", c);
-            r.put("isUploaded", isPalletUploaded(c));
+            r.put("isUploaded", uploaded);
+            if (uploaded) {
+                r.put("message", "该码所在垛已上传云端，暂不支持取消关联");
+            }
             return r;
         }
 
@@ -931,7 +972,7 @@ public class ShiwanM2BoxCaseService {
     /**
      * P02-06 取消关联 - 执行取消。
      * mode: ONE_LAYER（只解一层）或 ALL（全部解除）。
-     * 流程：校验 → 检查云端 → （如已上传）调云端取消整垛 → 本地执行。
+     * 流程：校验 → 检查上传状态（已上传暂不允许取消）→ 本地执行。
      */
     public ApiResult<Map<String, Object>> cancelCode(String code, String mode) {
         if (code == null || code.trim().isEmpty()) {
@@ -973,12 +1014,9 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "该码已关联至上级码 " + parentCode + "，请先取消上级");
         }
 
-        // ③ 已上传则先调云端取消整垛
+        // ③ 已上传暂不允许取消（当前阶段不调云端取消接口）
         if (palletCode != null && isPalletUploaded(palletCode)) {
-            ApiResult<Boolean> cloudResult = callCloudUnbindForPallet(palletCode);
-            if (cloudResult != null && cloudResult.getCode() != 200) {
-                return ApiResult.error(cloudResult.getCode(), cloudResult.getMessage());
-            }
+            return ApiResult.error(400, "该码所在垛已上传云端，暂不支持取消关联");
         }
 
         // ④ 本地事务执行取消
@@ -1012,11 +1050,17 @@ public class ShiwanM2BoxCaseService {
         Map<String, Object> r = new LinkedHashMap<>();
         switch (codeType) {
             case "PALLET": {
+                List<String> caseCodes = jdbcTemplate.queryForList(
+                        "SELECT DISTINCT BigSerialNumber FROM CodeRelationUpload " +
+                                "WHERE VirtualSerialNumber=? AND IsDel=0 AND BigSerialNumber!=''",
+                        String.class, code);
                 int rows = jdbcTemplate.update(
-                        "UPDATE CodeRelationUpload SET VirtualSerialNumber='', BiggerSerialNumber='' " +
+                        "UPDATE CodeRelationUpload " +
+                        "SET VirtualSerialNumber='', BiggerSerialNumber='', Status=3, IsUpload=0 " +
                         "WHERE VirtualSerialNumber=? AND IsDel=0", code);
-                log.info("[取消关联] 垛码 {} 断箱-垛 {} 行", code, rows);
-                r.put("cancelledCount", rows);
+                int caseCount = caseCodes == null ? 0 : caseCodes.size();
+                log.info("[取消关联] 垛码 {} 断箱-垛 {} 箱（影响 {} 行），状态置为未成垛", code, caseCount, rows);
+                r.put("cancelledCount", caseCount);
                 break;
             }
             case "CASE": {
@@ -1230,9 +1274,9 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "原码正在上传中，请等待上传完成后再进行替换");
         }
 
-        // 6. 先调云端替换接口（无论上传状态），云端失败则中止本地替换
+        // 6. 先调云端替换接口（无论上传状态），若已上传且云端失败则中止本地替换
         ApiResult<Boolean> cloudResult = callCloudCodeSubstitution(oldV, newV, codeType);
-        if (cloudResult != null && cloudResult.getCode() != 200) {
+        if (uploadStatus == 1 && cloudResult != null && cloudResult.getCode() != 200) {
             return cloudResult;
         }
 

@@ -11,7 +11,7 @@
       stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
 
     <!-- ——— 左侧（40%）——— -->
-    <VBox HBox.hgrow="ALWAYS" spacing="12">
+    <VBox HBox.hgrow="ALWAYS" spacing="12" minWidth="0">
 
         <!-- 手动上传按钮 -->
         <HBox styleClass="shiwan-m2-card" spacing="10" alignment="CENTER_LEFT">
@@ -38,7 +38,7 @@
     </VBox>
 
     <!-- ——— 右侧（40%）——— -->
-    <VBox HBox.hgrow="ALWAYS" spacing="12">
+    <VBox HBox.hgrow="ALWAYS" spacing="12" minWidth="0">
 
         <!-- 查询与状态管理 -->
         <VBox styleClass="shiwan-m2-card" spacing="12">
@@ -95,7 +95,7 @@
                 <HBox spacing="8" alignment="CENTER_LEFT">
                     <Label text="失败原因：" styleClass="sw2-upload-query-label"/>
                     <Label fx:id="resultFailReason" text="-" styleClass="sw2-upload-query-value"
-                           wrapText="true" HBox.hgrow="ALWAYS"/>
+                           wrapText="true" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                 </HBox>
             </VBox>
         </VBox>

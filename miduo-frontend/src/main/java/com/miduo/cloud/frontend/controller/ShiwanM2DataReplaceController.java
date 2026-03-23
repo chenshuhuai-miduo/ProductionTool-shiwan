@@ -39,6 +39,11 @@ import java.util.Optional;
  * 石湾M2-数据替换控制器
  */
 public class ShiwanM2DataReplaceController {
+    private static volatile ShiwanM2DataReplaceController instance;
+
+    public static ShiwanM2DataReplaceController getInstance() {
+        return instance;
+    }
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -57,9 +62,31 @@ public class ShiwanM2DataReplaceController {
 
     @FXML
     public void initialize() {
+        instance = this;
         replaceResultList.setItems(replaceResults);
         replaceResultList.setPlaceholder(new Label("暂无替换记录"));
         replaceStatusLabel.setText("请填写原码和新码后执行替换");
+    }
+
+    /**
+     * 扫码枪输入入口：先填原码，再填新码；两者都有时覆盖新码。
+     */
+    public void onScanCode(String code) {
+        String c = code == null ? "" : code.trim();
+        if (c.isEmpty()) return;
+        Platform.runLater(() -> {
+            if (originalCodeField == null || newCodeField == null) return;
+            String oldVal = originalCodeField.getText() == null ? "" : originalCodeField.getText().trim();
+            String newVal = newCodeField.getText() == null ? "" : newCodeField.getText().trim();
+            if (oldVal.isEmpty()) {
+                originalCodeField.setText(c);
+                newCodeField.requestFocus();
+            } else if (newVal.isEmpty()) {
+                newCodeField.setText(c);
+            } else {
+                newCodeField.setText(c);
+            }
+        });
     }
 
     @FXML
