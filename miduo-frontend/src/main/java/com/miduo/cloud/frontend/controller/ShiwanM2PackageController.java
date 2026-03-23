@@ -6,6 +6,7 @@ import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageImportVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageOnlineImportResultVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackagePageQueryDTO;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
@@ -281,16 +282,16 @@ public class ShiwanM2PackageController implements Initializable {
 
     @FXML
     private void onHelp() {
-        Alert info = new Alert(Alert.AlertType.INFORMATION);
-        info.setTitle("码包导入说明");
-        info.setHeaderText("码包管理操作帮助");
-        info.setContentText(
-                "在线更新：拉取盖外码小标和箱外码大标，按上次成功拉取时间增量更新。\n" +
-                "本地导入：选择码包类型 -> 选择 TXT -> 输入密码 -> 后端解析入库并判重。\n" +
-                "查看：查看码包内码值，支持搜索和分页。\n" +
-                "删除：仅当码包内无已关联码时允许删除（物理删除导入记录和热表记录）。");
-        ShiwanM2AlertUtil.applyStyle(info);
-        info.showAndWait();
+        FxHelpDialog.show(
+                keywordField.getScene().getWindow(),
+                "码包管理 - 功能说明",
+                "- **码包文件说明**：码包文件都是指外码，请不要导入内码，防止码包泄露",
+                "- **在线更新（仅盖外码小标）**：点击后系统按上次成功拉取时间增量拉取瓶码（盖外码小标）；盒外码中标、箱外码大标不参与在线拉取，需通过本地导入；拉取失败时不覆盖本地数据，可继续使用已有码包",
+                "- **启动自动导入**：软件每次启动时自动执行一次在线更新，仅拉取盖外码小标，规则同在线更新",
+                "- **本地导入**：盒外码中标、箱外码大标仅能通过本地导入；盖外码小标在无网络时也可本地导入。流程：选择码包类型 → 选择TXT文件 → 填写备注（选填）→ 输入密码 → 确认解析入库",
+                "- **删除**：只有码包里的码都还没用过时才能删除；有已用过的码则不能删。删除后数据仍保留，可查记录",
+                "- **提醒**：生产前请确保码包已正确导入，否则采集时会报错；可通过「查看」检查码包内容"
+        );
     }
 
     private void triggerStartupOnlineUpdate() {
