@@ -1699,10 +1699,11 @@ public class ShiwanM2BoxCaseService {
             return;
         }
 
-        // ① 标记为"上传中"（IsUpload=3）
+        // ① 标记为"上传中"（IsUpload=3），并在上传前写入 UploadTime
         try {
             jdbcTemplate.update(
-                    "UPDATE CodeRelationUpload SET IsUpload = 3 WHERE VirtualSerialNumber = ? AND IsDel = 0",
+                    "UPDATE CodeRelationUpload SET IsUpload = 3, UploadTime = NOW() " +
+                            "WHERE VirtualSerialNumber = ? AND IsDel = 0",
                     palletCode);
         } catch (Exception e) {
             log.error("[虚拟垛标上传] 更新 IsUpload=3 失败 palletCode={}", palletCode, e);

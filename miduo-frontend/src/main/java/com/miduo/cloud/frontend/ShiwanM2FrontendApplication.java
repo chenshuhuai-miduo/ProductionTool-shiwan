@@ -1,6 +1,7 @@
 package com.miduo.cloud.frontend;
 
 import com.miduo.cloud.frontend.controller.DeviceMismatchDialogController;
+import com.miduo.cloud.frontend.controller.ShiwanM2MainController;
 import com.miduo.cloud.frontend.controller.TrialExpireDialogController;
 import com.miduo.cloud.frontend.controller.TrialExpiringDialogController;
 import com.miduo.cloud.frontend.controller.UnactivatedDialogController;
@@ -15,6 +16,7 @@ import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.entity.enums.LicenseStatusEnum;
+import com.fasterxml.jackson.databind.JsonNode;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -54,6 +56,11 @@ public class ShiwanM2FrontendApplication extends Application {
             Platform.exit();
             return;
         }
+        // 主界面打开前先尝试一次云端产品同步：
+        // 成功：主界面点“产品选择”时无需再触发远端同步；
+        // 失败：主界面打开后在首次产品选择时补偿重试一次。
+        boolean preSyncOk = preSyncProductsBeforeMainWindow();
+        ShiwanM2MainController.reportStartupProductSyncResult(preSyncOk);
 
         try {
             FXMLLoader loader = new FXMLLoader(
@@ -99,6 +106,28 @@ public class ShiwanM2FrontendApplication extends Application {
             System.err.println("✗ 启动失败！" + e.getMessage());
             e.printStackTrace();
             throw e;
+        }
+    }
+
+    /**
+     * 主界面打开前预同步产品到本地。
+     * 失败不阻断启动，仅记录日志并交由主界面首次产品选择时补偿重试。
+     */
+    private boolean preSyncProductsBeforeMainWindow() {
+        try {
+            String resp = HttpUtil.doPost("/api/shiwan-m2/products/sync", "");
+            JsonNode node = HttpUtil.getObjectMapper().readTree(resp);
+            boolean ok = node != null && node.has("code") && node.get("code").asInt() == 200;
+            if (ok) {
+                System.out.println("✓ 启动前产品同步成功");
+            } else {
+                String msg = (node != null && node.has("message")) ? node.get("message").asText() : "未知错误";
+                System.out.println("⚠ 启动前产品同步失败：" + msg + "（主界面首次产品选择时将重试）");
+            }
+            return ok;
+        } catch (Exception e) {
+            System.out.println("⚠ 启动前产品同步异常：" + e.getMessage() + "（主界面首次产品选择时将重试）");
+            return false;
         }
     }
 

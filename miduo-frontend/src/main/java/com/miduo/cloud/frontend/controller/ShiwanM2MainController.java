@@ -266,6 +266,11 @@ public class ShiwanM2MainController implements Initializable {
     private List<Tab> allOriginalTabs;
 
     private static final Logger log = LoggerFactory.getLogger(ShiwanM2MainController.class);
+    /** 启动前产品同步结果（由 Application 在主界面打开前写入）。 */
+    private static volatile boolean startupProductSyncTried = false;
+    private static volatile boolean startupProductSyncSucceeded = false;
+    /** 启动前同步失败后，主界面打开后的补偿重试只执行一次。 */
+    private boolean productSyncRetriedAfterWindowOpen = false;
 
     /** 扫码枪设备类别代码（与 DeviceConnectionManager.convertCategoryTextToCode 保持一致） */
     private static final int CATEGORY_SCANNER = 7;
@@ -292,6 +297,14 @@ public class ShiwanM2MainController implements Initializable {
             checkUnfinishedOnStartup();
         });
         loadSpecFromSettings();
+    }
+
+    /**
+     * 由启动类在主界面打开前调用，记录“启动前预拉产品”结果。
+     */
+    public static void reportStartupProductSyncResult(boolean success) {
+        startupProductSyncTried = true;
+        startupProductSyncSucceeded = success;
     }
 
     /** 为统计/码包管理 Tab 设置懒加载：首次切换到该 Tab 时才触发数据查询，避免启动时未连接数据库的弹窗报错 */
@@ -463,11 +476,10 @@ public class ShiwanM2MainController implements Initializable {
             }
         });
 
-        // 启动时先同步一次再加载
-        productExecutor.submit(() -> {
-            syncProducts();
-            fetchProducts("", 50);
-        });
+        // 启动时仅从本地加载产品列表。
+        // 远端产品同步由 Application 在主界面打开前先尝试一次；
+        // 若该次失败，则在主界面打开后（首次点产品选择）再重试一次。
+        productExecutor.submit(() -> fetchProducts("", 50));
     }
 
     /** 配置所有 ListView 的 CellFactory */
@@ -945,8 +957,14 @@ public class ShiwanM2MainController implements Initializable {
         loadingStage.setScene(new Scene(loadingBox, 260, 120));
         loadingStage.show();
 
-        // 后台从本地数据库加载产品列表（启动时已同步，此处不重复拉取远端）
+        // 后台加载产品列表：
+        // 1) 启动前预同步失败时，在主界面打开后补偿重试一次远端同步；
+        // 2) 然后从本地库加载产品列表刷新弹窗数据。
         productExecutor.submit(() -> {
+            if (startupProductSyncTried && !startupProductSyncSucceeded && !productSyncRetriedAfterWindowOpen) {
+                productSyncRetriedAfterWindowOpen = true;
+                syncProducts();
+            }
             fetchProducts("", 50);
             Platform.runLater(() -> {
                 loadingStage.close();
