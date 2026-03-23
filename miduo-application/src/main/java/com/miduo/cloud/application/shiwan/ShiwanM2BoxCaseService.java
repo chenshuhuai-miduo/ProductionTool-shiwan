@@ -266,23 +266,41 @@ public class ShiwanM2BoxCaseService {
                 return ApiResult.error(400, "箱码已使用（重码）：" + caseCode);
             }
 
-            // 采集态盒箱关联前强校验：每个盒码必须在 CodeRelationUpload 中存在且仅存在 6 条未关联记录
+            // 采集态盒箱关联前强校验：
+            // 1) 每个盒码去重后的瓶码数量必须为 6；
+            // 2) 若去重后为 6，但任一记录已有 BigSerialNumber，则判定该盒已被箱码关联。
             String verifyPlaceholders = String.join(",", Collections.nCopies(normalizedBoxCodes.size(), "?"));
             List<Map<String, Object>> verifyRows = jdbcTemplate.queryForList(
-                    "SELECT MediumSerialNumber, COUNT(1) AS cnt FROM CodeRelationUpload " +
-                            "WHERE IsDel = 0 AND (BigSerialNumber IS NULL OR BigSerialNumber = '') " +
-                            "AND MediumSerialNumber IN (" + verifyPlaceholders + ") GROUP BY MediumSerialNumber",
+                    "SELECT MediumSerialNumber, SmallSerialNumber, BigSerialNumber FROM CodeRelationUpload " +
+                            "WHERE IsDel = 0 AND MediumSerialNumber IN (" + verifyPlaceholders + ")",
                     normalizedBoxCodes.toArray());
-            Map<String, Integer> boxRowCountMap = new HashMap<>();
+
+            Map<String, Set<String>> boxBottleSetMap = new HashMap<>();
+            Map<String, String> boxLinkedCaseMap = new HashMap<>();
             for (Map<String, Object> row : verifyRows) {
                 String boxCode = toStr(row.get("MediumSerialNumber"));
-                int cnt = row.get("cnt") instanceof Number ? ((Number) row.get("cnt")).intValue() : 0;
-                boxRowCountMap.put(boxCode, cnt);
+                if (boxCode.isEmpty()) continue;
+                String bottleCode = toStr(row.get("SmallSerialNumber"));
+                if (!bottleCode.isEmpty()) {
+                    boxBottleSetMap.computeIfAbsent(boxCode, k -> new HashSet<>()).add(bottleCode);
+                }
+                String linkedCase = toStr(row.get("BigSerialNumber"));
+                if (!linkedCase.isEmpty()) {
+                    boxLinkedCaseMap.putIfAbsent(boxCode, linkedCase);
+                }
             }
+
             for (String boxCode : normalizedBoxCodes) {
-                int cnt = boxRowCountMap.getOrDefault(boxCode, 0);
-                if (cnt != requiredRowsPerBox) {
-                    return ApiResult.error(400, "盒码对应条数不符（需" + requiredRowsPerBox + "条）：" + boxCode + "，当前" + cnt + "条");
+                int bottleCnt = boxBottleSetMap.getOrDefault(boxCode, Collections.emptySet()).size();
+                if (bottleCnt < requiredRowsPerBox) {
+                    return ApiResult.error(400, "盒码 " + boxCode + " 的关联瓶码不足6条");
+                }
+                if (bottleCnt > requiredRowsPerBox) {
+                    return ApiResult.error(400, "盒码 " + boxCode + " 的关联瓶码超过6条");
+                }
+                String linkedCase = boxLinkedCaseMap.get(boxCode);
+                if (linkedCase != null && !linkedCase.isEmpty()) {
+                    return ApiResult.error(400, "盒码 " + boxCode + " 已被" + linkedCase + "箱码关联");
                 }
             }
 
@@ -299,8 +317,7 @@ public class ShiwanM2BoxCaseService {
                             "WHERE IsDel = 0 " +
                             "AND MediumSerialNumber IN (" + placeholders + ") AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
                     args.toArray());
-            int expectedUpdated = normalizedBoxCodes.size() * requiredRowsPerBox;
-            if (updated != expectedUpdated) {
+            if (updated <= 0) {
                 return ApiResult.error(400, "未找到可关联的盒码记录，箱码：" + caseCode);
             }
             // 落冷：箱码（大标）和盒码（中标）从热表迁移到冷表

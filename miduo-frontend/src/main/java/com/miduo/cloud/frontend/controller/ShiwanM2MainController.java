@@ -1004,6 +1004,11 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onOpenProductSelectDialog() {
+        final ProductItem originalValue = productComboBox != null ? productComboBox.getValue() : null;
+        final String originalProductCode = productCodeLabel != null ? productCodeLabel.getText() : "";
+        final boolean originalCodeRowVisible = productCodeRow != null && productCodeRow.isVisible();
+        final boolean originalCodeRowManaged = productCodeRow != null && productCodeRow.isManaged();
+
         // 显示加载提示弹窗
         Stage loadingStage = new Stage();
         loadingStage.initModality(Modality.APPLICATION_MODAL);
@@ -1034,12 +1039,15 @@ public class ShiwanM2MainController implements Initializable {
             fetchProducts("", 50);
             Platform.runLater(() -> {
                 loadingStage.close();
-                doOpenProductSelectDialog();
+                doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
             });
         });
     }
 
-    private void doOpenProductSelectDialog() {
+    private void doOpenProductSelectDialog(ProductItem originalValue,
+                                           String originalProductCode,
+                                           boolean originalCodeRowVisible,
+                                           boolean originalCodeRowManaged) {
         try {
             java.net.URL fxmlUrl = getClass().getResource("/fxml/ShiwanM2ProductSelectDialog.fxml");
             if (fxmlUrl == null) return;
@@ -1069,6 +1077,18 @@ public class ShiwanM2MainController implements Initializable {
                 productCodeRow.setVisible(true);
                 productCodeRow.setManaged(true);
                 addOpLog(LocalDateTime.now().format(TIME_FMT) + "  产品已选择：" + name + "（" + pronumber + "）", LogType.INFO);
+            } else {
+                // 弹窗取消：恢复弹窗打开前的产品显示，避免刷新列表导致下拉框文本变空。
+                if (productComboBox != null) {
+                    productComboBox.setValue(originalValue);
+                }
+                if (productCodeLabel != null) {
+                    productCodeLabel.setText(originalProductCode != null ? originalProductCode : "");
+                }
+                if (productCodeRow != null) {
+                    productCodeRow.setVisible(originalCodeRowVisible);
+                    productCodeRow.setManaged(originalCodeRowManaged);
+                }
             }
         } catch (IOException e) {
             showWarn("打开产品选择失败", e.getMessage());
@@ -1571,8 +1591,6 @@ public class ShiwanM2MainController implements Initializable {
                 .saveAsync();
         palletCount = 0;
         palletCountLabel.setText("0");
-        totalRejectCount = 0;
-        rejectCountLabel.setText("0");
         // 非恢复模式：重置计数
         if (pendingRestoreOrderNo == null || !pendingRestoreOrderNo.equals(orderNo)) {
             currentCases = 0;

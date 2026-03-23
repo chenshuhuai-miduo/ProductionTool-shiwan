@@ -188,7 +188,7 @@ public class M1TCodeSyncService {
                         "WHERE NOT EXISTS (" +
                         "SELECT 1 FROM CodeRelationUpload " +
                         "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0)";
-        log.info("1号机 T_Code 同步 [插入] SQL: {} | 待写入 {} 条到 CodeRelationUpload (去重: MediumSerialNumber+SmallSerialNumber)",
+        log.info("1号机 T_Code 同步 [插入] SQL: {} | 待写入 {} 条到 CodeRelationUpload",
                 insertSql, rows.size());
 
         LocalDateTime now = LocalDateTime.now();
@@ -196,49 +196,70 @@ public class M1TCodeSyncService {
         String tagNo = "";
         int insertedCount = 0;
         int skippedCount = 0;
-        try {
-            int[] results = jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    TCodeRow row = rows.get(i);
-                    ps.setString(1, empty);          // BiggerSerialNumber（垛码，成垛时回填）
-                    ps.setString(2, empty);          // BigSerialNumber（箱码，盒箱关联时回填）
-                    ps.setString(3, row.boxCode);    // MediumSerialNumber ← T_Code.BoxCode（中层箱码）
-                    ps.setString(4, row.bagCode);    // SmallSerialNumber  ← T_Code.BagCode（小层盒码）
-                    ps.setString(5, empty);
-                    ps.setString(6, empty);
-                    ps.setString(7, empty);
-                    ps.setInt(8, 0);
-                    ps.setString(9, productNo);      // ProductNO（盒箱关联时回填）
-                    ps.setString(10, orderNo);       // OrderNo（盒箱关联时回填）
-                    ps.setInt(11, 0);
-                    ps.setString(12, tagNo);
-                    ps.setInt(13, 0);
-                    ps.setInt(14, 1);
-                    ps.setString(15, empty);
-                    ps.setString(16, empty);
-                    ps.setObject(17, now);
-                    ps.setInt(18, 0);
-                    ps.setString(19, empty);
-                    ps.setInt(20, 0);
-                    ps.setInt(21, 0);                // IsDel=0
-                    ps.setString(22, empty);
-                    ps.setString(23, row.boxCode);   // WHERE NOT EXISTS: MediumSerialNumber
-                    ps.setString(24, row.bagCode);   // WHERE NOT EXISTS: SmallSerialNumber
+        int markedDuplicateCount = 0;
+        List<TCodeRow> rowsToInsert = new ArrayList<>();
+        for (TCodeRow row : rows) {
+            if (existsByMediumOrSmallCode(row.boxCode, row.bagCode)) {
+                skippedCount++;
+                int marked = markExistingDuplicateAsStatus4(row.boxCode, row.bagCode);
+                if (marked > 0) {
+                    markedDuplicateCount += marked;
                 }
+                continue;
+            }
+            rowsToInsert.add(row);
+        }
 
-                @Override
-                public int getBatchSize() {
-                    return rows.size();
+        if (markedDuplicateCount > 0) {
+            log.info("1号机 T_Code 同步 [重复处理] 本批检测到重复码，已将 {} 条存量数据置为 Status=4（待剔除）",
+                    markedDuplicateCount);
+        }
+
+        try {
+            if (!rowsToInsert.isEmpty()) {
+                int[] results = jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        TCodeRow row = rowsToInsert.get(i);
+                        ps.setString(1, empty);          // BiggerSerialNumber（垛码，成垛时回填）
+                        ps.setString(2, empty);          // BigSerialNumber（箱码，盒箱关联时回填）
+                        ps.setString(3, row.boxCode);    // MediumSerialNumber ← T_Code.BoxCode（中层箱码）
+                        ps.setString(4, row.bagCode);    // SmallSerialNumber  ← T_Code.BagCode（小层盒码）
+                        ps.setString(5, empty);
+                        ps.setString(6, empty);
+                        ps.setString(7, empty);
+                        ps.setInt(8, 0);
+                        ps.setString(9, productNo);      // ProductNO（盒箱关联时回填）
+                        ps.setString(10, orderNo);       // OrderNo（盒箱关联时回填）
+                        ps.setInt(11, 0);
+                        ps.setString(12, tagNo);
+                        ps.setInt(13, 0);
+                        ps.setInt(14, 1);
+                        ps.setString(15, empty);
+                        ps.setString(16, empty);
+                        ps.setObject(17, now);
+                        ps.setInt(18, 0);
+                        ps.setString(19, empty);
+                        ps.setInt(20, 0);
+                        ps.setInt(21, 0);                // IsDel=0
+                        ps.setString(22, empty);
+                        ps.setString(23, row.boxCode);   // WHERE NOT EXISTS: MediumSerialNumber
+                        ps.setString(24, row.bagCode);   // WHERE NOT EXISTS: SmallSerialNumber
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return rowsToInsert.size();
+                    }
+                });
+                for (int r : results) {
+                    if (r > 0) insertedCount++;
+                    else skippedCount++;
                 }
-            });
-            for (int r : results) {
-                if (r > 0) insertedCount++;
-                else skippedCount++;
             }
         } catch (Exception e) {
             log.warn("1号机 T_Code 同步 [插入] 批量写入失败，回退逐条写入: {}", e.getMessage());
-            for (TCodeRow row : rows) {
+            for (TCodeRow row : rowsToInsert) {
                 try {
                     int affected = jdbcTemplate.update(
                             insertSql,
@@ -268,8 +289,26 @@ public class M1TCodeSyncService {
             pushSyncEvent("SYNC_RESULT", msg);
         }
 
-        // 热表校验：瓶码(PackageType=1)和盒码(PackageType=2)均须存在于热表，否则置 Status=4（待剔除）
-        checkHotTableAndMarkStatus4(rows);
+        // 热表校验：仅对本次新增写入的数据校验（瓶码/盒码须在热表中）
+        checkHotTableAndMarkStatus4(rowsToInsert);
+    }
+
+    /** 是否存在重复：只要盒码或瓶码任一已存在于 CodeRelationUpload（IsDel=0），即判重。 */
+    private boolean existsByMediumOrSmallCode(String mediumCode, String smallCode) {
+        Long cnt = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM CodeRelationUpload " +
+                        "WHERE IsDel = 0 AND (MediumSerialNumber = ? OR SmallSerialNumber = ?)",
+                Long.class, mediumCode, smallCode);
+        return cnt != null && cnt > 0;
+    }
+
+    /** 将已存在的对应重复数据统一置为 Status=4（待剔除）。 */
+    private int markExistingDuplicateAsStatus4(String mediumCode, String smallCode) {
+        return jdbcTemplate.update(
+                "UPDATE CodeRelationUpload SET Status = 4, Msg = ? " +
+                        "WHERE IsDel = 0 AND (MediumSerialNumber = ? OR SmallSerialNumber = ?)",
+                "同步重复码，标记待剔除", mediumCode, smallCode
+        );
     }
 
     /**

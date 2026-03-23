@@ -119,6 +119,11 @@ public class ShiwanM2SettingsDto {
     public Upload getUpload() { return upload; }
     public void setUpload(Upload upload) { this.upload = upload; }
 
+    /** 信号与剔除时序配置（对应前端 ShiwanM2Settings.SignalConfig） */
+    private SignalConfig signalConfig;
+    public SignalConfig getSignalConfig() { return signalConfig; }
+    public void setSignalConfig(SignalConfig signalConfig) { this.signalConfig = signalConfig; }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Upload {
@@ -126,6 +131,15 @@ public class ShiwanM2SettingsDto {
         private boolean autoUpload = true;
         public boolean isAutoUpload() { return autoUpload; }
         public void setAutoUpload(boolean autoUpload) { this.autoUpload = autoUpload; }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SignalConfig {
+        /** 触发剔除延时（ms）：检测到需要剔除后，等待该时间再发送剔除信号。 */
+        private int rejectTriggerDelayMs = 0;
+        public int getRejectTriggerDelayMs() { return rejectTriggerDelayMs; }
+        public void setRejectTriggerDelayMs(int rejectTriggerDelayMs) { this.rejectTriggerDelayMs = rejectTriggerDelayMs; }
     }
 
     /** 接口配置（后端读 shiwan-m2-settings.json 中的 api 节点，用于产品同步等） */
