@@ -250,12 +250,10 @@ public class MiduoFrontendApplication extends Application {
         return false;
     }
 
-    /**
-     * JavaFX应用程序启动入口
-     * 可以直接运行此方法启动前端
-     * @param args 命令行参数
-     */
     public static void main(String[] args) {
+        // 「关于系统」弹窗展示内容，发版时在此修改，用 \n 分隔多行
+        System.setProperty("app.about.text",
+            "米多赋码采集关联系统 v1.0.0\n部署站点：致美斋产线\n版权所有 © 米多科技");
         launch(args);
     }
 }

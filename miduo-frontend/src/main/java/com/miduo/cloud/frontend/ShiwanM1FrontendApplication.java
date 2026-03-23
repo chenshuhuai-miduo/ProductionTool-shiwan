@@ -147,6 +147,9 @@ public class ShiwanM1FrontendApplication extends Application {
     }
 
     public static void main(String[] args) {
+        // 「关于系统」弹窗展示内容，发版时在此修改，用 \n 分隔多行
+        System.setProperty("app.about.text",
+            "米多赋码采集关联系统 v1.0.0\n关联模式：瓶盒关联\n部署站点：石湾产线\n版权所有 © 米多科技");
         launch(args);
     }
 }

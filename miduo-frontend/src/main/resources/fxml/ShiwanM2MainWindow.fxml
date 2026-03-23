@@ -25,12 +25,6 @@
                 <MenuItem text="许可证信息" onAction="#onLicenseInfo"/>
             </Menu>
             <Menu text="数据">
-                <MenuItem text="码包管理" onAction="#onCodePackage"/>
-                <MenuItem text="数据查询" onAction="#onDataQuery"/>
-                <MenuItem text="数据替换" onAction="#onDataReplace"/>
-                <MenuItem text="取消关联" onAction="#onCancelAssociation"/>
-                <MenuItem text="生产统计" onAction="#onProductionStats"/>
-                <MenuItem text="数据上传" onAction="#onDataUpload"/>
                 <MenuItem text="操作日志" onAction="#onOperationLog"/>
             </Menu>
             <Menu text="帮助(H)">

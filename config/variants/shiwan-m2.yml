@@ -1,11 +1,15 @@
-# config/variants/shiwan-m2.yml
+# config/variants/shiwan-m2.yml —— 开发参考文档（不被任何代码加载）
 # 石湾2号机（盒箱垛关联软件）
-
-app:
-  name: 米多赋码采集关联系统
+#
+# 运行时文件位置：
+#   关于系统显示内容  → miduo-frontend/.../ShiwanM2FrontendApplication.main()
+#   Spring 后端配置   → miduo-bootstrap/src/main/resources/application-shiwan-m2.properties
+#   专属 Java 代码    → miduo-variant-shiwan/src/main/java/
 
 build:
   variant: shiwan
   machine: 2
 
-features: {}
+features:
+  codePackage: true
+  cancelAssociation: true

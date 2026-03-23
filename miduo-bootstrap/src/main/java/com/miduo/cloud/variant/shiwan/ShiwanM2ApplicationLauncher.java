@@ -28,6 +28,7 @@ public class ShiwanM2ApplicationLauncher {
     private static final CountDownLatch backendReadyLatch = new CountDownLatch(1);
 
     public static void main(String[] args) {
+        // 「关于系统」内容在 ShiwanM2FrontendApplication.main() 中配置
         initializeLogging();
         printWelcomeBanner();
 

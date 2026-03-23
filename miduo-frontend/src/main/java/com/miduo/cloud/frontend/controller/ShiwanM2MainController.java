@@ -856,36 +856,6 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     @FXML
-    private void onCodePackage() {
-        switchToTab(5);
-    }
-
-    @FXML
-    private void onDataQuery() {
-        switchToTab(2);
-    }
-
-    @FXML
-    private void onDataReplace() {
-        switchToTab(3);
-    }
-
-    @FXML
-    private void onCancelAssociation() {
-        switchToTab(6);
-    }
-
-    @FXML
-    private void onProductionStats() {
-        switchToTab(4);
-    }
-
-    @FXML
-    private void onDataUpload() {
-        switchToTab(7);
-    }
-
-    @FXML
     private void onOperationLog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/OperateLog.fxml"));
@@ -949,11 +919,8 @@ public class ShiwanM2MainController implements Initializable {
 
     @FXML
     private void onAbout() {
-        FxDialog.alert(
-                mainTabPane.getScene().getWindow(),
-                "关于系统",
-                "米多赋码采集关联系统 v1.2\n关联模式：盒箱垛关联\n部署站点：石湾产线\n版权所有 © 米多科技"
-        );
+        FxDialog.alert(mainTabPane.getScene().getWindow(), "关于系统",
+                com.miduo.cloud.common.config.AppVersion.readAboutText());
     }
 
     // ==================== 产品选择 ====================

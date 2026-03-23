@@ -10,6 +10,7 @@ import com.miduo.cloud.frontend.ShiwanM1FrontendApplication;
  * </p>
  */
 public class ShiwanM1Launcher {
+    // 「关于系统」内容在 ShiwanM1FrontendApplication.main() 中配置
     public static void main(String[] args) {
         ShiwanM1FrontendApplication.main(args);
     }
