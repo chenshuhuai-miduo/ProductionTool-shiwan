@@ -138,13 +138,13 @@ public class M1TCodeSyncService {
         // 注意：不过滤 Status，同步全部 SerialNo > lastSynced 的记录
         String querySql = "SELECT TOP " + MAX_ROWS_PER_SYNC + " SerialNo, BagCode, BoxCode FROM " + tableName
                 + " WHERE SerialNo > ? ORDER BY SerialNo ASC";
-        log.info("1号机 T_Code 同步 [查询] SQL: {} | 参数: SerialNo > {} | 目标: {}@{}:{}/{}",
+        log.debug("1号机 T_Code 同步 [查询] SQL: {} | 参数: SerialNo > {} | 目标: {}@{}:{}/{}",
                 querySql, lastSynced, username, host, port, database);
 
         List<TCodeRow> rows = new ArrayList<>();
         long maxSerialNo = lastSynced;
         try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
-            log.info("1号机 T_Code 同步 [查询] 连接成功: {}@{}:{}/{}", username, host, port, database);
+            log.debug("1号机 T_Code 同步 [查询] 连接成功: {}@{}:{}/{}", username, host, port, database);
             try (PreparedStatement ps = conn.prepareStatement(querySql)) {
                 ps.setLong(1, lastSynced);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -160,7 +160,7 @@ public class M1TCodeSyncService {
             log.info("1号机 T_Code 同步 [查询] 结果: 共读取 {} 条 (SerialNo > {}, 上限 {}条/批)",
                     rows.size(), lastSynced, MAX_ROWS_PER_SYNC);
             if (!rows.isEmpty()) {
-                log.info("1号机 T_Code 同步 [查询] SerialNo 范围: {} ~ {} | 首条样本: SerialNo={} BagCode={} BoxCode={}",
+                log.debug("1号机 T_Code 同步 [查询] SerialNo 范围: {} ~ {} | 首条样本: SerialNo={} BagCode={} BoxCode={}",
                         rows.get(0).serialNo, maxSerialNo,
                         rows.get(0).serialNo, rows.get(0).bagCode, rows.get(0).boxCode);
             }
@@ -188,7 +188,7 @@ public class M1TCodeSyncService {
                         "WHERE NOT EXISTS (" +
                         "SELECT 1 FROM CodeRelationUpload " +
                         "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0)";
-        log.info("1号机 T_Code 同步 [插入] SQL: {} | 待写入 {} 条到 CodeRelationUpload",
+        log.debug("1号机 T_Code 同步 [插入] SQL: {} | 待写入 {} 条到 CodeRelationUpload",
                 insertSql, rows.size());
 
         LocalDateTime now = LocalDateTime.now();

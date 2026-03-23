@@ -117,7 +117,7 @@ public class ProductSyncService {
             }
             String url = baseUrl + path;
             String queryJson = "{\"prostate\":\"0\",\"noprotype\":\"0\"}";
-            int pageSize = 1000;
+            int pageSize = 2000;
             String sort = "";
 
             // 分页循环拉取：每次取 1000 条，若返回条数等于 1000 则继续拉下一页，直到返回条数 < 1000 为止

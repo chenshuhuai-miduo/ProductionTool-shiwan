@@ -15,7 +15,7 @@
                  -fx-border-width: 0 0 1 0;
                  -fx-padding: 0 8 0 24;
                  -fx-min-height: 56; -fx-pref-height: 56;">
-        <Label text="取消关联"
+        <Label text="取消关联确认"
                style="-fx-font-size: 18px; -fx-font-weight: bold;
                       -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
         <Region HBox.hgrow="ALWAYS"/>
@@ -123,7 +123,7 @@
                        -fx-background-radius: 8; -fx-border-width: 0;
                        -fx-effect: null; -fx-cursor: hand;
                        -fx-font-family: 'Microsoft YaHei';"/>
-        <Button text="确认取消" onAction="#onConfirm"
+        <Button text="确认" onAction="#onConfirm"
                 style="-fx-min-width: 104; -fx-pref-width: 104;
                        -fx-min-height: 40; -fx-pref-height: 40;
                        -fx-font-size: 18px; -fx-font-weight: bold;

@@ -343,7 +343,7 @@ public class ShiwanM2MainController implements Initializable {
      */
     private void registerDeviceDataHandler() {
         DeviceConnectionManager.getInstance().setDataReceiveHandlerWithOrder((categoryCode, data) -> {
-            log.info("[设备数据分发] category={} data={}", categoryCode, data);
+            log.debug("[设备数据分发] category={} data={}", categoryCode, data);
 
             // 扫码枪数据不写数据接收区，直接路由到各页面输入框
             if (categoryCode == CATEGORY_SCANNER) {
@@ -372,7 +372,7 @@ public class ShiwanM2MainController implements Initializable {
         Consumer<String> popupConsumer = extractUnfinishedScannerConsumer;
         if (popupConsumer != null) {
             popupConsumer.accept(code);
-            log.info("[扫码枪路由] 提取未成垛弹窗接收 code={}", code);
+            log.debug("[扫码枪路由] 提取未成垛弹窗接收 code={}", code);
             return;
         }
 
@@ -383,7 +383,7 @@ public class ShiwanM2MainController implements Initializable {
                 .findFirst().orElse(null);
         // 非主界面激活时，不抢占扫码数据（提取未成垛弹窗由 popupConsumer 优先处理）
         if (focusedWindow != null && focusedWindow != mainWindow) {
-            log.info("[扫码枪路由] 当前焦点非主界面窗口，忽略 code={}", code);
+            log.debug("[扫码枪路由] 当前焦点非主界面窗口，忽略 code={}", code);
             return;
         }
 
@@ -392,7 +392,7 @@ public class ShiwanM2MainController implements Initializable {
             ShiwanM2ManualController manualCtrl = ShiwanM2ManualController.getInstance();
             if (manualCtrl != null) {
                 manualCtrl.onScanCode(code);
-                log.info("[扫码枪路由] 手工采集页接收 code={}", code);
+                log.debug("[扫码枪路由] 手工采集页接收 code={}", code);
             }
             return;
         }
@@ -400,7 +400,7 @@ public class ShiwanM2MainController implements Initializable {
             ShiwanM2QueryController queryCtrl = ShiwanM2QueryController.getInstance();
             if (queryCtrl != null) {
                 queryCtrl.onScanCode(code);
-                log.info("[扫码枪路由] 数据查询页接收 code={}", code);
+                log.debug("[扫码枪路由] 数据查询页接收 code={}", code);
             }
             return;
         }
@@ -408,7 +408,7 @@ public class ShiwanM2MainController implements Initializable {
             ShiwanM2DataReplaceController replaceCtrl = ShiwanM2DataReplaceController.getInstance();
             if (replaceCtrl != null) {
                 replaceCtrl.onScanCode(code);
-                log.info("[扫码枪路由] 数据替换页接收 code={}", code);
+                log.debug("[扫码枪路由] 数据替换页接收 code={}", code);
             }
             return;
         }
@@ -416,7 +416,7 @@ public class ShiwanM2MainController implements Initializable {
             ShiwanM2CancelAssociationController cancelCtrl = ShiwanM2CancelAssociationController.getInstance();
             if (cancelCtrl != null) {
                 cancelCtrl.onScanCode(code);
-                log.info("[扫码枪路由] 取消关联页接收 code={}", code);
+                log.debug("[扫码枪路由] 取消关联页接收 code={}", code);
             }
         }
     }
@@ -1077,9 +1077,25 @@ public class ShiwanM2MainController implements Initializable {
                 productCodeRow.setManaged(true);
                 addOpLog(LocalDateTime.now().format(TIME_FMT) + "  产品已选择：" + name + "（" + pronumber + "）", LogType.INFO);
             } else {
-                // 弹窗取消：恢复弹窗打开前的产品显示，避免刷新列表导致下拉框文本变空。
+                // 弹窗取消：恢复弹窗打开前的产品显示。
+                // fetchProducts 刷新列表时会用新对象替换旧引用（setAll），
+                // 必须从当前列表中找到同编号的新对象来恢复，否则 setValue 设的是不在列表中
+                // 的旧引用，JavaFX 按钮单元格不刷新，导致下拉框显示空白。
                 if (productComboBox != null) {
-                    productComboBox.setValue(originalValue);
+                    ProductItem restoreItem = originalValue;
+                    if (originalValue != null
+                            && originalValue.getNo() != null
+                            && !originalValue.getNo().isEmpty()) {
+                        final String targetNo = originalValue.getNo();
+                        restoreItem = productItems.stream()
+                                .filter(p -> targetNo.equals(p.getNo()))
+                                .findFirst()
+                                .orElse(originalValue);
+                    }
+                    // setValue(null) → setValue(target) 强制按钮单元格重新渲染
+                    final ProductItem finalRestore = restoreItem;
+                    productComboBox.setValue(null);
+                    productComboBox.setValue(finalRestore);
                 }
                 if (productCodeLabel != null) {
                     productCodeLabel.setText(originalProductCode != null ? originalProductCode : "");
@@ -1455,7 +1471,7 @@ public class ShiwanM2MainController implements Initializable {
             String rawJson = JSON.writeValueAsString(deviceConnections);
             return URLEncoder.encode(rawJson, StandardCharsets.UTF_8.name());
         } catch (Exception e) {
-            System.err.println("[开始采集-设备校验] 组装设备连接状态失败: " + e.getMessage());
+            log.warn("[开始采集-设备校验] 组装设备连接状态失败: {}", e.getMessage());
             return null;
         }
     }
@@ -2118,10 +2134,10 @@ public class ShiwanM2MainController implements Initializable {
             String resp = HttpUtil.doPost("/api/shiwan-m2/products/sync", "");
             JsonNode n = JSON.readTree(resp);
             if (n == null || !n.has("code") || n.get("code").asInt() != 200) {
-                System.out.println("[产品同步] 失败：" + (n != null && n.has("message") ? n.get("message").asText() : "未知错误"));
+                log.warn("[产品同步] 失败：{}", (n != null && n.has("message") ? n.get("message").asText() : "未知错误"));
             }
         } catch (Exception e) {
-            System.out.println("[产品同步] 异常：" + e.getMessage());
+            log.warn("[产品同步] 异常：{}", e.getMessage());
         }
     }
 
@@ -2349,6 +2365,8 @@ public class ShiwanM2MainController implements Initializable {
                             .content("强制满垛失败，生产单：" + orderNo + "，当前箱数：" + currentCaseCount)
                             .failReason(errMsg)
                             .saveAsync();
+                    // 强制满垛失败时，从数据库刷新真实箱数，防止前端计数与实际不符
+                    refreshCurrentCasesAsync(orderNo);
                     showWarn("强制满垛失败", errMsg);
                     return;
                 }
@@ -2389,6 +2407,31 @@ public class ShiwanM2MainController implements Initializable {
         boxRecvCountSet = false;
         curCasesLabel.setText("0");
         curBoxesLabel.setText("0");
+    }
+
+    /**
+     * 从数据库异步刷新当前真实箱数，并同步更新前端计数与标签。
+     * 用于强制满垛失败后修正可能因取消关联等操作导致的前端计数偏差。
+     */
+    private void refreshCurrentCasesAsync(String orderNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return;
+        HttpUtil.asyncGet("/api/shiwan-m2/box-case/current-cases?orderNo="
+                + java.net.URLEncoder.encode(orderNo.trim(), java.nio.charset.StandardCharsets.UTF_8),
+                json -> {
+                    try {
+                        JsonNode node = JSON.readTree(json);
+                        if (node != null && node.has("code") && node.get("code").asInt() == 200
+                                && node.has("data") && !node.get("data").isNull()) {
+                            int realCases = node.get("data").asInt(0);
+                            Platform.runLater(() -> {
+                                currentCases = realCases;
+                                if (curCasesLabel != null) curCasesLabel.setText(String.valueOf(realCases));
+                                addOpLog(LocalDateTime.now().format(TIME_FMT)
+                                        + "  [刷新] 当前真实箱数已从数据库同步：" + realCases + " 箱", LogType.INFO);
+                            });
+                        }
+                    } catch (Exception ignored) {}
+                }, ignored -> {});
     }
 
     /** 暂存未成垛数据并退出（异步 HTTP，回调里再 Platform.exit） */

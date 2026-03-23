@@ -287,13 +287,13 @@ public class ShiwanM2ManualController implements Initializable {
      * @param code 扫描到的码值
      */
     public void onScanCode(String code) {
-        log.info("[手工采集] 扫码枪收到数据: {} | isRunning={}", code, isRunning);
+        log.debug("[手工采集] 扫码枪收到数据: {} | isRunning={}", code, isRunning);
         if (!isRunning) {
-            log.info("[手工采集] 当前未启动采集，忽略扫码: {}", code);
+            log.debug("[手工采集] 当前未启动采集，忽略扫码: {}", code);
             return;
         }
         if (isValidating) {
-            log.info("[手工采集] 上一码正在校验中，忽略新码: {}", code);
+            log.debug("[手工采集] 上一码正在校验中，忽略新码: {}", code);
             return;
         }
         final String trimmedCode = code != null ? code.trim() : "";
@@ -384,11 +384,11 @@ public class ShiwanM2ManualController implements Initializable {
             currentBottles++;
             pendingBottleCodes.add(code);
             currentCountLabel.setText(String.valueOf(currentBottles));
-            log.info("[手工采集] 瓶码 #{}: {} (当前已扫 {}/{})", currentBottles, code, currentBottles, bpb);
+            log.debug("[手工采集] 瓶码 #{}: {} (当前已扫 {}/{})", currentBottles, code, currentBottles, bpb);
             addDataLog(now + "  瓶码采集：" + code, ShiwanM2MainController.LogType.DATA);
             if (currentBottles >= bpb) {
                 waitingBottle = false;
-                log.info("[手工采集] 瓶码已满 {} 个，等待扫盒码", bpb);
+                log.debug("[手工采集] 瓶码已满 {} 个，等待扫盒码", bpb);
                 addDataLog(now + "  扫码完成，请扫盒码", ShiwanM2MainController.LogType.DATA);
             }
         } else {
@@ -396,7 +396,7 @@ public class ShiwanM2ManualController implements Initializable {
             final String boxCode = code;
             final List<String> bottleCodesCopy = new java.util.ArrayList<>(pendingBottleCodes);
             final int currentTotalBoxes = totalBoxes + 1;
-            log.info("[手工采集] 盒码: {} ({}瓶→1盒，累计 {} 盒)", code, bpb, currentTotalBoxes);
+            log.debug("[手工采集] 盒码: {} ({}瓶→1盒，累计 {} 盒)", code, bpb, currentTotalBoxes);
 
             // 先重置计数和状态，避免重复扫码
             currentBottles = 0;

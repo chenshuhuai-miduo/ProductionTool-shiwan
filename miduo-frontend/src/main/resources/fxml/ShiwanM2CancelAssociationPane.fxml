@@ -84,7 +84,7 @@
         <VBox VBox.vgrow="ALWAYS" spacing="8" styleClass="shiwan-m2-maint-card">
             <Label text="识别结果" styleClass="shiwan-m2-maint-title"/>
             <Label fx:id="identifySummaryLabel"
-                   text="请在左侧输入码值并点击识别"
+                   text=""
                    style="-fx-font-size:14px; -fx-text-fill:#9CA3AF;"/>
             <ListView fx:id="identifyResultList" VBox.vgrow="ALWAYS"
                       styleClass="shiwan-m2-maint-result-list"/>

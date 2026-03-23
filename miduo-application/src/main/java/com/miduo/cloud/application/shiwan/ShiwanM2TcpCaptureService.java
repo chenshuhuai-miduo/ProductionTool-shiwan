@@ -300,7 +300,7 @@ public class ShiwanM2TcpCaptureService {
                 try { Thread.sleep(RECONNECT_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
             }
         }
-        log.info("[{}] 接收线程退出", name);
+        log.debug("[{}] 接收线程退出", name);
     }
 
     // ================================================================

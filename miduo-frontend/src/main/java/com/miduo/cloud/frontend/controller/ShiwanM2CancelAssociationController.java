@@ -231,6 +231,7 @@ public class ShiwanM2CancelAssociationController {
 
         if ("UNKNOWN".equals(codeType)) {
             showAlert(Alert.AlertType.WARNING, "提示", message != null ? message : "该码未在关联表中，无需取消关联");
+            codeInputField.clear();
             return;
         }
 
@@ -238,6 +239,7 @@ public class ShiwanM2CancelAssociationController {
             String boxCode = str(check, "boxCode");
             if (boxCode == null || boxCode.isEmpty()) {
                 showAlert(Alert.AlertType.WARNING, "提示", "瓶码 " + raw + " 未在关联表中，无需取消关联");
+                codeInputField.clear();
                 return;
             }
             // 弹出确认转换为盒码
@@ -327,7 +329,7 @@ public class ShiwanM2CancelAssociationController {
         pendingItems.clear();
         lastIdentifyMap.clear();
         identifyItems.clear();
-        identifySummaryLabel.setText("请在左侧输入码值并点击识别");
+        identifySummaryLabel.setText("");
         confirmCancelButton.setDisable(true);
     }
 
@@ -405,9 +407,28 @@ public class ShiwanM2CancelAssociationController {
                 if (!progressed) break;
             }
 
+            // 收集「连带取消」的码：执行后仍在 latestMap 中但已不存在于关联表（UNKNOWN），
+            // 说明被父级的「全部解除」操作连带删除，视为隐式成功，一并从列表移除
+            List<String> implicitlyCancelledCodes = new ArrayList<>();
+            for (Map.Entry<String, IdentifyItem> entry : latestMap.entrySet()) {
+                if ("UNKNOWN".equals(entry.getValue().codeType)) {
+                    implicitlyCancelledCodes.add(entry.getKey());
+                }
+            }
+            for (String code : implicitlyCancelledCodes) {
+                latestMap.remove(code);
+            }
+
             Platform.runLater(() -> {
-                // 移除成功的码
+                // 移除显式取消成功的码
                 for (String code : successCodes) {
+                    pendingMap.remove(code);
+                    lastIdentifyMap.remove(code);
+                    pendingItems.removeIf(p -> p.code.equals(code));
+                    identifyItems.removeIf(i -> i.code.equals(code));
+                }
+                // 移除连带取消的码（已无关联，视为隐式成功）
+                for (String code : implicitlyCancelledCodes) {
                     pendingMap.remove(code);
                     lastIdentifyMap.remove(code);
                     pendingItems.removeIf(p -> p.code.equals(code));

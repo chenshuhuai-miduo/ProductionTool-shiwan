@@ -48,7 +48,7 @@
     "soundAlarmEnabled" : true,
     "alarmDelayMs" : 100,
     "alarmIntervalMs" : 2000,
-    "rejectTriggerDelayMs" : 0,
+    "rejectTriggerDelayMs" : 3000,
     "rejectRetractTimeMs" : 2000
   },
   "deviceSignal" : {

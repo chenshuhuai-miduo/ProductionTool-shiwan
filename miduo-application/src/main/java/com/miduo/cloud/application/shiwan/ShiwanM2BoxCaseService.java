@@ -479,14 +479,23 @@ public class ShiwanM2BoxCaseService {
         try {
             Map<String, Object> task = getCurrentTaskByOrderNo(orderNo);
             String productNo = task != null ? toStr(task.get("productNo")) : "";
-            int casesToClose = currentCaseCount != null && currentCaseCount > 0 ? currentCaseCount : countCurrentCasesInPallet(orderNo);
-            if (casesToClose <= 0) {
-                Map<String, Object> data = new HashMap<>();
-                data.put("palletCode", null);
-                data.put("currentCaseCount", 0);
-                return ApiResult.success("当前无未成垛箱", data);
+
+            // 始终以数据库为准查询当前实际可用箱数（取消关联等操作会清空 BigSerialNumber，
+            // 前端计数可能未同步，绝不能直接信任前端传来的 currentCaseCount）
+            int actualCases = countCurrentCasesInPallet(orderNo);
+            if (actualCases <= 0) {
+                return ApiResult.error(400,
+                        "当前订单无可用箱数，无法执行强制满垛（所有箱码可能已被取消关联或尚未采集）");
             }
+
+            // 若前端传入的数量与数据库实际可用数量不一致，以数据库为准
+            int casesToClose = actualCases;
             String palletCode = completeCurrentPallet(orderNo, productNo, casesToClose);
+            if (palletCode == null) {
+                // 防御：completeCurrentPallet 内部再次查库时仍为空（极罕见的并发场景）
+                return ApiResult.error(400,
+                        "当前订单无可用箱码，强制满垛操作无效");
+            }
             Map<String, Object> data = new HashMap<>();
             data.put("palletCode", palletCode);
             data.put("currentCaseCount", 0);
@@ -1885,7 +1894,7 @@ public class ShiwanM2BoxCaseService {
             headers.put("Content-type", "application/json");
 
             String response = sendPost(baseUrl + path, headers, MAPPER.writeValueAsString(requestData));
-            log.info("[垛标结果查询] palletCode={} 响应: {}", palletCode, response);
+            log.debug("[垛标结果查询] palletCode={} 响应: {}", palletCode, response);
 
             JsonNode root       = MAPPER.readTree(response);
             String   returnCode = root.has("return_code") ? root.get("return_code").asText() : "-1";
