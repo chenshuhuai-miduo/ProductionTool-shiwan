@@ -30,7 +30,9 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
 
@@ -49,6 +51,15 @@ import java.util.ResourceBundle;
  * </p>
  */
 public class ShiwanM2SystemSettingsController implements Initializable {
+
+    // ==================== 根容器 & 自定义标题栏 ====================
+    @FXML private VBox rootBox;
+    @FXML private HBox titleBar;
+    @FXML private Button closeBtn;
+
+    /** 标题栏拖拽辅助变量 */
+    private double dragOffsetX;
+    private double dragOffsetY;
 
     // ==================== 主 TabPane ====================
     @FXML private TabPane mainTabPane;
@@ -136,8 +147,9 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField m1InitialSerialNoField;
     @FXML private Label m1DbTestResultLabel;
 
-    // ==================== 连接 - 后端服务地址 ====================
+    // ==================== 连接 - 接口服务 ====================
     @FXML private TextField backendBaseUrlField;
+    @FXML private TextField openPlatformUrlField;
     @FXML private Label backendBaseUrlResultLabel;
 
     // ==================== 数据模型 ====================
@@ -1113,7 +1125,21 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
     }
 
-    // ==================== 关闭 ====================
+    // ==================== 自定义标题栏（拖拽 & 关闭） ====================
+
+    @FXML
+    private void onTitleBarPressed(MouseEvent e) {
+        Stage stage = (Stage) mainTabPane.getScene().getWindow();
+        dragOffsetX = e.getScreenX() - stage.getX();
+        dragOffsetY = e.getScreenY() - stage.getY();
+    }
+
+    @FXML
+    private void onTitleBarDragged(MouseEvent e) {
+        Stage stage = (Stage) mainTabPane.getScene().getWindow();
+        stage.setX(e.getScreenX() - dragOffsetX);
+        stage.setY(e.getScreenY() - dragOffsetY);
+    }
 
     @FXML
     private void onClose() {

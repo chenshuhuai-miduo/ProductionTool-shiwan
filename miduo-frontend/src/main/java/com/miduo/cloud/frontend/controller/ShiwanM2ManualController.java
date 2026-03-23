@@ -92,11 +92,11 @@ public class ShiwanM2ManualController implements Initializable {
         opLogList.setItems(opLogItems);
         opLogList.setCellFactory(lv -> new ShiwanM2MainController.LogCell());
 
-        // 限制输入：仅允许1-3位正整数（范围1-999）
+        // 限制输入：1–999 正整数，禁止前导零（如 01）
         bottlesPerBoxField.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.isEmpty()) return change;
-            if (!newText.matches("\\d{1,3}")) return null;
+            if (!newText.matches("[1-9]\\d{0,2}")) return null;
             int val2 = Integer.parseInt(newText);
             if (val2 < 1 || val2 > 999) return null;
             return change;

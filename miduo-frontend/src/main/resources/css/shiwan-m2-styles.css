@@ -1090,6 +1090,28 @@
 .sw2-page-btn:hover    { -fx-background-color: #F3F4F6; }
 .sw2-page-btn:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
 
+/* ---- 分页每页条数下拉（覆盖 Modena 蓝底）---- */
+/* ComboBox 自身同时拥有 combo-box-base 和 sw2-page-combo 两个 class，用复合选择器 */
+.combo-box-base.sw2-page-combo {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+}
+.combo-box-base.sw2-page-combo:focused {
+    -fx-background-color: white;
+    -fx-border-color: #93C5FD;
+}
+.combo-box-base.sw2-page-combo .arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0 6 6 0;
+}
+.combo-box-base.sw2-page-combo .arrow-button .arrow {
+    -fx-background-color: #6B7280;
+}
+
 /* ---- 小操作按钮（表格内查看/删除）---- */
 .sw2-btn-sm-blue {
     -fx-background-color: #EFF6FF;
@@ -1378,7 +1400,7 @@
 .sw2-required { -fx-text-fill: #DC2626; }
 
 /* ============================================================
-   系统设置弹窗 - 一级 TabPane
+   系统设置弹窗 - 一级 TabPane（填充式 pill 样式，匹配设计稿）
    ============================================================ */
 .sw2-settings-tab-pane {
     -fx-background-color: white;
@@ -1389,50 +1411,55 @@
 }
 
 .sw2-settings-tab-pane > .tab-header-area {
-    -fx-background-color: white;
+    -fx-background-color: #F9FAFB;
     -fx-border-color: transparent transparent #E5E7EB transparent;
     -fx-border-width: 0 0 1px 0;
-    -fx-padding: 20px 0 0 0;
-    -fx-min-height: 62px;
-    -fx-pref-height: 62px;
-    -fx-max-height: 62px;
+    -fx-padding: 0 0 0 24px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
 }
 
 .sw2-settings-tab-pane > .tab-header-area > .tab-header-background {
     -fx-background-color: transparent;
 }
 
+/* 未选中 Tab：灰色填充 */
 .sw2-settings-tab-pane .tab {
-    -fx-background-color: transparent;
-    -fx-background-radius: 0;
-    -fx-background-insets: 0;
-    -fx-border-color: transparent transparent transparent transparent;
+    -fx-background-color: #F9FAFB, #f5f5f5;
+    -fx-background-radius: 0, 0;
+    -fx-background-insets: 0, 0;
+    -fx-border-color: transparent;
     -fx-border-width: 0;
-    -fx-padding: 8px 18px;
+    -fx-padding: 0px 20px;
     -fx-cursor: hand;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
 
 .sw2-settings-tab-pane .tab > .tab-container > .tab-label {
-    -fx-text-fill: #6B7280;
-    -fx-font-size: 16px;
+    -fx-text-fill: #333333;
+    -fx-font-size: 15px;
     -fx-font-family: "Microsoft YaHei";
 }
 
 .sw2-settings-tab-pane .tab:hover > .tab-container > .tab-label {
-    -fx-text-fill: #2563EB;
+    -fx-text-fill: #1a6fd8;
 }
 
+/* 选中 Tab：蓝色填充，白色文字 */
 .sw2-settings-tab-pane .tab:selected {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #2563EB transparent;
-    -fx-border-width: 0 0 3px 0;
+    -fx-background-color: #F9FAFB, #4a90e2;
+    -fx-background-radius: 0, 0;
+    -fx-background-insets: 0, 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
 }
 
 .sw2-settings-tab-pane .tab:selected > .tab-container > .tab-label {
-    -fx-text-fill: #2563EB;
+    -fx-text-fill: white;
     -fx-font-weight: bold;
+    -fx-font-size: 15px;
 }
 
 .sw2-settings-tab-pane > .tab-content-area {
@@ -1470,7 +1497,9 @@
     -fx-background-color: transparent;
     -fx-background-radius: 0;
     -fx-background-insets: 0;
-    -fx-border-width: 0;
+    /* 与选中态保持相同 border-width，颜色透明，防止切换时高度跳动 */
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2px 0;
     -fx-padding: 6px 14px;
     -fx-cursor: hand;
     -fx-focus-color: transparent;

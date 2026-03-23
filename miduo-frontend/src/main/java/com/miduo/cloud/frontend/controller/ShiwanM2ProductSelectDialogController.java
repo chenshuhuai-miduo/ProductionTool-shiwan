@@ -22,20 +22,31 @@ import java.util.concurrent.CompletableFuture;
 public class ShiwanM2ProductSelectDialogController implements Initializable {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final int PAGE_SIZE = 10;
 
     @FXML private TextField keywordField;
     @FXML private TableView<Map<String, String>> productTable;
     @FXML private TableColumn<Map<String, String>, String> nameColumn;
     @FXML private TableColumn<Map<String, String>, String> pronumberColumn;
     @FXML private Label totalLabel;
-    @FXML private Label pageInfoLabel;
+    @FXML private ComboBox<String> pageSizeCombo;
+    @FXML private TextField currentPageField;
+    @FXML private Label totalPagesLabel;
 
     private int currentPage = 1;
     private int totalCount = 0;
     private String keyword = "";
     /** 确认时选中的产品，取消为 null */
     private Map<String, String> selectedProduct;
+
+    private int getPageSize() {
+        String v = pageSizeCombo.getValue();
+        if (v == null) return 20;
+        try {
+            return Integer.parseInt(v.trim());
+        } catch (NumberFormatException e) {
+            return 20;
+        }
+    }
 
     @Override
     @SuppressWarnings("deprecation")
@@ -92,7 +103,7 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     private void loadPage(int page) {
         currentPage = Math.max(page, 1);
         StringBuilder url = new StringBuilder("/api/shiwan-m2/products/search-page?page=")
-                .append(currentPage).append("&pageSize=").append(PAGE_SIZE);
+                .append(currentPage).append("&pageSize=").append(getPageSize());
         if (keyword != null && !keyword.isEmpty()) {
             try {
                 url.append("&keyword=").append(java.net.URLEncoder.encode(keyword, "UTF-8"));
@@ -134,8 +145,9 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
         productTable.getItems().clear();
         productTable.getItems().addAll(list);
         totalLabel.setText("共 " + total + " 条");
-        int totalPages = total <= 0 ? 1 : (total + PAGE_SIZE - 1) / PAGE_SIZE;
-        pageInfoLabel.setText("第 " + currentPage + " / " + totalPages + " 页");
+        int totalPages = total <= 0 ? 1 : (total + getPageSize() - 1) / getPageSize();
+        currentPageField.setText(String.valueOf(currentPage));
+        totalPagesLabel.setText("/ " + totalPages + " 页");
     }
 
     @FXML
@@ -145,8 +157,19 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     }
 
     @FXML
-    private void onFirstPage() {
-        if (currentPage > 1) loadPage(1);
+    private void onPageSizeChanged() {
+        loadPage(1);
+    }
+
+    @FXML
+    private void onPageInput() {
+        try {
+            int page = Integer.parseInt(currentPageField.getText().trim());
+            int totalPages = totalCount <= 0 ? 1 : (totalCount + getPageSize() - 1) / getPageSize();
+            loadPage(Math.max(1, Math.min(page, totalPages)));
+        } catch (NumberFormatException ignored) {
+            currentPageField.setText(String.valueOf(currentPage));
+        }
     }
 
     @FXML
@@ -156,14 +179,8 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
 
     @FXML
     private void onNextPage() {
-        int totalPages = totalCount <= 0 ? 1 : (totalCount + PAGE_SIZE - 1) / PAGE_SIZE;
+        int totalPages = totalCount <= 0 ? 1 : (totalCount + getPageSize() - 1) / getPageSize();
         if (currentPage < totalPages) loadPage(currentPage + 1);
-    }
-
-    @FXML
-    private void onLastPage() {
-        int totalPages = totalCount <= 0 ? 1 : (totalCount + PAGE_SIZE - 1) / PAGE_SIZE;
-        if (currentPage < totalPages) loadPage(totalPages);
     }
 
     @FXML

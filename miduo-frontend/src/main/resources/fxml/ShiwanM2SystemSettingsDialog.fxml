@@ -10,12 +10,37 @@
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2SystemSettingsController"
-      prefWidth="900" prefHeight="640"
-      styleClass="application-background">
+      fx:id="rootBox"
+      prefWidth="1000" prefHeight="768"
+      style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1;">
     <stylesheets>
         <URL value="@../css/base-styles.css"/>
         <URL value="@../css/shiwan-m2-styles.css"/>
     </stylesheets>
+
+    <!-- ====================================================
+         自定义标题栏（可拖拽）
+         ==================================================== -->
+    <HBox fx:id="titleBar"
+          alignment="CENTER_LEFT"
+          style="-fx-background-color: #f0f0f0;
+                 -fx-border-color: transparent transparent #e0e0e0 transparent;
+                 -fx-border-width: 0 0 1 0;
+                 -fx-padding: 0 8 0 24;
+                 -fx-min-height: 48; -fx-pref-height: 48;"
+          onMousePressed="#onTitleBarPressed"
+          onMouseDragged="#onTitleBarDragged">
+        <Label text="系统设置"
+               style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #333333;
+                      -fx-font-family: 'Microsoft YaHei';"/>
+        <!-- 占位符，将关闭按钮推到最右 -->
+        <Region HBox.hgrow="ALWAYS"/>
+        <!-- 关闭按钮，同参考弹窗风格 -->
+        <Button fx:id="closeBtn" text="×" onAction="#onClose"
+                style="-fx-background-color: transparent; -fx-text-fill: #9CA3AF; -fx-font-size: 26px;
+                       -fx-cursor: hand; -fx-min-width: 44; -fx-min-height: 44;
+                       -fx-border-width: 0; -fx-background-radius: 6; -fx-effect: null; -fx-padding: 0;"/>
+    </HBox>
 
     <!-- ====================================================
          主体：一级 TabPane
@@ -445,119 +470,63 @@
                     </VBox>
                 </Tab>
 
-                <!-- 设备信号配置 -->
-                <Tab text="设备信号">
+                <!-- 设备控制配置 -->
+                <Tab text="设备控制配置">
                     <ScrollPane fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER">
-                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
-                            <Label text="设备控制信号配置"
-                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                        <VBox spacing="12" style="-fx-padding: 20px 24px;">
+
+                            <!-- 剔除装置 -->
+                            <Label text="剔除装置"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #333333;
                                           -fx-font-family: 'Microsoft YaHei';"/>
-                            <Label text="16进制格式，支持：01 0A FF  或  010AFF  或  01:0A:FF（空格可选，不区分大小写）"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   wrapText="true"/>
+                            <Separator style="-fx-background-color: #E5E7EB;"/>
 
-                            <!-- 业务状态指令（系统自动发送，已预置协议值） -->
-                            <Label text="一、业务状态指令（系统自动发送至报警器设备，已预置协议值）"
-                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                          -fx-font-family: 'Microsoft YaHei';"/>
-
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="全关" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdAllOffField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="正常运行（工控机灯+龙门架灯）" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdNormalOnField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="正常运行+剔除中" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdNormalWithRejectField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="上传成功（三灯，1分钟后切回正常）" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdUploadSuccessField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="上传成功期间+剔除" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdUploadSuccessWithRejectField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="上传失败报警（红灯蜂鸣）" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdUploadFailField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="上传失败报警+剔除" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="cmdUploadFailWithRejectField" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-
-                            <!-- 剔除时序配置 -->
-                            <Label text="二、剔除时序配置"
-                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                          -fx-font-family: 'Microsoft YaHei';"/>
-
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="触发剔除延时（ms）" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="rejectTriggerDelayField" promptText="0" HBox.hgrow="ALWAYS" maxWidth="120"/>
+                            <HBox spacing="16" alignment="CENTER_LEFT">
+                                <Label text="触发剔除延时（ms）："
+                                       minWidth="160"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="rejectTriggerDelayField"
+                                           promptText="1000"
+                                           prefWidth="120"
+                                           styleClass="text-field"/>
                                 <Label text="检测到需要剔除后，等待该时间再发送信号"
                                        style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
                             </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="剔除收回时间（ms）" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="rejectRetractTimeField" promptText="2000" HBox.hgrow="ALWAYS" maxWidth="120"/>
+
+                            <HBox spacing="16" alignment="CENTER_LEFT">
+                                <Label text="剔除收回时间（ms）："
+                                       minWidth="160"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="rejectRetractTimeField"
+                                           promptText="600"
+                                           prefWidth="120"
+                                           styleClass="text-field"/>
                                 <Label text="发送剔除信号后，等待该时间自动发送收回信号"
                                        style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
                             </HBox>
 
-                            <!-- 手动按钮信号 -->
-                            <Label text="三、主界面手动按钮信号（用户自定义）"
-                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                          -fx-font-family: 'Microsoft YaHei';"/>
-
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="「打开报警」按钮信号" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="alarmOpenHexField" promptText="如 01 0A" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="「关闭报警」按钮信号" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="alarmCloseHexField" promptText="如 00" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="「测试报警灯亮」按钮信号" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="alarmLightOnHexField" promptText="如 02" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="「测试报警灯灭」按钮信号" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="alarmLightOffHexField" promptText="如 00" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="「触发剔除」按钮信号" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="rejectTriggerHexField" promptText="如 01" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="「收回剔除」按钮信号" minWidth="200"
-                                       style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="rejectRetractHexField" promptText="如 00" HBox.hgrow="ALWAYS" maxWidth="400"/>
-                            </HBox>
-
                             <HBox>
-                                <Button text="保存设备信号配置"
+                                <Button text="保存"
                                         styleClass="primary-button"
                                         onAction="#onSaveDeviceSignalConfig"/>
                             </HBox>
+
+                            <!-- 隐藏的信号字段（保留供控制器注入，不在界面显示） -->
+                            <VBox managed="false" visible="false">
+                                <TextField fx:id="cmdAllOffField"/>
+                                <TextField fx:id="cmdNormalOnField"/>
+                                <TextField fx:id="cmdNormalWithRejectField"/>
+                                <TextField fx:id="cmdUploadSuccessField"/>
+                                <TextField fx:id="cmdUploadSuccessWithRejectField"/>
+                                <TextField fx:id="cmdUploadFailField"/>
+                                <TextField fx:id="cmdUploadFailWithRejectField"/>
+                                <TextField fx:id="alarmOpenHexField"/>
+                                <TextField fx:id="alarmCloseHexField"/>
+                                <TextField fx:id="alarmLightOnHexField"/>
+                                <TextField fx:id="alarmLightOffHexField"/>
+                                <TextField fx:id="rejectTriggerHexField"/>
+                                <TextField fx:id="rejectRetractHexField"/>
+                            </VBox>
                         </VBox>
                     </ScrollPane>
                 </Tab>
@@ -570,217 +539,176 @@
             <TabPane tabClosingPolicy="UNAVAILABLE"
                      styleClass="sw2-settings-inner-tab-pane">
 
-                <!-- 数据库连接 -->
+                <!-- 数据库连接（本机 + 1号机合并） -->
                 <Tab text="数据库连接">
                     <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
-                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
-                            <Label text="数据库连接配置"
-                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
-                                          -fx-font-family: 'Microsoft YaHei';"/>
+                        <VBox spacing="14" style="-fx-padding: 20px 24px;">
 
-                            <!-- 提示信息 -->
-                            <Label text="⚠ 2号机部署数据库，1号机通过局域网访问此库，请正确配置2号机所在机器的IP及数据库信息"
-                                   style="-fx-background-color: #FEF3C7; -fx-border-color: #FCD34D; -fx-border-width: 1px;
-                                          -fx-background-radius: 8px; -fx-border-radius: 8px;
-                                          -fx-padding: 10px 14px; -fx-font-size: 13px; -fx-text-fill: #92400E;
-                                          -fx-font-family: 'Microsoft YaHei';"
-                                   wrapText="true"/>
-
-                            <!-- 数据库地址 -->
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="数据库地址" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                            <!-- 本机数据库 section header -->
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="本机数据库（2号机自身）"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333333;
                                               -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="MySQL"
+                                       style="-fx-background-color: #D1FAE5; -fx-text-fill: #065F46;
+                                              -fx-background-radius: 20px; -fx-padding: 2px 10px;
+                                              -fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="IP地址："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="dbHostField"
-                                           text="192.168.1.200"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"
-                                           promptText="2号机 IP 地址"/>
+                                           prefWidth="220" styleClass="text-field"
+                                           promptText="localhost"/>
                             </HBox>
-
-                            <!-- 端口 -->
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="数据库端口" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="端口："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="dbPortField"
-                                           text="3306"
-                                           prefWidth="120"
-                                           styleClass="text-field"/>
+                                           prefWidth="120" styleClass="text-field"/>
                             </HBox>
-
-                            <!-- 数据库名 -->
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="数据库名" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="数据库名："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="dbNameField"
-                                           text="production_db"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"/>
+                                           prefWidth="220" styleClass="text-field"/>
                             </HBox>
-
-                            <!-- 用户名 -->
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="用户名" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="用户名："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="dbUserField"
-                                           text="admin"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"/>
-                            </HBox>
-
-                            <!-- 密码 -->
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="密码" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                           prefWidth="160" styleClass="text-field"/>
+                                <Label text="密码："
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <PasswordField fx:id="dbPasswordField"
-                                               text="123456"
-                                               HBox.hgrow="ALWAYS" maxWidth="300"
-                                               styleClass="text-field"/>
+                                               prefWidth="160" styleClass="text-field"/>
                             </HBox>
-
-                            <!-- 操作按钮 -->
                             <HBox spacing="10" alignment="CENTER_LEFT">
                                 <Button text="连接测试"
                                         styleClass="secondary-button"
                                         onAction="#onTestDbConnection"/>
-                                <Button text="保 存"
-                                        styleClass="primary-button"
-                                        onAction="#onSaveDbConfig"/>
                                 <Label fx:id="dbTestResultLabel"
                                        text=""
                                        style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
                             </HBox>
-                        </VBox>
-                    </ScrollPane>
-                </Tab>
 
-                <!-- 1号机连接（SQL Server，T_Code 同步） -->
-                <Tab text="1号机连接">
-                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
-                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
-                            <Label text="1号机数据库连接配置（SQL Server）"
-                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
-                                          -fx-font-family: 'Microsoft YaHei';"/>
+                            <Separator style="-fx-background-color: #E5E7EB; -fx-padding: 4px 0;"/>
 
-                            <Label text="用于定时同步 1 号机 T_Code 表中 Status=0 的数据到 2 号机 CodeRelationUpload，同步时 OrderNo/ProductNO 取当前 2 号机生产订单号与选择的产品编码。"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   wrapText="true"/>
+                            <!-- 1号机数据库 section header -->
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="1号机数据库（轮询同步源）"
+                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333333;
+                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="SQLServer"
+                                       style="-fx-background-color: #DBEAFE; -fx-text-fill: #1E40AF;
+                                              -fx-background-radius: 20px; -fx-padding: 2px 10px;
+                                              -fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
 
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="数据库地址" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="IP地址："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="m1DbHostField"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"
-                                           promptText="1号机 SQL Server IP"/>
+                                           prefWidth="220" styleClass="text-field"
+                                           promptText="192.168.1.xxx"/>
                             </HBox>
-
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="端口" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="端口："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="m1DbPortField"
-                                           text="1433"
-                                           prefWidth="120"
-                                           styleClass="text-field"/>
+                                           prefWidth="120" styleClass="text-field"/>
                             </HBox>
-
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="数据库名" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="数据库名："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="m1DbNameField"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"/>
+                                           prefWidth="220" styleClass="text-field"/>
                             </HBox>
-
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="表名" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="表名："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="m1DbTableField"
-                                           text="T_Code"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"
+                                           prefWidth="220" styleClass="text-field"
                                            promptText="默认 T_Code"/>
                             </HBox>
-
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="用户名" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="用户名："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="m1DbUserField"
-                                           HBox.hgrow="ALWAYS" maxWidth="300"
-                                           styleClass="text-field"/>
-                            </HBox>
-
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="密码" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                           prefWidth="160" styleClass="text-field"/>
+                                <Label text="密码："
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <PasswordField fx:id="m1DbPasswordField"
-                                               HBox.hgrow="ALWAYS" maxWidth="300"
-                                               styleClass="text-field"/>
+                                               prefWidth="160" styleClass="text-field"/>
                             </HBox>
-
-                            <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="初始同步游标" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
-                                <TextField fx:id="m1InitialSerialNoField"
-                                           prefWidth="180"
-                                           styleClass="text-field"
-                                           promptText="留空则从 0 开始"/>
-                                <Label text="首次同步时从此 SerialNo 之后开始拉取（已有游标文件时此项不生效）"
-                                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"
-                                       wrapText="false"/>
-                            </HBox>
-
                             <HBox spacing="10" alignment="CENTER_LEFT">
                                 <Button text="连接测试"
                                         styleClass="secondary-button"
                                         onAction="#onTestM1DbConnection"/>
-                                <Button text="保 存"
-                                        styleClass="primary-button"
-                                        onAction="#onSaveM1DbConfig"/>
                                 <Label fx:id="m1DbTestResultLabel"
                                        text=""
                                        style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+
+                            <!-- 隐藏的初始同步游标字段，保留供控制器注入 -->
+                            <TextField fx:id="m1InitialSerialNoField" managed="false" visible="false"/>
+
+                            <HBox spacing="10">
+                                <Button text="保存本机配置"
+                                        styleClass="primary-button"
+                                        onAction="#onSaveDbConfig"/>
+                                <Button text="保存1号机配置"
+                                        styleClass="primary-button"
+                                        onAction="#onSaveM1DbConfig"/>
                             </HBox>
                         </VBox>
                     </ScrollPane>
                 </Tab>
 
-                <!-- 后端服务地址（前端请求 API 的根地址，默认 8080 端口） -->
-                <Tab text="后端服务地址">
+                <!-- 接口服务（原"后端服务地址"） -->
+                <Tab text="接口服务">
                     <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
                         <VBox spacing="16" style="-fx-padding: 20px 24px;">
-                            <Label text="后端服务地址"
-                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                            <Label text="接口地址配置"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #333333;
                                           -fx-font-family: 'Microsoft YaHei';"/>
 
-                            <Label text="本机前端通过该地址访问后端 REST API（如 /api/shiwan-m2/*）。须先启动后端服务（Spring Boot，默认端口 8080），此处填后端地址。数据库端口 3306 由后端在「数据库连接」中配置，前端不直连数据库。"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   wrapText="true"/>
-
                             <HBox spacing="12" alignment="CENTER_LEFT">
-                                <Label text="后端 API 地址" minWidth="120"
-                                       style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                              -fx-font-family: 'Microsoft YaHei';"/>
+                                <Label text="接口地址："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
                                 <TextField fx:id="backendBaseUrlField"
-                                           text="http://localhost:8080"
                                            HBox.hgrow="ALWAYS" maxWidth="400"
                                            styleClass="text-field"
-                                           promptText="如 http://localhost:8080 或 http://192.168.1.100:8080"/>
+                                           promptText="http://example.com/api"/>
                             </HBox>
 
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Label text="开放平台："
+                                       minWidth="90" alignment="CENTER_RIGHT"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="openPlatformUrlField"
+                                           HBox.hgrow="ALWAYS" maxWidth="400"
+                                           styleClass="text-field"
+                                           promptText="请输入开放平台地址"/>
+                            </HBox>
+
+                            <Label text="说明：配置修改后保存生效；接口地址需包含完整路径，开放平台为第三方授权地址。"
+                                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
                             <HBox spacing="10" alignment="CENTER_LEFT">
-                                <Button text="保 存"
+                                <Button text="保存"
                                         styleClass="primary-button"
                                         onAction="#onSaveBackendBaseUrl"/>
                                 <Label fx:id="backendBaseUrlResultLabel"

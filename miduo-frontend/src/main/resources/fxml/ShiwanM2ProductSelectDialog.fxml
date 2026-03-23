@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.collections.FXCollections?>
 <?import javafx.geometry.Insets?>
+<?import java.lang.String?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
@@ -37,7 +39,7 @@
             <HBox spacing="12" alignment="CENTER_LEFT">
                 <TextField fx:id="keywordField" promptText="请输入产品名称或编号" HBox.hgrow="ALWAYS"
                            onAction="#onSearch"
-                           style="-fx-min-height: 40px; -fx-font-size: 16px; -fx-border-color: #D1D5DB; -fx-border-radius: 8; -fx-background-radius: 8; -fx-background-color: #F9FAFB; -fx-padding: 0 12;"/>
+                           style="-fx-min-height: 40px; -fx-font-size: 16px; -fx-border-color: #D1D5DB; -fx-border-radius: 8; -fx-background-radius: 8; -fx-background-color: white; -fx-padding: 0 12;"/>
                 <Button text="搜索" onAction="#onSearch"
                         style="-fx-min-height: 40px; -fx-pref-width: 80px; -fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-border-radius: 8; -fx-cursor: hand; -fx-effect: null;"/>
             </HBox>
@@ -54,16 +56,45 @@
                 </placeholder>
             </TableView>
 
-            <!-- 分页栏 -->
-            <HBox spacing="8" alignment="CENTER_LEFT">
-                <Label fx:id="totalLabel" text="共 0 条" styleClass="sw2-page-info"/>
+            <!-- 分页栏：左边总数，右边平铺（与查看码包弹窗保持一致） -->
+            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-min-height:44;">
+                <Label fx:id="totalLabel" text="共 0 条"
+                       style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="首页"   onAction="#onFirstPage" styleClass="sw2-page-btn"/>
-                <Button text="上一页" onAction="#onPrevPage"  styleClass="sw2-page-btn"/>
-                <Label fx:id="pageInfoLabel" text="第 1 / 1 页" styleClass="sw2-page-info"
-                       style="-fx-padding: 0 6;"/>
-                <Button text="下一页" onAction="#onNextPage"  styleClass="sw2-page-btn"/>
-                <Button text="最后页" onAction="#onLastPage"  styleClass="sw2-page-btn"/>
+                <Label text="每页"
+                       style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
+                <ComboBox fx:id="pageSizeCombo" prefWidth="72" onAction="#onPageSizeChanged"
+                          styleClass="sw2-page-combo"
+                          style="-fx-font-size:14px; -fx-pref-height:32; -fx-min-height:32;">
+                    <items><FXCollections fx:factory="observableArrayList">
+                        <String fx:value="10"/>
+                        <String fx:value="20"/>
+                        <String fx:value="50"/>
+                    </FXCollections></items>
+                    <value><String fx:value="20"/></value>
+                </ComboBox>
+                <Label text="条"
+                       style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
+                <Button text="上一页" onAction="#onPrevPage"
+                        style="-fx-min-width:64; -fx-pref-width:64; -fx-min-height:32; -fx-pref-height:32;
+                               -fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#6B7280;
+                               -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-background-radius:6;
+                               -fx-border-radius:6; -fx-cursor:hand; -fx-effect:null;"/>
+                <Label text="第"
+                       style="-fx-font-size:14px; -fx-text-fill:#374151; -fx-font-family:'Microsoft YaHei';"/>
+                <TextField fx:id="currentPageField" text="1" prefWidth="48"
+                           onAction="#onPageInput"
+                           style="-fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#374151;
+                                  -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-border-radius:6;
+                                  -fx-background-radius:6; -fx-min-height:32; -fx-pref-height:32;
+                                  -fx-alignment:CENTER; -fx-padding:0 8; -fx-font-family:'Microsoft YaHei';"/>
+                <Label fx:id="totalPagesLabel" text="/ 1 页"
+                       style="-fx-font-size:14px; -fx-text-fill:#374151; -fx-font-family:'Microsoft YaHei';"/>
+                <Button text="下一页" onAction="#onNextPage"
+                        style="-fx-min-width:64; -fx-pref-width:64; -fx-min-height:32; -fx-pref-height:32;
+                               -fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#6B7280;
+                               -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-background-radius:6;
+                               -fx-border-radius:6; -fx-cursor:hand; -fx-effect:null;"/>
             </HBox>
         </VBox>
 

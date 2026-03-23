@@ -86,15 +86,18 @@
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="每页"
                    style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
-            <ComboBox fx:id="pageSizeCombo" prefWidth="90"
+            <ComboBox fx:id="pageSizeCombo" prefWidth="72"
+                      styleClass="sw2-page-combo"
                       style="-fx-font-size:14px; -fx-pref-height:32; -fx-min-height:32;">
                 <items><FXCollections fx:factory="observableArrayList">
-                    <String fx:value="20条"/>
-                    <String fx:value="50条"/>
-                    <String fx:value="100条"/>
+                    <String fx:value="20"/>
+                    <String fx:value="50"/>
+                    <String fx:value="100"/>
                 </FXCollections></items>
-                <value><String fx:value="20条"/></value>
+                <value><String fx:value="20"/></value>
             </ComboBox>
+            <Label text="条"
+                   style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
             <Button text="上一页" onAction="#onPrevPage"
                     style="-fx-min-width:64; -fx-pref-width:64; -fx-min-height:32; -fx-pref-height:32;
                            -fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#6B7280;

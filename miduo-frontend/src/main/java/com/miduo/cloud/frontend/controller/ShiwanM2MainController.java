@@ -615,14 +615,15 @@ public class ShiwanM2MainController implements Initializable {
                 ignored -> {});
     }
 
-    /** 为输入框添加数字过滤器，限制范围 min-max */
+    /** 为输入框添加数字过滤器：1–999 正整数，禁止前导零（如 01、002） */
     private void applyNumericFilter(TextField field, int min, int max) {
         field.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.isEmpty()) return change;
-            if (!newText.matches("\\d{1,3}")) return null;
+            // 首位须为 1-9，总长 1–3 位，避免 01、00 等形式
+            if (!newText.matches("[1-9]\\d{0,2}")) return null;
             int value = Integer.parseInt(newText);
-            if (value < 0 || value > max) return null;
+            if (value < min || value > max) return null;
             return change;
         }));
     }
@@ -888,7 +889,7 @@ public class ShiwanM2MainController implements Initializable {
         openSystemSettingsDialog();
     }
 
-    /** 打开系统设置弹窗 */
+    /** 打开系统设置弹窗（自定义无装饰窗口，标题栏在 FXML 内） */
     private void openSystemSettingsDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(
@@ -896,13 +897,11 @@ public class ShiwanM2MainController implements Initializable {
             Parent root = loader.load();
 
             Stage settingsStage = new Stage();
-            settingsStage.setTitle("系统设置（2号机）");
-            settingsStage.setScene(new Scene(root));
+            settingsStage.initStyle(StageStyle.UNDECORATED);
             settingsStage.initModality(Modality.WINDOW_MODAL);
             settingsStage.initOwner(currentTimeLabel.getScene().getWindow());
-            settingsStage.setResizable(true);
-            settingsStage.setMinWidth(760);
-            settingsStage.setMinHeight(500);
+            settingsStage.setScene(new Scene(root));
+            settingsStage.setResizable(false);
             settingsStage.showAndWait();
             // 设置保存后立即刷新 Tab 显示（响应页面配置开关变更）
             applyPageConfig();
@@ -1417,7 +1416,7 @@ public class ShiwanM2MainController implements Initializable {
                 boolean go = FxDialog.confirm(
                         mainTabPane.getScene().getWindow(),
                         "生产单号已存在",
-                        "生产单号 [" + finalOrderNo + "] 已存在生产记录\n\n是否继续使用？选择「继续」将追加到原有记录。",
+                        "生产单号 [" + finalOrderNo + "] 已存在生产记录\n\n是否继续使用？",
                         "继 续"
                 );
                 if (go) {

@@ -90,7 +90,7 @@ public class ShiwanM2PackageViewCodesDialogController {
         });
 
         codeTable.setItems(rows);
-        pageSizeCombo.setValue("20条");
+        pageSizeCombo.setValue("20");
         pageSizeCombo.setOnAction(event -> {
             pageSize = resolvePageSize(pageSizeCombo.getValue());
             currentPage = 1;
@@ -195,13 +195,11 @@ public class ShiwanM2PackageViewCodesDialogController {
     }
 
     private int resolvePageSize(String value) {
-        if ("50条".equals(value)) {
-            return 50;
+        try {
+            return Integer.parseInt(value == null ? "20" : value.trim());
+        } catch (NumberFormatException e) {
+            return 20;
         }
-        if ("100条".equals(value)) {
-            return 100;
-        }
-        return 20;
     }
 
     private Stage getStage() {
