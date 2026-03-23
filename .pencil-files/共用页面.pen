@@ -517,10 +517,10 @@
     {
       "type": "frame",
       "id": "DjbNH",
-      "x": 3270,
-      "y": -350,
+      "x": 2550,
+      "y": -303,
       "name": "系统设置-业务-上传配置",
-      "width": 1280,
+      "width": 1000,
       "height": 768,
       "fill": "#ffffff",
       "stroke": {
@@ -565,7 +565,7 @@
               "name": "关闭按钮",
               "width": 36,
               "height": 36,
-              "fill": "#e0e0e0",
+              "fill": "#00000000",
               "cornerRadius": 4,
               "justifyContent": "center",
               "alignItems": "center",
@@ -576,7 +576,7 @@
                   "fill": "#333333",
                   "content": "×",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 18,
+                  "fontSize": 22,
                   "fontWeight": "normal"
                 }
               ]
@@ -600,7 +600,7 @@
                 "thickness": {
                   "right": 1
                 },
-                "fill": "#e0e0e0"
+                "fill": "#E5E7EB"
               },
               "layout": "vertical",
               "padding": 16,
@@ -611,11 +611,12 @@
                   "name": "一级Tab栏",
                   "width": "fill_container",
                   "height": 40,
+                  "fill": "#F9FAFB",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
                     },
-                    "fill": "#e0e0e0"
+                    "fill": "#E5E7EB"
                   },
                   "children": [
                     {
@@ -633,7 +634,7 @@
                           "fill": "#ffffff",
                           "content": "业务",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -653,7 +654,7 @@
                           "fill": "#333333",
                           "content": "页面配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -673,7 +674,7 @@
                           "fill": "#333333",
                           "content": "设备",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -693,7 +694,7 @@
                           "fill": "#333333",
                           "content": "连接",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -706,7 +707,7 @@
                   "name": "二级Tab栏",
                   "width": "fill_container",
                   "height": 40,
-                  "fill": "#F9FAFB",
+                  "fill": "#FFFFFF",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
@@ -723,17 +724,17 @@
                       "id": "HVDux",
                       "width": 120,
                       "height": "fill_container",
-                      "fill": "#f5f5f5",
+                      "fill": "#00000000",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "RKbBL",
-                          "fill": "#333333",
+                          "fill": "#6B7280",
                           "content": "码位数配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -743,17 +744,17 @@
                       "id": "Fop4A",
                       "width": 140,
                       "height": "fill_container",
-                      "fill": "#f5f5f5",
+                      "fill": "#00000000",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "oM5s8",
-                          "fill": "#333333",
+                          "fill": "#6B7280",
                           "content": "虚拟垛标规则",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -763,17 +764,23 @@
                       "id": "KlFVb",
                       "width": 100,
                       "height": "fill_container",
-                      "fill": "#4a90e2",
+                      "fill": "#FFFFFF",
+                      "stroke": {
+                        "thickness": {
+                          "bottom": 3
+                        },
+                        "fill": "#2563EB"
+                      },
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "YnYGR",
-                          "fill": "#ffffff",
+                          "fill": "#2563EB",
                           "content": "上传配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -850,9 +857,17 @@
                     },
                     {
                       "type": "frame",
+                      "id": "p2dhY",
+                      "name": "sp3",
+                      "width": "fill_container",
+                      "height": 20,
+                      "fill": "#00000000"
+                    },
+                    {
+                      "type": "frame",
                       "id": "ryVoD",
                       "name": "保存按钮",
-                      "width": 80,
+                      "width": 100,
                       "height": 36,
                       "fill": "#2563EB",
                       "cornerRadius": 6,
@@ -881,10 +896,10 @@
     {
       "type": "frame",
       "id": "Iw4Hk",
-      "x": 157,
-      "y": 878,
+      "x": 1360,
+      "y": 754,
       "name": "系统设置-连接-数据库连接",
-      "width": 1280,
+      "width": 1000,
       "height": 920,
       "fill": "#ffffff",
       "stroke": {
@@ -929,7 +944,7 @@
               "name": "关闭按钮",
               "width": 36,
               "height": 36,
-              "fill": "#e0e0e0",
+              "fill": "#00000000",
               "cornerRadius": 4,
               "justifyContent": "center",
               "alignItems": "center",
@@ -940,7 +955,7 @@
                   "fill": "$foreground",
                   "content": "×",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 18,
+                  "fontSize": 22,
                   "fontWeight": "normal"
                 }
               ]
@@ -974,11 +989,12 @@
                   "name": "Tab栏",
                   "width": "fill_container",
                   "height": 40,
+                  "fill": "#F9FAFB",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
                     },
-                    "fill": "$border-color"
+                    "fill": "#E5E7EB"
                   },
                   "children": [
                     {
@@ -997,7 +1013,7 @@
                           "fill": "$foreground",
                           "content": "业务",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -1018,7 +1034,7 @@
                           "fill": "$foreground",
                           "content": "页面配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -1039,7 +1055,7 @@
                           "fill": "$foreground",
                           "content": "设备",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -1060,7 +1076,7 @@
                           "fill": "#ffffff",
                           "content": "连接",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -1073,7 +1089,7 @@
                   "name": "二级Tab栏",
                   "width": "fill_container",
                   "height": 40,
-                  "fill": "#F9FAFB",
+                  "fill": "#FFFFFF",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
@@ -1091,18 +1107,45 @@
                       "name": "tabDbSub",
                       "width": 120,
                       "height": "fill_container",
-                      "fill": "#4a90e2",
+                      "fill": "#FFFFFF",
+                      "stroke": {
+                        "thickness": {
+                          "bottom": 3
+                        },
+                        "fill": "#2563EB"
+                      },
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "oD1JN",
-                          "fill": "#ffffff",
+                          "fill": "#2563EB",
                           "content": "数据库连接",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "CSzN4",
+                      "name": "接口服务Tab",
+                      "width": 100,
+                      "height": "fill_container",
+                      "fill": "#00000000",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "14TtP",
+                          "fill": "#6B7280",
+                          "content": "接口服务",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1936,6 +1979,14 @@
                             },
                             {
                               "type": "frame",
+                              "id": "G80tK",
+                              "name": "sp4",
+                              "width": "fill_container",
+                              "height": 20,
+                              "fill": "#00000000"
+                            },
+                            {
+                              "type": "frame",
                               "id": "B9wTz",
                               "name": "saveRow",
                               "gap": 12,
@@ -1943,18 +1994,12 @@
                               "children": [
                                 {
                                   "type": "frame",
-                                  "id": "DY8hn",
-                                  "width": 126,
-                                  "height": 1
-                                },
-                                {
-                                  "type": "frame",
                                   "id": "uoZS4",
                                   "name": "saveBtn",
-                                  "width": 80,
+                                  "width": 100,
                                   "height": 36,
-                                  "fill": "$primary-color",
-                                  "cornerRadius": 4,
+                                  "fill": "#2563EB",
+                                  "cornerRadius": 6,
                                   "justifyContent": "center",
                                   "alignItems": "center",
                                   "children": [
@@ -1989,7 +2034,7 @@
       "x": 157,
       "y": -350,
       "name": "系统设置-业务-码位数配置",
-      "width": 1280,
+      "width": 1000,
       "height": 768,
       "fill": "#ffffff",
       "stroke": {
@@ -2034,7 +2079,7 @@
               "name": "关闭按钮",
               "width": 36,
               "height": 36,
-              "fill": "#e0e0e0",
+              "fill": "#00000000",
               "cornerRadius": 4,
               "justifyContent": "center",
               "alignItems": "center",
@@ -2045,7 +2090,7 @@
                   "fill": "$foreground",
                   "content": "×",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 18,
+                  "fontSize": 22,
                   "fontWeight": "normal"
                 }
               ]
@@ -2079,11 +2124,12 @@
                   "name": "Tab栏",
                   "width": "fill_container",
                   "height": 40,
+                  "fill": "#F9FAFB",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
                     },
-                    "fill": "$border-color"
+                    "fill": "#E5E7EB"
                   },
                   "children": [
                     {
@@ -2102,7 +2148,7 @@
                           "fill": "#ffffff",
                           "content": "业务",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -2123,7 +2169,7 @@
                           "fill": "$foreground",
                           "content": "页面配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2144,7 +2190,7 @@
                           "fill": "$foreground",
                           "content": "设备",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2165,7 +2211,7 @@
                           "fill": "$foreground",
                           "content": "连接",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2178,7 +2224,7 @@
                   "name": "二级Tab栏",
                   "width": "fill_container",
                   "height": 40,
-                  "fill": "#F9FAFB",
+                  "fill": "#FFFFFF",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
@@ -2195,17 +2241,23 @@
                       "id": "qI0r0",
                       "width": 120,
                       "height": "fill_container",
-                      "fill": "#4a90e2",
+                      "fill": "#FFFFFF",
+                      "stroke": {
+                        "thickness": {
+                          "bottom": 3
+                        },
+                        "fill": "#2563EB"
+                      },
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "5AQBC",
-                          "fill": "#ffffff",
+                          "fill": "#2563EB",
                           "content": "码位数配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -2215,17 +2267,17 @@
                       "id": "WuyCb",
                       "width": 140,
                       "height": "fill_container",
-                      "fill": "#f5f5f5",
+                      "fill": "#00000000",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "8toxV",
-                          "fill": "#333333",
+                          "fill": "#6B7280",
                           "content": "虚拟垛标规则",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2235,17 +2287,17 @@
                       "id": "exHOq",
                       "width": 100,
                       "height": "fill_container",
-                      "fill": "#f5f5f5",
+                      "fill": "#00000000",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "0Vd7H",
-                          "fill": "#333333",
+                          "fill": "#6B7280",
                           "content": "上传配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2463,12 +2515,20 @@
                             },
                             {
                               "type": "frame",
+                              "id": "cvasw",
+                              "name": "sp1",
+                              "width": "fill_container",
+                              "height": 20,
+                              "fill": "#00000000"
+                            },
+                            {
+                              "type": "frame",
                               "id": "KRvRW",
                               "name": "保存按钮",
-                              "width": 80,
+                              "width": 100,
                               "height": 36,
-                              "fill": "#4a90e2",
-                              "cornerRadius": 4,
+                              "fill": "#2563EB",
+                              "cornerRadius": 6,
                               "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
@@ -2498,10 +2558,10 @@
     {
       "type": "frame",
       "id": "EAhHM",
-      "x": 1788,
-      "y": -350,
+      "x": 1360,
+      "y": -303,
       "name": "系统设置-业务-虚拟垛标规则",
-      "width": 1280,
+      "width": 1000,
       "height": 768,
       "fill": "#ffffff",
       "stroke": {
@@ -2547,7 +2607,7 @@
               "name": "关闭按钮",
               "width": 36,
               "height": 36,
-              "fill": "#e0e0e0",
+              "fill": "#00000000",
               "cornerRadius": 4,
               "justifyContent": "center",
               "alignItems": "center",
@@ -2559,7 +2619,7 @@
                   "fill": "#333333",
                   "content": "×",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 18,
+                  "fontSize": 22,
                   "fontWeight": "normal"
                 }
               ]
@@ -2594,11 +2654,12 @@
                   "name": "一级Tab栏",
                   "width": "fill_container",
                   "height": 40,
+                  "fill": "#F9FAFB",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
                     },
-                    "fill": "$border-color"
+                    "fill": "#E5E7EB"
                   },
                   "children": [
                     {
@@ -2617,7 +2678,7 @@
                           "fill": "#ffffff",
                           "content": "业务",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -2638,7 +2699,7 @@
                           "fill": "#333333",
                           "content": "页面配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2659,7 +2720,7 @@
                           "fill": "#333333",
                           "content": "设备",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2680,7 +2741,7 @@
                           "fill": "#333333",
                           "content": "连接",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2693,7 +2754,7 @@
                   "name": "二级Tab栏",
                   "width": "fill_container",
                   "height": 40,
-                  "fill": "#F9FAFB",
+                  "fill": "#FFFFFF",
                   "stroke": {
                     "thickness": {
                       "bottom": 1
@@ -2711,17 +2772,17 @@
                       "name": "tabCodeJ8",
                       "width": 120,
                       "height": "fill_container",
-                      "fill": "#f5f5f5",
+                      "fill": "#00000000",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "AWEsD",
-                          "fill": "#333333",
+                          "fill": "#6B7280",
                           "content": "码位数配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2732,17 +2793,23 @@
                       "name": "tabVirtualJ8",
                       "width": 140,
                       "height": "fill_container",
-                      "fill": "#4a90e2",
+                      "fill": "#FFFFFF",
+                      "stroke": {
+                        "thickness": {
+                          "bottom": 3
+                        },
+                        "fill": "#2563EB"
+                      },
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "FAEjJ",
-                          "fill": "#ffffff",
+                          "fill": "#2563EB",
                           "content": "虚拟垛标规则",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "600"
                         }
                       ]
@@ -2753,17 +2820,17 @@
                       "name": "tabUploadJ8",
                       "width": 100,
                       "height": "fill_container",
-                      "fill": "#f5f5f5",
+                      "fill": "#00000000",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "text",
                           "id": "pEyZ5",
-                          "fill": "#333333",
+                          "fill": "#6B7280",
                           "content": "上传配置",
                           "fontFamily": "Microsoft YaHei",
-                          "fontSize": 14,
+                          "fontSize": 15,
                           "fontWeight": "normal"
                         }
                       ]
@@ -2784,7 +2851,7 @@
                       "id": "mXHd7",
                       "name": "titleVirtual",
                       "fill": "#333333",
-                      "content": "虚拟垛标规则（成垛时生成，格式示例：V20260226001A）",
+                      "content": "虚拟垛标规则（成垛时生成，格式示例：V20260226001A12）",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 16,
                       "fontWeight": "600"
@@ -3086,9 +3153,17 @@
                     },
                     {
                       "type": "frame",
+                      "id": "TjNpu",
+                      "name": "sp2",
+                      "width": "fill_container",
+                      "height": 20,
+                      "fill": "#00000000"
+                    },
+                    {
+                      "type": "frame",
                       "id": "ecNp0",
                       "name": "saveBtnVirtual",
-                      "width": 80,
+                      "width": 100,
                       "height": 36,
                       "fill": "#2563EB",
                       "cornerRadius": 6,
@@ -3117,10 +3192,10 @@
     {
       "type": "frame",
       "id": "zcZRo",
-      "x": 1788,
-      "y": 1030,
+      "x": 157,
+      "y": 1853,
       "name": "系统设置-页面配置",
-      "width": 1280,
+      "width": 1000,
       "height": 768,
       "fill": "#ffffff",
       "stroke": {
@@ -3165,7 +3240,7 @@
               "name": "关闭按钮",
               "width": 36,
               "height": 36,
-              "fill": "#e0e0e0",
+              "fill": "#00000000",
               "cornerRadius": 4,
               "justifyContent": "center",
               "alignItems": "center",
@@ -3176,7 +3251,7 @@
                   "fill": "$foreground",
                   "content": "×",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 18,
+                  "fontSize": 22,
                   "fontWeight": "normal"
                 }
               ]
@@ -3213,7 +3288,7 @@
                   "type": "frame",
                   "id": "5u7t1",
                   "name": "业务Tab",
-                  "width": 55,
+                  "width": 80,
                   "height": 40,
                   "fill": "#f5f5f5",
                   "justifyContent": "center",
@@ -3225,7 +3300,7 @@
                       "fill": "$foreground",
                       "content": "业务",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "normal"
                     }
                   ]
@@ -3234,7 +3309,7 @@
                   "type": "frame",
                   "id": "zirvU",
                   "name": "页面配置Tab",
-                  "width": 90,
+                  "width": 100,
                   "height": 40,
                   "fill": "#4a90e2",
                   "justifyContent": "center",
@@ -3246,7 +3321,7 @@
                       "fill": "#ffffff",
                       "content": "页面配置",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "600"
                     }
                   ]
@@ -3255,7 +3330,7 @@
                   "type": "frame",
                   "id": "a4n82",
                   "name": "设备Tab",
-                  "width": 55,
+                  "width": 80,
                   "height": 40,
                   "fill": "#f5f5f5",
                   "justifyContent": "center",
@@ -3267,7 +3342,7 @@
                       "fill": "$foreground",
                       "content": "设备",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "normal"
                     }
                   ]
@@ -3276,7 +3351,7 @@
                   "type": "frame",
                   "id": "ZlYEU",
                   "name": "连接Tab",
-                  "width": 55,
+                  "width": 80,
                   "height": 40,
                   "fill": "#f5f5f5",
                   "justifyContent": "center",
@@ -3288,7 +3363,7 @@
                       "fill": "$foreground",
                       "content": "连接",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "normal"
                     }
                   ]
@@ -3516,9 +3591,17 @@
                 },
                 {
                   "type": "frame",
+                  "id": "dcQ0n",
+                  "name": "sp6",
+                  "width": "fill_container",
+                  "height": 20,
+                  "fill": "#00000000"
+                },
+                {
+                  "type": "frame",
                   "id": "3pcbx",
                   "name": "保存按钮",
-                  "width": 80,
+                  "width": 100,
                   "height": 36,
                   "fill": "#2563EB",
                   "cornerRadius": 6,
@@ -3545,10 +3628,10 @@
     {
       "type": "frame",
       "id": "Yq73e",
-      "x": 3270,
-      "y": 1068,
+      "x": 157,
+      "y": 701,
       "name": "系统设置-页面配置-盒箱垛",
-      "width": 1280,
+      "width": 1000,
       "height": 768,
       "fill": "#ffffff",
       "stroke": {
@@ -3594,7 +3677,7 @@
               "name": "关闭按钮",
               "width": 36,
               "height": 36,
-              "fill": "#e0e0e0",
+              "fill": "#00000000",
               "cornerRadius": 4,
               "justifyContent": "center",
               "alignItems": "center",
@@ -3606,7 +3689,7 @@
                   "fill": "#333333",
                   "content": "×",
                   "fontFamily": "Microsoft YaHei",
-                  "fontSize": 18,
+                  "fontSize": 22,
                   "fontWeight": "normal"
                 }
               ]
@@ -3656,7 +3739,7 @@
                       "fill": "#333333",
                       "content": "业务",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "normal"
                     }
                   ]
@@ -3678,7 +3761,7 @@
                       "fill": "#ffffff",
                       "content": "页面配置",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "600"
                     }
                   ]
@@ -3700,7 +3783,7 @@
                       "fill": "#333333",
                       "content": "设备",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "normal"
                     }
                   ]
@@ -3722,7 +3805,7 @@
                       "fill": "#333333",
                       "content": "连接",
                       "fontFamily": "Microsoft YaHei",
-                      "fontSize": 14,
+                      "fontSize": 15,
                       "fontWeight": "normal"
                     }
                   ]
@@ -4655,9 +4738,17 @@
                 },
                 {
                   "type": "frame",
+                  "id": "NBdUQ",
+                  "name": "sp7",
+                  "width": "fill_container",
+                  "height": 20,
+                  "fill": "#00000000"
+                },
+                {
+                  "type": "frame",
                   "id": "Ie7VM",
                   "name": "保存按钮",
-                  "width": 80,
+                  "width": 100,
                   "height": 36,
                   "fill": "#2563EB",
                   "cornerRadius": 6,
@@ -4684,7 +4775,7 @@
     {
       "type": "frame",
       "id": "16qth",
-      "x": 1360,
+      "x": 1157,
       "y": -1600,
       "name": "帮助提示弹窗",
       "width": 560,
@@ -4853,8 +4944,8 @@
     {
       "type": "frame",
       "id": "XVbsB",
-      "x": 2114,
-      "y": -1543,
+      "x": 1788,
+      "y": -1600,
       "name": "系统密码输入弹窗",
       "width": 400,
       "fill": "#FFFFFF",
@@ -5031,8 +5122,8 @@
     {
       "type": "frame",
       "id": "fcAh5",
-      "x": 2594,
-      "y": -1714,
+      "x": 1788,
+      "y": -1205,
       "name": "通用确认弹窗",
       "reusable": true,
       "width": 400,
@@ -5219,160 +5310,9 @@
     },
     {
       "type": "frame",
-      "id": "CvaNt",
-      "x": 2594,
-      "y": -1235,
-      "name": "通用提示弹窗",
-      "reusable": true,
-      "width": 400,
-      "fill": "#FFFFFF",
-      "cornerRadius": 16,
-      "stroke": {
-        "align": "inside",
-        "thickness": 1,
-        "fill": "#E5E7EB"
-      },
-      "effect": {
-        "type": "shadow",
-        "shadowType": "outer",
-        "color": "#0000001A",
-        "offset": {
-          "x": 0,
-          "y": 8
-        },
-        "blur": 24
-      },
-      "layout": "vertical",
-      "children": [
-        {
-          "type": "frame",
-          "id": "zTss3",
-          "name": "标题栏",
-          "width": "fill_container",
-          "gap": 10,
-          "padding": [
-            20,
-            24
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "Y9Xf1",
-              "name": "图标背景",
-              "width": 28,
-              "height": 28,
-              "fill": "#DBEAFE",
-              "cornerRadius": 14,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "uhkpu",
-                  "name": "信息图标",
-                  "width": 16,
-                  "height": 16,
-                  "iconFontName": "info",
-                  "iconFontFamily": "lucide",
-                  "fill": "#2563EB"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "id": "P7STy",
-              "name": "标题文本",
-              "fill": "#111827",
-              "content": "操作提示",
-              "fontFamily": "Inter",
-              "fontSize": 18,
-              "fontWeight": "600"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "EAiww",
-          "name": "分割线",
-          "width": "fill_container",
-          "height": 1,
-          "fill": "#F3F4F6"
-        },
-        {
-          "type": "frame",
-          "id": "5FHwB",
-          "name": "内容区",
-          "width": "fill_container",
-          "layout": "vertical",
-          "padding": [
-            20,
-            24,
-            8,
-            24
-          ],
-          "children": [
-            {
-              "type": "text",
-              "id": "G2ZkM",
-              "name": "内容文本",
-              "fill": "#4B5563",
-              "textGrowth": "fixed-width",
-              "width": "fill_container",
-              "content": "操作已完成，请知悉。",
-              "lineHeight": 1.7,
-              "fontFamily": "Inter",
-              "fontSize": 16,
-              "fontWeight": "normal"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "DLEsM",
-          "name": "底部按钮区",
-          "width": "fill_container",
-          "padding": [
-            16,
-            24,
-            28,
-            24
-          ],
-          "justifyContent": "center",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "81Kh8",
-              "name": "确定按钮",
-              "width": 160,
-              "height": 44,
-              "fill": "#2563EB",
-              "cornerRadius": 8,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "c9WeN",
-                  "name": "confirmText",
-                  "fill": "#FFFFFF",
-                  "content": "确定",
-                  "fontFamily": "Inter",
-                  "fontSize": 18,
-                  "fontWeight": "600"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "85YAH",
-      "x": 2594,
-      "y": -1235,
+      "x": 1788,
+      "y": -901,
       "name": "通用提示弹窗",
       "reusable": true,
       "width": 400,
@@ -5513,6 +5453,926 @@
                   "fontFamily": "Inter",
                   "fontSize": 18,
                   "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "t5h26",
+      "x": 2550,
+      "y": 754,
+      "name": "系统设置-连接-接口服务",
+      "width": 1000,
+      "height": 920,
+      "fill": "#ffffff",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$border-color"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "uAhjB",
+          "name": "对话框标题栏",
+          "width": "fill_container",
+          "height": 48,
+          "fill": "#f0f0f0",
+          "stroke": {
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$border-color"
+          },
+          "padding": [
+            16,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "jbxel",
+              "fill": "$foreground",
+              "content": "系统设置",
+              "fontFamily": "Microsoft YaHei",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "h1EE6",
+              "name": "关闭按钮",
+              "width": 36,
+              "height": 36,
+              "fill": "#00000000",
+              "cornerRadius": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iAS7G",
+                  "fill": "$foreground",
+                  "content": "×",
+                  "fontFamily": "Microsoft YaHei",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "W9ENb",
+          "name": "主内容区",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "So6Fh",
+              "name": "左侧配置区",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#ffffff",
+              "stroke": {
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$border-color"
+              },
+              "layout": "vertical",
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Ykd44",
+                  "name": "Tab栏",
+                  "width": "fill_container",
+                  "height": 40,
+                  "fill": "#F9FAFB",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E5E7EB"
+                  },
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "UwkKT",
+                      "name": "业务Tab",
+                      "width": 80,
+                      "height": 40,
+                      "fill": "#f5f5f5",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oo3Ty",
+                          "fill": "$foreground",
+                          "content": "业务",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ziW1E",
+                      "name": "页面配置Tab",
+                      "width": 100,
+                      "height": 40,
+                      "fill": "#f5f5f5",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fmjU4",
+                          "fill": "$foreground",
+                          "content": "页面配置",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "yGAS7",
+                      "name": "设备Tab",
+                      "width": 80,
+                      "height": 40,
+                      "fill": "#f5f5f5",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "L1aMq",
+                          "fill": "$foreground",
+                          "content": "设备",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2lFUM",
+                      "name": "连接Tab",
+                      "width": 80,
+                      "height": 40,
+                      "fill": "#4a90e2",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "b94w8",
+                          "fill": "#ffffff",
+                          "content": "连接",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GgUJf",
+                  "name": "二级Tab栏",
+                  "width": "fill_container",
+                  "height": 40,
+                  "fill": "#FFFFFF",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E5E7EB"
+                  },
+                  "padding": [
+                    0,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "b17GB",
+                      "name": "数据库连接Tab",
+                      "width": 120,
+                      "height": "fill_container",
+                      "fill": "#00000000",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Cda5X",
+                          "fill": "#6B7280",
+                          "content": "数据库连接",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ofHul",
+                      "name": "接口服务Tab",
+                      "width": 100,
+                      "height": "fill_container",
+                      "fill": "#FFFFFF",
+                      "stroke": {
+                        "thickness": {
+                          "bottom": 3
+                        },
+                        "fill": "#2563EB"
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vqTc5",
+                          "fill": "#2563EB",
+                          "content": "接口服务",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bI6rU",
+                  "name": "Tab内容区",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "eTDxx",
+                      "name": "apiTitle",
+                      "fill": "$foreground",
+                      "content": "接口地址配置",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ecewV",
+                      "name": "接口地址行",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "G7vuQ",
+                          "name": "labelWrap1",
+                          "width": 100,
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "HTe3o",
+                              "fill": "#333333",
+                              "content": "接口地址:",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "MVrY7",
+                          "name": "apiUrlInput",
+                          "width": 300,
+                          "height": 32,
+                          "fill": "#ffffff",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$border-color"
+                          },
+                          "padding": [
+                            6,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "okHWk",
+                              "fill": "#9CA3AF",
+                              "content": "http://example.com/api",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "YXFtY",
+                      "name": "开放平台行",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "jFgu4",
+                          "name": "labelWrap2",
+                          "width": 100,
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "HDJOE",
+                              "fill": "#333333",
+                              "content": "开放平台:",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "IKukz",
+                          "name": "openPlatInput",
+                          "width": 300,
+                          "height": 32,
+                          "fill": "#ffffff",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$border-color"
+                          },
+                          "padding": [
+                            6,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "0oprW",
+                              "fill": "#9CA3AF",
+                              "content": "请输入开放平台地址",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "hmjXe",
+                      "name": "apiHint",
+                      "fill": "#6B7280",
+                      "content": "说明：配置修改后保存生效；接口地址需包含完整路径，开放平台为第三方授权地址。",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "0W5kl",
+                      "name": "sp5",
+                      "width": "fill_container",
+                      "height": 20,
+                      "fill": "#00000000"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VxUWr",
+                      "name": "保存行",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "uUSxu",
+                          "name": "保存按钮",
+                          "width": 100,
+                          "height": 36,
+                          "fill": "#2563EB",
+                          "cornerRadius": 6,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "iz7GH",
+                              "fill": "#ffffff",
+                              "content": "保存",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TRoFB",
+      "x": 1360,
+      "y": 1918,
+      "name": "系统设置-设备-设备控制配置",
+      "width": 1000,
+      "height": 768,
+      "fill": "#ffffff",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#e0e0e0"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "rZoYN",
+          "name": "对话框标题栏",
+          "width": "fill_container",
+          "height": 48,
+          "fill": "#f0f0f0",
+          "stroke": {
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "#e0e0e0"
+          },
+          "padding": [
+            16,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "HRRec",
+              "fill": "#333333",
+              "content": "系统设置",
+              "fontFamily": "Microsoft YaHei",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "ihzr3",
+              "name": "关闭按钮",
+              "width": 36,
+              "height": 36,
+              "fill": "#00000000",
+              "cornerRadius": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "uEUt6",
+                  "fill": "#333333",
+                  "content": "×",
+                  "fontFamily": "Microsoft YaHei",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Dxu5v",
+          "name": "主内容区",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "3Qzp5",
+              "name": "左侧配置区",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#ffffff",
+              "stroke": {
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "#E5E7EB"
+              },
+              "layout": "vertical",
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "VpC9Q",
+                  "name": "Tab栏",
+                  "width": "fill_container",
+                  "height": 40,
+                  "fill": "#F9FAFB",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E5E7EB"
+                  },
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "o7d0w",
+                      "name": "业务Tab",
+                      "width": 80,
+                      "height": 40,
+                      "fill": "#f5f5f5",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "EIdVB",
+                          "fill": "#333333",
+                          "content": "业务",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FYs4E",
+                      "name": "页面配置Tab",
+                      "width": 100,
+                      "height": 40,
+                      "fill": "#f5f5f5",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rB411",
+                          "fill": "#333333",
+                          "content": "页面配置",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ukxGG",
+                      "name": "设备Tab",
+                      "width": 80,
+                      "height": 40,
+                      "fill": "#4a90e2",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "2Fg9m",
+                          "fill": "#ffffff",
+                          "content": "设备",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "u5fUf",
+                      "name": "连接Tab",
+                      "width": 80,
+                      "height": 40,
+                      "fill": "#f5f5f5",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "5mdGa",
+                          "fill": "#333333",
+                          "content": "连接",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LZXhV",
+                  "name": "二级Tab栏",
+                  "width": "fill_container",
+                  "height": 40,
+                  "fill": "#FFFFFF",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E5E7EB"
+                  },
+                  "padding": [
+                    0,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "myDDU",
+                      "name": "IO设备管理Tab",
+                      "width": 120,
+                      "height": "fill_container",
+                      "fill": "#00000000",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "xE2LT",
+                          "fill": "#6B7280",
+                          "content": "IO设备管理",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "A2qBk",
+                      "name": "设备控制配置Tab",
+                      "width": 120,
+                      "height": "fill_container",
+                      "fill": "#FFFFFF",
+                      "stroke": {
+                        "thickness": {
+                          "bottom": 3
+                        },
+                        "fill": "#2563EB"
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "87PGV",
+                          "fill": "#2563EB",
+                          "content": "设备控制配置",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Bs5q9",
+                  "name": "Tab内容区",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "YG7CP",
+                      "fill": "#333333",
+                      "content": "剔除装置",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "dadom",
+                      "width": "fill_container",
+                      "height": 1,
+                      "fill": "$border-color"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "44k9D",
+                      "name": "触发延时行",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "hZ3ri",
+                          "name": "lbl1",
+                          "width": 160,
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "eIB8r",
+                              "fill": "#333333",
+                              "content": "触发剔除延时（ms）:",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Wxb7f",
+                          "name": "input1",
+                          "width": 120,
+                          "height": 32,
+                          "fill": "#ffffff",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#D1D5DB"
+                          },
+                          "padding": [
+                            6,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "HbhO8",
+                              "fill": "#333333",
+                              "content": "1000",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "wc1zZ",
+                          "fill": "#6B7280",
+                          "content": "检测到需要剔除后，等待该时间再发送信号",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LbGtN",
+                      "name": "收回时间行",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "p5bTe",
+                          "name": "lbl2",
+                          "width": 160,
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "mkBTK",
+                              "fill": "#333333",
+                              "content": "剔除收回时间（ms）:",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "o0IC4",
+                          "name": "input2",
+                          "width": 120,
+                          "height": 32,
+                          "fill": "#ffffff",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#D1D5DB"
+                          },
+                          "padding": [
+                            6,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "poaHF",
+                              "fill": "#333333",
+                              "content": "600",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "PG0AD",
+                          "fill": "#6B7280",
+                          "content": "发送剔除信号后，等待该时间自动发送收回信号",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "OtRO2",
+                      "name": "sp8",
+                      "width": "fill_container",
+                      "height": 20,
+                      "fill": "#00000000"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SUg70",
+                      "name": "保存行",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "iiw82",
+                          "name": "保存按钮",
+                          "width": 100,
+                          "height": 36,
+                          "fill": "#2563EB",
+                          "cornerRadius": 6,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "0nqzN",
+                              "fill": "#ffffff",
+                              "content": "保存",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
