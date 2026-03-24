@@ -2,15 +2,14 @@ package com.miduo.cloud.frontend.controller;
 
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
@@ -19,6 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -95,17 +95,17 @@ public class ShiwanM2ReplaceController implements Initializable {
         String newCode = newCodeField.getText().trim();
 
         if (orig.isEmpty()) {
-            showWarn("请输入原码", "原码不能为空。");
+            FxDialog.warn(replaceDialogOwner(), "提示", "请输入原码，原码不能为空。");
             origCodeField.requestFocus();
             return;
         }
         if (newCode.isEmpty()) {
-            showWarn("请输入新码", "新码不能为空。");
+            FxDialog.warn(replaceDialogOwner(), "提示", "请输入新码，新码不能为空。");
             newCodeField.requestFocus();
             return;
         }
         if (orig.equals(newCode)) {
-            showWarn("码值相同", "原码与新码不能相同，请重新输入。");
+            FxDialog.warn(replaceDialogOwner(), "提示", "原码与新码不能相同，请重新输入。");
             return;
         }
 
@@ -133,7 +133,7 @@ public class ShiwanM2ReplaceController implements Initializable {
             if (!ctrl.isConfirmed()) return;
             executeReplace(orig, newCode, reason);
         } catch (Exception ex) {
-            showWarn("系统错误", "无法打开确认弹窗：" + ex.getMessage());
+            FxDialog.warn(replaceDialogOwner(), "提示", "无法打开确认弹窗：" + ex.getMessage());
         }
     }
 
@@ -232,21 +232,9 @@ public class ShiwanM2ReplaceController implements Initializable {
 
     // ==================== 工具 ====================
 
-    private void showInfo(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
-    }
-
-    private void showWarn(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+    private Window replaceDialogOwner() {
+        return origCodeField != null && origCodeField.getScene() != null
+                ? origCodeField.getScene().getWindow()
+                : null;
     }
 }
