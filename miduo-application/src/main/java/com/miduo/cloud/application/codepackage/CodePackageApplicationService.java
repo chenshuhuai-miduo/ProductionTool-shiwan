@@ -49,8 +49,8 @@ import java.util.stream.Collectors;
 @Service
 public class CodePackageApplicationService {
 
-    private static final int CODE_QUERY_BATCH_SIZE = 800;
-    private static final int INSERT_BATCH_SIZE = 1000;
+    private static final int CODE_QUERY_BATCH_SIZE = 2000;
+    private static final int INSERT_BATCH_SIZE = 3000;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired

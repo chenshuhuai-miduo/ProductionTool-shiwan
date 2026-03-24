@@ -120,8 +120,8 @@ public class CodePackageOpenPlatformClient {
         try {
             connection = (HttpURLConnection) new URL(fileDownloadAddress).openConnection();
             connection.setRequestMethod("GET");
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(30000);
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(300000);  // 300 秒：支持 50 万条码文件下载
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                 List<String> lines = new ArrayList<>();

@@ -706,7 +706,7 @@ public class ShiwanM2BoxCaseService {
                 if (bc.isEmpty()) continue;
                 jdbcTemplate.update(insertSql,
                         EMPTY, EMPTY, finalBoxCode, bc,
-                        EMPTY, EMPTY, EMPTY, 0, EMPTY, EMPTY, 1, EMPTY, 0, 1,
+                        EMPTY, EMPTY, EMPTY, 0, EMPTY, EMPTY, 0, EMPTY, 0, 1,
                         EMPTY, EMPTY, now, 0, EMPTY, 0, 0, EMPTY);
             }
             // 落冷：盒码和瓶码从热表迁移到冷表
