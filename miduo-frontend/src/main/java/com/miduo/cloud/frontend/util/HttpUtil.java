@@ -68,12 +68,22 @@ public class HttpUtil {
     }
     
     /**
-     * 请求配置
+     * 请求配置（常规接口）
      */
     private static final RequestConfig requestConfig = RequestConfig.custom()
             .setConnectTimeout(5000)        // 连接超时5秒
             .setSocketTimeout(30000)        // 读取超时30秒（生产统计等聚合查询耗时较长）
             .setConnectionRequestTimeout(3000)  // 从连接池获取连接超时3秒
+            .build();
+
+    /**
+     * 长时操作请求配置：码包本地导入 / 在线更新等耗时较长的接口使用。
+     * socketTimeout = 10 分钟，避免大文件处理时 ReadTimeout 中断。
+     */
+    private static final RequestConfig longRequestConfig = RequestConfig.custom()
+            .setConnectTimeout(10000)
+            .setSocketTimeout(600000)       // 读取超时10分钟
+            .setConnectionRequestTimeout(5000)
             .build();
     
     /**
@@ -166,6 +176,31 @@ public class HttpUtil {
         return doPut(url, jsonBody);
     }
     
+    /**
+     * POST请求（长时操作，10分钟超时）。
+     * 适用于码包本地导入、在线更新等耗时接口，避免 ReadTimeout 中断。
+     *
+     * @param url      请求URL（相对路径）
+     * @param jsonBody JSON请求体
+     * @return 响应字符串
+     */
+    public static String doPostLong(String url, String jsonBody) throws IOException {
+        warnIfFxThread("doPostLong", url);
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpPost httpPost = new HttpPost(getBaseUrl() + url);
+        httpPost.setConfig(longRequestConfig);
+        httpPost.setHeader("Content-Type", "application/json;charset=UTF-8");
+        if (jsonBody != null && !jsonBody.isEmpty()) {
+            StringEntity entity = new StringEntity(jsonBody, StandardCharsets.UTF_8);
+            httpPost.setEntity(entity);
+        }
+        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+            return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+        } finally {
+            httpClient.close();
+        }
+    }
+
     /**
      * DELETE请求
      * @param url 请求URL（相对路径）

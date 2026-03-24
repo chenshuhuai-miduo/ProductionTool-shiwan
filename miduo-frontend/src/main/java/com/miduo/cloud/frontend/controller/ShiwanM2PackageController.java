@@ -305,7 +305,7 @@ public class ShiwanM2PackageController implements Initializable {
     private void triggerOnlineUpdate(boolean showDialog) {
         new Thread(() -> {
             try {
-                String responseJson = HttpUtil.doPost("/api/code-package/import/online", "");
+                String responseJson = HttpUtil.doPostLong("/api/code-package/import/online", "");
                 ApiResult<CodePackageOnlineImportResultVO> result = HttpUtil.parseJson(
                         responseJson,
                         new TypeReference<ApiResult<CodePackageOnlineImportResultVO>>() {});

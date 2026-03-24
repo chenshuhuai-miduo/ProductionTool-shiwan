@@ -117,7 +117,7 @@ public class ShiwanM2PackageImportDialogController {
                 if (!remark.isEmpty()) request.setRemark(remark);
                 request.setCodes(lines);
 
-                String responseJson = HttpUtil.doPost("/api/code-package/import/local", request);
+                String responseJson = HttpUtil.doPostLong("/api/code-package/import/local", HttpUtil.getObjectMapper().writeValueAsString(request));
                 ApiResult<CodePackageImportVO> result = HttpUtil.parseJson(
                         responseJson, new TypeReference<ApiResult<CodePackageImportVO>>() {});
 
