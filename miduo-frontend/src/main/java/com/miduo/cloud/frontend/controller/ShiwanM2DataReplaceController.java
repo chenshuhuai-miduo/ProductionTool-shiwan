@@ -26,6 +26,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -59,6 +60,7 @@ public class ShiwanM2DataReplaceController {
     private Label replaceStatusLabel;
 
     private final ObservableList<String> replaceResults = FXCollections.observableArrayList();
+    private TextField lastFocusedCodeField;
 
     @FXML
     public void initialize() {
@@ -66,6 +68,7 @@ public class ShiwanM2DataReplaceController {
         replaceResultList.setItems(replaceResults);
         replaceResultList.setPlaceholder(new Label("暂无替换记录"));
         replaceStatusLabel.setText("请填写原码和新码后执行替换");
+        bindFocusTracking();
     }
 
     /**
@@ -76,6 +79,12 @@ public class ShiwanM2DataReplaceController {
         if (c.isEmpty()) return;
         Platform.runLater(() -> {
             if (originalCodeField == null || newCodeField == null) return;
+            TextField target = resolveTargetCodeField();
+            if (target != null) {
+                target.setText(c);
+                return;
+            }
+
             String oldVal = originalCodeField.getText() == null ? "" : originalCodeField.getText().trim();
             String newVal = newCodeField.getText() == null ? "" : newCodeField.getText().trim();
             if (oldVal.isEmpty()) {
@@ -87,6 +96,37 @@ public class ShiwanM2DataReplaceController {
                 newCodeField.setText(c);
             }
         });
+    }
+
+    private void bindFocusTracking() {
+        originalCodeField.focusedProperty().addListener((obs, oldV, focused) -> {
+            if (Boolean.TRUE.equals(focused)) {
+                lastFocusedCodeField = originalCodeField;
+            }
+        });
+        newCodeField.focusedProperty().addListener((obs, oldV, focused) -> {
+            if (Boolean.TRUE.equals(focused)) {
+                lastFocusedCodeField = newCodeField;
+            }
+        });
+    }
+
+    private TextField resolveTargetCodeField() {
+        if (originalCodeField != null
+                && originalCodeField.getScene() != null
+                && originalCodeField.getScene().getFocusOwner() instanceof Node) {
+            Node focusOwner = originalCodeField.getScene().getFocusOwner();
+            if (focusOwner == originalCodeField || originalCodeField.isFocused()) {
+                return originalCodeField;
+            }
+            if (focusOwner == newCodeField || newCodeField.isFocused()) {
+                return newCodeField;
+            }
+        }
+        if (lastFocusedCodeField == originalCodeField || lastFocusedCodeField == newCodeField) {
+            return lastFocusedCodeField;
+        }
+        return null;
     }
 
     @FXML
