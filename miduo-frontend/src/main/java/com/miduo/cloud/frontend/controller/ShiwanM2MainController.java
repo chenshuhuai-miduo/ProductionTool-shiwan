@@ -1891,7 +1891,19 @@ public class ShiwanM2MainController implements Initializable {
         int cpp = parseSpecValue(casesPerPalletField.getText(), 70);
         String orderNo = orderNumField.getText() != null ? orderNumField.getText().trim() : "";
 
-        for (JsonNode evt : dataArr) {
+        List<JsonNode> events = new ArrayList<>();
+        dataArr.forEach(events::add);
+        // 数据接收区按毫秒时间排序；同毫秒再按 seq 排序，保证“最新在上”稳定。
+        events.sort((a, b) -> {
+            long ta = eventTimeMs(a);
+            long tb = eventTimeMs(b);
+            if (ta != tb) return Long.compare(ta, tb);
+            long sa = a.has("seq") ? a.get("seq").asLong() : 0L;
+            long sb = b.has("seq") ? b.get("seq").asLong() : 0L;
+            return Long.compare(sa, sb);
+        });
+
+        for (JsonNode evt : events) {
             long   seq  = evt.has("seq")     ? evt.get("seq").asLong()   : 0;
             String type = evt.has("type")    ? evt.get("type").asText()  : "";
             String msg  = evt.has("message") ? evt.get("message").asText(): "";
@@ -2040,6 +2052,16 @@ public class ShiwanM2MainController implements Initializable {
                     break;
             }
         }
+    }
+
+    /**
+     * 事件排序时间（毫秒）。优先使用后端 timeMs，缺失时回退到 seq，保证老版本数据也可稳定排序。
+     */
+    private static long eventTimeMs(JsonNode evt) {
+        if (evt != null && evt.has("timeMs")) {
+            return evt.get("timeMs").asLong(0L);
+        }
+        return evt != null && evt.has("seq") ? evt.get("seq").asLong(0L) : 0L;
     }
 
     /** 从事件 data 中安全提取文本值，fallback 到 defaultVal。 */

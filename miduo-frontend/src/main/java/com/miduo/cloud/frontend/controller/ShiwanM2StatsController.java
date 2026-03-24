@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,7 +22,6 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
@@ -192,15 +190,8 @@ public class ShiwanM2StatsController implements Initializable {
         });
         uploadTable.setItems(pageData);
         uploadTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        /* 与码包管理同用 sw2-table；异常原因列多行依赖非固定行高 */
         uploadTable.setFixedCellSize(-1);
-        /* 去掉 Modena 竖向网格线；点击后不保留行选中高亮（避免与状态列配色冲突） */
-        uploadTable.setStyle("-fx-table-cell-border-color: transparent;");
-        uploadTable.setRowFactory(tv -> {
-            TableRow<UploadRow> row = new TableRow<>();
-            row.addEventFilter(MouseEvent.MOUSE_CLICKED,
-                    e -> Platform.runLater(() -> uploadTable.getSelectionModel().clearSelection()));
-            return row;
-        });
     }
 
     /** 为超长连续串插入零宽断点，避免不换行撑开布局 */

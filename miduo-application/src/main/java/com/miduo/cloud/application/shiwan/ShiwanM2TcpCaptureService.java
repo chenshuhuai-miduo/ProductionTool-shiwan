@@ -207,6 +207,7 @@ public class ShiwanM2TcpCaptureService {
                     item.put("type",    e.type);
                     item.put("message", e.message);
                     item.put("time",    e.time);
+                    item.put("timeMs",  e.timeMs);
                     if (e.data != null) item.put("data", e.data);
                     result.add(item);
                 }
@@ -509,6 +510,7 @@ public class ShiwanM2TcpCaptureService {
 
     /** 盒码批次超时（未等到同批次箱码）→ 整批剔除。 */
     private void handleBoxBatchTimeoutReject(BoxBatchEntry boxBatch) {
+        alignBatchCountersAfterTimeout(boxBatch.batchNo);
         String reason = "箱相机未在双相机等待超时时间内采集到箱码，剔除整箱";
         List<String> boxCodes = boxBatch.codes == null
                 ? Collections.emptyList()
@@ -518,9 +520,9 @@ public class ShiwanM2TcpCaptureService {
         for (String boxCode : boxCodes) {
             boxCaseService.insertRejectRecord(currentOrderNo, null, boxCode, null, boxCode, reason);
         }
-        // 清理该批次盒码在关联表中的未关联记录
+        // 将该批次盒码在关联表中的未关联记录状态置为未完成（Status=0）
         if (!boxCodes.isEmpty()) {
-            boxCaseService.deleteCodeRelationUploadByBoxCodes(boxCodes);
+            boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(boxCodes);
         }
 
         Map<String, Object> data = new LinkedHashMap<>();
@@ -533,6 +535,7 @@ public class ShiwanM2TcpCaptureService {
 
     /** 箱码批次超时（未等到同批次盒码）→ 整批剔除。 */
     private void handleCaseBatchTimeoutReject(CaseBatchEntry caseBatch) {
+        alignBatchCountersAfterTimeout(caseBatch.batchNo);
         String reason = "盒相机未在双相机等待超时时间内采集到盒码，剔除整箱";
         String caseCode = caseBatch.code != null ? caseBatch.code : "";
 
@@ -547,7 +550,19 @@ public class ShiwanM2TcpCaptureService {
         log.warn("[批{}] 超时剔除：箱码批次未匹配到盒码，caseCode={}", caseBatch.batchNo, caseCode);
     }
 
-    /** 读取系统设置中的双相机批次匹配等待超时（ms），默认 3000；0 表示禁用。 */
+
+    /**
+     * 任一侧批次超时剔除后，将盒/箱批次计数器统一推进到同一批次基线，
+     * 避免后续一侧仍从旧批次号继续入队，导致长期错位。
+     */
+    private void alignBatchCountersAfterTimeout(int timeoutBatchNo) {
+        int alignedBox = boxBatchCounter.updateAndGet(v -> Math.max(v, timeoutBatchNo));
+        int alignedCase = caseBatchCounter.updateAndGet(v -> Math.max(v, timeoutBatchNo));
+        log.info("[批次对齐] 超时批次={}，对齐后 boxBatchCounter={}, caseBatchCounter={}",
+                timeoutBatchNo, alignedBox, alignedCase);
+    }
+
+        /** 读取系统设置中的双相机批次匹配等待超时（ms），默认 3000；0 表示禁用。 */
     private long resolveMatchWaitTimeoutMs() {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         if (cfg == null || cfg.getBoxCaseCameraCapture() == null) return 3000L;
@@ -733,8 +748,9 @@ public class ShiwanM2TcpCaptureService {
 
     private void addEvent(String type, String message, Map<String, Object> data) {
         long seq = eventSeq.incrementAndGet();
+        long nowMs = System.currentTimeMillis();
         CaptureEvent evt = new CaptureEvent(seq, type, message,
-                LocalDateTime.now().format(TIME_FMT), data);
+                LocalDateTime.now().format(TIME_FMT), nowMs, data);
         synchronized (eventLock) {
             if (recentEvents.size() >= MAX_EVENTS) recentEvents.pollFirst();
             recentEvents.addLast(evt);
@@ -878,13 +894,15 @@ public class ShiwanM2TcpCaptureService {
         final String             type;
         final String             message;
         final String             time;
+        final long               timeMs;
         final Map<String, Object> data;
 
-        CaptureEvent(long seq, String type, String message, String time, Map<String, Object> data) {
+        CaptureEvent(long seq, String type, String message, String time, long timeMs, Map<String, Object> data) {
             this.seq     = seq;
             this.type    = type;
             this.message = message;
             this.time    = time;
+            this.timeMs  = timeMs;
             this.data    = data;
         }
     }
