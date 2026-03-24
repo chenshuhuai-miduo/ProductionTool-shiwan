@@ -13,6 +13,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -25,6 +26,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
@@ -85,7 +87,9 @@ public class ShiwanM2CancelAssociationController {
         cancelRecordList.setItems(cancelRecordItems);
 
         pendingList.setPlaceholder(new Label("暂无待取消项"));
-        identifyResultList.setPlaceholder(new Label("请在左侧输入码值并点击识别"));
+        Label identifyPh = new Label("请在左侧输入码值并点击识别");
+        identifyPh.setStyle("-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';");
+        identifyResultList.setPlaceholder(identifyPh);
         cancelRecordList.setPlaceholder(new Label("暂无取消关联记录"));
 
         // 自定义 Cell
@@ -324,7 +328,12 @@ public class ShiwanM2CancelAssociationController {
 
     /** 仅刷新识别结果区（切换取消范围时调用）。 */
     private void refreshIdentifyDisplay() {
-        if (lastIdentifyMap.isEmpty()) return;
+        if (lastIdentifyMap.isEmpty()) {
+            identifyItems.clear();
+            identifySummaryLabel.setText("");
+            confirmCancelButton.setDisable(true);
+            return;
+        }
         boolean modeAll = isModeAll();
         int cancelable = 0, nonCancelable = 0;
         identifyItems.clear();
@@ -785,7 +794,7 @@ public class ShiwanM2CancelAssociationController {
         }
     }
 
-    /** 识别结果 Cell：✓/✗ 标题 + 详情描述，带颜色区分 */
+    /** 识别结果 Cell（设计 OL6SK：项内 gap4；失败行左侧红圆×；项间 #E5E7EB 分隔线） */
     private class IdentifyCell extends ListCell<IdentifyItem> {
         @Override
         protected void updateItem(IdentifyItem item, boolean empty) {
@@ -793,30 +802,67 @@ public class ShiwanM2CancelAssociationController {
             if (empty || item == null) { setGraphic(null); setText(null); return; }
 
             VBox card = new VBox(4);
-            card.setPadding(new Insets(8, 10, 8, 10));
 
             String typeName = codeTypeName(item.codeType);
             if (item.cancelable) {
-                card.setStyle("-fx-border-color: #16A34A transparent transparent transparent; " +
-                        "-fx-border-width: 3 0 0 0;");
                 Label title = new Label("✓ " + typeName + " " + item.code + "，可解除");
-                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#10B981;");
-                Label detail = new Label("   " + item.detailText());
-                detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280;");
+                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#10B981; " +
+                        "-fx-font-family:'Microsoft YaHei';");
+                Label detail = new Label(item.detailText());
+                detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';");
                 detail.setWrapText(true);
+                detail.setMaxWidth(Double.MAX_VALUE);
                 card.getChildren().addAll(title, detail);
             } else {
-                card.setStyle("-fx-border-color: #DC2626 transparent transparent transparent; " +
-                        "-fx-border-width: 3 0 0 0;");
-                Label title = new Label("✗ " + typeName + " " + item.code + "，不可解除");
-                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
-                Label detail = new Label("   " + item.detailText());
-                detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280;");
+                Region disc = new Region();
+                disc.setMinSize(20, 20);
+                disc.setPrefSize(20, 20);
+                disc.setStyle("-fx-background-color:#EF4444; -fx-background-radius:10;");
+                Label xMark = new Label("×");
+                xMark.setStyle("-fx-text-fill:white; -fx-font-size:12px; -fx-font-weight:bold;");
+                StackPane iconStack = new StackPane(disc, xMark);
+                StackPane.setAlignment(xMark, Pos.CENTER);
+                iconStack.setMinSize(20, 20);
+                iconStack.setMaxSize(20, 20);
+
+                Label title = new Label(typeName + " " + item.code + "，不可解除");
+                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#EF4444; " +
+                        "-fx-font-family:'Microsoft YaHei';");
+                HBox titleRow = new HBox(6, iconStack, title);
+                titleRow.setAlignment(Pos.CENTER_LEFT);
+                HBox.setHgrow(title, Priority.ALWAYS);
+
+                Label detail = new Label(item.detailText());
+                detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';");
                 detail.setWrapText(true);
-                card.getChildren().addAll(title, detail);
+                detail.setMaxWidth(Double.MAX_VALUE);
+                card.getChildren().addAll(titleRow, detail);
             }
 
-            setGraphic(card);
+            VBox root = new VBox(0);
+            root.getChildren().add(card);
+
+            ListView<IdentifyItem> lv = getListView();
+            int n = lv != null ? lv.getItems().size() : 0;
+            int idx = getIndex();
+            // 横线画在上一条底部，本条内容需与线拉开间距（与线上方 12px 对称）
+            if (idx > 0) {
+                card.setPadding(new Insets(12, 0, 0, 0));
+            }
+            if (idx >= 0 && n > 0 && idx < n - 1) {
+                HBox lineWrap = new HBox();
+                lineWrap.setPadding(new Insets(12, 0, 0, 0));
+                Region sep = new Region();
+                sep.setMinHeight(1);
+                sep.setPrefHeight(1);
+                sep.setMaxHeight(1);
+                sep.setStyle("-fx-background-color:#E5E7EB;");
+                HBox.setHgrow(sep, Priority.ALWAYS);
+                lineWrap.getChildren().add(sep);
+                root.getChildren().add(lineWrap);
+            }
+
+            setGraphic(root);
             setText(null);
         }
     }

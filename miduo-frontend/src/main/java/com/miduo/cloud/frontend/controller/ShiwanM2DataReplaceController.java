@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 石湾M2-数据替换控制器（主窗口内嵌页：布局与确认弹窗与 {@link ShiwanM2ReplaceController} 对齐，业务走真实接口）。
+ * 石湾M2-数据替换控制器（主窗口内嵌页，确认弹窗 {@link ShiwanM2ReplaceConfirmDialogController}，业务走 {@code POST /api/shiwan-m2/code/replace}）。
  */
 public class ShiwanM2DataReplaceController {
     private static volatile ShiwanM2DataReplaceController instance;
@@ -271,7 +271,7 @@ public class ShiwanM2DataReplaceController {
                 .saveAsync();
     }
 
-    /** 与 {@link ShiwanM2ReplaceController#executeReplace} 相同的结果卡片样式。 */
+    /** 在右侧结果区追加一条替换结果卡片。 */
     private void appendResultCard(boolean success, String oldCode, String newCode, String failMessage, String reason) {
         emptyResultLabel.setVisible(false);
         emptyResultLabel.setManaged(false);

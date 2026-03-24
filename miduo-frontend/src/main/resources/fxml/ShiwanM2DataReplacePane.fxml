@@ -2,7 +2,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<!-- 数据替换（主窗口内嵌，与 ShiwanM2ReplaceTab 布局一致） -->
+<!-- 数据替换（主窗口内嵌 Tab） -->
 <HBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2DataReplaceController"

@@ -814,6 +814,35 @@
     -fx-font-size: 15px;
 }
 
+/* 取消关联 · 识别结果列表（OL6SK：白底卡片内平铺，无内层灰框） */
+.sw2-identify-result-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-identify-result-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.sw2-identify-result-list .list-cell:filled:selected,
+.sw2-identify-result-list .list-cell:filled:selected:focused {
+    -fx-background-color: transparent;
+    -fx-text-fill: inherit;
+}
+
+/* 识别结果底部汇总行（#6B7280 14px） */
+.sw2-identify-summary {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6B7280;
+    -fx-font-family: "Microsoft YaHei";
+}
+
 .shiwan-m2-maint-btn-primary {
     -fx-background-color: #2563EB;
     -fx-text-fill: white;
