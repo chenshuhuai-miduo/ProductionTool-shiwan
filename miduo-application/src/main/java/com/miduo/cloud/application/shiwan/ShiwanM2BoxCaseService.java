@@ -1633,6 +1633,29 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
+     * 批次超时（仅盒码侧）- 将指定盒码在 CodeRelationUpload 中未关联箱码的记录置为未完成（Status=0）。
+     * 条件：BigSerialNumber 为空（尚未关联箱码）且 IsDel=0，不改动其他记录。
+     * @return 实际更新行数
+     */
+    public int markCodeRelationUploadUnfinishedByBoxCodes(List<String> boxCodes) {
+        if (boxCodes == null || boxCodes.isEmpty()) return 0;
+        try {
+            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            int updated = jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET Status = 0 WHERE MediumSerialNumber IN (" + placeholders + ") " +
+                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') AND IsDel = 0",
+                    boxCodes.toArray());
+            if (updated > 0) {
+                log.info("[批次超时] CodeRelationUpload 未关联记录置为未完成 {} 条，盒码：{}", updated, boxCodes);
+            }
+            return updated;
+        } catch (Exception e) {
+            log.error("[批次超时] 更新 CodeRelationUpload 未完成状态失败: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    /**
      * 热表落冷：将指定码从 CodePackageItemHot 移至 CodePackageItemCold。
      * 热表中不存在时仅记录警告，不抛异常，由调用方事务统一回滚。
      */
