@@ -613,6 +613,9 @@
                                                prefWidth="160" styleClass="text-field"/>
                             </HBox>
                             <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button text="保存本机配置"
+                                        styleClass="primary-button"
+                                        onAction="#onSaveDbConfig"/>
                                 <Button text="连接测试"
                                         styleClass="secondary-button"
                                         onAction="#onTestDbConnection"/>
@@ -676,6 +679,9 @@
                                                prefWidth="160" styleClass="text-field"/>
                             </HBox>
                             <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button text="保存1号机配置"
+                                        styleClass="primary-button"
+                                        onAction="#onSaveM1DbConfig"/>
                                 <Button text="连接测试"
                                         styleClass="secondary-button"
                                         onAction="#onTestM1DbConnection"/>
@@ -686,15 +692,6 @@
 
                             <!-- 隐藏的初始同步游标字段，保留供控制器注入 -->
                             <TextField fx:id="m1InitialSerialNoField" managed="false" visible="false"/>
-
-                            <HBox spacing="10">
-                                <Button text="保存本机配置"
-                                        styleClass="primary-button"
-                                        onAction="#onSaveDbConfig"/>
-                                <Button text="保存1号机配置"
-                                        styleClass="primary-button"
-                                        onAction="#onSaveM1DbConfig"/>
-                            </HBox>
                         </VBox>
                     </ScrollPane>
                 </Tab>
