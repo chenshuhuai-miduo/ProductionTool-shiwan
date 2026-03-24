@@ -4,11 +4,13 @@
 <?import javafx.scene.layout.*?>
 
 <!-- 数据查询 Tab -->
-<VBox xmlns="http://javafx.com/javafx/17"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2QueryController"
-      styleClass="sw2-tab-content" spacing="10"
-      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+<StackPane xmlns="http://javafx.com/javafx/17"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2QueryController"
+           maxWidth="Infinity" maxHeight="Infinity"
+           stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css">
+
+    <VBox styleClass="sw2-tab-content" spacing="10" maxWidth="Infinity" maxHeight="Infinity">
 
     <!-- 查询栏 -->
     <HBox styleClass="sw2-query-bar" spacing="10" alignment="CENTER_LEFT">
@@ -17,10 +19,10 @@
                    styleClass="sw2-query-input"
                    HBox.hgrow="ALWAYS"
                    onKeyPressed="#onInputKeyPressed"/>
-        <Button text="查询" styleClass="sw2-btn-primary"
+        <Button fx:id="queryButton" text="查询" styleClass="sw2-btn-primary"
                 onAction="#onQuery"
                 minHeight="40" prefHeight="40" style="-fx-padding:0 20px;"/>
-        <Button text="清空" styleClass="sw2-btn-outline"
+        <Button fx:id="clearButton" text="清空" styleClass="sw2-btn-outline"
                 onAction="#onClear"
                 minHeight="40" prefHeight="40" style="-fx-padding:0 14px;"/>
         <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
@@ -168,4 +170,14 @@
             </ScrollPane>
         </VBox>
     </HBox>
-</VBox>
+    </VBox>
+
+    <StackPane fx:id="queryLoadingOverlay" visible="false" managed="false"
+               styleClass="sw2-loading-overlay" maxWidth="Infinity" maxHeight="Infinity"
+               pickOnBounds="true">
+        <VBox alignment="CENTER" spacing="12">
+            <ProgressIndicator styleClass="sw2-loading-spinner"/>
+            <Label text="正在查询，请稍候…"/>
+        </VBox>
+    </StackPane>
+</StackPane>

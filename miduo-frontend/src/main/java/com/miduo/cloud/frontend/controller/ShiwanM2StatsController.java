@@ -25,6 +25,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -75,6 +76,11 @@ public class ShiwanM2StatsController implements Initializable {
     @FXML private Button upLastBtn;
     @FXML private TextField upPageField;
     @FXML private Label upPageTotalLabel;
+
+    @FXML private StackPane statsLoadingOverlay;
+
+    /** 并行请求（如首次进入同时拉生产汇总与上传统计）时叠加计数，全部结束后再关闭遮罩 */
+    private int statsLoadingDepth;
 
     private final ObservableList<UploadRow> pageData = FXCollections.observableArrayList();
     private int currentPage = 1;
@@ -229,6 +235,7 @@ public class ShiwanM2StatsController implements Initializable {
         String url = "/api/shiwan-m2/stats/production-summary?startDate=" + getDateText(startDate)
                 + "&endDate=" + getDateText(endDate)
                 + "&orderNo=" + encode(orderNoField.getText());
+        pushStatsLoading();
         HttpUtil.asyncGet(url, response -> {
             try {
                 ApiResult<Map<String, Object>> result = HttpUtil.parseJson(
@@ -244,8 +251,13 @@ public class ShiwanM2StatsController implements Initializable {
                 rejectNum.setText(String.valueOf(num(data.get("rejectCount"))));
             } catch (Exception ex) {
                 showWarn("统计解析失败");
+            } finally {
+                popStatsLoading();
             }
-        }, ex -> showWarn("统计查询异常：" + ex.getMessage()));
+        }, ex -> {
+            showWarn("统计查询异常：" + ex.getMessage());
+            popStatsLoading();
+        });
     }
 
     @FXML
@@ -295,6 +307,7 @@ public class ShiwanM2StatsController implements Initializable {
                 + "&status=" + encode(status)
                 + "&page=" + currentPage
                 + "&pageSize=" + pageSize;
+        pushStatsLoading();
         HttpUtil.asyncGet(url, response -> {
             try {
                 ApiResult<Map<String, Object>> result = HttpUtil.parseJson(
@@ -323,8 +336,29 @@ public class ShiwanM2StatsController implements Initializable {
                 upLastBtn.setDisable(currentPage >= totalPages);
             } catch (Exception ex) {
                 showWarn("上传统计解析失败");
+            } finally {
+                popStatsLoading();
             }
-        }, ex -> showWarn("上传统计查询异常：" + ex.getMessage()));
+        }, ex -> {
+            showWarn("上传统计查询异常：" + ex.getMessage());
+            popStatsLoading();
+        });
+    }
+
+    private void pushStatsLoading() {
+        statsLoadingDepth++;
+        if (statsLoadingDepth == 1 && statsLoadingOverlay != null) {
+            statsLoadingOverlay.setVisible(true);
+            statsLoadingOverlay.setManaged(true);
+        }
+    }
+
+    private void popStatsLoading() {
+        statsLoadingDepth = Math.max(0, statsLoadingDepth - 1);
+        if (statsLoadingDepth == 0 && statsLoadingOverlay != null) {
+            statsLoadingOverlay.setVisible(false);
+            statsLoadingOverlay.setManaged(false);
+        }
     }
 
     @FXML

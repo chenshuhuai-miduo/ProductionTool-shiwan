@@ -35,7 +35,7 @@
         <HBox spacing="12" alignment="CENTER_LEFT">
             <TextField fx:id="palletCodeField" promptText="请输入垛码"
                        prefWidth="300" minWidth="300" maxWidth="300"
-                       style="-fx-font-size:16px; -fx-background-color:#F9FAFB;
+                       style="-fx-font-size:16px; -fx-background-color:white;
                               -fx-border-color:#D1D5DB; -fx-border-width:1;
                               -fx-border-radius:8; -fx-background-radius:8;
                               -fx-min-height:40; -fx-pref-height:40; -fx-padding:0 16;

@@ -15,6 +15,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.net.URLEncoder;
@@ -44,7 +45,10 @@ public class ShiwanM2QueryController implements Initializable {
     // ==================== FXML 注入 ====================
 
     @FXML private TextField queryInput;
+    @FXML private Button    queryButton;
+    @FXML private Button    clearButton;
     @FXML private Label     countLabel;
+    @FXML private StackPane queryLoadingOverlay;
 
     // 左侧
     @FXML private VBox                                emptyPane;
@@ -72,6 +76,9 @@ public class ShiwanM2QueryController implements Initializable {
 
     /** 当前查询的输入码，用于红色高亮 */
     private String inputCode = "";
+
+    /** 并发查询（连扫等）时叠加，全部返回后再关闭遮罩 */
+    private int queryLoadingDepth;
 
     // ==================== 初始化 ====================
 
@@ -186,6 +193,7 @@ public class ShiwanM2QueryController implements Initializable {
 
     private void doQueryAsync(String code) {
         setStatus("loading", "正在查询...");
+        pushQueryLoading();
         String url = "/api/shiwan-m2/code/query?code=" + encodeParam(code);
         HttpUtil.asyncGet(url, response -> {
             try {
@@ -224,12 +232,53 @@ public class ShiwanM2QueryController implements Initializable {
                 setStatus("err", "查询服务异常");
                 countLabel.setText("");
                 showEmpty();
+            } finally {
+                popQueryLoading();
             }
         }, ex -> {
             setStatus("err", "查询服务异常");
             countLabel.setText("");
             showEmpty();
+            popQueryLoading();
         });
+    }
+
+    private void pushQueryLoading() {
+        queryLoadingDepth++;
+        if (queryLoadingDepth == 1) {
+            if (queryLoadingOverlay != null) {
+                queryLoadingOverlay.setVisible(true);
+                queryLoadingOverlay.setManaged(true);
+            }
+            if (queryButton != null) {
+                queryButton.setDisable(true);
+            }
+            if (queryInput != null) {
+                queryInput.setDisable(true);
+            }
+            if (clearButton != null) {
+                clearButton.setDisable(true);
+            }
+        }
+    }
+
+    private void popQueryLoading() {
+        queryLoadingDepth = Math.max(0, queryLoadingDepth - 1);
+        if (queryLoadingDepth == 0) {
+            if (queryLoadingOverlay != null) {
+                queryLoadingOverlay.setVisible(false);
+                queryLoadingOverlay.setManaged(false);
+            }
+            if (queryButton != null) {
+                queryButton.setDisable(false);
+            }
+            if (queryInput != null) {
+                queryInput.setDisable(false);
+            }
+            if (clearButton != null) {
+                clearButton.setDisable(false);
+            }
+        }
     }
 
     // ==================== 视图切换 ====================

@@ -922,6 +922,24 @@
     -fx-spacing: 10px;
 }
 
+/* 查询/统计等异步请求时的整页遮罩 */
+.sw2-loading-overlay {
+    -fx-background-color: rgba(255, 255, 255, 0.72);
+    -fx-alignment: center;
+}
+
+.sw2-loading-overlay .label {
+    -fx-font-size: 15px;
+    -fx-text-fill: #4B5563;
+}
+
+.sw2-loading-spinner {
+    -fx-pref-width: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-width: 44px;
+    -fx-max-height: 44px;
+}
+
 /* ---- 工具栏 ---- */
 .sw2-toolbar {
     -fx-background-color: transparent;
