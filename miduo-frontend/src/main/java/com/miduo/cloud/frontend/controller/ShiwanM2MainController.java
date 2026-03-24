@@ -308,8 +308,19 @@ public class ShiwanM2MainController implements Initializable {
         Platform.runLater(() -> {
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
+            autoConnectConfiguredDevicesOnStartup();
         });
         loadSpecFromSettings();
+    }
+
+    /**
+     * 主界面打开后按系统设置自动连接已启用 IO 设备。
+     * 排除盒码/箱码采集相机（由后端 TCP 采集服务管理）。
+     */
+    private void autoConnectConfiguredDevicesOnStartup() {
+        String now = LocalDateTime.now().format(TIME_FMT);
+        addOpLog(now + "  正在按系统设置自动连接IO设备...", LogType.INFO);
+        connectAllDevices();
     }
 
     /**
@@ -1604,8 +1615,6 @@ public class ShiwanM2MainController implements Initializable {
                 .content("开始采集 - 产品：" + product + "，生产单：" + orderNo
                         + "，规格：每箱" + n + "盒/每垛" + m + "箱")
                 .saveAsync();
-        palletCount = 0;
-        palletCountLabel.setText("0");
         // 非恢复模式：重置计数
         if (pendingRestoreOrderNo == null || !pendingRestoreOrderNo.equals(orderNo)) {
             currentCases = 0;
@@ -1724,6 +1733,10 @@ public class ShiwanM2MainController implements Initializable {
                 // 逐个发起连接
                 for (IoDeviceDTO device : targetDevices) {
                     try {
+                        // 已连接设备保持现状，避免重复重连导致短暂抖动。
+                        if (DeviceConnectionManager.getInstance().isConnected(device.getId())) {
+                            continue;
+                        }
                         DeviceConnectionManager.getInstance().startConnection(device);
                     } catch (Exception e) {
                         final String errMsg = device.getDeviceName() + " 连接失败：" + e.getMessage();
