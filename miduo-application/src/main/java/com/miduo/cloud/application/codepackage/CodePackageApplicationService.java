@@ -559,6 +559,7 @@ public class CodePackageApplicationService {
 
     /**
      * 读取系统设置，返回指定码包类型要求的位数；<= 0 表示不限。
+     * packageType: 1=盖外码小标(smallCodeDigits), 2=盒外码中标(mediumCodeDigits), 3=箱外码大标(largeCodeDigits)
      */
     private int resolveRequiredDigits(Integer packageType) {
         ShiwanM2SettingsDto settings = ShiwanM2SettingsFileLoader.load();
@@ -570,7 +571,9 @@ public class CodePackageApplicationService {
             return -1;
         }
         switch (packageType) {
-            case 2: return cfg.getSmallCodeDigits();
+            case 1: return cfg.getSmallCodeDigits();
+            case 2: return cfg.getMediumCodeDigits();
+            case 3: return cfg.getLargeCodeDigits();
             default: return -1;
         }
     }
