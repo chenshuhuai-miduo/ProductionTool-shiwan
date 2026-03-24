@@ -33,7 +33,7 @@
                            HBox.hgrow="ALWAYS"
                            promptText="请输入或扫描盒码、箱码、垛码（或瓶码）"
                            styleClass="shiwan-m2-maint-input"/>
-                <Button text="加入列表" styleClass="shiwan-m2-maint-btn-primary"
+                <Button fx:id="addToListButton" text="加入列表" styleClass="shiwan-m2-maint-btn-primary"
                         prefWidth="100" onAction="#onAddToList"/>
             </HBox>
         </VBox>

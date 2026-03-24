@@ -126,7 +126,8 @@
 
         <!-- 上传统计表格 + 分页栏 -->
         <VBox styleClass="sw2-table-card" VBox.vgrow="ALWAYS">
-            <TableView fx:id="uploadTable" VBox.vgrow="ALWAYS" styleClass="sw2-table">
+            <TableView fx:id="uploadTable" VBox.vgrow="ALWAYS"
+                       styleClass="sw2-table sw2-upload-stats-table">
                 <columns>
                     <TableColumn fx:id="upColPallet"  text="垛码"     prefWidth="160" minWidth="120"/>
                     <TableColumn fx:id="upColCases"   text="箱数"     prefWidth="80"  minWidth="70"/>

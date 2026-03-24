@@ -421,7 +421,7 @@ public class ShiwanM2TcpCaptureService {
         BoxBatchEntry  boxBatch;
         CaseBatchEntry caseBatch;
         synchronized (matchLock) {
-            // 先做“指定剔除延迟内未等到同批次”的超时剔除，再尝试正常批次匹配
+            // 先做“双相机等待超时内未等到同批次”的超时剔除，再尝试正常批次匹配
             expireAndRejectTimeoutBatchesLocked();
             BoxBatchEntry  peekBox  = boxBatchQueue.peek();
             CaseBatchEntry peekCase = caseBatchQueue.peek();
@@ -465,7 +465,7 @@ public class ShiwanM2TcpCaptureService {
 
     /** 在批次匹配锁内执行超时剔除（仅剔除队列头，逐步推进）。 */
     private void expireAndRejectTimeoutBatchesLocked() {
-        long timeoutMs = resolveRejectDelayMs();
+        long timeoutMs = resolveMatchWaitTimeoutMs();
         if (timeoutMs <= 0) return;
         long now = System.currentTimeMillis();
 
@@ -509,7 +509,7 @@ public class ShiwanM2TcpCaptureService {
 
     /** 盒码批次超时（未等到同批次箱码）→ 整批剔除。 */
     private void handleBoxBatchTimeoutReject(BoxBatchEntry boxBatch) {
-        String reason = "箱相机未在指定剔除延迟时间内采集到箱码，剔除整箱";
+        String reason = "箱相机未在双相机等待超时时间内采集到箱码，剔除整箱";
         List<String> boxCodes = boxBatch.codes == null
                 ? Collections.emptyList()
                 : boxBatch.codes.stream().map(i -> i.code).filter(Objects::nonNull).collect(Collectors.toList());
@@ -533,7 +533,7 @@ public class ShiwanM2TcpCaptureService {
 
     /** 箱码批次超时（未等到同批次盒码）→ 整批剔除。 */
     private void handleCaseBatchTimeoutReject(CaseBatchEntry caseBatch) {
-        String reason = "盒相机未在指定剔除延迟时间内采集到盒码，剔除整箱";
+        String reason = "盒相机未在双相机等待超时时间内采集到盒码，剔除整箱";
         String caseCode = caseBatch.code != null ? caseBatch.code : "";
 
         // 落库：按箱码记录剔除条目
@@ -547,11 +547,11 @@ public class ShiwanM2TcpCaptureService {
         log.warn("[批{}] 超时剔除：箱码批次未匹配到盒码，caseCode={}", caseBatch.batchNo, caseCode);
     }
 
-    /** 读取系统设置中的“触发剔除延时（ms）”。 */
-    private long resolveRejectDelayMs() {
+    /** 读取系统设置中的双相机批次匹配等待超时（ms），默认 3000；0 表示禁用。 */
+    private long resolveMatchWaitTimeoutMs() {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
-        if (cfg == null || cfg.getAlarm() == null) return 0L;
-        int ms = cfg.getAlarm().getRejectTriggerDelayMs();
+        if (cfg == null || cfg.getBoxCaseCameraCapture() == null) return 3000L;
+        int ms = cfg.getBoxCaseCameraCapture().getMatchWaitTimeoutMs();
         return Math.max(ms, 0);
     }
 

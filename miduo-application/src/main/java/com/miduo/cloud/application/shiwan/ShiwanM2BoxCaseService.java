@@ -1782,7 +1782,7 @@ public class ShiwanM2BoxCaseService {
         // ② 日志：开始上传（灰色）+ 推送垛状态事件（上传中）
         String logTime = LocalDateTime.now().format(LOG_TIME_FMT);
         UploadLogBus.log(
-                logTime + "  垛码 " + palletCode + " " + boxCount + "箱 开始上传",
+                formatUploadLogLine(logTime, palletCode, boxCount, "开始上传"),
                 UploadLogBus.Color.GRAY);
         UploadLogBus.firePalletEvent(palletCode, boxCount,
                 UploadLogBus.PalletUploadStatus.UPLOADING, null);
@@ -1834,7 +1834,7 @@ public class ShiwanM2BoxCaseService {
             // ③ 日志：上传中（蓝色）
             logTime = LocalDateTime.now().format(LOG_TIME_FMT);
             UploadLogBus.log(
-                    logTime + "  垛码 " + palletCode + " " + boxCount + "箱 上传中...",
+                    formatUploadLogLine(logTime, palletCode, boxCount, "上传中…"),
                     UploadLogBus.Color.BLUE);
 
             // ④ 5 分钟后轮询上传结果
@@ -1854,7 +1854,8 @@ public class ShiwanM2BoxCaseService {
             }
             logTime = LocalDateTime.now().format(LOG_TIME_FMT);
             UploadLogBus.log(
-                    logTime + "  垛码 " + palletCode + " " + boxCount + "箱 上传失败：" + e.getMessage(),
+                    formatUploadLogLine(logTime, palletCode, boxCount,
+                            "上传失败（" + (e.getMessage() != null ? e.getMessage() : "未知错误") + "）"),
                     UploadLogBus.Color.RED);
         }
     }
@@ -1907,7 +1908,7 @@ public class ShiwanM2BoxCaseService {
                         palletCode);
                 log.info("[垛标结果查询] 垛 {} 上传成功", palletCode);
                 UploadLogBus.log(
-                        logTime + "  垛码 " + palletCode + " " + boxCount + "箱 上传成功",
+                        formatUploadLogLine(logTime, palletCode, boxCount, "上传成功"),
                         UploadLogBus.Color.GREEN);
                 UploadLogBus.firePalletEvent(palletCode, boxCount,
                         UploadLogBus.PalletUploadStatus.SUCCESS, null);
@@ -1917,7 +1918,8 @@ public class ShiwanM2BoxCaseService {
                         returnMsg, palletCode);
                 log.warn("[垛标结果查询] 垛 {} 上传失败: {}", palletCode, returnMsg);
                 UploadLogBus.log(
-                        logTime + "  垛码 " + palletCode + " " + boxCount + "箱 上传失败：" + returnMsg,
+                        formatUploadLogLine(logTime, palletCode, boxCount,
+                                "上传失败（" + (returnMsg != null && !returnMsg.isEmpty() ? returnMsg : "未知错误") + "）"),
                         UploadLogBus.Color.RED);
                 UploadLogBus.firePalletEvent(palletCode, boxCount,
                         UploadLogBus.PalletUploadStatus.FAILED, returnMsg);
@@ -2019,6 +2021,11 @@ public class ShiwanM2BoxCaseService {
             }
         });
         return pending.size();
+    }
+
+    /** 与产品文档 P02-08 一致：HH:mm:ss 垛码 xxx，箱数 n，状态… */
+    private static String formatUploadLogLine(String logTime, String palletCode, int boxCount, String statusTail) {
+        return logTime + " 垛码 " + palletCode + "，箱数 " + boxCount + "，" + statusTail;
     }
 
     private static String palletSign(String time, String nonce, String secret, Map<String, Object> data) throws Exception {

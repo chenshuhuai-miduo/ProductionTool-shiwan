@@ -50,6 +50,7 @@ public class ShiwanM2CancelAssociationController {
 
     // ===== FXML 注入 =====
     @FXML private TextField  codeInputField;
+    @FXML private Button     addToListButton;
     @FXML private ListView<PendingItem>       pendingList;
     @FXML private Button      scopeOneBtn;
     @FXML private Button      scopeAllBtn;
@@ -62,6 +63,9 @@ public class ShiwanM2CancelAssociationController {
     private boolean modeAll = false;
 
     // ===== 内部状态 =====
+    /** 加入列表请求进行中，防止连点或并发请求重复入列 */
+    private volatile boolean addToListInProgress;
+
     /** 待取消列表（保持插入顺序）key=码值 */
     private final LinkedHashMap<String, PendingItem>  pendingMap     = new LinkedHashMap<>();
     /** 最近一次识别结果 key=码值 */
@@ -210,13 +214,26 @@ public class ShiwanM2CancelAssociationController {
             codeInputField.clear();
             return;
         }
-        // 异步查询码类型（同时处理瓶码自动转换）
+        if (addToListInProgress) {
+            return;
+        }
+        addToListInProgress = true;
+        if (addToListButton != null) {
+            addToListButton.setDisable(true);
+        }
         codeInputField.setDisable(true);
         new Thread(() -> {
             Map<String, Object> checkResult = doCheckCancel(raw);
             Platform.runLater(() -> {
-                codeInputField.setDisable(false);
-                handleAddResult(raw, checkResult);
+                try {
+                    handleAddResult(raw, checkResult);
+                } finally {
+                    codeInputField.setDisable(false);
+                    if (addToListButton != null) {
+                        addToListButton.setDisable(false);
+                    }
+                    addToListInProgress = false;
+                }
             });
         }, "shiwan-m2-check").start();
     }
@@ -266,6 +283,9 @@ public class ShiwanM2CancelAssociationController {
     }
 
     private void addPending(String code, String typeName) {
+        if (pendingMap.containsKey(code)) {
+            return;
+        }
         PendingItem item = new PendingItem(code, typeName);
         pendingMap.put(code, item);
         pendingItems.add(item);

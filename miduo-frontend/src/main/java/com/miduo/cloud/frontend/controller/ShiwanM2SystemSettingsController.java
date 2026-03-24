@@ -121,6 +121,9 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField rejectTriggerDelayField;
     @FXML private TextField rejectRetractTimeField;
 
+    // ==================== 设备 - 盒箱相机采集间隔 ====================
+    @FXML private TextField boxCaseCameraMatchWaitTimeoutField;
+
     // ==================== 设备 - 手动按钮信号 ====================
     @FXML private TextField alarmOpenHexField;
     @FXML private TextField alarmCloseHexField;
@@ -278,6 +281,11 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (s.getAlarm() != null) {
             if (rejectTriggerDelayField != null) rejectTriggerDelayField.setText(String.valueOf(s.getAlarm().getRejectTriggerDelayMs()));
             if (rejectRetractTimeField  != null) rejectRetractTimeField.setText(String.valueOf(s.getAlarm().getRejectRetractTimeMs()));
+        }
+        if (boxCaseCameraMatchWaitTimeoutField != null) {
+            ShiwanM2Settings.BoxCaseCameraCaptureConfig cap = s.getBoxCaseCameraCapture();
+            int ms = cap != null ? cap.getMatchWaitTimeoutMs() : 3000;
+            boxCaseCameraMatchWaitTimeoutField.setText(String.valueOf(ms));
         }
     }
 
@@ -958,6 +966,33 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
         saveSettings(s);
         showSuccess("设备信号配置", "设备信号配置已保存。");
+    }
+
+    @FXML
+    private void onSaveBoxCaseCameraCaptureConfig() {
+        if (boxCaseCameraMatchWaitTimeoutField == null
+                || boxCaseCameraMatchWaitTimeoutField.getText() == null
+                || boxCaseCameraMatchWaitTimeoutField.getText().trim().isEmpty()) {
+            showError("输入有误", "请填写双相机等待超时（毫秒），填 0 表示不启用超时剔除。");
+            return;
+        }
+        if (!isValidNumber(boxCaseCameraMatchWaitTimeoutField.getText())) {
+            showError("输入有误", "双相机等待超时必须为非负整数（毫秒）。");
+            return;
+        }
+        ShiwanM2Settings s = ShiwanM2SettingsStore.get();
+        if (s.getBoxCaseCameraCapture() == null) {
+            s.setBoxCaseCameraCapture(new ShiwanM2Settings.BoxCaseCameraCaptureConfig());
+        }
+        try {
+            s.getBoxCaseCameraCapture().setMatchWaitTimeoutMs(
+                    Integer.parseInt(boxCaseCameraMatchWaitTimeoutField.getText().trim()));
+        } catch (NumberFormatException e) {
+            showError("输入有误", "双相机等待超时必须为整数（毫秒）。");
+            return;
+        }
+        saveSettings(s);
+        showSuccess("盒箱相机采集间隔", "已保存。\n双相机等待超时：" + boxCaseCameraMatchWaitTimeoutField.getText().trim() + " ms");
     }
 
     // ==================== 连接 Tab 事件处理 ====================

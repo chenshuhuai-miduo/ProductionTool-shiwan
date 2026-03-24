@@ -124,6 +124,11 @@ public class ShiwanM2SettingsDto {
     public AlarmConfig getAlarm() { return alarm; }
     public void setAlarm(AlarmConfig alarm) { this.alarm = alarm; }
 
+    /** 盒箱相机采集间隔 / 双相机等待超时（JSON 键 boxCaseCameraCapture） */
+    private BoxCaseCameraCapture boxCaseCameraCapture;
+    public BoxCaseCameraCapture getBoxCaseCameraCapture() { return boxCaseCameraCapture; }
+    public void setBoxCaseCameraCapture(BoxCaseCameraCapture boxCaseCameraCapture) { this.boxCaseCameraCapture = boxCaseCameraCapture; }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Upload {
@@ -137,12 +142,20 @@ public class ShiwanM2SettingsDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AlarmConfig {
         /**
-         * 触发剔除延时（ms）：批次入队后超过此时间未等到另一相机的同批次数据，
-         * 则将整批剔除。0 表示禁用超时剔除。
+         * 触发剔除延时（ms）：检测到需要剔除后，再延迟该时间发送剔除信号（机械节拍）。0 表示立即发送。
          */
         private int rejectTriggerDelayMs = 0;
         public int getRejectTriggerDelayMs() { return rejectTriggerDelayMs; }
         public void setRejectTriggerDelayMs(int rejectTriggerDelayMs) { this.rejectTriggerDelayMs = rejectTriggerDelayMs; }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class BoxCaseCameraCapture {
+        /** 双相机批次匹配等待超时（ms），默认 3000；0 表示禁用超时剔除 */
+        private int matchWaitTimeoutMs = 3000;
+        public int getMatchWaitTimeoutMs() { return matchWaitTimeoutMs; }
+        public void setMatchWaitTimeoutMs(int matchWaitTimeoutMs) { this.matchWaitTimeoutMs = matchWaitTimeoutMs; }
     }
 
     /** 接口配置（后端读 shiwan-m2-settings.json 中的 api 节点，用于产品同步等） */

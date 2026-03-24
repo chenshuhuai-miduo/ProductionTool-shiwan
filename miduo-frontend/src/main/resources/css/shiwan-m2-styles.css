@@ -453,6 +453,11 @@
     -fx-text-fill: #374151;
 }
 
+/* 数据接收区 - 上传中（蓝色，与 P02-08 一致） */
+.log-cell-upload-blue {
+    -fx-text-fill: #2563EB;
+}
+
 /* ============================================================
    右侧面板 - 单位实时统计
    ============================================================ */
@@ -984,6 +989,18 @@
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
     -fx-background-insets: 0;
+}
+
+/* 上传统计 TableView：列宽为 CONSTRAINED，隐藏横向滚动条，长文案依赖单元格内换行 */
+.sw2-upload-stats-table .scroll-bar:horizontal,
+.sw2-upload-stats-table .scroll-bar:horizontal .track,
+.sw2-upload-stats-table .scroll-bar:horizontal .thumb,
+.sw2-upload-stats-table .scroll-bar:horizontal .increment-button,
+.sw2-upload-stats-table .scroll-bar:horizontal .decrement-button {
+    -fx-max-height: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    visibility: hidden;
 }
 
 .sw2-table .column-header {
@@ -1675,5 +1692,64 @@
 }
 .sw2-wrap-table .table-row-cell:selected .table-cell {
     -fx-text-fill: #1F2937;
+}
+
+/* =============================================================================
+ * 生产统计 - 上传统计 TableView（置于文件末尾，压过 base-styles 中 .table-view .table-cell 与 Modena）
+ * 无竖向网格线；仅水平分隔；点击不保留选中底色（状态列仍由内联 setStyle 着色）
+ * ============================================================================= */
+.table-view.sw2-upload-stats-table {
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-view.sw2-upload-stats-table .column-header,
+.table-view.sw2-upload-stats-table .column-header-background,
+.table-view.sw2-upload-stats-table .nested-column-header {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.table-view.sw2-upload-stats-table .table-cell,
+.table-view.sw2-upload-stats-table .table-cell:empty,
+.table-view.sw2-upload-stats-table .table-cell:filled {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-background-color: white;
+}
+
+.table-view.sw2-upload-stats-table .table-row-cell,
+.table-view.sw2-upload-stats-table .table-row-cell:odd,
+.table-view.sw2-upload-stats-table .table-row-cell:even,
+.table-view.sw2-upload-stats-table .table-row-cell:empty,
+.table-view.sw2-upload-stats-table .table-row-cell:filled {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+}
+
+.table-view.sw2-upload-stats-table .table-row-cell:hover,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:hover,
+.table-view.sw2-upload-stats-table .table-row-cell:odd:hover {
+    -fx-background-color: white;
+}
+
+.table-view.sw2-upload-stats-table .table-row-cell:selected,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:selected,
+.table-view.sw2-upload-stats-table .table-row-cell:focused,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:focused,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:focused:selected,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:selected:focused {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+}
+
+.table-view.sw2-upload-stats-table .table-row-cell:selected .table-cell,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:selected .table-cell,
+.table-view.sw2-upload-stats-table .table-row-cell:focused .table-cell,
+.table-view.sw2-upload-stats-table .table-row-cell:filled:focused .table-cell {
+    -fx-background-color: white;
+    -fx-text-fill: #374151;
+    -fx-font-weight: normal;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
 }
 

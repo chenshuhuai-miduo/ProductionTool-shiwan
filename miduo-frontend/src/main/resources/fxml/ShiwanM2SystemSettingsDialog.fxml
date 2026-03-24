@@ -511,6 +511,30 @@
                                         onAction="#onSaveDeviceSignalConfig"/>
                             </HBox>
 
+                            <!-- 盒箱相机采集间隔 -->
+                            <Label text="盒箱相机采集间隔"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #333333;
+                                          -fx-font-family: 'Microsoft YaHei';"/>
+                            <Separator style="-fx-background-color: #E5E7EB;"/>
+
+                            <HBox spacing="16" alignment="CENTER_LEFT">
+                                <Label text="双相机等待超时（ms）："
+                                       minWidth="160"
+                                       style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"/>
+                                <TextField fx:id="boxCaseCameraMatchWaitTimeoutField"
+                                           promptText="3000"
+                                           prefWidth="120"
+                                           styleClass="text-field"/>
+                                <Label text="一侧收到批数据后，等待另一侧同批号的最长时间；0 表示不启用超时剔除"
+                                       style="-fx-font-size: 12px; -fx-text-fill: #9CA3AF; -fx-font-family: 'Microsoft YaHei';"/>
+                            </HBox>
+
+                            <HBox>
+                                <Button text="保存"
+                                        styleClass="primary-button"
+                                        onAction="#onSaveBoxCaseCameraCaptureConfig"/>
+                            </HBox>
+
                             <!-- 隐藏的信号字段（保留供控制器注入，不在界面显示） -->
                             <VBox managed="false" visible="false">
                                 <TextField fx:id="cmdAllOffField"/>

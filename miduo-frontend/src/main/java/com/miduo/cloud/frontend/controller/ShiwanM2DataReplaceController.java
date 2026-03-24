@@ -7,37 +7,33 @@ import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.FxDialog;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.stage.Window;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
 
 /**
- * 石湾M2-数据替换控制器
+ * 石湾M2-数据替换控制器（主窗口内嵌页：布局与确认弹窗与 {@link ShiwanM2ReplaceController} 对齐，业务走真实接口）。
  */
 public class ShiwanM2DataReplaceController {
     private static volatile ShiwanM2DataReplaceController instance;
@@ -46,49 +42,47 @@ public class ShiwanM2DataReplaceController {
         return instance;
     }
 
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @FXML
-    private TextField originalCodeField;
-    @FXML
-    private TextField newCodeField;
-    @FXML
-    private TextArea reasonTextArea;
-    @FXML
-    private ListView<String> replaceResultList;
-    @FXML
-    private Label replaceStatusLabel;
+    @FXML private TextField origCodeField;
+    @FXML private TextField newCodeField;
+    @FXML private TextArea  reasonField;
 
-    private final ObservableList<String> replaceResults = FXCollections.observableArrayList();
+    @FXML private ScrollPane resultScrollPane;
+    @FXML private VBox       resultContainer;
+    @FXML private Label      emptyResultLabel;
+
     private TextField lastFocusedCodeField;
 
     @FXML
     public void initialize() {
         instance = this;
-        replaceResultList.setItems(replaceResults);
-        replaceResultList.setPlaceholder(new Label("暂无替换记录"));
-        replaceStatusLabel.setText("请填写原码和新码后执行替换");
         bindFocusTracking();
+
+        origCodeField.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.ENTER) newCodeField.requestFocus();
+        });
+        newCodeField.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.ENTER) onConfirmReplace();
+        });
     }
 
-    /**
-     * 扫码枪输入入口：先填原码，再填新码；两者都有时覆盖新码。
-     */
+    /** 扫码枪：先填原码，再填新码；两者都有时覆盖新码。 */
     public void onScanCode(String code) {
         String c = code == null ? "" : code.trim();
         if (c.isEmpty()) return;
         Platform.runLater(() -> {
-            if (originalCodeField == null || newCodeField == null) return;
+            if (origCodeField == null || newCodeField == null) return;
             TextField target = resolveTargetCodeField();
             if (target != null) {
                 target.setText(c);
                 return;
             }
 
-            String oldVal = originalCodeField.getText() == null ? "" : originalCodeField.getText().trim();
+            String oldVal = origCodeField.getText() == null ? "" : origCodeField.getText().trim();
             String newVal = newCodeField.getText() == null ? "" : newCodeField.getText().trim();
             if (oldVal.isEmpty()) {
-                originalCodeField.setText(c);
+                origCodeField.setText(c);
                 newCodeField.requestFocus();
             } else if (newVal.isEmpty()) {
                 newCodeField.setText(c);
@@ -99,9 +93,9 @@ public class ShiwanM2DataReplaceController {
     }
 
     private void bindFocusTracking() {
-        originalCodeField.focusedProperty().addListener((obs, oldV, focused) -> {
+        origCodeField.focusedProperty().addListener((obs, oldV, focused) -> {
             if (Boolean.TRUE.equals(focused)) {
-                lastFocusedCodeField = originalCodeField;
+                lastFocusedCodeField = origCodeField;
             }
         });
         newCodeField.focusedProperty().addListener((obs, oldV, focused) -> {
@@ -112,78 +106,107 @@ public class ShiwanM2DataReplaceController {
     }
 
     private TextField resolveTargetCodeField() {
-        if (originalCodeField != null
-                && originalCodeField.getScene() != null
-                && originalCodeField.getScene().getFocusOwner() instanceof Node) {
-            Node focusOwner = originalCodeField.getScene().getFocusOwner();
-            if (focusOwner == originalCodeField || originalCodeField.isFocused()) {
-                return originalCodeField;
+        if (origCodeField != null
+                && origCodeField.getScene() != null
+                && origCodeField.getScene().getFocusOwner() instanceof Node) {
+            Node focusOwner = origCodeField.getScene().getFocusOwner();
+            if (focusOwner == origCodeField || origCodeField.isFocused()) {
+                return origCodeField;
             }
             if (focusOwner == newCodeField || newCodeField.isFocused()) {
                 return newCodeField;
             }
         }
-        if (lastFocusedCodeField == originalCodeField || lastFocusedCodeField == newCodeField) {
+        if (lastFocusedCodeField == origCodeField || lastFocusedCodeField == newCodeField) {
             return lastFocusedCodeField;
         }
         return null;
     }
 
     @FXML
+    private void onOrigCodeHelp() {
+        FxHelpDialog.show(
+                replaceDialogOwner(),
+                "原码说明",
+                "- **原码**：请输入需要替换的原码，该码必须已在系统中存在关联关系"
+        );
+    }
+
+    @FXML
+    private void onNewCodeHelp() {
+        FxHelpDialog.show(
+                replaceDialogOwner(),
+                "新码说明",
+                "- **层级一致**：新码必须与原码属于同一层级（瓶→瓶、盒→盒、箱→箱）",
+                "- **码包范围**：新码必须在已导入的对应层级码包范围内",
+                "- **未被使用**：新码不能已存在关联关系（系统中无该码的任何关联）",
+                "- **不能相同**：新码不能与原码相同"
+        );
+    }
+
+    @FXML
     private void onClearReplaceForm() {
-        originalCodeField.clear();
+        origCodeField.clear();
         newCodeField.clear();
-        reasonTextArea.clear();
-        replaceStatusLabel.setText("表单已清空");
+        reasonField.clear();
     }
 
     @FXML
     private void onConfirmReplace() {
-        String oldCode = originalCodeField.getText() == null ? "" : originalCodeField.getText().trim();
+        String oldCode = origCodeField.getText() == null ? "" : origCodeField.getText().trim();
         String newCode = newCodeField.getText() == null ? "" : newCodeField.getText().trim();
-        String reason = reasonTextArea.getText() == null ? "" : reasonTextArea.getText().trim();
+        String reason  = reasonField.getText() == null ? "" : reasonField.getText().trim();
 
         if (oldCode.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请输入原码");
+            FxDialog.warn(replaceDialogOwner(), "提示", "请输入原码，原码不能为空。");
+            origCodeField.requestFocus();
             return;
         }
         if (newCode.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "提示", "请输入新码");
+            FxDialog.warn(replaceDialogOwner(), "提示", "请输入新码，新码不能为空。");
+            newCodeField.requestFocus();
             return;
         }
         if (oldCode.equals(newCode)) {
-            showAlert(Alert.AlertType.WARNING, "提示", "原码和新码不能相同");
+            FxDialog.warn(replaceDialogOwner(), "提示", "原码与新码不能相同，请重新输入。");
             return;
         }
 
-        // 直接弹出确认对话框，云端接口负责判断是否允许替换
-        final String finalOldCode = oldCode;
-        final String finalNewCode = newCode;
-        final String finalReason  = reason;
-        if (!showReplacePasswordConfirm(finalOldCode, finalNewCode, finalReason)) {
+        if (!openReplaceConfirmDialog(oldCode, newCode, reason)) {
             return;
         }
-        replaceStatusLabel.setText("替换请求处理中...");
-        doReplaceAsync(finalOldCode, finalNewCode, finalReason);
+        doReplaceAsync(oldCode, newCode, reason);
     }
 
-    /**
-     * 查询该码是否已上传。复用取消关联的 check-cancel 接口获取 isUploaded 字段。
-     * @return true=已上传；false=未上传或查询失败（失败时保守放行，由后端再做校验）
-     */
-    private boolean checkCodeUploaded(String code) {
+    /** 与 Replace Tab 相同的 FXML 确认弹窗；密码来自系统设置。 */
+    private boolean openReplaceConfirmDialog(String orig, String newCode, String reason) {
+        ShiwanM2Settings settings = ShiwanM2SettingsStore.load();
+        String configPassword = settings.getSystemSettingsPassword();
+        if (configPassword == null || configPassword.isEmpty()) {
+            configPassword = "123456";
+        }
         try {
-            String enc = java.net.URLEncoder.encode(code, "UTF-8");
-            String resp = HttpUtil.doGet("/api/shiwan-m2/code/check-cancel?code=" + enc);
-            com.fasterxml.jackson.databind.JsonNode root =
-                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(resp);
-            if (root != null && root.has("code") && root.get("code").asInt() == 200
-                    && root.has("data") && !root.get("data").isNull()) {
-                com.fasterxml.jackson.databind.JsonNode data = root.get("data");
-                return data.has("isUploaded") && data.get("isUploaded").asBoolean(false);
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/ShiwanM2ReplaceConfirmDialog.fxml"));
+            Parent root = loader.load();
+            ShiwanM2ReplaceConfirmDialogController ctrl = loader.getController();
+            ctrl.setReplaceInfo(orig, newCode, reason, configPassword);
+
+            Stage stage = new Stage();
+            stage.initStyle(StageStyle.UNDECORATED);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            Window owner = replaceDialogOwner();
+            if (owner != null) {
+                stage.initOwner(owner);
             }
-        } catch (Exception ignored) {}
-        return false;
+            stage.setScene(new Scene(root));
+            stage.setResizable(false);
+            stage.showAndWait();
+            return ctrl.isConfirmed();
+        } catch (Exception ex) {
+            FxDialog.warn(replaceDialogOwner(), "提示", "无法打开确认弹窗：" + ex.getMessage());
+            return false;
+        }
     }
 
     private void doReplaceAsync(String oldCode, String newCode, String reason) {
@@ -200,8 +223,15 @@ public class ShiwanM2DataReplaceController {
                 Platform.runLater(() -> handleReplaceResult(oldCode, newCode, reason, result));
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    appendReplaceResult(false, oldCode, newCode, "请求异常: " + e.getMessage());
-                    replaceStatusLabel.setText("替换失败");
+                    appendResultCard(false, oldCode, newCode, "请求异常: " + e.getMessage(), reason);
+                    OperateLogBuilder.create()
+                            .module(ModuleNameEnum.CODE_REPLACE)
+                            .operateType(OperateTypeEnum.REPLACE)
+                            .target(oldCode, newCode)
+                            .content("石湾M2数据替换失败: " + oldCode + " -> " + newCode)
+                            .failReason("请求异常: " + e.getMessage())
+                            .deviceInfo("石湾M2-数据替换")
+                            .saveAsync();
                 });
             }
         }, "shiwan-m2-data-replace").start();
@@ -210,9 +240,10 @@ public class ShiwanM2DataReplaceController {
     private void handleReplaceResult(String oldCode, String newCode, String reason, ApiResult<Boolean> result) {
         boolean success = result != null && result.getCode() == 200 && Boolean.TRUE.equals(result.getData());
         if (success) {
-            appendReplaceResult(true, oldCode, newCode, "");
-            replaceStatusLabel.setText("替换成功");
-            onClearReplaceForm();
+            appendResultCard(true, oldCode, newCode, null, reason);
+            origCodeField.clear();
+            newCodeField.clear();
+            reasonField.clear();
 
             OperateLogBuilder.create()
                     .module(ModuleNameEnum.CODE_REPLACE)
@@ -228,8 +259,7 @@ public class ShiwanM2DataReplaceController {
         }
 
         String message = result == null ? "后端无响应" : result.getMessage();
-        appendReplaceResult(false, oldCode, newCode, message);
-        replaceStatusLabel.setText("替换失败: " + message);
+        appendResultCard(false, oldCode, newCode, message, reason);
 
         OperateLogBuilder.create()
                 .module(ModuleNameEnum.CODE_REPLACE)
@@ -241,116 +271,65 @@ public class ShiwanM2DataReplaceController {
                 .saveAsync();
     }
 
-    private void appendReplaceResult(boolean success, String oldCode, String newCode, String message) {
-        String now = LocalDateTime.now().format(TIME_FMT);
-        String line;
-        if (success) {
-            line = now + "  ✓ 替换成功: " + oldCode + " -> " + newCode;
-        } else {
-            line = now + "  ✗ 替换失败: " + oldCode + " -> " + newCode + "，原因: " + message;
+    /** 与 {@link ShiwanM2ReplaceController#executeReplace} 相同的结果卡片样式。 */
+    private void appendResultCard(boolean success, String oldCode, String newCode, String failMessage, String reason) {
+        emptyResultLabel.setVisible(false);
+        emptyResultLabel.setManaged(false);
+
+        VBox card = new VBox(12);
+        card.getStyleClass().add(success ? "sw2-replace-result-ok" : "sw2-replace-result-err");
+
+        String iconColor = success ? "#10B981" : "#EF4444";
+        String titleText = success ? "码替换成功！" : "码替换失败！";
+
+        Label iconLbl = new Label(success ? "✔" : "✘");
+        iconLbl.setMinSize(28, 28);
+        iconLbl.setMaxSize(28, 28);
+        iconLbl.setAlignment(javafx.geometry.Pos.CENTER);
+        iconLbl.setStyle(String.format(
+                "-fx-background-color:%s; -fx-background-radius:14;"
+                        + "-fx-text-fill:white; -fx-font-size:13px; -fx-font-weight:bold;", iconColor));
+
+        Label titleLbl = new Label(titleText);
+        titleLbl.setStyle(String.format(
+                "-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:%s;", iconColor));
+
+        HBox headerRow = new HBox(8, iconLbl, titleLbl);
+        headerRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        VBox detailBox = new VBox(8);
+        if (!success && failMessage != null && !failMessage.isEmpty()) {
+            Label failReasonLbl = new Label("失败原因：" + failMessage);
+            failReasonLbl.setStyle("-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+            detailBox.getChildren().add(failReasonLbl);
         }
-        replaceResults.add(0, line);
+        detailBox.getChildren().addAll(
+                infoLine("原码：", oldCode),
+                infoLine("新码：", newCode));
+        if (success && reason != null && !reason.isEmpty()) {
+            detailBox.getChildren().add(infoLine("替换原因：", reason));
+        }
+        detailBox.getChildren().add(timeLine("操作时间：", LocalDateTime.now().format(DT_FMT)));
+
+        card.getChildren().addAll(headerRow, detailBox);
+        resultContainer.getChildren().add(0, card);
     }
 
-    private boolean showReplacePasswordConfirm(String oldCode, String newCode, String reason) {
-        ShiwanM2Settings settings = ShiwanM2SettingsStore.load();
-        String configPassword = settings.getSystemSettingsPassword();
-        if (configPassword == null || configPassword.isEmpty()) {
-            configPassword = "123456";
-        }
-        final String expectedPassword = configPassword;
-
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("确认码替换");
-        // 不使用系统 headerText，由内容区自定义标题
-        dialog.setHeaderText(null);
-
-        ButtonType confirmType = new ButtonType("确认替换", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelType  = new ButtonType("取消",    ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(confirmType, cancelType);
-
-        // ---- 标题行 ----
-        Label titleLabel = new Label("确认码替换");
-        titleLabel.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#1F2937;");
-
-        // ---- 确认提示 ----
-        Label confirmHint = new Label("请确认替换信息：");
-        confirmHint.setStyle("-fx-font-size:14px; -fx-text-fill:#374151;");
-
-        // ---- 信息盒（灰底圆角） ----
-        VBox infoBox = new VBox(4);
-        infoBox.setStyle("-fx-background-color:#F9FAFB; -fx-border-radius:8; " +
-                "-fx-background-radius:8; -fx-padding:14; -fx-line-spacing:4;");
-        infoBox.getChildren().add(infoRow("原码值：", oldCode));
-        infoBox.getChildren().add(infoRow("新码值：", newCode));
-        if (reason != null && !reason.isEmpty()) {
-            infoBox.getChildren().add(infoRow("替换原因：", reason));
-        }
-
-        // ---- 密码区 ----
-        Label pwdTitle = new Label("* 请输入密码");
-        pwdTitle.setStyle("-fx-font-size:14px; -fx-font-weight:600; -fx-text-fill:#DC2626;");
-        PasswordField pwdField = new PasswordField();
-        pwdField.setPromptText("请输入密码");
-        pwdField.setStyle("-fx-min-height:44px; -fx-font-size:14px; -fx-border-radius:6; " +
-                "-fx-background-radius:6; -fx-border-color:#D1D5DB; -fx-border-width:1px;");
-        Label pwdErr = new Label();
-        pwdErr.setStyle("-fx-text-fill:#DC2626; -fx-font-size:13px; -fx-min-height:18px;");
-
-        // ---- 不可恢复警告 ----
-        Label warnText = new Label("⚠ 此操作不可恢复，请仔细核对后确认！");
-        warnText.setStyle("-fx-text-fill:#DC2626; -fx-font-size:14px; -fx-font-weight:600;");
-
-        VBox content = new VBox(14,
-                titleLabel,
-                confirmHint,
-                infoBox,
-                new VBox(6, pwdTitle, pwdField, pwdErr),
-                warnText);
-        content.setPrefWidth(400);
-        content.setPadding(new Insets(20));
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().setStyle("-fx-padding:0;");
-
-        // 按钮样式
-        Button confirmBtn = (Button) dialog.getDialogPane().lookupButton(confirmType);
-        confirmBtn.setStyle("-fx-background-color:#DC2626; -fx-text-fill:white; " +
-                "-fx-font-weight:bold; -fx-min-width:100px; -fx-min-height:44px; -fx-font-size:14px;");
-        Button cancelBtn = (Button) dialog.getDialogPane().lookupButton(cancelType);
-        cancelBtn.setStyle("-fx-background-color:#6B7280; -fx-text-fill:white; " +
-                "-fx-min-width:80px; -fx-min-height:44px; -fx-font-size:14px;");
-
-        // 点击确认时验证密码，错误则不关闭
-        confirmBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            if (!expectedPassword.equals(pwdField.getText())) {
-                pwdErr.setText("密码错误，请重新输入");
-                pwdField.clear();
-                ev.consume();
-            }
-        });
-
-        Optional<ButtonType> result = dialog.showAndWait();
-        return result.isPresent() && result.get() == confirmType;
+    private static Label infoLine(String key, String val) {
+        Label l = new Label(key + val);
+        l.setStyle("-fx-font-size:16px; -fx-text-fill:#374151;");
+        return l;
     }
 
-    /** 构建信息行：加粗标签 + 普通值，横向排列 */
-    private static HBox infoRow(String label, String value) {
-        Label lbl = new Label(label);
-        lbl.setStyle("-fx-font-size:14px; -fx-font-weight:600; -fx-text-fill:#374151;");
-        Label val = new Label(value);
-        val.setStyle("-fx-font-size:14px; -fx-text-fill:#374151;");
-        val.setWrapText(true);
-        HBox row = new HBox(0, lbl, val);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
+    private static Label timeLine(String key, String val) {
+        Label l = new Label(key + val);
+        l.setStyle("-fx-font-size:16px; -fx-text-fill:#6B7280;");
+        return l;
     }
 
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+    private Window replaceDialogOwner() {
+        return origCodeField != null && origCodeField.getScene() != null
+                ? origCodeField.getScene().getWindow()
+                : null;
     }
 }

@@ -114,6 +114,7 @@ public final class ShiwanM2SettingsStore {
         if (s.getM1DbConnection() == null) s.setM1DbConnection(new ShiwanM2Settings.M1DbConnectionConfig());
         if (s.getPrinter() == null) s.setPrinter(new ShiwanM2Settings.PrinterConfig());
         if (s.getAlarm() == null) s.setAlarm(new ShiwanM2Settings.AlarmConfig());
+        if (s.getBoxCaseCameraCapture() == null) s.setBoxCaseCameraCapture(new ShiwanM2Settings.BoxCaseCameraCaptureConfig());
         if (s.getApi() == null) s.setApi(new ShiwanM2Settings.ApiConfig());
         if (s.getSystemSettingsPassword() == null) s.setSystemSettingsPassword("123456");
     }

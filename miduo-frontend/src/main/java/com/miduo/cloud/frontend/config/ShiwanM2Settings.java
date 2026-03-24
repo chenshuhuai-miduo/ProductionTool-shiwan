@@ -50,6 +50,9 @@ public class ShiwanM2Settings {
     /** 设备：报警配置 */
     private AlarmConfig alarm = new AlarmConfig();
 
+    /** 设备：盒箱相机 TCP 采集批次匹配等待超时 */
+    private BoxCaseCameraCaptureConfig boxCaseCameraCapture = new BoxCaseCameraCaptureConfig();
+
     /** 设备：自定义控制信号（16进制，用于主界面手动控制按钮） */
     private DeviceSignalConfig deviceSignal = new DeviceSignalConfig();
 
@@ -177,6 +180,14 @@ public class ShiwanM2Settings {
 
     public void setAlarm(AlarmConfig alarm) {
         this.alarm = alarm;
+    }
+
+    public BoxCaseCameraCaptureConfig getBoxCaseCameraCapture() {
+        return boxCaseCameraCapture;
+    }
+
+    public void setBoxCaseCameraCapture(BoxCaseCameraCaptureConfig boxCaseCameraCapture) {
+        this.boxCaseCameraCapture = boxCaseCameraCapture;
     }
 
     public DeviceSignalConfig getDeviceSignal() {
@@ -424,6 +435,21 @@ public class ShiwanM2Settings {
         public void setRejectTriggerDelayMs(int v) { this.rejectTriggerDelayMs = v; }
         public int getRejectRetractTimeMs() { return rejectRetractTimeMs; }
         public void setRejectRetractTimeMs(int v) { this.rejectRetractTimeMs = v; }
+    }
+
+    /**
+     * 盒箱双相机采集：一侧已收到某批号后，等待另一侧同批号数据的最长时间。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class BoxCaseCameraCaptureConfig {
+        /**
+         * 双相机等待超时（ms）。一侧入队后超过此时间仍未收到同批号另一侧数据则整批剔除。0 表示不启用。
+         */
+        private int matchWaitTimeoutMs = 3000;
+
+        public int getMatchWaitTimeoutMs() { return matchWaitTimeoutMs; }
+        public void setMatchWaitTimeoutMs(int matchWaitTimeoutMs) { this.matchWaitTimeoutMs = matchWaitTimeoutMs; }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

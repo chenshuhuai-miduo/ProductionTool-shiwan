@@ -23,6 +23,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputDialog;
@@ -457,23 +458,25 @@ public class ShiwanM2MainController implements Initializable {
                             }
                         }
                         if (!found) {
-                            uploadItems.add(0, new UploadItem(palletCode, boxCount + "箱", UploadStatus.UPLOADING));
+                            uploadItems.add(0, new UploadItem("垛 " + palletCode, boxCount + "箱", UploadStatus.UPLOADING));
                         }
                         uploadDataList.refresh();
-                        addDataLog(time + "  垛码上传中：" + palletCode + " " + boxCount + "箱，请稍候...", LogType.INFO);
+                        String base = time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，";
+                        addDataLog(base + "开始上传", LogType.INFO);
+                        addDataLog(base + "上传中…", LogType.UPLOAD_BLUE);
                         break;
                     }
                     case SUCCESS:
                         updateUploadItemStatus(palletCode, UploadStatus.DONE);
-                        addDataLog(time + "  垛码上传成功：" + palletCode + " " + boxCount + "箱", LogType.SUCCESS);
+                        addDataLog(time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，上传成功", LogType.SUCCESS);
                         // 文档：上传成功 → 绿灯常亮，1 分钟后自动熄灭
                         hw.greenLightOn();
                         break;
                     case FAILED:
                         updateUploadItemStatus(palletCode, UploadStatus.FAILED);
-                        String errInfo = (errorMsg != null && !errorMsg.isEmpty()) ? "：" + errorMsg : "";
-                        addDataLog(time + "  垛码上传失败：" + palletCode + " " + boxCount + "箱" + errInfo, LogType.ERROR);
-                        addAlarmLog(time + "  上传失败：" + palletCode + (errInfo.isEmpty() ? "" : errInfo), LogType.ERROR);
+                        String reason = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "未知错误";
+                        addDataLog(time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，上传失败（" + reason + "）", LogType.ERROR);
+                        addAlarmLog(time + "  上传失败：" + palletCode + "（" + reason + "）", LogType.ERROR);
                         // 文档：上传失败 → 红灯常亮 + 蜂鸣
                         hw.redLightAndBuzzer();
                         break;
@@ -496,6 +499,15 @@ public class ShiwanM2MainController implements Initializable {
             }
         }
         uploadDataList.refresh();
+    }
+
+    /**
+     * 实时上传数据区卡片第一行：统一展示为「垛」+ 垛码值（去掉已带的垛/垛码前缀，避免重复）。
+     */
+    private static String formatPalletDisplayForCard(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim().replaceFirst("^垛\\s*码?\\s*", "");
+        return s.isEmpty() ? "" : "垛 " + s;
     }
 
     /** 根据系统设置中的页面配置，调整主界面 Tab 的显示与顺序（可多次调用，实时生效） */
@@ -2907,9 +2919,10 @@ public class ShiwanM2MainController implements Initializable {
      * 向数据接收区添加日志条目
      */
     public void addDataLog(String message, LogType type) {
+        String line = softWrapLongToken(message);
         Platform.runLater(() -> {
             trimList(dataLogItems);
-            dataLogItems.add(0, new LogEntry(message, type));
+            dataLogItems.add(0, new LogEntry(line, type));
         });
     }
 
@@ -2937,6 +2950,28 @@ public class ShiwanM2MainController implements Initializable {
         while (list.size() >= MAX_LOG_ENTRIES) {
             list.remove(list.size() - 1);
         }
+    }
+
+    /** 为超长连续串插入零宽断点，便于 Label 换行展示完整内容、不出现末尾省略号。 */
+    private static String softWrapLongToken(String text) {
+        if (text == null || text.isEmpty()) return text;
+        final int chunk = 12;
+        StringBuilder sb = new StringBuilder(text.length() + 16);
+        int run = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            sb.append(ch);
+            if (Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == ':') {
+                run++;
+                if (run >= chunk) {
+                    sb.append('\u200B');
+                    run = 0;
+                }
+            } else {
+                run = 0;
+            }
+        }
+        return sb.toString();
     }
 
     // ==================== 工具方法 ====================
@@ -2972,7 +3007,8 @@ public class ShiwanM2MainController implements Initializable {
         SUCCESS, // 成功（绿字绿边）
         WARN,    // 警告（黄字黄边）
         ERROR,   // 错误/报警（红字红边）
-        INFO     // 操作日志（灰字灰边）
+        INFO,    // 操作日志（灰字灰边）
+        UPLOAD_BLUE // 上传中（蓝字，与需求文档一致）
     }
 
     /** 日志条目数据模型 */
@@ -3019,6 +3055,8 @@ public class ShiwanM2MainController implements Initializable {
         LogCell() {
             label.setMaxWidth(Double.MAX_VALUE);
             label.setWrapText(true);
+            label.setMaxHeight(Double.MAX_VALUE);
+            label.setTextOverrun(OverrunStyle.CLIP);
             label.getStyleClass().add("log-cell-label");
             // prefWidth=0 使 cell 自动跟随 ListView 宽度分配，避免 cell 撑出横向滚动条
             setPrefWidth(0);
@@ -3032,6 +3070,23 @@ public class ShiwanM2MainController implements Initializable {
         }
 
         @Override
+        protected double computePrefHeight(double width) {
+            if (isEmpty() || getItem() == null) {
+                return super.computePrefHeight(width);
+            }
+            double pad = snapSizeX(getInsets().getLeft() + getInsets().getRight());
+            double lw = width > 0 ? width - pad : -1;
+            if (lw <= 0 && getListView() != null) {
+                lw = Math.max(0, getListView().getWidth() - 30);
+            }
+            if (lw <= 0) {
+                lw = 280;
+            }
+            label.setMaxWidth(lw);
+            return snapSizeY(getInsets().getTop() + getInsets().getBottom() + label.prefHeight(lw));
+        }
+
+        @Override
         protected void updateItem(LogEntry item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
@@ -3042,7 +3097,7 @@ public class ShiwanM2MainController implements Initializable {
 
             label.getStyleClass().removeAll(
                     "log-cell-data", "log-cell-success",
-                    "log-cell-warn", "log-cell-error", "log-cell-info"
+                    "log-cell-warn", "log-cell-error", "log-cell-info", "log-cell-upload-blue"
             );
 
             switch (item.type) {
@@ -3057,6 +3112,9 @@ public class ShiwanM2MainController implements Initializable {
                     break;
                 case INFO:
                     label.getStyleClass().add("log-cell-info");
+                    break;
+                case UPLOAD_BLUE:
+                    label.getStyleClass().add("log-cell-upload-blue");
                     break;
                 default:
                     label.getStyleClass().add("log-cell-data");
@@ -3116,7 +3174,7 @@ public class ShiwanM2MainController implements Initializable {
                 return;
             }
 
-            palletLbl.setText(item.palletCode);
+            palletLbl.setText(formatPalletDisplayForCard(item.palletCode));
             boxCountLbl.setText(item.boxCount);
 
             statusBadge.getStyleClass().removeAll(

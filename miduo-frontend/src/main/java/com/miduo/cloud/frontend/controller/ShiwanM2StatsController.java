@@ -4,14 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.text.Font;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -20,6 +23,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
@@ -144,8 +148,83 @@ public class ShiwanM2StatsController implements Initializable {
                         : "-fx-text-fill: #EF4444; -fx-font-weight: bold;");
             }
         });
+        upColReason.setCellFactory(col -> new TableCell<>() {
+            private final Label label = new Label();
+
+            {
+                label.setWrapText(true);
+                label.setFont(Font.font("Microsoft YaHei", 15));
+                label.setAlignment(Pos.TOP_LEFT);
+                label.setMinWidth(0);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+                setAlignment(Pos.TOP_LEFT);
+            }
+
+            @Override
+            protected double computePrefHeight(double width) {
+                String text = label.getText();
+                if (text == null || text.isEmpty()) {
+                    return 44;
+                }
+                double w = width > 0 ? width : col.getWidth();
+                double lw = Math.max(0, w - 16);
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            }
+
+            @Override
+            protected void layoutChildren() {
+                double lw = Math.max(0, getWidth() - 16);
+                label.resize(lw, label.prefHeight(lw));
+                label.relocate(8, 8);
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    label.setText(null);
+                } else {
+                    label.setText(softWrapLongToken(item));
+                }
+            }
+        });
         uploadTable.setItems(pageData);
         uploadTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        uploadTable.setFixedCellSize(-1);
+        /* 去掉 Modena 竖向网格线；点击后不保留行选中高亮（避免与状态列配色冲突） */
+        uploadTable.setStyle("-fx-table-cell-border-color: transparent;");
+        uploadTable.setRowFactory(tv -> {
+            TableRow<UploadRow> row = new TableRow<>();
+            row.addEventFilter(MouseEvent.MOUSE_CLICKED,
+                    e -> Platform.runLater(() -> uploadTable.getSelectionModel().clearSelection()));
+            return row;
+        });
+    }
+
+    /** 为超长连续串插入零宽断点，避免不换行撑开布局 */
+    private static String softWrapLongToken(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        final int chunk = 12;
+        StringBuilder sb = new StringBuilder(text.length() + 16);
+        int run = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            sb.append(ch);
+            if (Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == ':') {
+                run++;
+                if (run >= chunk) {
+                    sb.append('\u200B');
+                    run = 0;
+                }
+            } else {
+                run = 0;
+            }
+        }
+        return sb.toString();
     }
 
     @FXML

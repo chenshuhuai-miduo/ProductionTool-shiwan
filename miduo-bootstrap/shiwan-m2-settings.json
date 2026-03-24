@@ -49,6 +49,9 @@
     "alarmDelayMs" : 500,
     "alarmIntervalMs" : 2000
   },
+  "boxCaseCameraCapture" : {
+    "matchWaitTimeoutMs" : 3000
+  },
   "api" : {
     "baseUrl" : "https://openapi.weixin12315.com",
     "backendBaseUrl" : "http://localhost:8080",

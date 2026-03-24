@@ -15,6 +15,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
@@ -66,6 +67,9 @@ public class ShiwanM2UploadController implements Initializable {
         resultFailReason.setMinWidth(0);
         resultFailReason.setPrefWidth(0);
         resultFailReason.maxWidthProperty().bind(resultDetailPane.widthProperty().subtract(96));
+        resultFailReason.setWrapText(true);
+        resultFailReason.setMaxHeight(Double.MAX_VALUE);
+        resultFailReason.setTextOverrun(OverrunStyle.CLIP);
 
         // 初始查询区状态
         showQueryState(QueryState.PROMPT, null, null);
@@ -154,7 +158,7 @@ public class ShiwanM2UploadController implements Initializable {
                     try {
                         JsonNode root = HttpUtil.getObjectMapper().readTree(response);
                         if (root.path("code").asInt(0) == 200) {
-                            addLog(now() + "  垛码 " + code + " 已设为未上传（待补传）", UploadColor.GRAY);
+                            addLog(now() + " 垛码 " + code + "，已设为未上传（待补传）", UploadColor.GRAY);
                             onQueryStatus();
                         } else {
                             showWarn("操作失败", root.path("msg").asText("未知错误"));
@@ -185,7 +189,7 @@ public class ShiwanM2UploadController implements Initializable {
                     try {
                         JsonNode root = HttpUtil.getObjectMapper().readTree(response);
                         if (root.path("code").asInt(0) == 200) {
-                            addLog(now() + "  垛码 " + code + " 已手动标记为已上传", UploadColor.GREEN);
+                            addLog(now() + " 垛码 " + code + "，已手动标记为已上传", UploadColor.GREEN);
                             onQueryStatus();
                         } else {
                             showWarn("操作失败", root.path("msg").asText("未知错误"));
@@ -309,7 +313,8 @@ public class ShiwanM2UploadController implements Initializable {
      * 可从任意线程调用，内部通过 Platform.runLater 切回 FX 线程。
      */
     public void addLog(String message, UploadColor color) {
-        Platform.runLater(() -> logItems.add(0, new UploadLogEntry(message, color)));
+        String line = softWrapLongToken(message);
+        Platform.runLater(() -> logItems.add(0, new UploadLogEntry(line, color)));
     }
 
     // ==================== 工具 ====================
@@ -361,7 +366,37 @@ public class ShiwanM2UploadController implements Initializable {
 
         UploadLogCell() {
             label.setWrapText(true);
-            label.setMaxWidth(Double.MAX_VALUE);
+            label.setMinWidth(0);
+            label.setMaxHeight(Double.MAX_VALUE);
+            /* 多行换行展示完整文案，不使用末尾「…」省略（行高由 computePrefHeight 撑开） */
+            label.setTextOverrun(OverrunStyle.CLIP);
+            setPrefWidth(0);
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            if (isEmpty() || getItem() == null) {
+                return super.computePrefHeight(width);
+            }
+            double pad = snapSizeX(getInsets().getLeft() + getInsets().getRight()) + 8;
+            double lw = width > 0 ? width - pad : -1;
+            if (lw <= 0 && getListView() != null) {
+                lw = Math.max(0, getListView().getWidth() - pad);
+            }
+            if (lw <= 0) {
+                lw = 280;
+            }
+            label.setMaxWidth(lw);
+            return snapSizeY(getInsets().getTop() + getInsets().getBottom() + label.prefHeight(lw));
+        }
+
+        @Override
+        protected void layoutChildren() {
+            double lw = Math.max(0, getWidth() - snapSizeX(getInsets().getLeft() + getInsets().getRight()) - 8);
+            if (lw > 0) {
+                label.setMaxWidth(lw);
+            }
+            super.layoutChildren();
         }
 
         @Override

@@ -28,8 +28,8 @@
                 <Label text="上传信息（最新在上）" styleClass="shiwan-m2-area-header-label"/>
             </HBox>
             <ListView fx:id="uploadLogList" VBox.vgrow="ALWAYS"
-                      style="-fx-background-color:white; -fx-border-width:0; -fx-padding:6px 8px;
-                             -fx-focus-color:transparent; -fx-faint-focus-color:transparent;">
+                      styleClass="shiwan-m2-log-list"
+                      style="-fx-background-color:#FFFFFF;">
                 <placeholder>
                     <Label text="暂无上传记录" style="-fx-text-fill:#9CA3AF;"/>
                 </placeholder>
