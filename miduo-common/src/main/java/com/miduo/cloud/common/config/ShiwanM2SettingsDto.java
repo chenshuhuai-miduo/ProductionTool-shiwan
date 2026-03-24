@@ -119,10 +119,10 @@ public class ShiwanM2SettingsDto {
     public Upload getUpload() { return upload; }
     public void setUpload(Upload upload) { this.upload = upload; }
 
-    /** 信号与剔除时序配置（对应前端 ShiwanM2Settings.SignalConfig） */
-    private SignalConfig signalConfig;
-    public SignalConfig getSignalConfig() { return signalConfig; }
-    public void setSignalConfig(SignalConfig signalConfig) { this.signalConfig = signalConfig; }
+    /** 报警与剔除时序配置（对应前端 ShiwanM2Settings.AlarmConfig，JSON 键为 "alarm"） */
+    private AlarmConfig alarm;
+    public AlarmConfig getAlarm() { return alarm; }
+    public void setAlarm(AlarmConfig alarm) { this.alarm = alarm; }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -135,8 +135,11 @@ public class ShiwanM2SettingsDto {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SignalConfig {
-        /** 触发剔除延时（ms）：检测到需要剔除后，等待该时间再发送剔除信号。 */
+    public static class AlarmConfig {
+        /**
+         * 触发剔除延时（ms）：批次入队后超过此时间未等到另一相机的同批次数据，
+         * 则将整批剔除。0 表示禁用超时剔除。
+         */
         private int rejectTriggerDelayMs = 0;
         public int getRejectTriggerDelayMs() { return rejectTriggerDelayMs; }
         public void setRejectTriggerDelayMs(int rejectTriggerDelayMs) { this.rejectTriggerDelayMs = rejectTriggerDelayMs; }

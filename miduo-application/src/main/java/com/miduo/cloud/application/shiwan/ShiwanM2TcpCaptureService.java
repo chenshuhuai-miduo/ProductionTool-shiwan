@@ -550,8 +550,8 @@ public class ShiwanM2TcpCaptureService {
     /** 读取系统设置中的“触发剔除延时（ms）”。 */
     private long resolveRejectDelayMs() {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
-        if (cfg == null || cfg.getSignalConfig() == null) return 0L;
-        int ms = cfg.getSignalConfig().getRejectTriggerDelayMs();
+        if (cfg == null || cfg.getAlarm() == null) return 0L;
+        int ms = cfg.getAlarm().getRejectTriggerDelayMs();
         return Math.max(ms, 0);
     }
 
