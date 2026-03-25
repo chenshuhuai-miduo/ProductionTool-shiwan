@@ -156,7 +156,8 @@
                 <!-- 每页条数 -->
                 <Label text="每页" style="-fx-font-size:16px; -fx-text-fill:#6B7280;"/>
                 <ComboBox fx:id="upPageSizeCombo" prefWidth="90" prefHeight="40"
-                          style="-fx-font-size:16px;" onAction="#onUploadPageSizeChange">
+                          styleClass="sw2-page-combo"
+                          onAction="#onUploadPageSizeChange">
                     <items><FXCollections fx:factory="observableArrayList">
                         <String fx:value="10"/>
                         <String fx:value="20"/>
@@ -174,7 +175,7 @@
                 <!-- 页码跳转 -->
                 <Label text="第" style="-fx-font-size:18px; -fx-text-fill:#374151;"/>
                 <TextField fx:id="upPageField" text="1" prefWidth="60" prefHeight="40"
-                           alignment="CENTER" style="-fx-font-size:18px;"
+                           alignment="CENTER" styleClass="sw2-page-field"
                            onAction="#onUploadGoPage"/>
                 <Label fx:id="upPageTotalLabel" text="/ 1 页"
                        style="-fx-font-size:18px; -fx-text-fill:#1F2937;"/>

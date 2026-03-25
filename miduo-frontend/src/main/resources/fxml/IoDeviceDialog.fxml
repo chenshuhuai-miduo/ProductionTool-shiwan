@@ -24,9 +24,11 @@
                     <ColumnConstraints hgrow="ALWAYS"/>
                 </columnConstraints>
 
-                <!-- 第1行：设备名称 -->
-                <Label text="设备名称：*" GridPane.rowIndex="0" GridPane.columnIndex="0"
-                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <!-- 第1行：设备名称（红色 * 在前） -->
+                <HBox spacing="4" alignment="CENTER_LEFT" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                    <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="设备名称：" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+                </HBox>
                 <TextField fx:id="deviceNameField" GridPane.rowIndex="0" GridPane.columnIndex="1"
                            promptText="请输入设备名称"
                            style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
@@ -49,8 +51,10 @@
                 </HBox>
 
                 <!-- 第4行：协议类型（仅网口） -->
-                <Label fx:id="protocolLabel" text="协议类型：*" GridPane.rowIndex="3" GridPane.columnIndex="0"
-                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <HBox fx:id="protocolLabelBox" spacing="4" alignment="CENTER_LEFT" GridPane.rowIndex="3" GridPane.columnIndex="0">
+                    <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="协议类型：" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+                </HBox>
                 <HBox spacing="30" GridPane.rowIndex="3" GridPane.columnIndex="1" fx:id="protocolBox">
                     <RadioButton fx:id="tcpRadio" text="TCP" 
                                  style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
@@ -58,16 +62,20 @@
                                  style="-fx-font-size: 14px; -fx-text-fill: #000000;"/>
                 </HBox>
 
-                <!-- 第5行：IP地址 -->
-                <Label fx:id="ipLabel" text="IP地址：*" GridPane.rowIndex="4" GridPane.columnIndex="0"
-                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <!-- 第5行：IP / 串口 -->
+                <HBox spacing="4" alignment="CENTER_LEFT" GridPane.rowIndex="4" GridPane.columnIndex="0">
+                    <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label fx:id="ipCaptionLabel" text="IP地址：" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+                </HBox>
                 <TextField fx:id="ipField" GridPane.rowIndex="4" GridPane.columnIndex="1"
                            promptText="例如：192.168.1.101"
                            style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
 
-                <!-- 第6行：端口号 -->
-                <Label fx:id="portLabel" text="端口号：*" GridPane.rowIndex="5" GridPane.columnIndex="0"
-                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <!-- 第6行：端口 / 波特率 -->
+                <HBox spacing="4" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="0">
+                    <Label text="*" style="-fx-text-fill: #EF4444; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label fx:id="portCaptionLabel" text="端口号：" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+                </HBox>
                 <TextField fx:id="portField" GridPane.rowIndex="5" GridPane.columnIndex="1"
                            promptText="例如：502"
                            style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>

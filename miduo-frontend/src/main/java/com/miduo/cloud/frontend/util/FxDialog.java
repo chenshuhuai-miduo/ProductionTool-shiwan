@@ -247,11 +247,7 @@ public class FxDialog {
         );
 
         Label titleLabel = new Label(title);
-        titleLabel.setStyle(
-                "-fx-font-size: 18px; -fx-font-weight: bold;" +
-                "-fx-text-fill: #111827;" +
-                "-fx-font-family: 'Microsoft YaHei';"
-        );
+        titleLabel.setStyle(MiduoFxTextStyles.DIALOG_TITLE);
 
         HBox header = new HBox(10, icon, titleLabel);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -271,12 +267,7 @@ public class FxDialog {
         Label text = new Label(content);
         text.setWrapText(true);
         text.setMaxWidth(Double.MAX_VALUE);
-        text.setStyle(
-                "-fx-font-size: 16px;" +
-                "-fx-text-fill: #4B5563;" +
-                "-fx-font-family: 'Microsoft YaHei';" +
-                "-fx-line-spacing: 4;"
-        );
+        text.setStyle(MiduoFxTextStyles.DIALOG_BODY);
         VBox area = new VBox(text);
         area.setPadding(new Insets(20, 24, 8, 24));
         return area;
@@ -302,8 +293,7 @@ public class FxDialog {
                 "-fx-min-height: " + height + ";" +
                 "-fx-background-color: " + bgColor + ";" +
                 "-fx-text-fill: " + textColor + ";" +
-                "-fx-font-size: 18px; -fx-font-weight: bold;" +
-                "-fx-font-family: 'Microsoft YaHei';" +
+                MiduoFxTextStyles.DIALOG_BUTTON_FONT +
                 "-fx-background-radius: 8;" +
                 "-fx-effect: null; -fx-cursor: hand;" +
                 border

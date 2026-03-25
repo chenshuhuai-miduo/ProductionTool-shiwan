@@ -318,9 +318,9 @@
         <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="12">
             <padding><Insets top="0" bottom="0" left="16" right="16"/></padding>
 
-            <!-- 关联模式 · 品牌站点 -->
-            <Label text="盒箱垛关联 · 石湾"
-                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280;"/>
+            <!-- IO 设备连接汇总（不含盒码/箱码采集相机，由 TCP 采集服务管理） -->
+            <Label fx:id="deviceStatusLabel" text="设备状态：全部未连接"
+                   styleClass="shiwan-m2-status-bar-text-muted"/>
 
             <!-- 弹性空白 -->
             <Region HBox.hgrow="ALWAYS"/>
@@ -346,7 +346,7 @@
             <!-- 当前时间 -->
             <Label fx:id="currentTimeLabel"
                    text="2024-12-01  10:30:00"
-                   style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
+                   styleClass="shiwan-m2-status-bar-text"/>
         </HBox>
     </bottom>
 

@@ -32,7 +32,10 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.Parent;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
 
@@ -324,16 +327,62 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     /** 初始化 IO 设备列表 */
     private void setupIoDeviceTable() {
         deviceNameCol.setCellValueFactory(new PropertyValueFactory<>("deviceName"));
+        deviceNameCol.setCellFactory(col -> {
+            TableCell<IoDeviceDTO, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                }
+            };
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
         deviceTypeCol.setCellValueFactory(new PropertyValueFactory<>("deviceCategory"));
+        deviceTypeCol.setCellFactory(col -> {
+            TableCell<IoDeviceDTO, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                }
+            };
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
         deviceAddrCol.setCellValueFactory(new PropertyValueFactory<>("address"));
+        deviceAddrCol.setCellFactory(col -> {
+            TableCell<IoDeviceDTO, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                }
+            };
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
         devicePortCol.setCellValueFactory(new PropertyValueFactory<>("port"));
+        devicePortCol.setCellFactory(col -> {
+            TableCell<IoDeviceDTO, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                }
+            };
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
 
         // 状态列：带颜色的徽标
         deviceStatusCol.setCellFactory(col -> new TableCell<IoDeviceDTO, String>() {
             private final Label badge = new Label();
             {
+                badge.getStyleClass().add("sw2-io-device-status-badge");
                 setGraphic(badge);
                 setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
             }
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -363,7 +412,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             private final Button deleteBtn = new Button("删除");
             private final HBox box = new HBox(6, editBtn, testBtn, deleteBtn);
             {
-                box.setAlignment(Pos.CENTER_LEFT);
+                box.setAlignment(Pos.CENTER);
                 String editStyle   = "-fx-background-color: #EFF6FF; -fx-text-fill: #2563EB;"
                     + "-fx-border-width: 0; -fx-background-radius: 4px; -fx-font-size: 12px;"
                     + "-fx-font-weight: bold; -fx-padding: 3px 14px; -fx-min-height: 28px; -fx-min-width: 58px;"
@@ -385,6 +434,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 deleteBtn.setOnAction(e -> onDeleteDevice(getIndex()));
                 setGraphic(box);
                 setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
+                setAlignment(Pos.CENTER);
             }
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -393,7 +443,39 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             }
         });
 
+        /* 列宽随表格宽度拉伸（需表格自身宽度 = 父容器宽度，嵌套 Tab 内仅靠 CSS 往往无效） */
+        ioDeviceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        wireIoDeviceTableWidthAndGrow();
+
         ioDeviceTable.setItems(ioDeviceList);
+    }
+
+    /**
+     * 将 IO 设备表横向铺满父 VBox，否则 CONSTRAINED_RESIZE_POLICY 无宽度可分，会出现列间大块留白。
+     */
+    private void wireIoDeviceTableWidthAndGrow() {
+        VBox.setVgrow(ioDeviceTable, Priority.ALWAYS);
+        Runnable bind = () -> {
+            Parent p = ioDeviceTable.getParent();
+            if (!(p instanceof Region)) {
+                return;
+            }
+            Region region = (Region) p;
+            if (!ioDeviceTable.prefWidthProperty().isBound()) {
+                ioDeviceTable.prefWidthProperty().bind(region.widthProperty());
+            }
+            if (!ioDeviceTable.maxWidthProperty().isBound()) {
+                ioDeviceTable.maxWidthProperty().bind(region.widthProperty());
+            }
+        };
+        ioDeviceTable.sceneProperty().addListener((obs, prev, scene) -> {
+            if (scene != null) {
+                Platform.runLater(bind);
+            }
+        });
+        if (ioDeviceTable.getScene() != null) {
+            Platform.runLater(bind);
+        }
     }
 
     /**

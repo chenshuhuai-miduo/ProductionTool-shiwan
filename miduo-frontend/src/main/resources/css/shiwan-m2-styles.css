@@ -189,6 +189,13 @@
     -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.1), 4, 0, 0, 0);
 }
 
+/* TextField 自带 .text-field，与 input-styles 全局 14px 规则同优先级时以后加载顺序为准；
+   部分 Win7/高分屏环境内联文本仍会回落默认字体，数字会显得远小于中文；提高优先级并锁字体。 */
+.text-field.shiwan-m2-order-input {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 18px;
+}
+
 /* 采集规格标签（设计稿 22px/600） */
 .shiwan-m2-spec-label {
     -fx-font-size: 22px;
@@ -199,6 +206,7 @@
 
 /* 采集规格输入框（设计稿 34px/700 蓝字 #1D4ED8，加宽至少容纳3位数） */
 .shiwan-m2-spec-input {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 34px;
     -fx-font-weight: 700;
     -fx-text-fill: #1D4ED8;
@@ -214,6 +222,13 @@
     -fx-pref-height: 52px;
     -fx-min-height: 52px;
     -fx-max-height: 52px;
+}
+
+.text-field.shiwan-m2-spec-input {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1D4ED8;
 }
 
 .shiwan-m2-spec-input:hover {
@@ -480,6 +495,7 @@
 }
 
 .shiwan-m2-stat-num-red {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 44px;
     -fx-font-weight: 700;
     -fx-text-fill: #DC2626;
@@ -487,6 +503,7 @@
 }
 
 .shiwan-m2-stat-num-blue {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 44px;
     -fx-font-weight: 700;
     -fx-text-fill: #2563EB;
@@ -494,6 +511,7 @@
 }
 
 .shiwan-m2-stat-num-dark {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 44px;
     -fx-font-weight: 700;
     -fx-text-fill: #1F2937;
@@ -515,6 +533,7 @@
 }
 
 .shiwan-m2-stats-line-val {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 24px;
     -fx-font-weight: 600;
     -fx-text-fill: #1F2937;
@@ -522,6 +541,7 @@
 
 /* 总剔除数（设计稿 24px/600 红色，与已生产垛数同级） */
 .shiwan-m2-reject-count {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 24px;
     -fx-font-weight: 600;
     -fx-text-fill: #DC2626;
@@ -1142,6 +1162,18 @@
 .sw2-page-btn:hover    { -fx-background-color: #F3F4F6; }
 .sw2-page-btn:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
 
+/* 分页页码输入：提高优先级并锁雅黑，避免数字比周围 Label 小一号 */
+.text-field.sw2-page-field {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 18px;
+}
+
+/* 弹窗内窄分页条页码框（略小于 Tab 内） */
+.text-field.sw2-page-field-compact {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
 /* ---- 分页每页条数下拉（覆盖 Modena 蓝底）---- */
 /* ComboBox 自身同时拥有 combo-box-base 和 sw2-page-combo 两个 class，用复合选择器 */
 .combo-box-base.sw2-page-combo {
@@ -1162,6 +1194,31 @@
 }
 .combo-box-base.sw2-page-combo .arrow-button .arrow {
     -fx-background-color: #6B7280;
+}
+
+.combo-box-base.sw2-page-combo > .list-cell {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 15px;
+    -fx-text-fill: #374151;
+}
+
+/* ---- 主窗口底栏：压过 base-styles「.status-bar .label」11px，授权天数/时间数字更易读 ---- */
+.status-bar .license-status-box .license-status-text {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.status-bar .shiwan-m2-status-bar-text-muted {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
+    -fx-text-fill: #6B7280;
+}
+
+.status-bar .shiwan-m2-status-bar-text {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
+    -fx-text-fill: #374151;
 }
 
 /* ---- 小操作按钮（表格内查看/删除）---- */
@@ -1583,6 +1640,33 @@
     -fx-background-color: white;
     -fx-padding: 0;
     -fx-border-width: 0;
+}
+
+/* 二级 Tab 内容占满 TabPane 剩余区域，便于内部 TableView 纵向/横向铺满 */
+.sw2-settings-inner-tab-pane > .tab-content-area StackPane > * {
+    -fx-max-width: Infinity;
+    -fx-max-height: Infinity;
+}
+
+/* 系统设置 IO 设备表（状态列徽标为 Label 内联样式，不受选中行文字色规则影响） */
+.sw2-settings-io-device-table {
+    -fx-border-color: -border-color;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.sw2-settings-io-device-table .table-cell {
+    -fx-alignment: CENTER;
+}
+
+.sw2-settings-io-device-table .table-cell .label {
+    -fx-text-alignment: center;
+}
+
+.sw2-settings-io-device-table .column-header .label {
+    -fx-alignment: CENTER;
+    -fx-text-alignment: center;
 }
 
 /* ============================================================

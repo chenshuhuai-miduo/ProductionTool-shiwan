@@ -193,6 +193,9 @@ public class ShiwanM2MainController implements Initializable {
 
     // --- 状态栏 ---
 
+    /** IO 设备连接汇总（已启用且由 DeviceConnectionManager 连接，不含盒码/箱码采集相机） */
+    @FXML private Label deviceStatusLabel;
+
     /** 许可证状态容器 */
     @FXML private HBox licenseStatusBox;
     /** 许可证状态圆点 */
@@ -300,6 +303,7 @@ public class ShiwanM2MainController implements Initializable {
         applyPageConfig();
         registerPalletEventListener();
         registerDeviceDataHandler();
+        DeviceConnectionManager.getInstance().setDeviceStatusChangeHandler(this::updateDeviceStatusBar);
         setupTabLazyLoad();
         initOrderNumField();
         // 初始未采集：强制满垛/收回剔除置灰，提取工单未成垛可用
@@ -310,6 +314,7 @@ public class ShiwanM2MainController implements Initializable {
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
             autoConnectConfiguredDevicesOnStartup();
+            updateDeviceStatusBar();
         });
         loadSpecFromSettings();
     }
@@ -322,6 +327,64 @@ public class ShiwanM2MainController implements Initializable {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  正在按系统设置自动连接IO设备...", LogType.INFO);
         connectAllDevices();
+    }
+
+    /** 与 {@link #connectAllDevices} 一致：计入状态栏的已启用设备（排除 TCP 管理的盒码/箱码相机）。 */
+    private static boolean isDeviceCountedForStatusBar(IoDeviceDTO device) {
+        if (device == null || !Boolean.TRUE.equals(device.getEnabled())) {
+            return false;
+        }
+        String cat = device.getDeviceCategory();
+        return !"盒码采集".equals(cat) && !"箱码采集".equals(cat);
+    }
+
+    /**
+     * 刷新状态栏「设备状态：…」（后台请求列表，避免阻塞 UI；连接变化由 DeviceConnectionManager 回调）。
+     */
+    private void updateDeviceStatusBar() {
+        if (deviceStatusLabel == null) {
+            return;
+        }
+        productExecutor.submit(() -> {
+            try {
+                String responseJson = HttpUtil.doGet("/api/device/list");
+                ApiResult<List<IoDeviceDTO>> result = HttpUtil.parseJson(
+                        responseJson, new TypeReference<ApiResult<List<IoDeviceDTO>>>() {});
+                if (result == null || result.getCode() != 200 || result.getData() == null) {
+                    Platform.runLater(() -> deviceStatusLabel.setText("设备状态：状态未知"));
+                    return;
+                }
+                int enabledCount = 0;
+                int connectedCount = 0;
+                for (IoDeviceDTO device : result.getData()) {
+                    if (!isDeviceCountedForStatusBar(device)) {
+                        continue;
+                    }
+                    enabledCount++;
+                    if (DeviceConnectionManager.getInstance().isConnected(device.getId())) {
+                        connectedCount++;
+                    }
+                }
+                final int e = enabledCount;
+                final int c = connectedCount;
+                Platform.runLater(() -> {
+                    String status;
+                    if (e == 0) {
+                        status = "设备状态：全部未连接";
+                    } else if (c == 0) {
+                        status = "设备状态：全部未连接";
+                    } else if (c == e) {
+                        status = "设备状态：全部已连接";
+                    } else {
+                        status = "设备状态：部分未连接";
+                    }
+                    deviceStatusLabel.setText(status);
+                });
+            } catch (Exception ex) {
+                log.debug("[设备状态栏] 更新失败: {}", ex.getMessage());
+                Platform.runLater(() -> deviceStatusLabel.setText("设备状态：状态未知"));
+            }
+        });
     }
 
     /**
@@ -1730,8 +1793,12 @@ public class ShiwanM2MainController implements Initializable {
                 ApiResult<List<IoDeviceDTO>> result = HttpUtil.parseJson(
                         resp, new TypeReference<ApiResult<List<IoDeviceDTO>>>() {});
                 if (result == null || result.getCode() != 200 || result.getData() == null) {
-                    Platform.runLater(() -> addOpLog(
-                            LocalDateTime.now().format(TIME_FMT) + "  获取设备列表失败，跳过IO设备连接", LogType.WARN));
+                    Platform.runLater(() -> {
+                        addOpLog(
+                                LocalDateTime.now().format(TIME_FMT) + "  获取设备列表失败，跳过IO设备连接",
+                                LogType.WARN);
+                        updateDeviceStatusBar();
+                    });
                     return;
                 }
                 // 收集需要连接的设备（排除盒码/箱码采集相机，由后端TCP服务管理）
@@ -1775,11 +1842,18 @@ public class ShiwanM2MainController implements Initializable {
                 }
                 final int cnt = connectedCount;
                 final int total = targetDevices.size();
-                Platform.runLater(() -> addOpLog(
-                        LocalDateTime.now().format(TIME_FMT) + "  IO设备连接完成，已连接 " + cnt + " / " + total + " 台", LogType.INFO));
+                Platform.runLater(() -> {
+                    addOpLog(
+                            LocalDateTime.now().format(TIME_FMT) + "  IO设备连接完成，已连接 " + cnt + " / " + total + " 台",
+                            LogType.INFO);
+                    updateDeviceStatusBar();
+                });
             } catch (Exception e) {
-                Platform.runLater(() -> addOpLog(
-                        LocalDateTime.now().format(TIME_FMT) + "  IO设备连接异常：" + e.getMessage(), LogType.WARN));
+                Platform.runLater(() -> {
+                    addOpLog(
+                            LocalDateTime.now().format(TIME_FMT) + "  IO设备连接异常：" + e.getMessage(), LogType.WARN);
+                    updateDeviceStatusBar();
+                });
             }
         });
     }

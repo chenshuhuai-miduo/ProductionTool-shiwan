@@ -103,10 +103,11 @@
                            style="-fx-font-size:14px; -fx-text-fill:#374151; -fx-font-family:'Microsoft YaHei';"/>
                     <TextField fx:id="pageInputField" text="1" prefWidth="48"
                                onAction="#onPageInput"
-                               style="-fx-font-size:14px; -fx-background-color:white; -fx-text-fill:#374151;
+                               styleClass="sw2-page-field-compact"
+                               style="-fx-background-color:white; -fx-text-fill:#374151;
                                       -fx-border-color:#D1D5DB; -fx-border-width:1; -fx-border-radius:6;
                                       -fx-background-radius:6; -fx-min-height:32; -fx-pref-height:32;
-                                      -fx-alignment:CENTER; -fx-padding:0 8; -fx-font-family:'Microsoft YaHei';"/>
+                                      -fx-alignment:CENTER; -fx-padding:0 8;"/>
                     <Label fx:id="totalPagesLabel" text="/ 1 页"
                            style="-fx-font-size:14px; -fx-text-fill:#374151; -fx-font-family:'Microsoft YaHei';"/>
                     <Button fx:id="nextBtn" text="下一页" onAction="#onNextPage"

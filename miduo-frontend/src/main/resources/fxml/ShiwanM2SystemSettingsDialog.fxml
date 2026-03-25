@@ -438,11 +438,14 @@
         <!-- ============ Tab3：设备 ============ -->
         <Tab text="设备">
             <TabPane tabClosingPolicy="UNAVAILABLE"
+                     VBox.vgrow="ALWAYS"
+                     maxHeight="Infinity" maxWidth="Infinity"
                      styleClass="sw2-settings-inner-tab-pane">
 
-                <!-- IO设备管理 -->
+                <!-- IO设备管理（布局与致美斋 SystemConfig IO 表一致：撑满 Tab、列约束拉伸） -->
                 <Tab text="IO设备管理">
-                    <VBox spacing="0" style="-fx-background-color: white;">
+                    <VBox spacing="0" VBox.vgrow="ALWAYS" maxWidth="Infinity" maxHeight="Infinity"
+                          minHeight="0" style="-fx-background-color: white;">
                         <!-- 工具栏 -->
                         <HBox spacing="10" styleClass="tool-bar" alignment="CENTER_LEFT">
                             <Button text="+ 添加设备" styleClass="primary-button"
@@ -453,14 +456,15 @@
                         <!-- 设备列表 -->
                         <TableView fx:id="ioDeviceTable"
                                    VBox.vgrow="ALWAYS"
-                                   styleClass="table-view">
+                                   maxWidth="Infinity" minWidth="0" minHeight="0"
+                                   styleClass="table-view sw2-settings-io-device-table">
                             <columns>
-                                <TableColumn fx:id="deviceNameCol" text="设备名称" prefWidth="130"/>
-                                <TableColumn fx:id="deviceTypeCol" text="设备类型" prefWidth="120"/>
-                                <TableColumn fx:id="deviceAddrCol" text="连接地址" prefWidth="160"/>
-                                <TableColumn fx:id="devicePortCol" text="端口" prefWidth="80"/>
-                                <TableColumn fx:id="deviceStatusCol" text="状态" prefWidth="120"/>
-                                <TableColumn fx:id="deviceActionCol" text="操作" prefWidth="220"/>
+                                <TableColumn fx:id="deviceNameCol" text="设备名称" prefWidth="150" minWidth="80"/>
+                                <TableColumn fx:id="deviceTypeCol" text="设备类型" prefWidth="120" minWidth="70"/>
+                                <TableColumn fx:id="deviceAddrCol" text="连接地址" prefWidth="200" minWidth="100"/>
+                                <TableColumn fx:id="devicePortCol" text="端口" prefWidth="90" minWidth="60"/>
+                                <TableColumn fx:id="deviceStatusCol" text="状态" prefWidth="100" minWidth="80"/>
+                                <TableColumn fx:id="deviceActionCol" text="操作" prefWidth="200" minWidth="180"/>
                             </columns>
                             <placeholder>
                                 <Label text="暂无设备配置，点击「+ 添加设备」按钮添加"

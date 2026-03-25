@@ -47,6 +47,15 @@
     -fx-background-color: derive(-primary-color, 80%);
 }
 
+/* 选中行保持深色文字（覆盖 Modena 默认白字；勿用 .label 以免覆盖状态徽标等自定义样式） */
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -text-primary;
+}
+
+.table-view .table-row-cell:selected .table-cell .text {
+    -fx-fill: -text-primary;
+}
+
 .table-view .table-row-cell:hover {
     -fx-background-color: -hover-color;
 }

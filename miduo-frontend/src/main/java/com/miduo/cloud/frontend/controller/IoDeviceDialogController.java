@@ -16,13 +16,13 @@ public class IoDeviceDialogController {
     @FXML private ComboBox<String> deviceCategoryComboBox;
     @FXML private RadioButton networkRadio;
     @FXML private RadioButton serialRadio;
-    @FXML private Label protocolLabel;
+    @FXML private HBox protocolLabelBox;
     @FXML private HBox protocolBox;
     @FXML private RadioButton tcpRadio;
     @FXML private RadioButton udpRadio;
-    @FXML private Label ipLabel;
+    @FXML private Label ipCaptionLabel;
     @FXML private TextField ipField;
-    @FXML private Label portLabel;
+    @FXML private Label portCaptionLabel;
     @FXML private TextField portField;
     @FXML private TextField timeoutField;
     @FXML private TextField retryField;
@@ -92,27 +92,27 @@ public class IoDeviceDialogController {
         boolean isNetwork = networkRadio.isSelected();
         
         // 协议类型仅在网口模式下显示
-        protocolLabel.setVisible(isNetwork);
-        protocolLabel.setManaged(isNetwork);
+        protocolLabelBox.setVisible(isNetwork);
+        protocolLabelBox.setManaged(isNetwork);
         protocolBox.setVisible(isNetwork);
         protocolBox.setManaged(isNetwork);
         
         if (isNetwork) {
-            // 网口模式
-            ipLabel.setText("IP地址：*");
+            // 网口模式（标签文案由 FXML 前置红 * + 此处文案）
+            ipCaptionLabel.setText("IP地址：");
             ipField.setPromptText("例如：192.168.1.101");
             ipField.setDisable(false);
             
-            portLabel.setText("端口号：*");
+            portCaptionLabel.setText("端口号：");
             portField.setPromptText("例如：502（TCP）或 5000（UDP）");
             portField.setDisable(false);
         } else {
-            // 串口模式
-            ipLabel.setText("串口号：");
+            // 串口模式（串口/波特率仍为必填，保留前置红 *）
+            ipCaptionLabel.setText("串口号：");
             ipField.setPromptText("例如：COM1");
             ipField.setDisable(false);
             
-            portLabel.setText("波特率：");
+            portCaptionLabel.setText("波特率：");
             portField.setPromptText("例如：9600");
             portField.setDisable(false);
         }
