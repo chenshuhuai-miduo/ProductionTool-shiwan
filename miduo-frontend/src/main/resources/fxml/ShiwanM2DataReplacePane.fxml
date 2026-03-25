@@ -26,8 +26,7 @@
             <TextField fx:id="origCodeField"
                        promptText="请输入或扫描原码（待替换的码）"
                        styleClass="sw2-field-input"
-                       minHeight="48" prefHeight="48"
-                       style="-fx-font-size:18px;"/>
+                       minHeight="48" prefHeight="48"/>
         </VBox>
 
         <!-- 新码 -->
@@ -40,8 +39,7 @@
             <TextField fx:id="newCodeField"
                        promptText="请输入或扫描新码（替换后的码）"
                        styleClass="sw2-field-input"
-                       minHeight="48" prefHeight="48"
-                       style="-fx-font-size:18px;"/>
+                       minHeight="48" prefHeight="48"/>
         </VBox>
 
         <!-- 替换原因 -->
@@ -51,7 +49,6 @@
             <TextArea fx:id="reasonField"
                       promptText="请输入替换原因（如：码损坏、码错误等）"
                       styleClass="sw2-field-textarea"
-                      style="-fx-font-size:18px;"
                       prefHeight="80" prefRowCount="2" wrapText="true"/>
         </VBox>
 

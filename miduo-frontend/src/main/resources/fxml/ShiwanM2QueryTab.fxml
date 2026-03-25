@@ -45,9 +45,8 @@
 
             <!-- 空状态 -->
             <VBox fx:id="emptyPane" VBox.vgrow="ALWAYS" alignment="CENTER" spacing="12">
-                <Label text="🔍" style="-fx-font-size:40px;"/>
-                <Label text="请输入码进行查询"
-                       style="-fx-font-size:16px; -fx-text-fill:#9CA3AF;"/>
+                <Label text="🔍" styleClass="sw2-query-empty-icon"/>
+                <Label text="请输入码进行查询" styleClass="sw2-query-empty-hint"/>
             </VBox>
 
             <!-- 分层结果表格（序号 + 四层码）-->
@@ -62,7 +61,7 @@
                     <TableColumn fx:id="colL4"  text="第四层（垛码）" prefWidth="130"/>
                 </columns>
                 <placeholder>
-                    <Label text="暂无数据" style="-fx-text-fill:#9CA3AF; -fx-font-size:16px;"/>
+                    <Label text="暂无数据" styleClass="sw2-query-empty-hint"/>
                 </placeholder>
             </TableView>
         </VBox>
@@ -74,10 +73,8 @@
             <!-- 右侧空状态 -->
             <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS"
                   alignment="CENTER" spacing="8">
-                <Label text="请点击左侧记录"
-                       style="-fx-font-size:15px; -fx-text-fill:#9CA3AF;"/>
-                <Label text="查看详细信息"
-                       style="-fx-font-size:15px; -fx-text-fill:#9CA3AF;"/>
+                <Label text="请点击左侧记录" styleClass="sw2-query-empty-hint"/>
+                <Label text="查看详细信息" styleClass="sw2-query-empty-hint"/>
             </VBox>
 
             <!-- 详情内容（选中行后显示）-->
@@ -87,82 +84,62 @@
                 <VBox spacing="16" style="-fx-padding: 24;">
 
                     <!-- 主标题 -->
-                    <Label text="具体信息"
-                           style="-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#1F2937;"/>
+                    <Label text="具体信息" styleClass="sw2-query-detail-main-title"/>
 
                     <!-- 码详细信息 -->
-                    <Label text="码详细信息"
-                           style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
+                    <Label text="码详细信息" styleClass="sw2-query-detail-section-title"/>
 
                     <GridPane hgap="8" vgap="12">
                         <columnConstraints>
                             <ColumnConstraints minWidth="80" maxWidth="80"/>
                             <ColumnConstraints hgrow="ALWAYS"/>
                         </columnConstraints>
-                        <Label text="瓶码"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="瓶码" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                        <Label fx:id="detBottle" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                        <Label fx:id="detBottle" text="—" styleClass="sw2-query-detail-value"
                                GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                        <Label text="盒码"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="盒码" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                        <Label fx:id="detBox" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                        <Label fx:id="detBox" text="—" styleClass="sw2-query-detail-value"
                                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                        <Label text="箱码"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="箱码" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                        <Label fx:id="detCase" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                        <Label fx:id="detCase" text="—" styleClass="sw2-query-detail-value"
                                GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                        <Label text="垛码"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="垛码" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                        <Label fx:id="detPallet" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#1F2937; -fx-wrap-text:true;"
+                        <Label fx:id="detPallet" text="—" styleClass="sw2-query-detail-value"
                                GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-                        <Label text="采集时间"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="采集时间" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-                        <Label fx:id="detTime" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#4B5563;"
+                        <Label fx:id="detTime" text="—" styleClass="sw2-query-detail-value-muted"
                                GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-                        <Label text="是否关联"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="是否关联" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="5"/>
                         <Label fx:id="detLinked" text="—"
-                               style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"
+                               styleClass="sw2-query-detail-value-muted"
                                GridPane.columnIndex="1" GridPane.rowIndex="5"/>
                     </GridPane>
 
                     <!-- 产品信息 -->
-                    <Label text="产品信息"
-                           style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#374151;"/>
+                    <Label text="产品信息" styleClass="sw2-query-detail-section-title"/>
 
                     <GridPane hgap="8" vgap="12">
                         <columnConstraints>
                             <ColumnConstraints minWidth="80" maxWidth="80"/>
                             <ColumnConstraints hgrow="ALWAYS"/>
                         </columnConstraints>
-                        <Label text="产品编号"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="产品编号" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                        <Label fx:id="detProductCode" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#4B5563;"
+                        <Label fx:id="detProductCode" text="—" styleClass="sw2-query-detail-value-muted"
                                GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                        <Label text="产品名称"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="产品名称" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                        <Label fx:id="detProductName" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#4B5563; -fx-wrap-text:true;"
+                        <Label fx:id="detProductName" text="—" styleClass="sw2-query-detail-value-muted"
                                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                        <Label text="生产单号"
-                               style="-fx-font-size:16px; -fx-text-fill:#6B7280;"
+                        <Label text="生产单号" styleClass="sw2-query-detail-key"
                                GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                        <Label fx:id="detOrderNo" text="—"
-                               style="-fx-font-size:16px; -fx-text-fill:#4B5563; -fx-wrap-text:true;"
+                        <Label fx:id="detOrderNo" text="—" styleClass="sw2-query-detail-value-muted"
                                GridPane.columnIndex="1" GridPane.rowIndex="2"/>
                     </GridPane>
 

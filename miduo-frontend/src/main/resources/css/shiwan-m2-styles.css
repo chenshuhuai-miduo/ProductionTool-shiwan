@@ -129,6 +129,7 @@
 
 /* 卡片标题（带下边框） */
 .shiwan-m2-card-title {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #1F2937;
@@ -142,6 +143,7 @@
    左侧面板 - 当前生产信息
    ============================================================ */
 .shiwan-m2-form-label-small {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 16px;
     -fx-text-fill: #6B7280;
 }
@@ -164,7 +166,13 @@
     -fx-border-color: #2563EB;
 }
 
+.combo-box-base.shiwan-m2-product-combo > .list-cell {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
 .shiwan-m2-product-code-label {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-text-fill: #374151;
@@ -238,6 +246,27 @@
 .shiwan-m2-spec-input:focused {
     -fx-border-color: #2563EB;
     -fx-background-color: #EFF6FF;
+}
+
+/* 手工采集 - 瓶码输入（与 sw2-query-input / sw2-field-input 统一 16px） */
+.sw2-manual-code-input {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-background-color: white;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-padding: 0 12px;
+}
+.sw2-manual-code-input:focused {
+    -fx-border-color: #2563EB;
+}
+.text-field.sw2-manual-code-input {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
 }
 
 .shiwan-m2-section-title {
@@ -856,6 +885,28 @@
     -fx-text-fill: inherit;
 }
 
+/* 取消关联 · 取消记录（DDEZa/w3Dni：卡片内直接罗列，无灰底内框） */
+.sw2-cancel-record-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.sw2-cancel-record-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 8 0;
+}
+
+.sw2-cancel-record-list .list-cell:filled:selected,
+.sw2-cancel-record-list .list-cell:filled:selected:focused {
+    -fx-background-color: transparent;
+    -fx-text-fill: inherit;
+}
+
 /* 识别结果底部汇总行（#6B7280 14px） */
 .sw2-identify-summary {
     -fx-font-size: 14px;
@@ -978,7 +1029,8 @@
 }
 
 .sw2-loading-overlay .label {
-    -fx-font-size: 15px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-text-fill: #4B5563;
 }
 
@@ -1010,12 +1062,14 @@
 }
 
 .sw2-filter-label {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #374151;
 }
 
 .sw2-filter-input {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 16px;
     -fx-background-color: white;
     -fx-border-color: #D1D5DB;
@@ -1028,6 +1082,7 @@
 }
 
 .sw2-filter-combo {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 16px;
     -fx-background-color: white;
     -fx-border-color: #D1D5DB;
@@ -1036,6 +1091,30 @@
     -fx-background-radius: 6px;
     -fx-min-height: 36px;
     -fx-pref-height: 36px;
+}
+
+/* DatePicker / ComboBox 内嵌编辑区与列表格字体（与 sw2-filter 一致） */
+.date-picker.sw2-filter-combo .text-field {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+.combo-box-base.sw2-filter-combo > .list-cell {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
+/* 下拉面板内行（与筛选区字号一致；本表用于石湾 M2 各 Tab） */
+.combo-box-popup .list-view .list-cell {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
+.text-field.sw2-filter-input,
+.text-field.sw2-field-input,
+.text-area.sw2-field-textarea,
+.text-field.sw2-query-input {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
 }
 
 /* ---- 表格卡片 ---- */
@@ -1066,7 +1145,8 @@
 }
 
 .sw2-table .column-header .label {
-    -fx-font-size: 15px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #374151;
     -fx-padding: 10px 8px;
@@ -1078,7 +1158,8 @@
 }
 
 .sw2-table .table-cell {
-    -fx-font-size: 15px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-text-fill: #374151;
     -fx-border-color: transparent transparent #E5E7EB transparent;
     -fx-border-width: 0 0 1px 0;
@@ -1144,7 +1225,27 @@
     -fx-text-fill: #374151;
 }
 
+/* 与 .sw2-page-field 页码框统一雅黑，避免「共A条」「/Y页」中数字与中间页码 X 字体不一致 */
+.sw2-page-num-text {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 18px;
+    -fx-text-fill: #374151;
+}
+
+.sw2-page-num-text-accent {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 18px;
+    -fx-text-fill: #1F2937;
+}
+
+.sw2-page-caption {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #6B7280;
+}
+
 .sw2-page-btn {
+    -fx-font-family: "Microsoft YaHei";
     -fx-background-color: white;
     -fx-border-color: #D1D5DB;
     -fx-border-width: 1px;
@@ -1318,10 +1419,17 @@
 }
 .sw2-stat-card-reject:hover { -fx-background-color: #FEF2F2; }
 
-.sw2-stat-num        { -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: #2563EB; -fx-underline: true; }
-.sw2-stat-num-plain  { -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: #1F2937; }
-.sw2-stat-num-reject { -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: #EF4444; -fx-underline: true; }
-.sw2-stat-label      { -fx-font-size: 18px; -fx-text-fill: #6B7280; }
+.sw2-stat-num        { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: #2563EB; -fx-underline: true; }
+.sw2-stat-num-plain  { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: #1F2937; }
+.sw2-stat-num-reject { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: #EF4444; -fx-underline: true; }
+.sw2-stat-label      { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 18px; -fx-text-fill: #6B7280; }
+
+/* 生产统计 / 筛选区：日期间隔符「-」 */
+.sw2-filter-date-sep {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 18px;
+    -fx-text-fill: #9CA3AF;
+}
 
 /* ---- 手工采集 提示区 ---- */
 .sw2-prompt-main       { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #374151; }
@@ -1347,7 +1455,8 @@
 }
 
 .sw2-query-input {
-    -fx-font-size: 14px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-background-color: white;
     -fx-border-color: #D1D5DB;
     -fx-border-width: 1px;
@@ -1358,9 +1467,9 @@
     -fx-padding: 0 12px;
 }
 
-.sw2-query-status-ok    { -fx-text-fill: #16A34A; -fx-font-size: 15px; -fx-font-weight: bold; }
-.sw2-query-status-err   { -fx-text-fill: #DC2626; -fx-font-size: 15px; -fx-font-weight: bold; }
-.sw2-query-status-idle  { -fx-text-fill: #6B7280; -fx-font-size: 15px; }
+.sw2-query-status-ok    { -fx-font-family: "Microsoft YaHei"; -fx-text-fill: #16A34A; -fx-font-size: 16px; -fx-font-weight: bold; }
+.sw2-query-status-err   { -fx-font-family: "Microsoft YaHei"; -fx-text-fill: #DC2626; -fx-font-size: 16px; -fx-font-weight: bold; }
+.sw2-query-status-idle  { -fx-font-family: "Microsoft YaHei"; -fx-text-fill: #6B7280; -fx-font-size: 16px; }
 
 /* ---- 数据查询 结果面板 ---- */
 .sw2-result-panel {
@@ -1373,6 +1482,7 @@
 }
 
 .sw2-result-header {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 17px;
     -fx-font-weight: bold;
     -fx-text-fill: #1F2937;
@@ -1380,6 +1490,59 @@
     -fx-border-width: 0 0 1px 0;
     -fx-padding: 12px 16px;
     -fx-max-width: Infinity;
+}
+
+/* 数据查询 - 右侧「具体信息」标签与取值（雅黑 + 16px，数字与中文同屏一致） */
+.sw2-query-detail-main-title {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
+}
+.sw2-query-detail-section-title {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+.sw2-query-detail-key {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #6B7280;
+}
+.sw2-query-detail-value {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #1F2937;
+    -fx-wrap-text: true;
+}
+.sw2-query-detail-value-muted {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #4B5563;
+    -fx-wrap-text: true;
+}
+.sw2-query-detail-value-linked-ok {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #16A34A;
+}
+.sw2-query-detail-value-linked-no {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #DC2626;
+}
+
+.sw2-query-empty-hint {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #9CA3AF;
+}
+.sw2-query-empty-icon {
+    -fx-font-family: "Segoe UI Emoji", "Microsoft YaHei";
+    -fx-font-size: 40px;
 }
 
 .sw2-code-type-pallet { -fx-background-color: #7C3AED; -fx-text-fill: white; -fx-background-radius: 4px; -fx-padding: 2px 8px; -fx-font-weight: bold; -fx-font-size: 14px; }
@@ -1448,6 +1611,7 @@
 }
 
 .sw2-cancel-input {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 16px;
     -fx-background-color: white;
     -fx-border-color: #D1D5DB;
@@ -1502,9 +1666,9 @@
 /* ---- form 字段标签 ---- */
 .sw2-section-title { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1F2937; }
 .sw2-field-label   { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #374151; }
-.sw2-field-input   { -fx-font-size: 16px; -fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-min-height: 40px; -fx-padding: 0 12px; -fx-max-width: Infinity; }
+.sw2-field-input   { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 16px; -fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-min-height: 40px; -fx-padding: 0 12px; -fx-max-width: Infinity; }
 .sw2-field-input:focused { -fx-border-color: #2563EB; }
-.sw2-field-textarea { -fx-font-size: 16px; -fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 8px 12px; -fx-max-width: Infinity; }
+.sw2-field-textarea { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 16px; -fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 8px 12px; -fx-max-width: Infinity; }
 .sw2-field-textarea:focused { -fx-border-color: #2563EB; }
 .sw2-required { -fx-text-fill: #DC2626; }
 

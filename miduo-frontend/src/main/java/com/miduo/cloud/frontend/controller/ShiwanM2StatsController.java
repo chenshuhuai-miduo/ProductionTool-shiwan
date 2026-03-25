@@ -148,8 +148,8 @@ public class ShiwanM2StatsController implements Initializable {
                 setText(status);
                 setAlignment(Pos.CENTER);
                 setStyle("成功".equals(status)
-                        ? "-fx-text-fill: #10B981; -fx-font-weight: bold;"
-                        : "-fx-text-fill: #EF4444; -fx-font-weight: bold;");
+                        ? "-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #10B981; -fx-font-weight: bold;"
+                        : "-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #EF4444; -fx-font-weight: bold;");
             }
         });
         upColReason.setCellFactory(col -> new TableCell<>() {
@@ -157,7 +157,7 @@ public class ShiwanM2StatsController implements Initializable {
 
             {
                 label.setWrapText(true);
-                label.setFont(Font.font("Microsoft YaHei", 15));
+                label.setFont(Font.font("Microsoft YaHei", 16));
                 label.setAlignment(Pos.TOP_LEFT);
                 label.setMinWidth(0);
                 setGraphic(label);

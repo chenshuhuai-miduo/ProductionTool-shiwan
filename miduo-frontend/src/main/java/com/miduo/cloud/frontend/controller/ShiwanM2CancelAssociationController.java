@@ -90,7 +90,9 @@ public class ShiwanM2CancelAssociationController {
         Label identifyPh = new Label("请在左侧输入码值并点击识别");
         identifyPh.setStyle("-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';");
         identifyResultList.setPlaceholder(identifyPh);
-        cancelRecordList.setPlaceholder(new Label("暂无取消关联记录"));
+        Label cancelPh = new Label("暂无取消关联记录");
+        cancelPh.setStyle("-fx-text-fill:#6B7280; -fx-font-size:16px; -fx-font-family:'Microsoft YaHei';");
+        cancelRecordList.setPlaceholder(cancelPh);
 
         // 自定义 Cell
         pendingList.setCellFactory(lv -> new PendingCell());
@@ -874,7 +876,7 @@ public class ShiwanM2CancelAssociationController {
             super.updateItem(item, empty);
             if (empty || item == null) { setGraphic(null); setText(null); return; }
             Label label = new Label(item.toString());
-            label.setStyle("-fx-font-size:16px; -fx-text-fill:" +
+            label.setStyle("-fx-font-size:16px; -fx-font-family:'Microsoft YaHei'; -fx-text-fill:" +
                     (item.success ? "#10B981" : "#DC2626") + ";");
             label.setWrapText(true);
             setGraphic(label);

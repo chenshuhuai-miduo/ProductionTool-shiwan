@@ -11,7 +11,7 @@
 
 <HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2CancelAssociationController"
-      styleClass="shiwan-m2-content-body" spacing="16">
+      styleClass="shiwan-m2-content-body" spacing="16" minHeight="0">
 
     <!-- ===== 左侧操作区（600px）===== -->
     <VBox prefWidth="600" minWidth="540" spacing="12" styleClass="shiwan-m2-maint-card">
@@ -41,7 +41,7 @@
         <!-- 待取消列表 -->
         <VBox spacing="6">
             <Label text="待取消列表" styleClass="shiwan-m2-maint-label"/>
-            <ListView fx:id="pendingList" prefHeight="120" maxHeight="160"
+            <ListView fx:id="pendingList" prefHeight="120" maxHeight="160" minHeight="0"
                       styleClass="shiwan-m2-maint-result-list"/>
         </VBox>
 
@@ -77,23 +77,23 @@
 
     </VBox>
 
-    <!-- ===== 右侧结果区 ===== -->
-    <VBox HBox.hgrow="ALWAYS" spacing="16">
+    <!-- ===== 右侧结果区（标题/底栏固定，仅中间 ListView 内部滚动）===== -->
+    <VBox HBox.hgrow="ALWAYS" minHeight="0" spacing="16">
 
-        <!-- 识别结果（设计 OL6SK：标题 → 列表 → 底部分汇总） -->
-        <VBox VBox.vgrow="ALWAYS" spacing="8" styleClass="shiwan-m2-maint-card">
+        <!-- 识别结果：标题 + 可滚动列表 + 底部汇总（汇总不随列表滚） -->
+        <VBox VBox.vgrow="ALWAYS" minHeight="0" spacing="8" styleClass="shiwan-m2-maint-card">
             <Label text="识别结果" styleClass="shiwan-m2-maint-title"/>
-            <ListView fx:id="identifyResultList" VBox.vgrow="ALWAYS"
+            <ListView fx:id="identifyResultList" VBox.vgrow="ALWAYS" minHeight="0"
                       styleClass="sw2-identify-result-list"/>
             <Label fx:id="identifySummaryLabel" text="" styleClass="sw2-identify-summary"/>
         </VBox>
 
-        <!-- 取消记录 -->
-        <VBox prefHeight="220" minHeight="160" spacing="8" styleClass="shiwan-m2-maint-card">
+        <!-- 取消记录：标题固定，仅列表区域滚动 -->
+        <VBox prefHeight="220" minHeight="160" maxHeight="220" spacing="12" styleClass="shiwan-m2-maint-card">
             <Label text="取消记录"
-                   style="-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#1F2937;"/>
-            <ListView fx:id="cancelRecordList" VBox.vgrow="ALWAYS"
-                      styleClass="shiwan-m2-maint-result-list"/>
+                   style="-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"/>
+            <ListView fx:id="cancelRecordList" VBox.vgrow="ALWAYS" minHeight="0"
+                      styleClass="sw2-cancel-record-list"/>
         </VBox>
 
     </VBox>

@@ -31,7 +31,7 @@
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <DatePicker fx:id="startDate" styleClass="sw2-filter-combo"
                             prefHeight="40" HBox.hgrow="ALWAYS"/>
-                <Label text="-" style="-fx-text-fill:#9CA3AF; -fx-font-size:18px;"/>
+                <Label text="-" styleClass="sw2-filter-date-sep"/>
                 <DatePicker fx:id="endDate" styleClass="sw2-filter-combo"
                             prefHeight="40" HBox.hgrow="ALWAYS"/>
             </HBox>
@@ -100,7 +100,7 @@
                 <Label text="日期：" styleClass="sw2-filter-label" minWidth="40"/>
                 <DatePicker fx:id="uploadStartDate" styleClass="sw2-filter-combo"
                             prefHeight="40" HBox.hgrow="ALWAYS"/>
-                <Label text="-" style="-fx-text-fill:#9CA3AF; -fx-font-size:18px;"/>
+                <Label text="-" styleClass="sw2-filter-date-sep"/>
                 <DatePicker fx:id="uploadEndDate" styleClass="sw2-filter-combo"
                             prefHeight="40" HBox.hgrow="ALWAYS"/>
             </HBox>
@@ -140,8 +140,7 @@
                     <TableColumn fx:id="upColReason"  text="异常原因"  prefWidth="160" minWidth="100"/>
                 </columns>
                 <placeholder>
-                    <Label text="暂无上传记录"
-                           style="-fx-text-fill:#9CA3AF; -fx-font-size:16px;"/>
+                    <Label text="暂无上传记录" styleClass="sw2-query-empty-hint"/>
                 </placeholder>
             </TableView>
 
@@ -149,12 +148,12 @@
             <HBox styleClass="sw2-pagination-bar" alignment="CENTER_LEFT" spacing="10">
                 <!-- 总条数 -->
                 <Label fx:id="upTotalLabel" text="共 0 条"
-                       style="-fx-font-size:18px; -fx-text-fill:#374151;"/>
+                       styleClass="sw2-page-num-text"/>
 
                 <Region HBox.hgrow="ALWAYS"/>
 
                 <!-- 每页条数 -->
-                <Label text="每页" style="-fx-font-size:16px; -fx-text-fill:#6B7280;"/>
+                <Label text="每页" styleClass="sw2-page-caption"/>
                 <ComboBox fx:id="upPageSizeCombo" prefWidth="90" prefHeight="40"
                           styleClass="sw2-page-combo"
                           onAction="#onUploadPageSizeChange">
@@ -166,19 +165,19 @@
                     </FXCollections></items>
                     <value><String fx:value="20"/></value>
                 </ComboBox>
-                <Label text="条" style="-fx-font-size:16px; -fx-text-fill:#6B7280;"/>
+                <Label text="条" styleClass="sw2-page-caption"/>
 
                 <!-- 翻页按钮 -->
                 <Button fx:id="upFirstBtn" text="首页"  styleClass="sw2-page-btn" onAction="#onUploadFirstPage"/>
                 <Button fx:id="upPrevBtn"  text="上一页" styleClass="sw2-page-btn" onAction="#onUploadPrevPage"/>
 
                 <!-- 页码跳转 -->
-                <Label text="第" style="-fx-font-size:18px; -fx-text-fill:#374151;"/>
+                <Label text="第" styleClass="sw2-page-num-text"/>
                 <TextField fx:id="upPageField" text="1" prefWidth="60" prefHeight="40"
                            alignment="CENTER" styleClass="sw2-page-field"
                            onAction="#onUploadGoPage"/>
                 <Label fx:id="upPageTotalLabel" text="/ 1 页"
-                       style="-fx-font-size:18px; -fx-text-fill:#1F2937;"/>
+                       styleClass="sw2-page-num-text-accent"/>
 
                 <Button fx:id="upNextBtn" text="下一页" styleClass="sw2-page-btn" onAction="#onUploadNextPage"/>
                 <Button fx:id="upLastBtn" text="最后页" styleClass="sw2-page-btn" onAction="#onUploadLastPage"/>

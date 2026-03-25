@@ -88,7 +88,7 @@ public class ShiwanM2QueryController implements Initializable {
         setupColumns();
         setupRowSelection();
         Label placeholder = new Label("未找到该码信息");
-        placeholder.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 16px;");
+        placeholder.setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-text-fill: #9CA3AF; -fx-font-size: 16px;");
         resultTable.setPlaceholder(placeholder);
     }
 
@@ -103,7 +103,7 @@ public class ShiwanM2QueryController implements Initializable {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : item);
-                setStyle("-fx-alignment: CENTER; -fx-text-fill: #9CA3AF; -fx-font-size: 14px;");
+                setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-alignment: CENTER; -fx-text-fill: #9CA3AF;");
             }
         });
 
@@ -133,13 +133,13 @@ public class ShiwanM2QueryController implements Initializable {
                 super.updateItem(item, empty);
                 if (empty || item == null || item.isEmpty()) {
                     setText(null);
-                    setStyle("-fx-font-size: 15px; -fx-alignment: CENTER;");
+                    setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-alignment: CENTER;");
                 } else {
                     setText(item);
                     if (!inputCode.isEmpty() && item.equals(inputCode)) {
-                        setStyle("-fx-text-fill: #F44336; -fx-font-weight: bold; -fx-font-size: 15px; -fx-alignment: CENTER;");
+                        setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #F44336; -fx-font-weight: bold; -fx-alignment: CENTER;");
                     } else {
-                        setStyle("-fx-font-size: 15px; -fx-text-fill: #1F2937; -fx-alignment: CENTER;");
+                        setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #1F2937; -fx-alignment: CENTER;");
                     }
                 }
             }
@@ -319,9 +319,12 @@ public class ShiwanM2QueryController implements Initializable {
         // 是否关联：有箱码或垛码视为已关联，否则显示未关联
         boolean linked = !row.caseCode.isEmpty() || !row.palletCode.isEmpty();
         detLinked.setText(linked ? "已关联" : "未关联");
-        detLinked.setStyle(linked
-                ? "-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"
-                : "-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+        detLinked.getStyleClass().removeAll(
+                "sw2-query-detail-value-muted",
+                "sw2-query-detail-value-linked-ok",
+                "sw2-query-detail-value-linked-no");
+        detLinked.getStyleClass().add(linked ? "sw2-query-detail-value-linked-ok" : "sw2-query-detail-value-linked-no");
+        detLinked.setStyle(null);
 
         detProductCode.setText(row.productNo.isEmpty() ? "—" : row.productNo);
         // 优先使用查询时 LEFT JOIN 已带出的产品名称；若为空且有产品编号，则异步补查产品表

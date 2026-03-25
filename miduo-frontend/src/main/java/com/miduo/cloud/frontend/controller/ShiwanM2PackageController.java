@@ -127,12 +127,13 @@ public class ShiwanM2PackageController implements Initializable {
                     return;
                 }
                 setText(status);
+                String font = "-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px;";
                 if ("正常".equals(status)) {
-                    setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
+                    setStyle(font + " -fx-text-fill: #16A34A; -fx-font-weight: bold;");
                 } else if ("已删除".equals(status)) {
-                    setStyle("-fx-text-fill: #9CA3AF;");
+                    setStyle(font + " -fx-text-fill: #9CA3AF;");
                 } else {
-                    setStyle("-fx-text-fill: #D97706;");
+                    setStyle(font + " -fx-text-fill: #D97706;");
                 }
             }
         });

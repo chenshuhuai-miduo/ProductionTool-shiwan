@@ -498,8 +498,9 @@ public class ShiwanM2MainController implements Initializable {
 
     /**
      * 注册 UploadLogBus 垛状态事件监听：
-     * UPLOADING → 实时上传数据区新增条目；
-     * SUCCESS/FAILED → 更新条目状态 + 数据接收区追加结果日志。
+     * 每个垛码在实时上传区仅一行，状态在待上传/上传中/已上传/失败间就地变更；
+     * UPLOADING 时若已有该行则只改状态与箱数（不挪位置），无行时再在顶部插入；
+     * SUCCESS/FAILED → 同上更新状态 + 数据接收区追加结果日志。
      */
     private void registerPalletEventListener() {
         UploadLogBus.registerPalletEventListener((palletCode, boxCount, status, errorMsg) ->
@@ -508,20 +509,31 @@ public class ShiwanM2MainController implements Initializable {
                 ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
                 switch (status) {
                     case UPLOADING: {
-                        // 同一垛码只保留一条记录：先尝试更新已有条目（支持有无"垛 "前缀两种格式）
-                        boolean found = false;
-                        for (UploadItem it : uploadItems) {
-                            String stored = it.palletCode;
-                            if (palletCode.equals(stored)
-                                    || ("垛 " + palletCode).equals(stored)
-                                    || palletCode.equals(stored.replaceFirst("^垛 ", ""))) {
-                                it.status = UploadStatus.UPLOADING;
-                                found = true;
-                                break;
+                        String bc = boxCount + "箱";
+                        UploadItem keep = null;
+                        int minIdx = Integer.MAX_VALUE;
+                        for (int i = 0; i < uploadItems.size(); i++) {
+                            UploadItem it = uploadItems.get(i);
+                            if (!matchesPalletCode(it.palletCode, palletCode)) continue;
+                            it.status = UploadStatus.UPLOADING;
+                            it.boxCount = bc;
+                            if (i < minIdx) {
+                                minIdx = i;
+                                keep = it;
                             }
                         }
-                        if (!found) {
-                            uploadItems.add(0, new UploadItem("垛 " + palletCode, boxCount + "箱", UploadStatus.UPLOADING));
+                        if (keep == null) {
+                            String disp = formatPalletDisplayForCard(palletCode);
+                            if (disp.isEmpty() && palletCode != null && !palletCode.trim().isEmpty()) {
+                                disp = "垛 " + normalizePalletKey(palletCode);
+                            }
+                            if (!disp.isEmpty()) {
+                                uploadItems.add(0, new UploadItem(disp, bc, UploadStatus.UPLOADING));
+                            }
+                        } else {
+                            // 同一垛仅保留一行：去掉重复项，不在列表内改顺序（只变状态）
+                            final UploadItem keepRef = keep;
+                            uploadItems.removeIf(it -> it != keepRef && matchesPalletCode(it.palletCode, palletCode));
                         }
                         uploadDataList.refresh();
                         String base = time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，";
@@ -550,16 +562,22 @@ public class ShiwanM2MainController implements Initializable {
         );
     }
 
-    /** 按垛码查找 uploadItems 中对应条目并更新状态，更新后刷新列表（兼容有无"垛 "前缀两种格式） */
+    /** 按垛码更新状态，并合并同一垛码的重复行（只保留一条） */
     private void updateUploadItemStatus(String palletCode, UploadStatus newStatus) {
-        for (UploadItem item : uploadItems) {
-            String stored = item.palletCode;
-            if (palletCode.equals(stored)
-                    || ("垛 " + palletCode).equals(stored)
-                    || palletCode.equals(stored.replaceFirst("^垛 ", ""))) {
-                item.status = newStatus;
-                break;
+        UploadItem keep = null;
+        int minIdx = Integer.MAX_VALUE;
+        for (int i = 0; i < uploadItems.size(); i++) {
+            UploadItem item = uploadItems.get(i);
+            if (!matchesPalletCode(item.palletCode, palletCode)) continue;
+            item.status = newStatus;
+            if (i < minIdx) {
+                minIdx = i;
+                keep = item;
             }
+        }
+        if (keep != null) {
+            final UploadItem keepRef = keep;
+            uploadItems.removeIf(it -> it != keepRef && matchesPalletCode(it.palletCode, palletCode));
         }
         uploadDataList.refresh();
     }
@@ -571,6 +589,42 @@ public class ShiwanM2MainController implements Initializable {
         if (raw == null) return "";
         String s = raw.trim().replaceFirst("^垛\\s*码?\\s*", "");
         return s.isEmpty() ? "" : "垛 " + s;
+    }
+
+    /** 去掉「垛/垛码」前缀后的垛码，用于列表去重与事件匹配（避免同一垛多条记录） */
+    private static String normalizePalletKey(String storedOrRaw) {
+        if (storedOrRaw == null) return "";
+        String s = storedOrRaw.trim().replaceFirst("^垛\\s*码?\\s*", "");
+        return s.trim();
+    }
+
+    /** 列表中存储的垛显示串与事件里的垛码是否同一垛 */
+    private static boolean matchesPalletCode(String storedDisplay, String palletCodeFromEvent) {
+        if (palletCodeFromEvent == null) return false;
+        String k1 = normalizePalletKey(palletCodeFromEvent);
+        String k2 = normalizePalletKey(storedDisplay);
+        if (!k1.isEmpty() && k1.equals(k2)) return true;
+        return palletCodeFromEvent.equals(storedDisplay)
+                || ("垛 " + palletCodeFromEvent).equals(storedDisplay)
+                || palletCodeFromEvent.equals(storedDisplay.replaceFirst("^垛 ", ""));
+    }
+
+    /**
+     * 满垛/强制满垛时在顶部插入「待上传」行；同一归一化垛码先删旧再插，保证实时上传区每条垛码仅一行。
+     */
+    private void addPendingUploadRowAtTop(String palletCodeRaw, String boxCountLabel) {
+        String key = normalizePalletKey(palletCodeRaw);
+        if (!key.isEmpty()) {
+            uploadItems.removeIf(it -> key.equals(normalizePalletKey(it.palletCode)));
+        }
+        String disp = formatPalletDisplayForCard(palletCodeRaw);
+        if (disp.isEmpty() && key != null && !key.isEmpty()) {
+            disp = "垛 " + key;
+        }
+        if (disp.isEmpty()) {
+            return;
+        }
+        uploadItems.add(0, new UploadItem(disp, boxCountLabel, UploadStatus.PENDING));
     }
 
     /** 根据系统设置中的页面配置，调整主界面 Tab 的显示与顺序（可多次调用，实时生效） */
@@ -608,7 +662,9 @@ public class ShiwanM2MainController implements Initializable {
         productComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(ProductItem item) {
-                return item != null ? item.getDisplay() : "";
+                if (item == null) return "";
+                String n = item.getName();
+                return n != null ? n : "";
             }
 
             @Override
@@ -2070,7 +2126,7 @@ public class ShiwanM2MainController implements Initializable {
                                 .content("满垛完成 - 垛码：" + pc + " 共 " + cpp + " 箱，生产单：" + orderNo
                                         + "，已生产垛数：" + palletCount)
                                 .saveAsync();
-                        uploadItems.add(0, new UploadItem("垛 " + pc, cpp + "箱", UploadStatus.PENDING));
+                        addPendingUploadRowAtTop(pc, cpp + "箱");
                         currentCases = 0;
                         curCasesLabel.setText("0");
                     }
@@ -2522,7 +2578,7 @@ public class ShiwanM2MainController implements Initializable {
                 .content("强制满垛 - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱，生产单：" + forceOrderNo
                         + "，已生产垛数：" + palletCount)
                 .saveAsync();
-        uploadItems.add(0, new UploadItem("垛 " + palletCode, caseCount + "箱", UploadStatus.PENDING));
+        addPendingUploadRowAtTop(palletCode, caseCount + "箱");
         currentCases = 0;
         currentBoxes = 0;
         boxRecvCountSet = false;
@@ -2981,7 +3037,7 @@ public class ShiwanM2MainController implements Initializable {
             addDataLog(now + "  满垛提示 - 垛码：" + palletCode + " 已生成，共" + cpp + "箱" + uploadSuffix, LogType.SUCCESS);
             addOpLog(now + "  满垛完成，已生产垛数：" + palletCount, LogType.INFO);
 
-            uploadItems.add(0, new UploadItem("垛 " + palletCode, cpp + "箱", UploadStatus.PENDING));
+            addPendingUploadRowAtTop(palletCode, cpp + "箱");
 
             currentCases = 0;
             currentBoxes = 0;
@@ -3129,7 +3185,7 @@ public class ShiwanM2MainController implements Initializable {
     /** 上传条目数据模型 */
     public static class UploadItem {
         public final String       palletCode;
-        public final String       boxCount;
+        public       String       boxCount;
         public       UploadStatus status;
 
         public UploadItem(String palletCode, String boxCount, UploadStatus status) {
