@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.annotation.PreDestroy;
 import java.io.BufferedReader;
@@ -180,6 +181,7 @@ public class ShiwanM2BoxCaseService {
             }
             return ApiResult.success("盒箱关联成功", data);
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             e.printStackTrace();
             return ApiResult.error("盒箱关联失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
@@ -342,6 +344,7 @@ public class ShiwanM2BoxCaseService {
             if (fullPallet && palletCode != null) data.put("palletCode", palletCode);
             return ApiResult.success("盒箱关联成功", data);
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             e.printStackTrace();
             return ApiResult.error("盒箱关联失败：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
@@ -1650,26 +1653,13 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
-     * 批次关联 - 从 CodeRelationUpload 中硬删除指定盒码（MediumSerialNumber）的未关联记录。
-     * 条件：BigSerialNumber 为空（尚未关联箱码）且 IsDel=0，不论 Status。
-     * @return 实际删除行数
+     * 批次关联兼容方法：历史方法名保留，但不再物理删除。
+     * 统一将指定盒码在 CodeRelationUpload 中未关联箱码的记录置为未完成（Status=0）。
+     * @return 实际更新行数
      */
     public int deleteCodeRelationUploadByBoxCodes(List<String> boxCodes) {
-        if (boxCodes == null || boxCodes.isEmpty()) return 0;
-        try {
-            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
-            int deleted = jdbcTemplate.update(
-                    "DELETE FROM CodeRelationUpload WHERE MediumSerialNumber IN (" + placeholders + ") " +
-                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') AND IsDel = 0",
-                    boxCodes.toArray());
-            if (deleted > 0) {
-                log.info("[批次剔除] 从 CodeRelationUpload 删除 {} 条记录，盒码：{}", deleted, boxCodes);
-            }
-            return deleted;
-        } catch (Exception e) {
-            log.error("[批次剔除] 删除 CodeRelationUpload 记录失败: {}", e.getMessage(), e);
-            return 0;
-        }
+        log.warn("[批次剔除] deleteCodeRelationUploadByBoxCodes 已改为置未完成逻辑，不再物理删除");
+        return markCodeRelationUploadUnfinishedByBoxCodes(boxCodes);
     }
 
     /**
