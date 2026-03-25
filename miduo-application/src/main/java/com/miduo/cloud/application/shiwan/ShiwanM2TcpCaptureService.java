@@ -636,10 +636,10 @@ public class ShiwanM2TcpCaptureService {
                 boxCaseService.insertStatus4RejectRecordsForBox(currentOrderNo, caseCode, status4Box);
             }
 
-            // 从 CodeRelationUpload 删除该批次所有盒码的未关联记录
+            // 从 CodeRelationUpload 处理该批次盒码未关联记录：统一置为未完成（Status=0），不再物理删除。
             if (!allBoxCodes.isEmpty()) {
-                int deleted = boxCaseService.deleteCodeRelationUploadByBoxCodes(allBoxCodes);
-                log.warn("[批{}] 整批剔除：从 CodeRelationUpload 删除 {} 条记录", batchNo, deleted);
+                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
+                log.warn("[批{}] 整批剔除：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
             }
 
             // 构造问题摘要
@@ -694,7 +694,8 @@ public class ShiwanM2TcpCaptureService {
                 }
             }
             if (!digitOkBoxCodes.isEmpty()) {
-                boxCaseService.deleteCodeRelationUploadByBoxCodes(digitOkBoxCodes);
+                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(digitOkBoxCodes);
+                log.warn("[批{}] 关联失败：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
             }
             addEvent("ASSOC_FAIL",
                     "[批" + batchNo + "] 关联失败 箱码:" + caseCode + "，原因：" + errMsg,

@@ -63,6 +63,8 @@ import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -326,7 +328,7 @@ public class ShiwanM2MainController implements Initializable {
     private void autoConnectConfiguredDevicesOnStartup() {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  正在按系统设置自动连接IO设备...", LogType.INFO);
-        connectAllDevices();
+        connectAllDevices(true);
     }
 
     /** 与 {@link #connectAllDevices} 一致：计入状态栏的已启用设备（排除 TCP 管理的盒码/箱码相机）。 */
@@ -336,6 +338,15 @@ public class ShiwanM2MainController implements Initializable {
         }
         String cat = device.getDeviceCategory();
         return !"盒码采集".equals(cat) && !"箱码采集".equals(cat);
+    }
+
+    /** 盒码/箱码采集相机：启动时只做连通性检测，不建立长期连接占用。 */
+    private static boolean isCameraCaptureDevice(IoDeviceDTO device) {
+        if (device == null) {
+            return false;
+        }
+        String cat = device.getDeviceCategory();
+        return "盒码采集".equals(cat) || "箱码采集".equals(cat);
     }
 
     /**
@@ -1760,8 +1771,10 @@ public class ShiwanM2MainController implements Initializable {
         startM1Sync();
         // 启动 TCP 相机采集（n=每箱盒数, m=每垛箱数）
         startTcpCapture(orderNo, productNo, n, m);
-        // 最后连接所有IO设备（网口/串口），连接完成后才打印连接结果日志
-        connectAllDevices();
+        // 最后连接所有IO设备（网口/串口），连接完成后打印汇总日志
+        connectAllDevices(false);
+        // 开始采集时：按数据库实时箱数检查是否已达到成垛阈值，达到则直接强制满垛（并触发上传流程）
+        checkAndForceFullPalletOnStart(orderNo, m);
         // 如果是恢复上次未完成任务，启动TCP后从数据库恢复待关联盒码到内存队列
         if (pendingRestoreOrderNo != null && pendingRestoreOrderNo.equals(orderNo)) {
             final String restoreOrderNo = pendingRestoreOrderNo;
@@ -1783,6 +1796,33 @@ public class ShiwanM2MainController implements Initializable {
                 } catch (Exception ignored) {}
             });
         }
+    }
+
+    /**
+     * 开始采集后按数据库实时箱数检查：若当前未成垛箱数已达到每垛箱数阈值，则直接强制满垛。
+     * 场景：提取工单未成垛后，已有箱数已满足成垛标准。
+     */
+    private void checkAndForceFullPalletOnStart(String orderNo, int boxesPerPallet) {
+        if (orderNo == null || orderNo.trim().isEmpty() || boxesPerPallet <= 0) return;
+        HttpUtil.asyncGet("/api/shiwan-m2/box-case/current-cases?orderNo="
+                        + java.net.URLEncoder.encode(orderNo.trim(), java.nio.charset.StandardCharsets.UTF_8),
+                json -> {
+                    try {
+                        JsonNode node = JSON.readTree(json);
+                        if (node == null || !node.has("code") || node.get("code").asInt() != 200 || !node.has("data")) {
+                            return;
+                        }
+                        int realCases = node.get("data").asInt(0);
+                        currentCases = realCases;
+                        curCasesLabel.setText(String.valueOf(realCases));
+                        if (realCases >= boxesPerPallet) {
+                            addOpLog(LocalDateTime.now().format(TIME_FMT)
+                                    + "  启动检测到未成垛箱数已达阈值（" + realCases + "/" + boxesPerPallet + "），自动执行满垛", LogType.INFO);
+                            forceFullPalletBackend(orderNo, realCases, false);
+                        }
+                    } catch (Exception ignored) {}
+                },
+                ignored -> {});
     }
 
     private static String escapeJson(String s) {
@@ -1842,7 +1882,7 @@ public class ShiwanM2MainController implements Initializable {
      * 开始采集时在后台线程连接所有已启用的IO设备（网口/串口）。
      * 先尝试连接所有设备，等待片刻后再用 isConnected 统计实际连接数，最后打印结果日志。
      */
-    private void connectAllDevices() {
+    private void connectAllDevices(boolean logDeviceDetails) {
         productExecutor.submit(() -> {
             try {
                 String resp = HttpUtil.doGet("/api/device/list");
@@ -1859,10 +1899,13 @@ public class ShiwanM2MainController implements Initializable {
                 }
                 // 收集需要连接的设备（排除盒码/箱码采集相机，由后端TCP服务管理）
                 List<IoDeviceDTO> targetDevices = new ArrayList<>();
+                List<IoDeviceDTO> cameraProbeDevices = new ArrayList<>();
                 for (IoDeviceDTO device : result.getData()) {
                     if (!Boolean.TRUE.equals(device.getEnabled())) continue;
-                    String cat = device.getDeviceCategory();
-                    if ("盒码采集".equals(cat) || "箱码采集".equals(cat)) continue;
+                    if (isCameraCaptureDevice(device)) {
+                        cameraProbeDevices.add(device);
+                        continue;
+                    }
                     targetDevices.add(device);
                 }
                 // 逐个发起连接
@@ -1896,11 +1939,54 @@ public class ShiwanM2MainController implements Initializable {
                         connectedCount++;
                     }
                 }
+                int cameraProbeSuccessCount = 0;
+                if (logDeviceDetails && !cameraProbeDevices.isEmpty()) {
+                    for (IoDeviceDTO camera : cameraProbeDevices) {
+                        String connType = camera.getConnectionType() == null ? "" : camera.getConnectionType().trim();
+                        if (!"网口".equals(connType)) {
+                            String warnMsg = LocalDateTime.now().format(TIME_FMT)
+                                    + "  相机连接检测跳过: " + camera.getDeviceName()
+                                    + "（当前连接方式=" + connType + "）";
+                            Platform.runLater(() -> addOpLog(warnMsg, LogType.WARN));
+                            continue;
+                        }
+                        boolean ok = tryProbeTcpConnectivity(camera);
+                        if (ok) {
+                            cameraProbeSuccessCount++;
+                        }
+                        String endpoint = (camera.getAddress() == null ? "" : camera.getAddress())
+                                + ":" + (camera.getPort() == null ? "" : camera.getPort());
+                        String probeMsg = LocalDateTime.now().format(TIME_FMT) + "  相机连接"
+                                + (ok ? "成功: " : "失败: ")
+                                + camera.getDeviceName() + " (" + endpoint + ")";
+                        LogType probeType = ok ? LogType.SUCCESS : LogType.WARN;
+                        Platform.runLater(() -> addOpLog(probeMsg, probeType));
+                    }
+                }
+                if (logDeviceDetails) {
+                    for (IoDeviceDTO device : targetDevices) {
+                        boolean connected = DeviceConnectionManager.getInstance().isConnected(device.getId());
+                        String connType = device.getConnectionType() == null ? "" : " (" + device.getConnectionType() + ")";
+                        String msg = LocalDateTime.now().format(TIME_FMT) + "  设备连接"
+                                + (connected ? "成功: " : "失败: ")
+                                + device.getDeviceName() + connType;
+                        LogType type = connected ? LogType.SUCCESS : LogType.WARN;
+                        Platform.runLater(() -> addOpLog(msg, type));
+                    }
+                    final int cameraTotal = cameraProbeDevices.size();
+                    final int cameraOk = cameraProbeSuccessCount;
+                    if (cameraTotal > 0) {
+                        Platform.runLater(() -> addOpLog(
+                                LocalDateTime.now().format(TIME_FMT)
+                                        + "  相机连通性检测完成，成功 " + cameraOk + " / " + cameraTotal + " 台（未占用连接）",
+                                LogType.INFO));
+                    }
+                }
                 final int cnt = connectedCount;
                 final int total = targetDevices.size();
                 Platform.runLater(() -> {
                     addOpLog(
-                            LocalDateTime.now().format(TIME_FMT) + "  IO设备连接完成，已连接 " + cnt + " / " + total + " 台",
+                            LocalDateTime.now().format(TIME_FMT) + "  设备初始化完成，已连接 " + cnt + " / " + total + " 台",
                             LogType.INFO);
                     updateDeviceStatusBar();
                 });
@@ -1912,6 +1998,34 @@ public class ShiwanM2MainController implements Initializable {
                 });
             }
         });
+    }
+
+    /** 对网口设备做一次短连接探测（连上即关闭），避免长期占用设备连接。 */
+    private boolean tryProbeTcpConnectivity(IoDeviceDTO device) {
+        if (device == null) {
+            return false;
+        }
+        String address = device.getAddress() != null ? device.getAddress().trim() : "";
+        if (address.isEmpty()) {
+            return false;
+        }
+        int port;
+        try {
+            String portText = device.getPort() != null ? device.getPort().trim() : "";
+            port = portText.isEmpty() ? 502 : Integer.parseInt(portText);
+        } catch (Exception e) {
+            return false;
+        }
+        int timeoutMs = 2000;
+        if (device.getTimeout() != null && device.getTimeout() > 0) {
+            timeoutMs = Math.max(1000, Math.min(device.getTimeout() * 1000, 5000));
+        }
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(address, port), timeoutMs);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** 停止 TCP 相机采集并关闭事件轮询。 */
@@ -2529,6 +2643,14 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     private void forceFullPalletBackend(String orderNo, int currentCaseCount) {
+        forceFullPalletBackend(orderNo, currentCaseCount, true);
+    }
+
+    /**
+     * 调用后端满垛接口。
+     * @param showAsForce true=按“强制满垛”文案展示，false=按“满垛”文案展示（自动达标场景）
+     */
+    private void forceFullPalletBackend(String orderNo, int currentCaseCount, boolean showAsForce) {
         String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\",\"currentCaseCount\":" + currentCaseCount + "}";
         HttpUtil.asyncPost("/api/shiwan-m2/box-case/force-full-pallet", body, json -> {
             try {
@@ -2550,9 +2672,9 @@ public class ShiwanM2MainController implements Initializable {
                 JsonNode data = root.get("data");
                 String palletCode = data != null && data.has("palletCode") ? data.get("palletCode").asText() : null;
                 if (palletCode == null) {
-                    fetchNextVirtualSerialNumberAsync(code -> finishForcePallet(code, currentCaseCount));
+                    fetchNextVirtualSerialNumberAsync(code -> finishForcePallet(code, currentCaseCount, showAsForce));
                 } else {
-                    finishForcePallet(palletCode, currentCaseCount);
+                    finishForcePallet(palletCode, currentCaseCount, showAsForce);
                 }
             } catch (Exception e) {
                 showWarn("强制满垛失败", e.getMessage());
@@ -2561,14 +2683,15 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     /** 强制满垛后端成功后更新 UI（FX 线程回调） */
-    private void finishForcePallet(String palletCode, int caseCount) {
+    private void finishForcePallet(String palletCode, int caseCount, boolean showAsForce) {
         palletCount++;
         palletCountLabel.setText(String.valueOf(palletCount));
         String now = LocalDateTime.now().format(TIME_FMT);
         boolean autoUploadOn = ShiwanM2SettingsStore.get().getUpload() == null
                 || ShiwanM2SettingsStore.get().getUpload().isAutoUpload();
         String uploadSuffix = autoUploadOn ? "，正在上传..." : "";
-        addDataLog(now + "  强制满垛 - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱" + uploadSuffix, LogType.SUCCESS);
+        String actionText = showAsForce ? "强制满垛" : "满垛";
+        addDataLog(now + "  " + actionText + " - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱" + uploadSuffix, LogType.SUCCESS);
         addOpLog(now + "  强制满垛操作完成，已生产垛数：" + palletCount, LogType.INFO);
         final String forceOrderNo = orderNumField.getText();
         OperateLogBuilder.create()
