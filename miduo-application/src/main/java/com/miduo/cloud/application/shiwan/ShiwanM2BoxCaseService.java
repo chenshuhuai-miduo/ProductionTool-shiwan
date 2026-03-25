@@ -1792,7 +1792,8 @@ public class ShiwanM2BoxCaseService {
 
     /**
      * 成垛后将码关系数据上传至开放平台（虚拟垛标入库接口）。
-     * 流程：① 设 IsUpload=3（上传中）→ ② 日志"开始上传"→ ③ 调接口 → ④ 日志"上传中" → ⑤ 5分钟后轮询。
+     * 流程：① 设 IsUpload=3（上传中）→ ② 日志"开始上传"→ ③ 调接口 → ④ 日志"上传中"
+     * → ⑤ 每 10 秒轮询结果，最多 5 次（若返回"虚拟垛正...在处理中"则继续重试）。
      * 接口调用失败：设 IsUpload=2 + 日志"上传失败"。任何步骤异常均不影响外层事务。
      *
      * @param boxCount 本垛箱数（用于日志显示）
@@ -1890,9 +1891,9 @@ public class ShiwanM2BoxCaseService {
                     formatUploadLogLine(logTime, palletCode, boxCount, "上传中…"),
                     UploadLogBus.Color.BLUE);
 
-            // ④ 5 分钟后轮询上传结果
+            // ④ 10 秒后开始轮询上传结果（最多 5 次）
             pollScheduler.schedule(
-                    () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount),
+                    () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, 1),
                     10, TimeUnit.SECONDS);
 
         } catch (Exception e) {
@@ -1914,10 +1915,13 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
-     * 5 分钟后轮询 GetSyncCodeAndVirtualRelationResult 接口，根据结果更新 IsUpload 并刷新实时上传区。
-     * return_code=0 → IsUpload=1（已上传）；否则 → IsUpload=2（上传失败）。
+     * 轮询 GetSyncCodeAndVirtualRelationResult 接口，根据结果更新 IsUpload 并刷新实时上传区。
+     * return_msg=处理成功 → IsUpload=1（已上传）；
+     * return_msg=虚拟垛正...在处理中 → 每 10 秒重试一次，最多 5 次；
+     * 其余结果或重试上限耗尽 → IsUpload=2（上传失败）。
      */
-    private void pollAndUpdatePalletStatus(String palletCode, String orderNo, int boxCount) {
+    private void pollAndUpdatePalletStatus(String palletCode, String orderNo, int boxCount, int attemptNo) {
+        final int maxAttempts = 5;
         try {
             ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
             if (cfg == null || cfg.getApi() == null) {
@@ -1965,6 +1969,27 @@ public class ShiwanM2BoxCaseService {
                         UploadLogBus.Color.GREEN);
                 UploadLogBus.firePalletEvent(palletCode, boxCount,
                         UploadLogBus.PalletUploadStatus.SUCCESS, null);
+            } else if (isVirtualPalletProcessing(returnMsg)) {
+                if (attemptNo < maxAttempts) {
+                    int nextAttempt = attemptNo + 1;
+                    log.info("[垛标结果查询] 垛 {} 第 {}/{} 次查询返回处理中，10 秒后重试。msg={}",
+                            palletCode, attemptNo, maxAttempts, returnMsg);
+                    pollScheduler.schedule(
+                            () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, nextAttempt),
+                            10, TimeUnit.SECONDS);
+                } else {
+                    String failMsg = "上传结果查询超时（连续" + maxAttempts + "次返回处理中）：" + returnMsg;
+                    jdbcTemplate.update(
+                            "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
+                            failMsg, palletCode);
+                    log.warn("[垛标结果查询] 垛 {} 查询超时失败: {}", palletCode, failMsg);
+                    UploadLogBus.log(
+                            formatUploadLogLine(logTime, palletCode, boxCount,
+                                    "上传失败（" + failMsg + "）"),
+                            UploadLogBus.Color.RED);
+                    UploadLogBus.firePalletEvent(palletCode, boxCount,
+                            UploadLogBus.PalletUploadStatus.FAILED, failMsg);
+                }
             } else {
                 jdbcTemplate.update(
                         "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
@@ -1980,6 +2005,15 @@ public class ShiwanM2BoxCaseService {
         } catch (Exception e) {
             log.error("[垛标结果查询] palletCode={} 异常: {}", palletCode, e.getMessage(), e);
         }
+    }
+
+    /** 开放平台返回“虚拟垛正XXX在处理中”时判定为可重试。 */
+    private static boolean isVirtualPalletProcessing(String returnMsg) {
+        if (returnMsg == null) {
+            return false;
+        }
+        String msg = returnMsg.trim();
+        return msg.contains("虚拟垛正") && msg.contains("处理中");
     }
 
     // ================================================================

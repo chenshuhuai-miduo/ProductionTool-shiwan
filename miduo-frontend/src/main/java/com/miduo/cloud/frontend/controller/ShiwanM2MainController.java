@@ -63,8 +63,6 @@ import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -328,7 +326,8 @@ public class ShiwanM2MainController implements Initializable {
     private void autoConnectConfiguredDevicesOnStartup() {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  正在按系统设置自动连接IO设备...", LogType.INFO);
-        connectAllDevices(true);
+        // 启动时包含盒码/箱码相机：连接成功后保持占用端口
+        connectAllDevices(true, true);
     }
 
     /** 与 {@link #connectAllDevices} 一致：计入状态栏的已启用设备（排除 TCP 管理的盒码/箱码相机）。 */
@@ -340,7 +339,7 @@ public class ShiwanM2MainController implements Initializable {
         return !"盒码采集".equals(cat) && !"箱码采集".equals(cat);
     }
 
-    /** 盒码/箱码采集相机：启动时只做连通性检测，不建立长期连接占用。 */
+    /** 盒码/箱码采集相机设备识别。 */
     private static boolean isCameraCaptureDevice(IoDeviceDTO device) {
         if (device == null) {
             return false;
@@ -1771,8 +1770,8 @@ public class ShiwanM2MainController implements Initializable {
         startM1Sync();
         // 启动 TCP 相机采集（n=每箱盒数, m=每垛箱数）
         startTcpCapture(orderNo, productNo, n, m);
-        // 最后连接所有IO设备（网口/串口），连接完成后打印汇总日志
-        connectAllDevices(false);
+        // 最后连接所有IO设备（网口/串口），相机连接沿用启动阶段结果，这里只补连非相机设备并打印汇总日志
+        connectAllDevices(false, false);
         // 开始采集时：按数据库实时箱数检查是否已达到成垛阈值，达到则直接强制满垛（并触发上传流程）
         checkAndForceFullPalletOnStart(orderNo, m);
         // 如果是恢复上次未完成任务，启动TCP后从数据库恢复待关联盒码到内存队列
@@ -1882,7 +1881,7 @@ public class ShiwanM2MainController implements Initializable {
      * 开始采集时在后台线程连接所有已启用的IO设备（网口/串口）。
      * 先尝试连接所有设备，等待片刻后再用 isConnected 统计实际连接数，最后打印结果日志。
      */
-    private void connectAllDevices(boolean logDeviceDetails) {
+    private void connectAllDevices(boolean logDeviceDetails, boolean includeCameraDevices) {
         productExecutor.submit(() -> {
             try {
                 String resp = HttpUtil.doGet("/api/device/list");
@@ -1897,13 +1896,11 @@ public class ShiwanM2MainController implements Initializable {
                     });
                     return;
                 }
-                // 收集需要连接的设备（排除盒码/箱码采集相机，由后端TCP服务管理）
+                // 收集需要连接的设备（是否包含相机由调用方控制）
                 List<IoDeviceDTO> targetDevices = new ArrayList<>();
-                List<IoDeviceDTO> cameraProbeDevices = new ArrayList<>();
                 for (IoDeviceDTO device : result.getData()) {
                     if (!Boolean.TRUE.equals(device.getEnabled())) continue;
-                    if (isCameraCaptureDevice(device)) {
-                        cameraProbeDevices.add(device);
+                    if (!includeCameraDevices && isCameraCaptureDevice(device)) {
                         continue;
                     }
                     targetDevices.add(device);
@@ -1939,30 +1936,6 @@ public class ShiwanM2MainController implements Initializable {
                         connectedCount++;
                     }
                 }
-                int cameraProbeSuccessCount = 0;
-                if (logDeviceDetails && !cameraProbeDevices.isEmpty()) {
-                    for (IoDeviceDTO camera : cameraProbeDevices) {
-                        String connType = camera.getConnectionType() == null ? "" : camera.getConnectionType().trim();
-                        if (!"网口".equals(connType)) {
-                            String warnMsg = LocalDateTime.now().format(TIME_FMT)
-                                    + "  相机连接检测跳过: " + camera.getDeviceName()
-                                    + "（当前连接方式=" + connType + "）";
-                            Platform.runLater(() -> addOpLog(warnMsg, LogType.WARN));
-                            continue;
-                        }
-                        boolean ok = tryProbeTcpConnectivity(camera);
-                        if (ok) {
-                            cameraProbeSuccessCount++;
-                        }
-                        String endpoint = (camera.getAddress() == null ? "" : camera.getAddress())
-                                + ":" + (camera.getPort() == null ? "" : camera.getPort());
-                        String probeMsg = LocalDateTime.now().format(TIME_FMT) + "  相机连接"
-                                + (ok ? "成功: " : "失败: ")
-                                + camera.getDeviceName() + " (" + endpoint + ")";
-                        LogType probeType = ok ? LogType.SUCCESS : LogType.WARN;
-                        Platform.runLater(() -> addOpLog(probeMsg, probeType));
-                    }
-                }
                 if (logDeviceDetails) {
                     for (IoDeviceDTO device : targetDevices) {
                         boolean connected = DeviceConnectionManager.getInstance().isConnected(device.getId());
@@ -1972,14 +1945,6 @@ public class ShiwanM2MainController implements Initializable {
                                 + device.getDeviceName() + connType;
                         LogType type = connected ? LogType.SUCCESS : LogType.WARN;
                         Platform.runLater(() -> addOpLog(msg, type));
-                    }
-                    final int cameraTotal = cameraProbeDevices.size();
-                    final int cameraOk = cameraProbeSuccessCount;
-                    if (cameraTotal > 0) {
-                        Platform.runLater(() -> addOpLog(
-                                LocalDateTime.now().format(TIME_FMT)
-                                        + "  相机连通性检测完成，成功 " + cameraOk + " / " + cameraTotal + " 台（未占用连接）",
-                                LogType.INFO));
                     }
                 }
                 final int cnt = connectedCount;
@@ -1998,34 +1963,6 @@ public class ShiwanM2MainController implements Initializable {
                 });
             }
         });
-    }
-
-    /** 对网口设备做一次短连接探测（连上即关闭），避免长期占用设备连接。 */
-    private boolean tryProbeTcpConnectivity(IoDeviceDTO device) {
-        if (device == null) {
-            return false;
-        }
-        String address = device.getAddress() != null ? device.getAddress().trim() : "";
-        if (address.isEmpty()) {
-            return false;
-        }
-        int port;
-        try {
-            String portText = device.getPort() != null ? device.getPort().trim() : "";
-            port = portText.isEmpty() ? 502 : Integer.parseInt(portText);
-        } catch (Exception e) {
-            return false;
-        }
-        int timeoutMs = 2000;
-        if (device.getTimeout() != null && device.getTimeout() > 0) {
-            timeoutMs = Math.max(1000, Math.min(device.getTimeout() * 1000, 5000));
-        }
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(address, port), timeoutMs);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     /** 停止 TCP 相机采集并关闭事件轮询。 */
