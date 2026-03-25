@@ -52,11 +52,15 @@
 
         <!-- 云端影响区（有已上传垛码时显示）-->
         <VBox fx:id="cloudWarningBox" spacing="12" visible="false" managed="false">
-            <Label fx:id="cloudTitleLabel"
-                   text="⚠ 云端影响：以下垛码已上传云端，执行将先取消整垛云端数据"
-                   wrapText="true" maxWidth="Infinity"
-                   style="-fx-font-size: 16px; -fx-font-weight: bold;
-                          -fx-text-fill: #92400E; -fx-font-family: 'Microsoft YaHei';"/>
+            <HBox spacing="8" alignment="TOP_LEFT">
+                <StackPane fx:id="cloudWarnTitleIconPane" minWidth="18" minHeight="18" prefWidth="18" prefHeight="18"
+                           maxWidth="18" maxHeight="18"/>
+                <Label fx:id="cloudTitleLabel"
+                       text="云端影响：以下垛码已上传云端，执行将先取消整垛云端数据"
+                       wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold;
+                              -fx-text-fill: #92400E; -fx-font-family: 'Microsoft YaHei';"/>
+            </HBox>
             <VBox fx:id="cloudPalletList" spacing="4"/>
         </VBox>
 
@@ -86,9 +90,8 @@
                             style="-fx-background-color: transparent; -fx-border-width: 0;
                                    -fx-effect: null; -fx-cursor: hand; -fx-padding: 4;">
                         <graphic>
-                            <Label fx:id="eyeIcon" text="&#x1F441;"
-                                   style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;
-                                          -fx-text-fill: #9CA3AF;"/>
+                            <StackPane fx:id="cancelPwdEyeIconPane" minWidth="22" minHeight="22" prefWidth="22" prefHeight="22"
+                                       maxWidth="22" maxHeight="22"/>
                         </graphic>
                     </Button>
                 </HBox>
@@ -101,8 +104,8 @@
 
         <!-- 底部警告 -->
         <HBox spacing="8" alignment="CENTER_LEFT">
-            <Label text="⚠"
-                   style="-fx-font-size: 14px; -fx-text-fill: #DC2626;"/>
+            <StackPane fx:id="footerWarnIconPane" minWidth="16" minHeight="16" prefWidth="16" prefHeight="16"
+                       maxWidth="16" maxHeight="16"/>
             <Label text="此操作不可恢复，请仔细核对后确认！"
                    style="-fx-font-size: 16px; -fx-font-weight: bold;
                           -fx-text-fill: #DC2626; -fx-font-family: 'Microsoft YaHei';"/>

@@ -8,6 +8,7 @@ import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -28,6 +29,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Window;
 
 import java.net.URLEncoder;
@@ -60,6 +62,7 @@ public class ShiwanM2CancelAssociationController {
     @FXML private Label       identifySummaryLabel;
     @FXML private ListView<IdentifyItem>      identifyResultList;
     @FXML private ListView<CancelRecord>      cancelRecordList;
+    @FXML private StackPane                   cancelAssocWarnIconPane;
 
     // ===== 内部状态：取消范围 =====
     private boolean modeAll = false;
@@ -88,7 +91,7 @@ public class ShiwanM2CancelAssociationController {
 
         pendingList.setPlaceholder(new Label("暂无待取消项"));
         Label identifyPh = new Label("请在左侧输入码值并点击识别");
-        identifyPh.setStyle("-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';");
+        identifyPh.setStyle("-fx-text-fill:#9CA3AF; -fx-font-size:16px; -fx-font-family:'Microsoft YaHei';");
         identifyResultList.setPlaceholder(identifyPh);
         Label cancelPh = new Label("暂无取消关联记录");
         cancelPh.setStyle("-fx-text-fill:#6B7280; -fx-font-size:16px; -fx-font-family:'Microsoft YaHei';");
@@ -105,6 +108,10 @@ public class ShiwanM2CancelAssociationController {
         codeInputField.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) onAddToList();
         });
+
+        if (cancelAssocWarnIconPane != null) {
+            SvgIconLoader.loadInto(cancelAssocWarnIconPane, SvgIconLoader.ICON_WARN, 20, Color.web("#EF4444"));
+        }
     }
 
     /**

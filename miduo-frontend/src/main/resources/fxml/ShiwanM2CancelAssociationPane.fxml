@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
@@ -63,8 +64,12 @@
                 style="-fx-background-color:#E5E7EB;"/>
 
         <!-- 警告文字 -->
-        <Label text="⚠ 操作不可恢复，请确认后执行"
-               style="-fx-text-fill:#EF4444; -fx-font-size:18px; -fx-font-weight:bold;"/>
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <StackPane fx:id="cancelAssocWarnIconPane" minWidth="20" minHeight="20" prefWidth="20" prefHeight="20"
+                       maxWidth="20" maxHeight="20"/>
+            <Label text="操作不可恢复，请确认后执行"
+                   style="-fx-text-fill:#EF4444; -fx-font-size:18px; -fx-font-weight:bold;"/>
+        </HBox>
 
         <!-- 操作按钮（居中） -->
         <HBox spacing="12" alignment="CENTER">

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <style>.cls-1{fill:currentColor;fill-rule:evenodd}</style>
+  </defs>
+  <!-- 与 眼睛-显示.svg 完全一致 -->
+  <path class="cls-1" d="M12 4.5C7.5 4.5 3.73 7.61 2 12c1.73 4.39 5.5 7.5 10 7.5s8.27-3.11 10-7.5c-1.73-4.39-5.5-7.5-10-7.5zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+  <!-- 仅叠加斜杠（后绘，略粗便于小尺寸看清） -->
+  <path class="cls-1" d="M1 2 L8 9 L23 23 L16 16 Z"/>
+</svg>

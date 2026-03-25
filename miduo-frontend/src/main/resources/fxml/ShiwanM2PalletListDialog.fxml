@@ -63,8 +63,7 @@
                 <TableColumn fx:id="associateTimeCol" text="关联时间"  prefWidth="220"/>
             </columns>
             <placeholder>
-                <Label text="无匹配数据"
-                       style="-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';"/>
+                <Label text="无匹配数据" styleClass="sw2-query-empty-hint"/>
             </placeholder>
         </TableView>
 

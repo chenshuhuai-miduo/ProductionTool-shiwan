@@ -122,11 +122,11 @@ public class ShiwanM2FrontendApplication extends Application {
                 System.out.println("✓ 启动前产品同步成功");
             } else {
                 String msg = (node != null && node.has("message")) ? node.get("message").asText() : "未知错误";
-                System.out.println("⚠ 启动前产品同步失败：" + msg + "（主界面首次产品选择时将重试）");
+                System.out.println("[警告] 启动前产品同步失败：" + msg + "（主界面首次产品选择时将重试）");
             }
             return ok;
         } catch (Exception e) {
-            System.out.println("⚠ 启动前产品同步异常：" + e.getMessage() + "（主界面首次产品选择时将重试）");
+            System.out.println("[警告] 启动前产品同步异常：" + e.getMessage() + "（主界面首次产品选择时将重试）");
             return false;
         }
     }

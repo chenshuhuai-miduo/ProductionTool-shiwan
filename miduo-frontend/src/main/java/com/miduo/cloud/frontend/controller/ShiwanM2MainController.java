@@ -872,15 +872,15 @@ public class ShiwanM2MainController implements Initializable {
                     } else if (remainingDays >= 7) {
                         statusType = "warning";
                         statusText = "授权剩余: " + remainingDays + "天";
-                        tooltipText = "到期：" + expiredDay + "\n⚠即将到期，请尽快续期";
+                        tooltipText = "到期：" + expiredDay + "\n注意：即将到期，请尽快续期";
                     } else if (remainingDays > 0) {
                         statusType = "urgent";
                         statusText = "授权剩余: " + remainingDays + "天";
-                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                        tooltipText = "到期：" + expiredDay + "\n注意：紧急，请立即续期！";
                     } else {
                         statusType = "urgent";
                         statusText = "授权剩余: 不足1天";
-                        tooltipText = "到期：" + expiredDay + "\n⚠紧急，请立即续期！";
+                        tooltipText = "到期：" + expiredDay + "\n注意：紧急，请立即续期！";
                     }
                     break;
                 case TRIAL_ACTIVE:
@@ -888,7 +888,7 @@ public class ShiwanM2MainController implements Initializable {
                     statusText = remainingDays > 0
                         ? "试用剩余: " + remainingDays + "天"
                         : "试用剩余: 不足1天";
-                    tooltipText = "试用模式\n到期: " + expiredDay + "\n💡 点击激活正式版";
+                    tooltipText = "试用模式\n到期: " + expiredDay + "\n提示：点击激活正式版";
                     break;
                 case TRIAL_EXPIRED:
                     statusType = "expired";
@@ -898,13 +898,13 @@ public class ShiwanM2MainController implements Initializable {
                 case EXPIRED:
                     statusType = "expired";
                     statusText = "已过期";
-                    tooltipText = "过期时间：" + expiredDay + "\n❌已过期，必须续期";
+                    tooltipText = "过期时间：" + expiredDay + "\n错误：已过期，必须续期";
                     break;
                 case UNACTIVATED:
                 default:
                     statusType = "expired";
                     statusText = "未激活";
-                    tooltipText = "软件未激活\n💡 点击进行激活";
+                    tooltipText = "软件未激活\n提示：点击进行激活";
                     break;
             }
 

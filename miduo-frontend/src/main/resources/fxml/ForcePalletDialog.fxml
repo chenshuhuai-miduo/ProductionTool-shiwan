@@ -21,7 +21,8 @@
     <VBox spacing="16" style="-fx-padding: 16px; -fx-background-color: #fff7e6; -fx-background-radius: 8px; -fx-border-color: #ffa940; -fx-border-width: 1px; -fx-border-radius: 8px;">
         <!-- 警告图标和主提示 -->
         <HBox spacing="12" alignment="CENTER_LEFT">
-            <Label text="⚠" style="-fx-font-size: 24px; -fx-text-fill: #fa8c16;"/>
+            <StackPane fx:id="mainWarnIconPane" minWidth="24" minHeight="24" prefWidth="24" prefHeight="24"
+                       maxWidth="24" maxHeight="24"/>
             <Label fx:id="mainPromptLabel" 
                    text="确定要强制满垛吗？当前垛有 X 箱，将立即形成一垛。" 
                    wrapText="true"
@@ -39,12 +40,16 @@
                style="-fx-font-size: 13px; -fx-text-fill: #ad6800; -fx-padding: 0 0 0 36px;"/>
         
         <!-- 补充信息（动态显示） -->
-        <Label fx:id="supplementLabel" 
-               text="" 
-               wrapText="true"
-               visible="false"
-               managed="false"
-               style="-fx-font-size: 13px; -fx-text-fill: #ad6800; -fx-padding: 0 0 0 36px;"/>
+        <HBox fx:id="supplementRow" spacing="10" alignment="TOP_LEFT" visible="false" managed="false"
+              style="-fx-padding: 0 0 0 8px;">
+            <StackPane fx:id="supplementWarnIconPane" minWidth="20" minHeight="20" prefWidth="20" prefHeight="20"
+                       maxWidth="20" maxHeight="20"/>
+            <Label fx:id="supplementLabel"
+                   text=""
+                   wrapText="true"
+                   HBox.hgrow="ALWAYS"
+                   style="-fx-font-size: 13px; -fx-text-fill: #ad6800;"/>
+        </HBox>
     </VBox>
     
     <!-- 当前垛信息 -->

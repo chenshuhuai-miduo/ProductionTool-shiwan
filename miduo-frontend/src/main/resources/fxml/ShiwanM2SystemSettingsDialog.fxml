@@ -623,9 +623,13 @@
                                 <Button text="连接测试"
                                         styleClass="secondary-button"
                                         onAction="#onTestDbConnection"/>
-                                <Label fx:id="dbTestResultLabel"
-                                       text=""
-                                       style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                                <HBox fx:id="dbTestResultRow" spacing="6" alignment="CENTER_LEFT" visible="false" managed="false">
+                                    <StackPane fx:id="dbTestResultIconPane" minWidth="16" minHeight="16" prefWidth="16" prefHeight="16"
+                                               maxWidth="16" maxHeight="16"/>
+                                    <Label fx:id="dbTestResultLabel"
+                                           text=""
+                                           style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
                             </HBox>
 
                             <Separator style="-fx-background-color: #E5E7EB; -fx-padding: 4px 0;"/>
@@ -689,9 +693,13 @@
                                 <Button text="连接测试"
                                         styleClass="secondary-button"
                                         onAction="#onTestM1DbConnection"/>
-                                <Label fx:id="m1DbTestResultLabel"
-                                       text=""
-                                       style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                                <HBox fx:id="m1DbTestResultRow" spacing="6" alignment="CENTER_LEFT" visible="false" managed="false">
+                                    <StackPane fx:id="m1DbTestResultIconPane" minWidth="16" minHeight="16" prefWidth="16" prefHeight="16"
+                                               maxWidth="16" maxHeight="16"/>
+                                    <Label fx:id="m1DbTestResultLabel"
+                                           text=""
+                                           style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
                             </HBox>
 
                             <!-- 隐藏的初始同步游标字段，保留供控制器注入 -->
@@ -736,9 +744,13 @@
                                 <Button text="保存"
                                         styleClass="primary-button"
                                         onAction="#onSaveBackendBaseUrl"/>
-                                <Label fx:id="backendBaseUrlResultLabel"
-                                       text=""
-                                       style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                                <HBox fx:id="backendBaseUrlResultRow" spacing="6" alignment="CENTER_LEFT" visible="false" managed="false">
+                                    <StackPane fx:id="backendBaseUrlResultIconPane" minWidth="16" minHeight="16" prefWidth="16" prefHeight="16"
+                                               maxWidth="16" maxHeight="16"/>
+                                    <Label fx:id="backendBaseUrlResultLabel"
+                                           text=""
+                                           style="-fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
                             </HBox>
                         </VBox>
                     </ScrollPane>

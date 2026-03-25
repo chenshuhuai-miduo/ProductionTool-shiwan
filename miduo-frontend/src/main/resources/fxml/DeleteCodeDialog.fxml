@@ -21,7 +21,8 @@
     <VBox spacing="16" style="-fx-padding: 16px; -fx-background-color: #fff7e6; -fx-background-radius: 8px; -fx-border-color: #ffa940; -fx-border-width: 1px; -fx-border-radius: 8px;">
         <!-- 警告图标和主提示 -->
         <HBox spacing="12" alignment="CENTER_LEFT">
-            <Label text="⚠" style="-fx-font-size: 24px; -fx-text-fill: #fa8c16;"/>
+            <StackPane fx:id="warnIconPane" minWidth="24" minHeight="24" prefWidth="24" prefHeight="24"
+                       maxWidth="24" maxHeight="24"/>
             <Label text="确定要清除上一个采集的箱码吗？" 
                    wrapText="true"
                    style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #d46b08;">

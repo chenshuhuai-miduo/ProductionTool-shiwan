@@ -1,11 +1,14 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -23,7 +26,9 @@ public class ShiwanM2CancelConfirmDialogController {
     @FXML private VBox          cloudPalletList;
     @FXML private PasswordField passwordField;
     @FXML private TextField     plainField;
-    @FXML private Label         eyeIcon;
+    @FXML private StackPane     cloudWarnTitleIconPane;
+    @FXML private StackPane     cancelPwdEyeIconPane;
+    @FXML private StackPane     footerWarnIconPane;
     @FXML private Label         pwdErrorLabel;
 
     private double  dragOffsetX;
@@ -44,6 +49,19 @@ public class ShiwanM2CancelConfirmDialogController {
         });
         passwordField.setOnAction(e -> onConfirm());
         plainField.setOnAction(e -> onConfirm());
+
+        SvgIconLoader.loadInto(cloudWarnTitleIconPane, SvgIconLoader.ICON_WARN, 18, Color.web("#D97706"));
+        SvgIconLoader.loadInto(footerWarnIconPane, SvgIconLoader.ICON_WARN, 16, Color.web("#DC2626"));
+        refreshCancelPwdEyeIcon();
+    }
+
+    private void refreshCancelPwdEyeIcon() {
+        if (cancelPwdEyeIconPane == null) {
+            return;
+        }
+        boolean plainVisible = plainField != null && plainField.isVisible();
+        String path = plainVisible ? SvgIconLoader.ICON_EYE_HIDE : SvgIconLoader.ICON_EYE_SHOW;
+        SvgIconLoader.loadInto(cancelPwdEyeIconPane, path, 22, Color.web("#9CA3AF"));
     }
 
     /**
@@ -89,13 +107,12 @@ public class ShiwanM2CancelConfirmDialogController {
             passwordField.setText(plainField.getText());
             passwordField.setVisible(true);  passwordField.setManaged(true);
             plainField.setVisible(false);    plainField.setManaged(false);
-            eyeIcon.setText("\uD83D\uDC41");
         } else {
             plainField.setText(passwordField.getText());
             plainField.setVisible(true);     plainField.setManaged(true);
             passwordField.setVisible(false); passwordField.setManaged(false);
-            eyeIcon.setText("\uD83D\uDD12");
         }
+        refreshCancelPwdEyeIcon();
     }
 
     @FXML

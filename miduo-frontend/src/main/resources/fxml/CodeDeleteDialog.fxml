@@ -21,7 +21,8 @@
    <VBox spacing="16" style="-fx-padding: 16px; -fx-background-color: #fff7e6; -fx-background-radius: 8px; -fx-border-color: #ffa940; -fx-border-width: 1px; -fx-border-radius: 8px;">
       <!-- 警告图标和主提示 -->
       <HBox spacing="12" alignment="TOP_LEFT">
-         <Label text="⚠" style="-fx-font-size: 20px; -fx-text-fill: #fa8c16;"/>
+         <StackPane fx:id="warnIconPane" minWidth="22" minHeight="22" prefWidth="22" prefHeight="22"
+                    maxWidth="22" maxHeight="22"/>
          <VBox spacing="8" HBox.hgrow="ALWAYS">
             <Label text="警告：删除后将更新相关垛的箱数统计，此操作不可恢复！" 
                    wrapText="true"

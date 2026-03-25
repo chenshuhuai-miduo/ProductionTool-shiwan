@@ -31,7 +31,8 @@
 
         <!-- 确认提示标题 -->
         <HBox spacing="10" alignment="CENTER_LEFT">
-            <Label text="⚠" style="-fx-font-size:18px; -fx-text-fill:#DC2626;"/>
+            <StackPane fx:id="headerWarnIconPane" minWidth="20" minHeight="20" prefWidth="20" prefHeight="20"
+                       maxWidth="20" maxHeight="20"/>
             <Label text="请确认替换信息："
                    style="-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#991B1B; -fx-font-family:'Microsoft YaHei';"/>
         </HBox>
@@ -93,16 +94,21 @@
                            visible="false" managed="false"
                            style="-fx-font-size:16px; -fx-background-color:transparent;
                                   -fx-border-width:0; -fx-background-radius:8; -fx-padding: 0 12;"/>
-                <Button fx:id="eyeToggleBtn" text="👁" onAction="#onTogglePassword"
-                        style="-fx-background-color:transparent; -fx-text-fill:#9CA3AF; -fx-font-size:16px;
-                               -fx-cursor:hand; -fx-min-width:40; -fx-border-width:0;
-                               -fx-effect:null; -fx-padding: 0 12;"/>
+                <Button fx:id="eyeToggleBtn" onAction="#onTogglePassword"
+                        style="-fx-background-color:transparent; -fx-cursor:hand; -fx-min-width:40; -fx-border-width:0;
+                               -fx-effect:null; -fx-padding: 0 12;">
+                    <graphic>
+                        <StackPane fx:id="replaceEyeIconPane" minWidth="22" minHeight="22" prefWidth="22" prefHeight="22"
+                                   maxWidth="22" maxHeight="22"/>
+                    </graphic>
+                </Button>
             </HBox>
         </VBox>
 
         <!-- 底部警告 -->
         <HBox spacing="8" alignment="CENTER_LEFT">
-            <Label text="⚠" style="-fx-font-size:16px; -fx-text-fill:#DC2626;"/>
+            <StackPane fx:id="footerWarnIconPane" minWidth="18" minHeight="18" prefWidth="18" prefHeight="18"
+                       maxWidth="18" maxHeight="18"/>
             <Label text="此操作不可恢复，请仔细核对后确认！"
                    style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626; -fx-font-family:'Microsoft YaHei';"/>
         </HBox>

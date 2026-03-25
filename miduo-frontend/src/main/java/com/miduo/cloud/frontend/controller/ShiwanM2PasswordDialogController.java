@@ -1,10 +1,13 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 /**
@@ -15,7 +18,8 @@ public class ShiwanM2PasswordDialogController {
     @FXML private VBox          rootBox;
     @FXML private PasswordField passwordField;
     @FXML private TextField     plainField;
-    @FXML private Label         eyeIcon;
+    @FXML private StackPane     titleLockIconPane;
+    @FXML private StackPane     eyeIconPane;
     @FXML private Label         errorLabel;
 
     private boolean showingPlain = false;
@@ -52,6 +56,17 @@ public class ShiwanM2PasswordDialogController {
         // Enter 键确认
         passwordField.setOnAction(e -> onConfirm());
         plainField.setOnAction(e -> onConfirm());
+
+        SvgIconLoader.loadInto(titleLockIconPane, SvgIconLoader.ICON_LOCK, 26, Color.web("#374151"));
+        refreshEyeIcon();
+    }
+
+    private void refreshEyeIcon() {
+        if (eyeIconPane == null) {
+            return;
+        }
+        String path = showingPlain ? SvgIconLoader.ICON_EYE_HIDE : SvgIconLoader.ICON_EYE_SHOW;
+        SvgIconLoader.loadInto(eyeIconPane, path, 22, Color.web("#9CA3AF"));
     }
 
     /** 切换显示/隐藏密码 */
@@ -64,7 +79,7 @@ public class ShiwanM2PasswordDialogController {
             plainField.setManaged(true);
             passwordField.setVisible(false);
             passwordField.setManaged(false);
-            eyeIcon.setText("🔒");
+            refreshEyeIcon();
             plainField.requestFocus();
             plainField.positionCaret(plainField.getText().length());
         } else {
@@ -73,7 +88,7 @@ public class ShiwanM2PasswordDialogController {
             passwordField.setManaged(true);
             plainField.setVisible(false);
             plainField.setManaged(false);
-            eyeIcon.setText("\uD83D\uDC41");
+            refreshEyeIcon();
             passwordField.requestFocus();
             passwordField.positionCaret(passwordField.getText().length());
         }

@@ -7,6 +7,7 @@ import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import javafx.collections.FXCollections;
@@ -34,8 +35,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.Parent;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
 
@@ -141,6 +143,8 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField dbNameField;
     @FXML private TextField dbUserField;
     @FXML private PasswordField dbPasswordField;
+    @FXML private HBox dbTestResultRow;
+    @FXML private StackPane dbTestResultIconPane;
     @FXML private Label dbTestResultLabel;
 
     // ==================== 连接 - 1号机连接 ====================
@@ -151,11 +155,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField m1DbUserField;
     @FXML private PasswordField m1DbPasswordField;
     @FXML private TextField m1InitialSerialNoField;
+    @FXML private HBox m1DbTestResultRow;
+    @FXML private StackPane m1DbTestResultIconPane;
     @FXML private Label m1DbTestResultLabel;
 
     // ==================== 连接 - 接口服务 ====================
     @FXML private TextField backendBaseUrlField;
     @FXML private TextField openPlatformUrlField;
+    @FXML private HBox backendBaseUrlResultRow;
+    @FXML private StackPane backendBaseUrlResultIconPane;
     @FXML private Label backendBaseUrlResultLabel;
 
     // ==================== 数据模型 ====================
@@ -1079,6 +1087,29 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     // ==================== 连接 Tab 事件处理 ====================
 
+    private void applySettingsResultRow(HBox row, StackPane iconPane, Label label,
+                                        String text, String textColor, int fontSize, String svgPathOrNull) {
+        if (row == null || label == null) {
+            return;
+        }
+        row.setVisible(true);
+        row.setManaged(true);
+        label.setText(text);
+        label.setStyle("-fx-font-size: " + fontSize + "px; -fx-font-family: 'Microsoft YaHei'; -fx-text-fill: " + textColor + ";");
+        if (iconPane == null) {
+            return;
+        }
+        if (svgPathOrNull == null) {
+            iconPane.getChildren().clear();
+            iconPane.setVisible(false);
+            iconPane.setManaged(false);
+        } else {
+            iconPane.setVisible(true);
+            iconPane.setManaged(true);
+            SvgIconLoader.loadInto(iconPane, svgPathOrNull, 16, Color.web(textColor));
+        }
+    }
+
     @FXML
     private void onTestDbConnection() {
         String host = dbHostField.getText().trim();
@@ -1087,12 +1118,12 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         String user = dbUserField.getText().trim();
         String pwd  = dbPasswordField.getText();
         if (host.isEmpty() || port.isEmpty() || name.isEmpty() || user.isEmpty()) {
-            dbTestResultLabel.setText("❌ 请填写完整的数据库连接信息");
-            dbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            applySettingsResultRow(dbTestResultRow, dbTestResultIconPane, dbTestResultLabel,
+                "请填写完整的数据库连接信息", "#DC2626", 13, SvgIconLoader.ICON_ERROR);
             return;
         }
-        dbTestResultLabel.setText("⏳ 正在测试...");
-        dbTestResultLabel.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+        applySettingsResultRow(dbTestResultRow, dbTestResultIconPane, dbTestResultLabel,
+            "正在测试...", "#6B7280", 13, null);
         try {
             Map<String, String> body = new LinkedHashMap<>();
             body.put("host", host);
@@ -1105,16 +1136,17 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
             boolean ok = node.has("code") && node.get("code").asInt(500) == 200;
             if (ok) {
-                dbTestResultLabel.setText("✅ 连接成功");
-                dbTestResultLabel.setStyle("-fx-text-fill: #059669; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+                applySettingsResultRow(dbTestResultRow, dbTestResultIconPane, dbTestResultLabel,
+                    "连接成功", "#059669", 13, SvgIconLoader.ICON_SUCCESS);
             } else {
                 String msg = node.has("message") ? node.get("message").asText() : "连接失败";
-                dbTestResultLabel.setText("❌ " + (msg != null && !msg.isEmpty() ? msg : "连接失败"));
-                dbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+                applySettingsResultRow(dbTestResultRow, dbTestResultIconPane, dbTestResultLabel,
+                    (msg != null && !msg.isEmpty() ? msg : "连接失败"), "#DC2626", 13, SvgIconLoader.ICON_ERROR);
             }
         } catch (Exception e) {
-            dbTestResultLabel.setText("❌ 请求失败：" + (e.getMessage() != null ? e.getMessage() : "请确认后端已启动并提供 /api/shiwan-m2/settings/test-db-connection 接口"));
-            dbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px; -fx-font-family: 'Microsoft YaHei';");
+            applySettingsResultRow(dbTestResultRow, dbTestResultIconPane, dbTestResultLabel,
+                "请求失败：" + (e.getMessage() != null ? e.getMessage() : "请确认后端已启动并提供 /api/shiwan-m2/settings/test-db-connection 接口"),
+                "#DC2626", 12, SvgIconLoader.ICON_ERROR);
         }
     }
 
@@ -1149,12 +1181,12 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         String user = m1DbUserField.getText().trim();
         String pwd  = m1DbPasswordField.getText();
         if (host.isEmpty() || port.isEmpty() || name.isEmpty() || user.isEmpty()) {
-            m1DbTestResultLabel.setText("❌ 请填写完整的连接信息");
-            m1DbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+            applySettingsResultRow(m1DbTestResultRow, m1DbTestResultIconPane, m1DbTestResultLabel,
+                "请填写完整的连接信息", "#DC2626", 13, SvgIconLoader.ICON_ERROR);
             return;
         }
-        m1DbTestResultLabel.setText("⏳ 正在测试...");
-        m1DbTestResultLabel.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+        applySettingsResultRow(m1DbTestResultRow, m1DbTestResultIconPane, m1DbTestResultLabel,
+            "正在测试...", "#6B7280", 13, null);
         try {
             Map<String, String> body = new LinkedHashMap<>();
             body.put("host", host);
@@ -1167,16 +1199,17 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
             boolean ok = node.has("code") && node.get("code").asInt(500) == 200;
             if (ok) {
-                m1DbTestResultLabel.setText("✅ 连接成功");
-                m1DbTestResultLabel.setStyle("-fx-text-fill: #059669; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+                applySettingsResultRow(m1DbTestResultRow, m1DbTestResultIconPane, m1DbTestResultLabel,
+                    "连接成功", "#059669", 13, SvgIconLoader.ICON_SUCCESS);
             } else {
                 String msg = node.has("message") ? node.get("message").asText() : "连接失败";
-                m1DbTestResultLabel.setText("❌ " + (msg != null && !msg.isEmpty() ? msg : "连接失败"));
-                m1DbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
+                applySettingsResultRow(m1DbTestResultRow, m1DbTestResultIconPane, m1DbTestResultLabel,
+                    (msg != null && !msg.isEmpty() ? msg : "连接失败"), "#DC2626", 13, SvgIconLoader.ICON_ERROR);
             }
         } catch (Exception e) {
-            m1DbTestResultLabel.setText("❌ 请求失败：" + (e.getMessage() != null ? e.getMessage() : "请确认后端已启动"));
-            m1DbTestResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px; -fx-font-family: 'Microsoft YaHei';");
+            applySettingsResultRow(m1DbTestResultRow, m1DbTestResultIconPane, m1DbTestResultLabel,
+                "请求失败：" + (e.getMessage() != null ? e.getMessage() : "请确认后端已启动"),
+                "#DC2626", 12, SvgIconLoader.ICON_ERROR);
         }
     }
 
@@ -1223,10 +1256,8 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (backendBaseUrlField == null) return;
         String url = backendBaseUrlField.getText().trim();
         if (url.isEmpty()) {
-            if (backendBaseUrlResultLabel != null) {
-                backendBaseUrlResultLabel.setText("❌ 请填写后端 API 地址");
-                backendBaseUrlResultLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
-            }
+            applySettingsResultRow(backendBaseUrlResultRow, backendBaseUrlResultIconPane, backendBaseUrlResultLabel,
+                "请填写后端 API 地址", "#DC2626", 13, SvgIconLoader.ICON_ERROR);
             return;
         }
         if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url;
@@ -1236,10 +1267,8 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getApi().setBackendBaseUrl(url);
         saveSettings(s);
         HttpUtil.setBaseUrl(url);
-        if (backendBaseUrlResultLabel != null) {
-            backendBaseUrlResultLabel.setText("✅ 已保存，当前请求将发往：" + url);
-            backendBaseUrlResultLabel.setStyle("-fx-text-fill: #059669; -fx-font-size: 13px; -fx-font-family: 'Microsoft YaHei';");
-        }
+        applySettingsResultRow(backendBaseUrlResultRow, backendBaseUrlResultIconPane, backendBaseUrlResultLabel,
+            "已保存，当前请求将发往：" + url, "#059669", 13, SvgIconLoader.ICON_SUCCESS);
     }
 
     // ==================== 自定义标题栏（拖拽 & 关闭） ====================

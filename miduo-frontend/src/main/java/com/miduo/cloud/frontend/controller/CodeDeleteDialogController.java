@@ -1,16 +1,26 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 /**
  * 码删除确认对话框控制器
  */
 public class CodeDeleteDialogController {
-    
+
+    @FXML private StackPane warnIconPane;
+    @FXML private TextField boxCodeField;
+
     @FXML
-    private TextField boxCodeField;
+    public void initialize() {
+        if (warnIconPane != null) {
+            SvgIconLoader.loadInto(warnIconPane, SvgIconLoader.ICON_WARN, 22, Color.web("#fa8c16"));
+        }
+    }
     
     private boolean confirmed = false;
     private String boxCode;

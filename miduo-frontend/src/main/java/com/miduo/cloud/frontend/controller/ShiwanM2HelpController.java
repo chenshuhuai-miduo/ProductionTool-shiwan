@@ -1,16 +1,19 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.net.URL;
@@ -177,7 +180,7 @@ public class ShiwanM2HelpController implements Initializable {
         addBullets(sec, new String[]{
             "在左侧「采集规格设置」区域，确认「1盒 6瓶」设置正确（6可修改，默认6瓶）",
         });
-        addWarnLine(sec, "⚠ 开始采集后不可修改");
+        addWarnLine(sec, "开始采集后不可修改");
 
         addStepTitle(sec, "步骤2：开始采集");
         addOrdered(sec, new String[]{
@@ -199,7 +202,7 @@ public class ShiwanM2HelpController implements Initializable {
         addH2(sec, "2.2 设备连接状态");
         addBullets(sec, new String[]{
             "右侧操作日志区域显示读码器连接状态",
-            "绿色文字：设备已连接 ✓",
+            "绿色文字：设备已连接（正常）",
             "红色文字：设备未连接，请检查设备连接后重启"
         });
 
@@ -207,7 +210,7 @@ public class ShiwanM2HelpController implements Initializable {
         addBullets(sec, new String[]{
             "长报警时（设备未连接、连续重码3次等），点击「关闭报警」可重置报警状态",
         });
-        addWarnLine(sec, "⚠ 短报警（重码/错码/超码/缺码等单次异常）自动关闭，不需人工操作");
+        addWarnLine(sec, "短报警（重码/错码/超码/缺码等单次异常）自动关闭，不需人工操作");
 
         sections.add(sec);
         contentContainer.getChildren().add(sec);
@@ -297,7 +300,7 @@ public class ShiwanM2HelpController implements Initializable {
             "中间数据接收区实时显示扫码结果：绿色表示关联成功，红色表示码异常（请重新扫码）",
             "扫够规格数量的瓶码后再扫盒码，自动完成本组瓶盒关联，当前已读归零，继续下一组"
         });
-        addWarnLine(sec, "⚠ 点击「停止采集」结束；已扫但尚未完成关联的瓶码将被丢弃，下次从头开始计数");
+        addWarnLine(sec, "点击「停止采集」结束；已扫但尚未完成关联的瓶码将被丢弃，下次从头开始计数");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -343,12 +346,12 @@ public class ShiwanM2HelpController implements Initializable {
             "点击「确认替换」→ 弹窗核对信息 → 输入密码 → 确认执行"
         });
         addPara(sec, "新码要求（需同时满足）：");
-        addBullets(sec, new String[]{
-            "✅ 与原码同层级（瓶码只能替换瓶码，盒码只能替换盒码，箱码只能替换箱码）",
-            "✅ 在对应层级码包中，且从未使用过（系统中不存在该码的关联记录）",
-            "✅ 格式有效，且不能与原码相同"
+        addOkBulletLines(sec, new String[]{
+            "与原码同层级（瓶码只能替换瓶码，盒码只能替换盒码，箱码只能替换箱码）",
+            "在对应层级码包中，且从未使用过（系统中不存在该码的关联记录）",
+            "格式有效，且不能与原码相同"
         });
-        addWarnLine(sec, "⚠ 替换操作不可恢复，请务必核对无误再执行");
+        addWarnLine(sec, "替换操作不可恢复，请务必核对无误再执行");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -370,12 +373,12 @@ public class ShiwanM2HelpController implements Initializable {
         addOrdered(sec, new String[]{
             "输入盒/箱/垛码（支持扫瓶码，系统自动转换为盒码）→ 点击「加入列表」",
             "可批量加入多个码到待取消列表",
-            "点击「识别」→ 右侧显示各码识别结果（✓ 可取消 / ✗ 不可取消并提示原因）",
+            "点击「识别」→ 右侧显示各码识别结果（可取消 / 不可取消并提示原因）",
             "若有码标记为不可取消（有上级），将上级码也加入列表，再次点击「识别」",
             "选择取消范围（只解一层 / 全部解除）",
             "点击「确认取消关联」→ 输入密码 → 执行"
         });
-        addWarnLine(sec, "⚠ 操作不可恢复，请确认无误后操作");
+        addWarnLine(sec, "操作不可恢复，请确认无误后操作");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -451,10 +454,10 @@ public class ShiwanM2HelpController implements Initializable {
         addFaq(sec, "Q7：如何知道码属于哪一层级（瓶/盒/箱/垛）？",
             "在「数据查询」Tab 中输入码值，点击「查询」或回车，左侧表格按层级分列展示，点击某行右侧可查看该行的详细信息。");
         addFaqOrdered(sec, "Q8：识别结果提示「不可取消，有上级关联」，怎么操作？", new String[]{
-            "在识别结果中找到标记 ✗ 的码，查看提示（如「已关联至垛码xxx，请先将垛码加入列表」）",
+            "在识别结果中找到标记为「不可取消」的码，查看提示（如「已关联至垛码xxx，请先将垛码加入列表」）",
             "将提示的上级码（垛码）也输入并「加入列表」",
-            "再次点击「识别」，上级码通过后该码变为 ✓ 可取消",
-            "确认无 ✗ 码后，点击「确认取消关联」→ 输入密码 → 执行"
+            "再次点击「识别」，上级码通过后该码变为可取消",
+            "确认列表中无不可取消项后，点击「确认取消关联」→ 输入密码 → 执行"
         });
         sections.add(sec);
         contentContainer.getChildren().add(sec);
@@ -574,14 +577,44 @@ public class ShiwanM2HelpController implements Initializable {
         }
     }
 
-    /** 红色警告行 */
+    /** 红色警告行（左侧 SVG 警告图标） */
     private void addWarnLine(VBox sec, String text) {
+        HBox row = new HBox(6);
+        row.setAlignment(Pos.CENTER_LEFT);
+        StackPane ic = new StackPane();
+        ic.setMinSize(16, 16);
+        ic.setPrefSize(16, 16);
+        ic.setMaxSize(16, 16);
+        SvgIconLoader.loadInto(ic, SvgIconLoader.ICON_WARN, 16, Color.web("#DC2626"));
         Label lbl = new Label(text);
         lbl.setMaxWidth(Double.MAX_VALUE);
         lbl.setWrapText(true);
+        HBox.setHgrow(lbl, Priority.ALWAYS);
         lbl.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #DC2626;"
             + "-fx-font-family: 'Microsoft YaHei'; -fx-padding: 2px 0;");
-        sec.getChildren().add(lbl);
+        row.getChildren().addAll(ic, lbl);
+        sec.getChildren().add(row);
+    }
+
+    /** 绿色条件行（左侧对勾图标） */
+    private void addOkBulletLines(VBox sec, String[] items) {
+        for (String item : items) {
+            HBox row = new HBox(6);
+            row.setAlignment(Pos.TOP_LEFT);
+            StackPane ic = new StackPane();
+            ic.setMinSize(14, 14);
+            ic.setPrefSize(14, 14);
+            ic.setMaxSize(14, 14);
+            SvgIconLoader.loadInto(ic, SvgIconLoader.ICON_SUCCESS, 14, Color.web("#16A34A"));
+            Label lbl = new Label(item);
+            lbl.setMaxWidth(Double.MAX_VALUE);
+            lbl.setWrapText(true);
+            HBox.setHgrow(lbl, Priority.ALWAYS);
+            lbl.setStyle("-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
+                + "-fx-padding: 0 0 0 2px; -fx-line-spacing: 3px;");
+            row.getChildren().addAll(ic, lbl);
+            sec.getChildren().add(row);
+        }
     }
 
     /** 橙色信息框 */

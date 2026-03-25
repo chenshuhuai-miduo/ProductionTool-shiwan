@@ -80,26 +80,26 @@ public class AdjustBoxCountDialogController {
             int target = Integer.parseInt(inputText);
             
             if (target < 0) {
-                hintLabel.setText("⚠ 目标箱数不能为负数");
+                hintLabel.setText("目标箱数不能为负数");
                 hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ff4d4f; -fx-padding: 8px; -fx-background-color: #fff1f0; -fx-background-radius: 4px;");
                 return;
             }
             
             if (target == currentCount) {
-                hintLabel.setText("✓ 无需调整");
+                hintLabel.setText("无需调整");
                 hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #52c41a; -fx-padding: 8px; -fx-background-color: #f6ffed; -fx-background-radius: 4px;");
             } else if (target < currentCount) {
                 int diff = currentCount - target;
-                hintLabel.setText("⚠ 将删除 " + diff + " 个最新采集的箱码");
+                hintLabel.setText("将删除 " + diff + " 个最新采集的箱码");
                 hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ff4d4f; -fx-padding: 8px; -fx-background-color: #fff1f0; -fx-background-radius: 4px;");
             } else {
                 int diff = target - currentCount;
-                hintLabel.setText("ℹ 将自动生成 " + diff + " 个虚拟箱码");
+                hintLabel.setText("将自动生成 " + diff + " 个虚拟箱码");
                 hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #1890ff; -fx-padding: 8px; -fx-background-color: #e6f7ff; -fx-background-radius: 4px;");
             }
             
         } catch (NumberFormatException e) {
-            hintLabel.setText("⚠ 请输入有效的数字");
+            hintLabel.setText("请输入有效的数字");
             hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ff4d4f; -fx-padding: 8px; -fx-background-color: #fff1f0; -fx-background-radius: 4px;");
         }
     }
@@ -121,7 +121,7 @@ public class AdjustBoxCountDialogController {
         String inputText = targetCountField.getText().trim();
         
         if (inputText.isEmpty()) {
-            hintLabel.setText("⚠ 请输入目标箱数");
+            hintLabel.setText("请输入目标箱数");
             hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ff4d4f; -fx-padding: 8px; -fx-background-color: #fff1f0; -fx-background-radius: 4px;");
             return;
         }
@@ -130,7 +130,7 @@ public class AdjustBoxCountDialogController {
             targetCount = Integer.parseInt(inputText);
             
             if (targetCount < 0) {
-                hintLabel.setText("⚠ 目标箱数不能为负数");
+                hintLabel.setText("目标箱数不能为负数");
                 hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ff4d4f; -fx-padding: 8px; -fx-background-color: #fff1f0; -fx-background-radius: 4px;");
                 return;
             }
@@ -139,7 +139,7 @@ public class AdjustBoxCountDialogController {
             closeDialog();
             
         } catch (NumberFormatException e) {
-            hintLabel.setText("⚠ 请输入有效的数字");
+            hintLabel.setText("请输入有效的数字");
             hintLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ff4d4f; -fx-padding: 8px; -fx-background-color: #fff1f0; -fx-background-radius: 4px;");
         }
     }

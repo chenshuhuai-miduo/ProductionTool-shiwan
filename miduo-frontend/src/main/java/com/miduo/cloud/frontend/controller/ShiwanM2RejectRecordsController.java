@@ -92,8 +92,8 @@ public class ShiwanM2RejectRecordsController implements Initializable {
         seqCol.setCellFactory(col -> new TableCell<>() {
             private final Label label = new Label();
             {
-                label.setFont(Font.font("Microsoft YaHei", 14));
-                label.setStyle("-fx-text-fill:#1F2937;");
+                label.setFont(Font.font("Microsoft YaHei", 16));
+                label.setStyle("-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px; -fx-text-fill:#1F2937;");
                 label.setAlignment(Pos.CENTER);
                 setGraphic(label);
                 setText(null);
@@ -126,8 +126,8 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             private final Label label = new Label();
             {
                 label.setWrapText(true);
-                label.setFont(Font.font("Microsoft YaHei", 14));
-                label.setStyle("-fx-text-fill:#1F2937;");
+                label.setFont(Font.font("Microsoft YaHei", 16));
+                label.setStyle("-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px; -fx-text-fill:#1F2937;");
                 label.setAlignment(Pos.CENTER);
                 setGraphic(label);
                 setText(null);
@@ -287,7 +287,7 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             {
                 label.setWrapText(true);
                 // 显式设置字体，保证 prefHeight() 计算时字体度量正确
-                label.setFont(Font.font("Microsoft YaHei", 14));
+                label.setFont(Font.font("Microsoft YaHei", 16));
                 label.setAlignment(Pos.CENTER);
                 setGraphic(label);
                 setText(null);
@@ -321,10 +321,11 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 } else {
                     label.setText(item);
                     RejectRow row = getTableRow() == null ? null : getTableRow().getItem();
+                    String font = "-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px;";
                     if (row != null && !item.isEmpty() && item.equals(row.problemCode)) {
-                        label.setStyle("-fx-text-fill:#F44336; -fx-font-weight:bold;");
+                        label.setStyle(font + " -fx-text-fill:#F44336; -fx-font-weight:bold;");
                     } else {
-                        label.setStyle("-fx-text-fill:#1F2937;");
+                        label.setStyle(font + " -fx-text-fill:#1F2937;");
                     }
                 }
             }

@@ -1,8 +1,12 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 /**
@@ -16,6 +20,15 @@ public class ForcePalletDialogController {
     @FXML
     private Label detailLabel;
     
+    @FXML
+    private HBox supplementRow;
+
+    @FXML
+    private StackPane mainWarnIconPane;
+
+    @FXML
+    private StackPane supplementWarnIconPane;
+
     @FXML
     private Label supplementLabel;
     
@@ -39,6 +52,16 @@ public class ForcePalletDialogController {
     
     // 数据字段
     private boolean confirmed = false;
+
+    @FXML
+    public void initialize() {
+        if (mainWarnIconPane != null) {
+            SvgIconLoader.loadInto(mainWarnIconPane, SvgIconLoader.ICON_WARN, 24, Color.web("#fa8c16"));
+        }
+        if (supplementWarnIconPane != null) {
+            SvgIconLoader.loadInto(supplementWarnIconPane, SvgIconLoader.ICON_WARN, 20, Color.web("#ff9800"));
+        }
+    }
     
     /**
      * 设置当前垛信息
@@ -71,10 +94,12 @@ public class ForcePalletDialogController {
         }
         
         // 更新补充说明
-        supplementLabel.setText("⚠ 确认后需通过设备扫码完成托盘码关联，系统将不再校验箱数是否匹配。");
-        supplementLabel.setVisible(true);
-        supplementLabel.setManaged(true);
-        supplementLabel.setStyle("-fx-text-fill: #ff9800; -fx-font-weight: bold; -fx-padding: 0 0 0 36px;");
+        supplementLabel.setText("确认后需通过设备扫码完成托盘码关联，系统将不再校验箱数是否匹配。");
+        supplementLabel.setStyle("-fx-text-fill: #ff9800; -fx-font-weight: bold;");
+        if (supplementRow != null) {
+            supplementRow.setVisible(true);
+            supplementRow.setManaged(true);
+        }
     }
     
     /**

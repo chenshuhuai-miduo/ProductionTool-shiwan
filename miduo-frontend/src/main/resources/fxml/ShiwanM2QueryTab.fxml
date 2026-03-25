@@ -45,7 +45,7 @@
 
             <!-- 空状态 -->
             <VBox fx:id="emptyPane" VBox.vgrow="ALWAYS" alignment="CENTER" spacing="12">
-                <Label text="🔍" styleClass="sw2-query-empty-icon"/>
+                <StackPane fx:id="queryEmptyIconPane" styleClass="sw2-query-empty-icon-wrap"/>
                 <Label text="请输入码进行查询" styleClass="sw2-query-empty-hint"/>
             </VBox>
 

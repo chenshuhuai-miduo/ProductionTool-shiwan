@@ -6,6 +6,7 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -17,6 +18,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +54,7 @@ public class ShiwanM2QueryController implements Initializable {
 
     // 左侧
     @FXML private VBox                                emptyPane;
+    @FXML private StackPane                           queryEmptyIconPane;
     @FXML private TableView<QueryRow>                 resultTable;
     @FXML private TableColumn<QueryRow, String>       colSeq;
     @FXML private TableColumn<QueryRow, String>       colL1;
@@ -90,6 +93,10 @@ public class ShiwanM2QueryController implements Initializable {
         Label placeholder = new Label("未找到该码信息");
         placeholder.setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-text-fill: #9CA3AF; -fx-font-size: 16px;");
         resultTable.setPlaceholder(placeholder);
+
+        if (queryEmptyIconPane != null) {
+            SvgIconLoader.loadInto(queryEmptyIconPane, SvgIconLoader.ICON_QUERY, 40, Color.web("#9CA3AF"));
+        }
     }
 
     private void setupColumns() {
@@ -99,11 +106,21 @@ public class ShiwanM2QueryController implements Initializable {
         // 序号列：居中、灰色
         colSeq.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().seq));
         colSeq.setCellFactory(col -> new TableCell<>() {
+            private void refreshSeqStyle() {
+                setText(isEmpty() || getItem() == null ? null : getItem());
+                setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-alignment: CENTER; -fx-text-fill: #9CA3AF;");
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item);
-                setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-alignment: CENTER; -fx-text-fill: #9CA3AF;");
+                refreshSeqStyle();
+            }
+
+            @Override
+            public void updateSelected(boolean selected) {
+                super.updateSelected(selected);
+                refreshSeqStyle();
             }
         });
 
@@ -128,20 +145,33 @@ public class ShiwanM2QueryController implements Initializable {
 
     private void applyHighlightCellFactory(TableColumn<QueryRow, String> col) {
         col.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
+            private void refreshHighlightStyle() {
+                String item = getItem();
+                boolean empty = isEmpty();
                 if (empty || item == null || item.isEmpty()) {
                     setText(null);
                     setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-alignment: CENTER;");
                 } else {
                     setText(item);
                     if (!inputCode.isEmpty() && item.equals(inputCode)) {
-                        setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #F44336; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                        setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #F44336; -fx-alignment: CENTER;");
                     } else {
                         setStyle("-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px; -fx-text-fill: #1F2937; -fx-alignment: CENTER;");
                     }
                 }
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                refreshHighlightStyle();
+            }
+
+            /** 换选行时 table-styles 会对 .text 改 -fx-fill；此处同步重刷单元格样式 */
+            @Override
+            public void updateSelected(boolean selected) {
+                super.updateSelected(selected);
+                refreshHighlightStyle();
             }
         });
     }

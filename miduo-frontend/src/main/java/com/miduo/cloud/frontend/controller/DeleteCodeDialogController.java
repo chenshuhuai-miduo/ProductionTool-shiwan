@@ -1,14 +1,19 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 /**
  * 清除上一个箱码对话框控制器
  */
 public class DeleteCodeDialogController {
+
+    @FXML private StackPane warnIconPane;
 
     @FXML
     private Label orderNoLabel;
@@ -26,6 +31,13 @@ public class DeleteCodeDialogController {
     private Button confirmButton;
 
     private boolean confirmed = false;
+
+    @FXML
+    public void initialize() {
+        if (warnIconPane != null) {
+            SvgIconLoader.loadInto(warnIconPane, SvgIconLoader.ICON_WARN, 24, Color.web("#fa8c16"));
+        }
+    }
 
     /**
      * 设置当前垛信息

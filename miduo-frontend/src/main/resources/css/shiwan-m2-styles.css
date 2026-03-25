@@ -1183,10 +1183,19 @@
     -fx-background-color: #EFF6FF;
 }
 
-.sw2-table .table-row-cell:selected .table-cell {
-    -fx-text-fill: #1F2937;
-    -fx-font-weight: bold;
-    -fx-border-color: transparent transparent #BFDBFE transparent;
+/*
+ * 选中行仅保留浅蓝背景。
+ * base-styles → table-styles.css 对「任意 .table-view」选中格写了：
+ *   .table-cell { -fx-text-fill: -text-primary; } 与 .table-cell .text { -fx-fill: -text-primary; }
+ * 子结点 .text 的 -fx-fill 会压过 TableCell 内联红字，且换选行后可能残留，导致同列有的红、有的黑。
+ * 用 .table-view.sw2-table 提高优先级，仅对石湾 sw2 表取消对 .text 的强制填充。
+ */
+.table-view.sw2-table .table-row-cell:selected .table-cell {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+}
+
+.table-view.sw2-table .table-row-cell:selected .table-cell .text {
+    -fx-fill: inherit;
 }
 
 /* 码包管理表格专用：禁用行选中高亮（操作列按钮触发，不需要选中态） */
@@ -1540,9 +1549,46 @@
     -fx-font-size: 16px;
     -fx-text-fill: #9CA3AF;
 }
-.sw2-query-empty-icon {
-    -fx-font-family: "Segoe UI Emoji", "Microsoft YaHei";
-    -fx-font-size: 40px;
+/* 查询空状态：SVG 由 SvgIconLoader 加载 */
+.sw2-query-empty-icon-wrap {
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-width: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-width: 40px;
+    -fx-max-height: 40px;
+}
+
+/* 弹窗详情（剔除记录等）：标签右对齐 + 取值，与主界面查询详情同级 16px 雅黑 */
+.sw2-dialog-detail-section-follow {
+    -fx-padding: 4 0 0 0;
+}
+.sw2-dialog-detail-label {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #6B7280;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-min-width: 76;
+    -fx-pref-width: 76;
+}
+.sw2-dialog-detail-value {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #1F2937;
+    -fx-wrap-text: true;
+}
+.sw2-dialog-detail-value-muted {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #4B5563;
+    -fx-wrap-text: true;
+}
+.sw2-dialog-detail-value-problem {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F44336;
+    -fx-wrap-text: true;
 }
 
 .sw2-code-type-pallet { -fx-background-color: #7C3AED; -fx-text-fill: white; -fx-background-radius: 4px; -fx-padding: 2px 8px; -fx-font-weight: bold; -fx-font-size: 14px; }
@@ -1879,10 +1925,10 @@
     -fx-size: 44px;
 }
 .sw2-codes-table .column-header .label {
-    -fx-font-size: 15px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #374151;
-    -fx-font-family: 'Microsoft YaHei';
     -fx-alignment: CENTER;
 }
 .sw2-codes-table .filler {
@@ -1903,8 +1949,8 @@
 .sw2-codes-table .table-cell {
     -fx-border-color: transparent transparent #F3F4F6 transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-font-size: 15px;
-    -fx-font-family: 'Microsoft YaHei';
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-text-fill: #1F2937;
     -fx-padding: 0 12;
     -fx-alignment: CENTER;
@@ -1941,10 +1987,10 @@
     -fx-size: 44px;
 }
 .sw2-wrap-table .column-header .label {
-    -fx-font-size: 14px;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #374151;
-    -fx-font-family: 'Microsoft YaHei';
     -fx-alignment: CENTER;
 }
 .sw2-wrap-table .filler {
@@ -1964,6 +2010,9 @@
     -fx-border-color: transparent transparent #E5E7EB transparent;
     -fx-border-width: 0 0 1 0;
     -fx-background-color: transparent;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+    -fx-text-fill: #1F2937;
     -fx-padding: 0;
     -fx-alignment: CENTER;
 }

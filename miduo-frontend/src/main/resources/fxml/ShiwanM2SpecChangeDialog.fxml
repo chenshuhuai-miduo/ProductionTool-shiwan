@@ -38,8 +38,8 @@
                      -fx-border-color: #FDE68A; -fx-border-width: 1;
                      -fx-border-radius: 8; -fx-background-radius: 8;
                      -fx-padding: 14 16;">
-            <Label text="⚠"
-                   style="-fx-font-size: 16px; -fx-text-fill: #D97706;"/>
+            <StackPane fx:id="specWarnIconPane" minWidth="18" minHeight="18" prefWidth="18" prefHeight="18"
+                       maxWidth="18" maxHeight="18"/>
             <Label text="检测到已保存的采集规格与当前输入不一致"
                    style="-fx-font-size: 14px; -fx-font-weight: bold;
                           -fx-text-fill: #92400E; -fx-font-family: 'Microsoft YaHei';"

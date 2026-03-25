@@ -72,8 +72,7 @@
                         <TableColumn fx:id="reasonCol" text="剔除原因"    prefWidth="180"/>
                     </columns>
                     <placeholder>
-                        <Label text="无匹配数据"
-                               style="-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';"/>
+                        <Label text="无匹配数据" styleClass="sw2-query-empty-hint"/>
                     </placeholder>
                 </TableView>
 
@@ -123,88 +122,54 @@
                   style="-fx-background-color:white; -fx-border-color:#D9E1EC;
                          -fx-border-width:1; -fx-border-radius:12; -fx-background-radius:12;
                          -fx-padding:24;">
-                <Label text="具体信息"
-                       style="-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#1F2937;
-                              -fx-font-family:'Microsoft YaHei'; -fx-padding:0 0 8 0;"/>
+                <Label text="具体信息" styleClass="sw2-query-detail-main-title"
+                       style="-fx-padding:0 0 8 0;"/>
 
                 <!-- 空状态 -->
                 <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS" alignment="CENTER">
-                    <Label text="请点击左侧记录查看详细信息"
-                           style="-fx-text-fill:#9CA3AF; -fx-font-size:14px; -fx-font-family:'Microsoft YaHei';"/>
+                    <Label text="请点击左侧记录查看详细信息" styleClass="sw2-query-empty-hint"/>
                 </VBox>
 
                 <!-- 详情内容 -->
                 <VBox fx:id="detailPane" spacing="10" visible="false" managed="false">
-                    <Label text="剔除汇总"
-                           style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;
-                                  -fx-font-family:'Microsoft YaHei';"/>
+                    <Label text="剔除汇总" styleClass="sw2-query-detail-section-title"/>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="问题码："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detProblemCode"
-                               style="-fx-font-size:14px; -fx-text-fill:#F44336; -fx-font-weight:bold;
-                                      -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="问题码：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detProblemCode" styleClass="sw2-dialog-detail-value-problem"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="箱码："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detCaseCode"
-                               style="-fx-font-size:14px; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="箱码：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detCaseCode" styleClass="sw2-dialog-detail-value"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="剔除原因："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detReason"
-                               style="-fx-font-size:14px; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="剔除原因：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detReason" styleClass="sw2-dialog-detail-value"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="剔除时间："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detTime"
-                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="剔除时间：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detTime" styleClass="sw2-dialog-detail-value-muted"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
 
                     <Label text="产品信息"
-                           style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#374151;
-                                  -fx-font-family:'Microsoft YaHei'; -fx-padding:4 0 0 0;"/>
+                           styleClass="sw2-query-detail-section-title sw2-dialog-detail-section-follow"/>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="产品编号："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detProductNo"
-                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="产品编号：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detProductNo" styleClass="sw2-dialog-detail-value-muted"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="产品名称："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detProductName"
-                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="产品名称：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detProductName" styleClass="sw2-dialog-detail-value-muted"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="生产单号："
-                               minWidth="76" prefWidth="76"
-                               style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';
-                                      -fx-alignment:CENTER_RIGHT;"/>
-                        <Label fx:id="detOrderNo"
-                               style="-fx-font-size:14px; -fx-text-fill:#4B5563; -fx-font-family:'Microsoft YaHei';"
-                               wrapText="true" prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Label text="生产单号：" styleClass="sw2-dialog-detail-label"/>
+                        <Label fx:id="detOrderNo" styleClass="sw2-dialog-detail-value-muted"
+                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                     </HBox>
                 </VBox>
             </VBox>
