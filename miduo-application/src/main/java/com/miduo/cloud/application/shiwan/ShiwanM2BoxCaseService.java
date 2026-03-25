@@ -1236,6 +1236,39 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
+     * 数据替换：新码不在对应码包热表（赋码文档「小标/中标/大标不通过」界面句式）。
+     * packageType：1=小标(瓶)、2=中标(盒)、3=大标(箱)，与 {@link #isCodeInPackage(String, int)} 一致。
+     */
+    private static String replaceHintNotInPackage(int packageType, String code) {
+        switch (packageType) {
+            case 1:
+                return "瓶码 " + code + " 不在小标码包范围内";
+            case 2:
+                return "盒码 " + code + " 不在中标码包范围内";
+            case 3:
+                return "箱码 " + code + " 不在大标码包范围内";
+            default:
+                return "新码 " + code + " 不在对应码包范围内";
+        }
+    }
+
+    /**
+     * 数据替换：新码已在关联表（赋码文档「重码」界面句式）。
+     */
+    private static String replaceHintDuplicate(int packageType, String code) {
+        switch (packageType) {
+            case 1:
+                return "瓶码 " + code + " 重复出现";
+            case 2:
+                return "盒码 " + code + " 重复出现";
+            case 3:
+                return "箱码 " + code + " 重复出现";
+            default:
+                return "新码 " + code + " 重复出现";
+        }
+    }
+
+    /**
      * P02-06 数据替换：按层级直接更新对应列码值，并同步热冷表。
      * 流程：原码存在于冷表（已被关联）→ 验证新码在热表中（未使用）→ 更新关联表 → 原码从冷表回迁热表 → 新码从热表落冷。
      */
@@ -1268,15 +1301,15 @@ public class ShiwanM2BoxCaseService {
             packageType = 3; column = "BigSerialNumber";    codeType = 0;
         }
 
-        // 4. 校验新码：必须在对应码包热表中且未被使用
+        // 4. 校验新码：必须在对应码包热表中且未被使用（提示与赋码文档「小标/中标/大标不通过」「重码」一致）
         if (!isCodeInPackage(newV, packageType)) {
-            return ApiResult.error(400, "新码不在对应码包热表中（未使用）：" + newV);
+            return ApiResult.error(400, replaceHintNotInPackage(packageType, newV));
         }
         if (countByColumn("SmallSerialNumber",   newV) > 0
                 || countByColumn("MediumSerialNumber",  newV) > 0
                 || countByColumn("BigSerialNumber",     newV) > 0
                 || countByColumn("VirtualSerialNumber", newV) > 0) {
-            return ApiResult.error(400, "新码已存在于关联表，不允许替换：" + newV);
+            return ApiResult.error(400, replaceHintDuplicate(packageType, newV));
         }
 
         // 5. 查询原码记录的上传状态
