@@ -917,7 +917,7 @@ public class ShiwanM2BoxCaseService {
         if (countActiveBy("VirtualSerialNumber", c) > 0) {
             boolean uploaded = isPalletUploaded(c);
             r.put("codeType", "PALLET");
-            r.put("cancelable", !uploaded);
+            r.put("cancelable", true);
             r.put("parentCode", null);
             Long caseCnt = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
@@ -928,7 +928,7 @@ public class ShiwanM2BoxCaseService {
             r.put("palletCode", c);
             r.put("isUploaded", uploaded);
             if (uploaded) {
-                r.put("message", "该码所在垛已上传云端，暂不支持取消关联");
+                r.put("message", "该垛已上传云端，执行时将先取消云端整垛数据");
             }
             return r;
         }
@@ -998,7 +998,7 @@ public class ShiwanM2BoxCaseService {
     /**
      * P02-06 取消关联 - 执行取消。
      * mode: ONE_LAYER（只解一层）或 ALL（全部解除）。
-     * 流程：校验 → 检查上传状态（已上传暂不允许取消）→ 本地执行。
+     * 流程：校验 →（垛码且已上传时先云端取消）→ 本地执行。
      */
     public ApiResult<Map<String, Object>> cancelCode(String code, String mode) {
         if (code == null || code.trim().isEmpty()) {
@@ -1040,9 +1040,13 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(400, "该码已关联至上级码 " + parentCode + "，请先取消上级");
         }
 
-        // ③ 已上传暂不允许取消（当前阶段不调云端取消接口）
-        if (palletCode != null && isPalletUploaded(palletCode)) {
-            return ApiResult.error(400, "该码所在垛已上传云端，暂不支持取消关联");
+        // ③ 垛码若已上传：先取消云端整垛数据，成功后再执行本地取消
+        if ("PALLET".equals(codeType) && palletCode != null && isPalletUploaded(palletCode)) {
+            ApiResult<Boolean> cloudResult = callCloudUnbindForPallet(palletCode);
+            if (cloudResult != null && (cloudResult.getCode() == null || cloudResult.getCode() != 200)) {
+                String msg = cloudResult.getMessage() != null ? cloudResult.getMessage() : "云端取消失败";
+                return ApiResult.error(500, msg);
+            }
         }
 
         // ④ 本地事务执行取消
@@ -1148,7 +1152,10 @@ public class ShiwanM2BoxCaseService {
         return r;
     }
 
-    /** 调用云端 UnbindRelation 接口取消整垛数据（批量，每批100个码）。 */
+    /**
+     * 调用云端 UnbindRelation 接口取消整垛数据。
+     * 入参严格按文档：{"oldcodes":[去重后的该垛全部箱码]}。
+     */
     private ApiResult<Boolean> callCloudUnbindForPallet(String palletCode) {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         if (cfg == null || cfg.getApi() == null) {
@@ -1161,52 +1168,52 @@ public class ShiwanM2BoxCaseService {
             log.warn("[云端取消关联] 缺少 baseUrl 或 codeUnbindRelationPath，跳过 palletCode={}", palletCode);
             return null;
         }
-        String memberlogin = cfg.getApi().getMemberlogin();
+        String appId     = cfg.getApi().getAppId();
+        String appSecret = cfg.getApi().getAppSecret();
+        if (trimStr(appId) == null || trimStr(appSecret) == null) {
+            return ApiResult.error(500, "云端取消失败：缺少 appId 或 appSecret 配置");
+        }
 
-        // 收集箱码 + 盒码（上传时包含这两层）
+        // 仅收集该垛下箱码，按接口要求去重后填入 oldcodes
         List<String> caseCodes = jdbcTemplate.queryForList(
                 "SELECT DISTINCT BigSerialNumber FROM CodeRelationUpload " +
                 "WHERE VirtualSerialNumber=? AND IsDel=0 AND BigSerialNumber!=''",
                 String.class, palletCode);
-        List<String> boxCodes = jdbcTemplate.queryForList(
-                "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
-                "WHERE VirtualSerialNumber=? AND IsDel=0 AND MediumSerialNumber!=''",
-                String.class, palletCode);
-
-        List<String> allCodes = new ArrayList<>();
-        allCodes.addAll(caseCodes);
-        allCodes.addAll(boxCodes);
-        if (allCodes.isEmpty()) {
+        List<String> dedupCaseCodes = new ArrayList<>(new LinkedHashSet<>(caseCodes));
+        if (dedupCaseCodes.isEmpty()) {
             log.warn("[云端取消关联] 垛 {} 无码数据，跳过", palletCode);
             return null;
         }
 
-        // 分批（每批100个）调用
-        int batchSize = 100;
-        for (int i = 0; i < allCodes.size(); i += batchSize) {
-            List<String> batch = allCodes.subList(i, Math.min(i + batchSize, allCodes.size()));
-            try {
-                Map<String, Object> body = new LinkedHashMap<>();
-                body.put("Memberlogin", memberlogin != null ? memberlogin : "");
-                body.put("oldCodes", batch);
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+            String time  = sdf.format(new Date());
+            String nonce = "123";
 
-                Map<String, String> headers = new LinkedHashMap<>();
-                headers.put("Content-type", "application/json");
+            Map<String, Object> requestData = new LinkedHashMap<>();
+            requestData.put("oldcodes", dedupCaseCodes);
 
-                String response = sendPost(baseUrl + path, headers, MAPPER.writeValueAsString(body));
-                log.info("[云端取消关联] palletCode={} batch={}-{} 响应: {}",
-                        palletCode, i, i + batch.size() - 1, response);
+            String sign = palletSign(time, nonce, appSecret, requestData);
 
-                JsonNode root       = MAPPER.readTree(response);
-                int      returnCode = root.path("Return_code").asInt(-1);
-                if (returnCode != 0) {
-                    String msg = root.path("Return_msg").asText("未知错误");
-                    return ApiResult.error(500, "云端取消失败：" + msg);
-                }
-            } catch (Exception e) {
-                log.error("[云端取消关联] 接口调用异常 palletCode={}: {}", palletCode, e.getMessage(), e);
-                return ApiResult.error(500, "云端取消接口调用异常：" + e.getMessage());
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("timestamp", time);
+            headers.put("appid", appId);
+            headers.put("nonce", nonce);
+            headers.put("sign", sign);
+            headers.put("Content-type", "application/json");
+
+            String response = sendPost(baseUrl + path, headers, MAPPER.writeValueAsString(requestData));
+            log.info("[云端取消关联] palletCode={} 箱码数={} 响应: {}", palletCode, dedupCaseCodes.size(), response);
+
+            JsonNode root = MAPPER.readTree(response);
+            String returnCode = root.path("return_code").asText("");
+            if (!"0".equals(returnCode)) {
+                String msg = root.path("return_msg").asText("未知错误");
+                return ApiResult.error(500, "云端取消失败：" + msg);
             }
+        } catch (Exception e) {
+            log.error("[云端取消关联] 接口调用异常 palletCode={}: {}", palletCode, e.getMessage(), e);
+            return ApiResult.error(500, "云端取消接口调用异常：" + e.getMessage());
         }
         return ApiResult.success("云端取消成功", true);
     }
@@ -2090,10 +2097,18 @@ public class ShiwanM2BoxCaseService {
         StringBuilder params = new StringBuilder();
         for (Map.Entry<String, Object> entry : sorted.entrySet()) {
             String key = entry.getKey();
-            String value = String.valueOf(entry.getValue());
-            if (key != null && !key.isEmpty()) {
-                params.append(key).append(value);
+            if (key == null || key.isEmpty()) continue;
+            Object raw = entry.getValue();
+            String value;
+            if (raw == null) {
+                value = "";
+            } else if (raw instanceof String || raw instanceof Number || raw instanceof Boolean) {
+                value = String.valueOf(raw);
+            } else {
+                // List、Map 等复杂类型用 JSON 序列化，与接口服务端签名算法保持一致
+                value = MAPPER.writeValueAsString(raw);
             }
+            params.append(key).append(value);
         }
         String signStr = time + nonce + (secret != null ? secret : "") + params;
         MessageDigest md = MessageDigest.getInstance("MD5");

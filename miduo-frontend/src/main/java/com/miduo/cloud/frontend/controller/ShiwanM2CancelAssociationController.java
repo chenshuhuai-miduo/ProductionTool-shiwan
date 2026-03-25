@@ -651,7 +651,7 @@ public class ShiwanM2CancelAssociationController {
                 : null;
     }
 
-    /** 根据后端 check-cancel 响应构建识别项。若该码已上传则直接标记为不可解除。 */
+    /** 根据后端 check-cancel 响应构建识别项。 */
     private static IdentifyItem buildIdentifyItem(String code, Map<String, Object> check, boolean modeAll) {
         IdentifyItem item = new IdentifyItem();
         item.code    = code;
@@ -667,14 +667,8 @@ public class ShiwanM2CancelAssociationController {
         item.affectedOneLayer = intVal(check, "affectedOneLayer");
         item.affectedAll     = intVal(check, "affectedAll");
         item.isUploaded      = boolVal(check, "isUploaded");
-        // 已上传则不允许取消关联
-        if (item.isUploaded) {
-            item.cancelable = false;
-            item.message    = "该码所在垛已上传云端，暂不支持取消关联";
-        } else {
-            item.cancelable = boolVal(check, "cancelable");
-            item.message    = str(check, "message");
-        }
+        item.cancelable      = boolVal(check, "cancelable");
+        item.message         = str(check, "message");
         return item;
     }
 

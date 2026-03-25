@@ -1706,6 +1706,8 @@ public class ShiwanM2MainController implements Initializable {
         startTcpCapture(orderNo, productNo, n, m);
         // 最后连接所有IO设备（网口/串口），连接完成后才打印连接结果日志
         connectAllDevices();
+        // 开始采集时：按数据库实时箱数检查是否已达到成垛阈值，达到则直接强制满垛（并触发上传流程）
+        checkAndForceFullPalletOnStart(orderNo, m);
         // 如果是恢复上次未完成任务，启动TCP后从数据库恢复待关联盒码到内存队列
         if (pendingRestoreOrderNo != null && pendingRestoreOrderNo.equals(orderNo)) {
             final String restoreOrderNo = pendingRestoreOrderNo;
@@ -1727,6 +1729,33 @@ public class ShiwanM2MainController implements Initializable {
                 } catch (Exception ignored) {}
             });
         }
+    }
+
+    /**
+     * 开始采集后按数据库实时箱数检查：若当前未成垛箱数已达到每垛箱数阈值，则直接强制满垛。
+     * 场景：提取工单未成垛后，已有箱数已满足成垛标准。
+     */
+    private void checkAndForceFullPalletOnStart(String orderNo, int boxesPerPallet) {
+        if (orderNo == null || orderNo.trim().isEmpty() || boxesPerPallet <= 0) return;
+        HttpUtil.asyncGet("/api/shiwan-m2/box-case/current-cases?orderNo="
+                        + java.net.URLEncoder.encode(orderNo.trim(), java.nio.charset.StandardCharsets.UTF_8),
+                json -> {
+                    try {
+                        JsonNode node = JSON.readTree(json);
+                        if (node == null || !node.has("code") || node.get("code").asInt() != 200 || !node.has("data")) {
+                            return;
+                        }
+                        int realCases = node.get("data").asInt(0);
+                        currentCases = realCases;
+                        curCasesLabel.setText(String.valueOf(realCases));
+                        if (realCases >= boxesPerPallet) {
+                            addOpLog(LocalDateTime.now().format(TIME_FMT)
+                                    + "  启动检测到未成垛箱数已达阈值（" + realCases + "/" + boxesPerPallet + "），自动执行满垛", LogType.INFO);
+                            forceFullPalletBackend(orderNo, realCases, false);
+                        }
+                    } catch (Exception ignored) {}
+                },
+                ignored -> {});
     }
 
     private static String escapeJson(String s) {
@@ -2473,6 +2502,14 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     private void forceFullPalletBackend(String orderNo, int currentCaseCount) {
+        forceFullPalletBackend(orderNo, currentCaseCount, true);
+    }
+
+    /**
+     * 调用后端满垛接口。
+     * @param showAsForce true=按“强制满垛”文案展示，false=按“满垛”文案展示（自动达标场景）
+     */
+    private void forceFullPalletBackend(String orderNo, int currentCaseCount, boolean showAsForce) {
         String body = "{\"orderNo\":\"" + escapeJson(orderNo) + "\",\"currentCaseCount\":" + currentCaseCount + "}";
         HttpUtil.asyncPost("/api/shiwan-m2/box-case/force-full-pallet", body, json -> {
             try {
@@ -2494,9 +2531,9 @@ public class ShiwanM2MainController implements Initializable {
                 JsonNode data = root.get("data");
                 String palletCode = data != null && data.has("palletCode") ? data.get("palletCode").asText() : null;
                 if (palletCode == null) {
-                    fetchNextVirtualSerialNumberAsync(code -> finishForcePallet(code, currentCaseCount));
+                    fetchNextVirtualSerialNumberAsync(code -> finishForcePallet(code, currentCaseCount, showAsForce));
                 } else {
-                    finishForcePallet(palletCode, currentCaseCount);
+                    finishForcePallet(palletCode, currentCaseCount, showAsForce);
                 }
             } catch (Exception e) {
                 showWarn("强制满垛失败", e.getMessage());
@@ -2505,14 +2542,15 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     /** 强制满垛后端成功后更新 UI（FX 线程回调） */
-    private void finishForcePallet(String palletCode, int caseCount) {
+    private void finishForcePallet(String palletCode, int caseCount, boolean showAsForce) {
         palletCount++;
         palletCountLabel.setText(String.valueOf(palletCount));
         String now = LocalDateTime.now().format(TIME_FMT);
         boolean autoUploadOn = ShiwanM2SettingsStore.get().getUpload() == null
                 || ShiwanM2SettingsStore.get().getUpload().isAutoUpload();
         String uploadSuffix = autoUploadOn ? "，正在上传..." : "";
-        addDataLog(now + "  强制满垛 - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱" + uploadSuffix, LogType.SUCCESS);
+        String actionText = showAsForce ? "强制满垛" : "满垛";
+        addDataLog(now + "  " + actionText + " - 垛码：" + palletCode + " 已生成，共" + caseCount + "箱" + uploadSuffix, LogType.SUCCESS);
         addOpLog(now + "  强制满垛操作完成，已生产垛数：" + palletCount, LogType.INFO);
         final String forceOrderNo = orderNumField.getText();
         OperateLogBuilder.create()

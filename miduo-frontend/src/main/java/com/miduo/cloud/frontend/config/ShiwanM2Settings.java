@@ -471,6 +471,8 @@ public class ShiwanM2Settings {
         private String productsListPath = "/api/sign/md.shop.products/v1/list";
         /** 码替换接口路径 */
         private String codeSubstitutionPath;
+        /** 取消关联接口路径（UnbindRelation） */
+        private String codeUnbindRelationPath;
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -492,5 +494,7 @@ public class ShiwanM2Settings {
         public void setProductsListPath(String path) { this.productsListPath = path; }
         public String getCodeSubstitutionPath() { return codeSubstitutionPath; }
         public void setCodeSubstitutionPath(String codeSubstitutionPath) { this.codeSubstitutionPath = codeSubstitutionPath; }
+        public String getCodeUnbindRelationPath() { return codeUnbindRelationPath; }
+        public void setCodeUnbindRelationPath(String codeUnbindRelationPath) { this.codeUnbindRelationPath = codeUnbindRelationPath; }
     }
 }

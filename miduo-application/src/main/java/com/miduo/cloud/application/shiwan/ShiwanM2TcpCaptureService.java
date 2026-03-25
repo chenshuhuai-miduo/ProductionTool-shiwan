@@ -636,10 +636,20 @@ public class ShiwanM2TcpCaptureService {
                 boxCaseService.insertStatus4RejectRecordsForBox(currentOrderNo, caseCode, status4Box);
             }
 
-            // 从 CodeRelationUpload 删除该批次所有盒码的未关联记录
+            // 从 CodeRelationUpload 处理该批次盒码未关联记录：
+            // 若本次失败由箱码问题导致，且盒码不存在 Status=4，则将记录置为未完成（Status=0）；
+            // 其他场景保持原逻辑删除。
             if (!allBoxCodes.isEmpty()) {
-                int deleted = boxCaseService.deleteCodeRelationUploadByBoxCodes(allBoxCodes);
-                log.warn("[批{}] 整批剔除：从 CodeRelationUpload 删除 {} 条记录", batchNo, deleted);
+                boolean caseProblem = !caseBatch.digitOk || caseBatch.queueDuplicate;
+                boolean hasBoxProblem = boxItems.stream().anyMatch(i -> !i.digitOk || i.queueDuplicate);
+                boolean shouldMarkUnfinished = caseProblem && !hasBoxProblem && countOk && status4Codes.isEmpty();
+                if (shouldMarkUnfinished) {
+                    int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
+                    log.warn("[批{}] 整批剔除（箱码问题）：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
+                } else {
+                    int deleted = boxCaseService.deleteCodeRelationUploadByBoxCodes(allBoxCodes);
+                    log.warn("[批{}] 整批剔除：从 CodeRelationUpload 删除 {} 条记录", batchNo, deleted);
+                }
             }
 
             // 构造问题摘要
@@ -694,7 +704,14 @@ public class ShiwanM2TcpCaptureService {
                 }
             }
             if (!digitOkBoxCodes.isEmpty()) {
-                boxCaseService.deleteCodeRelationUploadByBoxCodes(digitOkBoxCodes);
+                List<String> status4CodesOnFail = boxCaseService.getStatus4BoxCodes(digitOkBoxCodes);
+                boolean caseProblem = "大标不通过".equals(caseRejectReason) || "重码".equals(caseRejectReason);
+                if (caseProblem && (status4CodesOnFail == null || status4CodesOnFail.isEmpty())) {
+                    int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(digitOkBoxCodes);
+                    log.warn("[批{}] 关联失败（箱码问题）：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
+                } else {
+                    boxCaseService.deleteCodeRelationUploadByBoxCodes(digitOkBoxCodes);
+                }
             }
             addEvent("ASSOC_FAIL",
                     "[批" + batchNo + "] 关联失败 箱码:" + caseCode + "，原因：" + errMsg,
