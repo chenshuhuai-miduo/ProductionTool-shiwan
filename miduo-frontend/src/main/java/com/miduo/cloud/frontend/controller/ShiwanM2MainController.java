@@ -1770,8 +1770,8 @@ public class ShiwanM2MainController implements Initializable {
         startM1Sync();
         // 启动 TCP 相机采集（n=每箱盒数, m=每垛箱数）
         startTcpCapture(orderNo, productNo, n, m);
-        // 最后连接所有IO设备（网口/串口），相机连接沿用启动阶段结果，这里只补连非相机设备并打印汇总日志
-        connectAllDevices(false, false);
+        // 最后连接所有已启用设备（含网口相机/串口），汇总日志按全部设备统计 X/M
+        connectAllDevices(false, true);
         // 开始采集时：按数据库实时箱数检查是否已达到成垛阈值，达到则直接强制满垛（并触发上传流程）
         checkAndForceFullPalletOnStart(orderNo, m);
         // 如果是恢复上次未完成任务，启动TCP后从数据库恢复待关联盒码到内存队列
