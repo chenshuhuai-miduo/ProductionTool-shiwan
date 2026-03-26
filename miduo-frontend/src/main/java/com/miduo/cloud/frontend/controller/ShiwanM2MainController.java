@@ -1355,8 +1355,8 @@ public class ShiwanM2MainController implements Initializable {
                         applyProductItems(syncedProducts);
                         if (syncedProducts.isEmpty()) {
                             String tip = syncOk
-                                    ? "产品信息加载完成，但未获取到可用产品，请联系管理员维护产品档案。"
-                                    : "加载产品信息失败，请检查网络或开放平台配置后重试。";
+                                    ? "产品信息已同步，但本地仍无可用产品，请联系管理员确认产品档案。"
+                                    : "从云端加载产品信息失败，请检查网络连接或开放平台配置（baseUrl / appId / appSecret / productsListPath）后重试。";
                             showWarn("产品信息加载提示", tip);
                         }
                         doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
@@ -2550,13 +2550,24 @@ public class ShiwanM2MainController implements Initializable {
         });
     }
 
-    /** 同步产品到本地（后台线程调用） */
+    /**
+     * 同步产品到本地（后台线程调用）。
+     * 返回 true 当且仅当 HTTP 200 且云端实际同步到 1 条以上产品。
+     * 若接口返回错误或同步到 0 条，均返回 false，调用方可据此判断是否真正同步成功。
+     */
     private boolean syncProducts() {
         try {
             String resp = HttpUtil.doPost("/api/shiwan-m2/products/sync", "");
             JsonNode n = JSON.readTree(resp);
             if (n == null || !n.has("code") || n.get("code").asInt() != 200) {
-                log.warn("[产品同步] 失败：{}", (n != null && n.has("message") ? n.get("message").asText() : "未知错误"));
+                String msg = (n != null && n.has("message")) ? n.get("message").asText() : "未知错误";
+                log.warn("[产品同步] 失败：{}", msg);
+                return false;
+            }
+            // data 字段为实际同步条数，为 0 表示云端接口未返回产品数据（可能是接口异常或账号无产品）
+            int count = (n.has("data") && !n.get("data").isNull()) ? n.get("data").asInt(0) : 0;
+            if (count <= 0) {
+                log.warn("[产品同步] 接口返回成功但产品条数为 0，请检查云端产品配置或接口响应");
                 return false;
             }
             return true;

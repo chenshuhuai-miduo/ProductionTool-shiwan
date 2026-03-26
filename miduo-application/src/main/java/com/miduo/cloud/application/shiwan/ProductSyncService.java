@@ -107,73 +107,71 @@ public class ProductSyncService {
         return response.toString();
     }
 
-    public int syncProducts() {
-        try {
-            ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
-            String baseUrl = trim(cfg.getApi().getBaseUrl());
-            String path = trim(cfg.getApi().getProductsListPath());
-            if (baseUrl == null || path == null) {
-                throw new RuntimeException("缺少开放平台配置：baseUrl 或 appId/appSecret 或 productsListPath");
-            }
-            String url = baseUrl + path;
-            String queryJson = "{\"prostate\":\"0\",\"noprotype\":\"0\"}";
-            int pageSize = 2000;
-            String sort = "";
-
-            // 分页循环拉取：每次取 1000 条，若返回条数等于 1000 则继续拉下一页，直到返回条数 < 1000 为止
-            List<ProductInfoPO> allItems = new ArrayList<>();
-            int currentPage = 1;
-            while (true) {
-                Map<String, Object> requestData = new HashMap<>();
-                requestData.put("page", currentPage);
-                requestData.put("pagesize", pageSize);
-                requestData.put("query", queryJson);
-                requestData.put("sort", sort);
-
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-                String time = sdf.format(new Date());
-                String nonce = "123";
-                String sign = getSign(time, nonce, trim(cfg.getApi().getAppSecret()), requestData);
-
-                Map<String, String> headers = new HashMap<>();
-                headers.put("timestamp", time);
-                headers.put("appid", trim(cfg.getApi().getAppId()));
-                headers.put("nonce", nonce);
-                headers.put("sign", sign);
-                headers.put("Content-type", "application/json");
-
-                String jsonStr = MAPPER.writeValueAsString(requestData);
-                String response = sendPostRequest(url, headers, jsonStr);
-                System.out.println("[产品同步] 第" + currentPage + "页响应: " + response);
-
-                List<ProductInfoPO> pageItems = parseItems(response);
-                allItems.addAll(pageItems);
-
-                if (pageItems.size() < pageSize) {
-                    // 返回条数小于 pageSize，说明已是最后一页
-                    break;
-                }
-                currentPage++;
-            }
-
-            if (allItems.isEmpty()) return 0;
-
-            // 全量覆盖：先清空本地产品表，再写入所有页汇总数据
-            productInfoMapper.delete(new QueryWrapper<>());
-            int total = 0;
-            int batchSize = 500;
-            for (int i = 0; i < allItems.size(); i += batchSize) {
-                List<ProductInfoPO> sub = allItems.subList(i, Math.min(i + batchSize, allItems.size()));
-                productInfoMapper.batchUpsert(sub);
-                total += sub.size();
-            }
-            System.out.println("[产品同步] 共同步 " + total + " 条产品数据（共" + (currentPage) + "页）");
-            return total;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
+    public int syncProducts() throws Exception {
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        String baseUrl = trim(cfg.getApi().getBaseUrl());
+        String path = trim(cfg.getApi().getProductsListPath());
+        if (baseUrl == null || path == null) {
+            throw new RuntimeException("缺少开放平台配置：baseUrl 或 productsListPath");
         }
+        String appId = trim(cfg.getApi().getAppId());
+        String appSecret = trim(cfg.getApi().getAppSecret());
+        if (appId == null || appSecret == null) {
+            throw new RuntimeException("缺少开放平台配置：appId 或 appSecret");
+        }
+        String url = baseUrl + path;
+        String queryJson = "{\"prostate\":\"0\",\"noprotype\":\"0\"}";
+        int pageSize = 2000;
+        String sort = "";
+
+        // 分页循环拉取
+        List<ProductInfoPO> allItems = new ArrayList<>();
+        int currentPage = 1;
+        while (true) {
+            Map<String, Object> requestData = new HashMap<>();
+            requestData.put("page", currentPage);
+            requestData.put("pagesize", pageSize);
+            requestData.put("query", queryJson);
+            requestData.put("sort", sort);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+            String time = sdf.format(new Date());
+            String nonce = "123";
+            String sign = getSign(time, nonce, appSecret, requestData);
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put("timestamp", time);
+            headers.put("appid", appId);
+            headers.put("nonce", nonce);
+            headers.put("sign", sign);
+            headers.put("Content-type", "application/json");
+
+            String jsonStr = MAPPER.writeValueAsString(requestData);
+            String response = sendPostRequest(url, headers, jsonStr);
+            System.out.println("[产品同步] 第" + currentPage + "页响应: " + response);
+
+            List<ProductInfoPO> pageItems = parseItems(response);
+            allItems.addAll(pageItems);
+
+            if (pageItems.size() < pageSize) {
+                break;
+            }
+            currentPage++;
+        }
+
+        if (allItems.isEmpty()) return 0;
+
+        // 全量覆盖：先清空本地产品表，再写入所有页汇总数据
+        productInfoMapper.delete(new QueryWrapper<>());
+        int total = 0;
+        int batchSize = 500;
+        for (int i = 0; i < allItems.size(); i += batchSize) {
+            List<ProductInfoPO> sub = allItems.subList(i, Math.min(i + batchSize, allItems.size()));
+            productInfoMapper.batchUpsert(sub);
+            total += sub.size();
+        }
+        System.out.println("[产品同步] 共同步 " + total + " 条产品数据（共" + currentPage + "页）");
+        return total;
     }
 
     /**
