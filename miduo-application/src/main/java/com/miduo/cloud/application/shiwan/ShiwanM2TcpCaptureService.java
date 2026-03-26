@@ -102,6 +102,12 @@ public class ShiwanM2TcpCaptureService {
     private Thread          caseReceiverThread;
     private volatile Socket boxSocket;
     private volatile Socket caseSocket;
+    /**
+     * 持久连接模式标志。
+     * 为 true 时，接收线程在 active=false 阶段也保持 TCP 连接，收到数据静默丢弃；
+     * active 变为 true 后自动开始处理，无需重新建连接。
+     */
+    private volatile boolean persistentConnection = false;
     /** 批次超时巡检线程（用于“另一相机未在指定时间到达同批次”剔除） */
     private final ScheduledExecutorService timeoutScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "tcp-batch-timeout-checker");
@@ -145,10 +151,14 @@ public class ShiwanM2TcpCaptureService {
         active = true;
         startTimeoutChecker();
 
-        boxReceiverThread  = newDaemonThread(() -> receiveLoop(boxDev,  true),  "tcp-box-receiver");
-        caseReceiverThread = newDaemonThread(() -> receiveLoop(caseDev, false), "tcp-case-receiver");
-        boxReceiverThread.start();
-        caseReceiverThread.start();
+        if (!persistentConnection) {
+            // 无持久连接：新建接收线程（首次或非持久模式）
+            boxReceiverThread  = newDaemonThread(() -> receiveLoop(boxDev,  true),  "tcp-box-receiver");
+            caseReceiverThread = newDaemonThread(() -> receiveLoop(caseDev, false), "tcp-case-receiver");
+            boxReceiverThread.start();
+            caseReceiverThread.start();
+        }
+        // 有持久连接：线程已在运行，仅设置 active=true 即可驱动其开始处理数据，不创建新连接
 
         addEvent("STARTED", "TCP采集已启动：订单=" + orderNo
                 + "  每箱" + this.boxesPerCase + "盒  每垛" + this.boxesPerPallet + "箱", null);
@@ -156,18 +166,65 @@ public class ShiwanM2TcpCaptureService {
         return null;
     }
 
-    /** 停止 TCP 采集。 */
+    /** 停止 TCP 采集（保持持久连接以便下次采集复用）。 */
     public synchronized void stop() {
         active = false;
-        closeSocket(boxSocket);
-        closeSocket(caseSocket);
-        boxSocket  = null;
-        caseSocket = null;
-        if (boxReceiverThread  != null) boxReceiverThread.interrupt();
-        if (caseReceiverThread != null) caseReceiverThread.interrupt();
+        if (!persistentConnection) {
+            // 非持久连接模式：完全释放 socket 和线程
+            closeSocket(boxSocket);
+            closeSocket(caseSocket);
+            boxSocket  = null;
+            caseSocket = null;
+            if (boxReceiverThread  != null) boxReceiverThread.interrupt();
+            if (caseReceiverThread != null) caseReceiverThread.interrupt();
+        }
+        // 持久连接模式：保持 socket 存活，接收线程继续运行并丢弃相机数据，
+        // 下次调用 start() 时 active=true 后接收线程自动恢复处理
         stopTimeoutChecker();
         addEvent("STOPPED", "TCP采集已停止", null);
         log.info("TCP采集已停止");
+    }
+
+    /**
+     * 软件启动时建立相机持久 TCP 连接。
+     * 调用后接收线程保持连接但不处理数据（active=false 时静默丢弃）；
+     * 开始采集（start）时直接复用该连接，无需重新建立，避免双重连接。
+     * 幂等：已在持久连接状态时重复调用无副作用。
+     */
+    public synchronized void connectCamerasPersistently() {
+        if (persistentConnection) {
+            log.info("[TCP采集] 相机持久连接已在运行，无需重复建立");
+            return;
+        }
+        IoDeviceDTO boxDev  = findDevice(BOX_CATEGORY);
+        IoDeviceDTO caseDev = findDevice(CASE_CATEGORY);
+        if (boxDev == null || caseDev == null) {
+            log.warn("[TCP采集] 未找到相机设备配置（盒码/箱码采集），跳过持久连接");
+            return;
+        }
+        if (!Boolean.TRUE.equals(boxDev.getEnabled()) || !Boolean.TRUE.equals(caseDev.getEnabled())) {
+            log.warn("[TCP采集] 相机设备未启用，跳过持久连接");
+            return;
+        }
+        if (boxDev.getAddress() == null || boxDev.getPort() == null
+                || caseDev.getAddress() == null || caseDev.getPort() == null) {
+            log.warn("[TCP采集] 相机地址/端口未配置，跳过持久连接");
+            return;
+        }
+        persistentConnection = true;
+        boxReceiverThread  = newDaemonThread(() -> receiveLoop(boxDev,  true),  "tcp-box-persistent");
+        caseReceiverThread = newDaemonThread(() -> receiveLoop(caseDev, false), "tcp-case-persistent");
+        boxReceiverThread.start();
+        caseReceiverThread.start();
+        log.info("[TCP采集] 相机持久 TCP 连接线程已启动（软件启动时连接，采集时复用同一条连接）");
+        addEvent("BOX_CONNECTING", "相机持久连接中：" + boxDev.getDeviceName()
+                + " (" + boxDev.getAddress() + ":" + boxDev.getPort() + ")", null);
+    }
+
+    /** 查询指定相机是否已连接。 */
+    public boolean isCameraConnected(boolean isBox) {
+        Socket sock = isBox ? boxSocket : caseSocket;
+        return sock != null && !sock.isClosed() && sock.isConnected();
     }
 
     /**
@@ -183,6 +240,9 @@ public class ShiwanM2TcpCaptureService {
     public Map<String, Object> getStatus() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("active",               active);
+        m.put("persistentConnection", persistentConnection);
+        m.put("boxCameraConnected",   isCameraConnected(true));
+        m.put("caseCameraConnected",  isCameraConnected(false));
         m.put("pendingBoxBatches",    boxBatchQueue.size());
         m.put("pendingCaseBatches",   caseBatchQueue.size());
         m.put("boxBatchCounter",      boxBatchCounter.get());
@@ -236,7 +296,9 @@ public class ShiwanM2TcpCaptureService {
             return;
         }
 
-        while (active) {
+        // 持久连接模式（persistentConnection）时外层循环在 active=false 期间也维持，
+        // 保持 TCP socket 存活，收到数据静默丢弃；start() 将 active=true 后恢复处理。
+        while (active || persistentConnection) {
             Socket sock = null;
             try {
                 log.info("[{}] 正在连接 {}:{}", name, address, port);
@@ -254,9 +316,15 @@ public class ShiwanM2TcpCaptureService {
                 byte[]        buffer  = new byte[1024];
                 StringBuilder msgBuf  = new StringBuilder();
 
-                while (active) {
+                while (active || persistentConnection) {
                     int n = is.read(buffer);
                     if (n == -1) break;
+
+                    // 非采集状态（持久连接待机期间）：丢弃数据，保持 TCP 连接存活
+                    if (!active) {
+                        msgBuf.setLength(0);
+                        continue;
+                    }
 
                     String  chunk      = new String(buffer, 0, n, StandardCharsets.UTF_8);
                     boolean hasNewline = chunk.contains("\n");
@@ -282,13 +350,13 @@ public class ShiwanM2TcpCaptureService {
                     }
                 }
 
-                if (active) {
+                if (active || persistentConnection) {
                     addEvent(isBoxCamera ? "BOX_DISCONNECTED" : "CASE_DISCONNECTED",
                             name + " 连接断开，" + RECONNECT_MS / 1000 + " 秒后重连", null);
                     log.warn("[{}] 连接断开，重连中", name);
                 }
             } catch (Exception e) {
-                if (!active) break;
+                if (!active && !persistentConnection) break;
                 addEvent(isBoxCamera ? "BOX_DISCONNECTED" : "CASE_DISCONNECTED",
                         name + " 连接异常：" + e.getMessage() + "，" + RECONNECT_MS / 1000 + " 秒后重连", null);
                 log.warn("[{}] 连接异常：{}，重连中", name, e.getMessage());
@@ -297,7 +365,7 @@ public class ShiwanM2TcpCaptureService {
                 if (isBoxCamera) boxSocket  = null;
                 else             caseSocket = null;
             }
-            if (active) {
+            if (active || persistentConnection) {
                 try { Thread.sleep(RECONNECT_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
             }
         }
