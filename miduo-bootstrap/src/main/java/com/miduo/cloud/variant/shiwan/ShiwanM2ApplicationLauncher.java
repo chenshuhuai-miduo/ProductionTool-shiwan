@@ -128,6 +128,8 @@ public class ShiwanM2ApplicationLauncher {
                     "--spring.profiles.active=shiwan-m2");
                 isBackendReady = true;
                 backendReadyLatch.countDown();
+                // 通知前端控制器：后端已就绪，可以执行 DB 检测和 IO 连接
+                ShiwanM2FrontendApplication.signalBackendReady();
                 System.out.println("✓ Spring Boot 后端启动完成");
             } catch (Exception e) {
                 System.err.println("✗ 后端服务启动失败：" + e.getMessage());

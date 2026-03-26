@@ -1959,7 +1959,8 @@ public class ShiwanM2BoxCaseService {
             String   returnMsg  = root.has("return_msg")  ? root.get("return_msg").asText()  : "未知错误";
             String   logTime    = LocalDateTime.now().format(LOG_TIME_FMT);
 
-            if ("处理成功".equals(returnMsg)) {
+            if ("0".equals(returnCode)) {
+                // return_code=0 表示云端处理完成且成功
                 jdbcTemplate.update(
                         "UPDATE CodeRelationUpload SET IsUpload = 1, UploadTime = NOW() WHERE VirtualSerialNumber = ? AND IsDel = 0",
                         palletCode);
@@ -1970,14 +1971,16 @@ public class ShiwanM2BoxCaseService {
                 UploadLogBus.firePalletEvent(palletCode, boxCount,
                         UploadLogBus.PalletUploadStatus.SUCCESS, null);
             } else if (isVirtualPalletProcessing(returnMsg)) {
+                // return_code!=0 且 return_msg 为"虚拟垛XXX正在处理中"，云端仍在处理，继续等待重试
                 if (attemptNo < maxAttempts) {
                     int nextAttempt = attemptNo + 1;
-                    log.info("[垛标结果查询] 垛 {} 第 {}/{} 次查询返回处理中，10 秒后重试。msg={}",
-                            palletCode, attemptNo, maxAttempts, returnMsg);
+                    log.info("[垛标结果查询] 垛 {} 第 {}/{} 次查询返回处理中，10 秒后重试。return_code={} msg={}",
+                            palletCode, attemptNo, maxAttempts, returnCode, returnMsg);
                     pollScheduler.schedule(
                             () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, nextAttempt),
                             10, TimeUnit.SECONDS);
                 } else {
+                    // 已达最大重试次数（5次×10秒=50秒），仍为处理中，视作失败
                     String failMsg = "上传结果查询超时（连续" + maxAttempts + "次返回处理中）：" + returnMsg;
                     jdbcTemplate.update(
                             "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
@@ -1991,10 +1994,11 @@ public class ShiwanM2BoxCaseService {
                             UploadLogBus.PalletUploadStatus.FAILED, failMsg);
                 }
             } else {
+                // return_code!=0 且 return_msg 不是处理中，直接视为失败
                 jdbcTemplate.update(
                         "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
                         returnMsg, palletCode);
-                log.warn("[垛标结果查询] 垛 {} 上传失败: {}", palletCode, returnMsg);
+                log.warn("[垛标结果查询] 垛 {} 上传失败: return_code={} msg={}", palletCode, returnCode, returnMsg);
                 UploadLogBus.log(
                         formatUploadLogLine(logTime, palletCode, boxCount,
                                 "上传失败（" + (returnMsg != null && !returnMsg.isEmpty() ? returnMsg : "未知错误") + "）"),
@@ -2013,7 +2017,7 @@ public class ShiwanM2BoxCaseService {
             return false;
         }
         String msg = returnMsg.trim();
-        return msg.contains("虚拟垛正") && msg.contains("处理中");
+        return msg.contains("虚拟垛") && msg.contains("正在处理中");
     }
 
     // ================================================================

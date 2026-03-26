@@ -46,6 +46,42 @@ public class ShiwanM2FrontendApplication extends Application {
     /** 启动期许可证状态快照，供主界面复用，避免重复采集设备指纹。 */
     private static volatile LicenseStatusSnapshot startupLicenseStatusSnapshot;
 
+    /**
+     * 后端就绪信号门（初始 count=1）。
+     * 同 JVM 启动时由 {@code ShiwanM2ApplicationLauncher} 调用 {@link #signalBackendReady()} 释放；
+     * 单独启动前端时将在超时后自动释放，让控制器正常尝试连接（后端已在外部启动）。
+     */
+    private static final java.util.concurrent.CountDownLatch BACKEND_READY_LATCH =
+            new java.util.concurrent.CountDownLatch(1);
+
+    /**
+     * 由启动器在后端 Spring Boot 就绪后调用，通知前端控制器可以开始 DB 检测和 IO 连接。
+     * 幂等：重复调用无副作用。
+     */
+    public static void signalBackendReady() {
+        BACKEND_READY_LATCH.countDown();
+    }
+
+    /**
+     * 后端就绪（或超时）后在后台线程执行 {@code callback}，完成后通过 {@code Platform.runLater} 切回 FX 线程。
+     * 超时后仍会执行（后端可能已在外部启动），由调用方处理接口不可用的情况。
+     *
+     * @param callback     需在 FX 线程执行的初始化逻辑
+     * @param timeoutSecs  最长等待秒数（建议 60）
+     */
+    public static void runAfterBackendReady(Runnable callback, int timeoutSecs) {
+        Thread waiter = new Thread(() -> {
+            try {
+                BACKEND_READY_LATCH.await(timeoutSecs, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            Platform.runLater(callback);
+        }, "ShiwanM2-BackendReady-Waiter");
+        waiter.setDaemon(true);
+        waiter.start();
+    }
+
     @Override
     public void start(Stage primaryStage) throws Exception {
         frontendStartupBeginMs = System.currentTimeMillis();

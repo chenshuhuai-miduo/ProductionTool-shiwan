@@ -321,13 +321,18 @@ public class ShiwanM2MainController implements Initializable {
             DeviceConnectionManager.getInstance().setDeviceStatusChangeHandler(this::updateDeviceStatusBar);
             setupTabLazyLoad();
             setupScannerWarmupOnRelevantTabs();
-            initOrderNumField();
+            initOrderNumFieldFormatter();
             loadSpecFromSettings();
+        });
+
+        // 依赖后端 HTTP 接口的初始化：等后端就绪信号后再执行，避免后端未启动完时报连接错误。
+        ShiwanM2FrontendApplication.runAfterBackendReady(() -> {
+            requestSuggestedOrderNo();
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
             autoConnectConfiguredDevicesOnStartup();
             updateDeviceStatusBar();
-        });
+        }, 60);
     }
 
     /**
@@ -785,17 +790,21 @@ public class ShiwanM2MainController implements Initializable {
         });
     }
 
-    /**
-     * 初始化生产单号输入框：设置仅允许字母/数字（最长20位）的过滤器，
-     * 并异步从后端获取当天建议单号（YYYYMMDD + 自增序号）设为默认值。
-     */
-    private void initOrderNumField() {
+    /** 初始化生产单号输入框格式：仅允许字母/数字，最大 16 位。 */
+    private void initOrderNumFieldFormatter() {
         orderNumField.setTextFormatter(new javafx.scene.control.TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.isEmpty()) return change;
             if (!newText.matches("[a-zA-Z0-9]{0,16}")) return null;
             return change;
         }));
+    }
+
+    /**
+     * 从后端获取当天建议生产单号（YYYYMMDD + 自增序号）并回填到输入框。
+     * 仅在当前输入框为空时写入，避免覆盖用户手工输入或“未成垛恢复”回填值。
+     */
+    private void requestSuggestedOrderNo() {
         // 异步获取建议单号（当天日期+首个未用序号）
         String prefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         HttpUtil.asyncGet("/api/shiwan-m2/current-task/suggest-order-no?prefix=" + prefix,
