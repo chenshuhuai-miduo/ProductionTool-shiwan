@@ -1744,6 +1744,64 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
+     * 整箱剔除时写入全量剔除记录：
+     * - 按本箱涉及的所有盒码查询 CodeRelationUpload 明细（盒/瓶）；
+     * - 每条明细写一条 RejectRecord，确保整箱全部关联数据可追溯；
+     * - 若查不到明细，按盒码兜底写入，避免整箱剔除时无记录。
+     *
+     * @param orderNo      订单号
+     * @param caseCode     当前箱码
+     * @param boxCodes     当前箱对应盒码列表
+     * @param rejectReason 剔除原因（同箱内各条记录统一原因）
+     */
+    public void insertFullCaseRejectRecords(String orderNo, String caseCode, List<String> boxCodes, String rejectReason) {
+        if (boxCodes == null || boxCodes.isEmpty()) {
+            insertRejectRecord(orderNo, caseCode, null, null, caseCode, rejectReason);
+            return;
+        }
+        List<String> validBoxCodes = boxCodes.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
+        if (validBoxCodes.isEmpty()) {
+            insertRejectRecord(orderNo, caseCode, null, null, caseCode, rejectReason);
+            return;
+        }
+        try {
+            String placeholders = String.join(",", Collections.nCopies(validBoxCodes.size(), "?"));
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT MediumSerialNumber, SmallSerialNumber FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND IsDel = 0 " +
+                    "ORDER BY MediumSerialNumber, SmallSerialNumber",
+                    validBoxCodes.toArray());
+            if (rows == null || rows.isEmpty()) {
+                for (String boxCode : validBoxCodes) {
+                    insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode, rejectReason);
+                }
+                return;
+            }
+            for (Map<String, Object> row : rows) {
+                String boxCode = row.get("MediumSerialNumber") == null ? null : row.get("MediumSerialNumber").toString();
+                String bottleCode = row.get("SmallSerialNumber") == null ? null : row.get("SmallSerialNumber").toString();
+                String problemCode = (bottleCode != null && !bottleCode.trim().isEmpty())
+                        ? bottleCode : boxCode;
+                insertRejectRecord(orderNo, caseCode, boxCode, bottleCode, problemCode, rejectReason);
+            }
+            log.warn("[整箱剔除] 全量剔除记录已写入 caseCode={} boxCount={} rowCount={} reason={}",
+                    caseCode, validBoxCodes.size(), rows.size(), rejectReason);
+        } catch (Exception e) {
+            log.error("[整箱剔除] 全量写入失败 caseCode={} reason={}: {}",
+                    caseCode, rejectReason, e.getMessage(), e);
+            // 异常兜底：至少按盒码写入，避免整箱剔除无记录。
+            for (String boxCode : validBoxCodes) {
+                insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode, rejectReason);
+            }
+        }
+    }
+
+    /**
      * 批次关联兼容方法：历史方法名保留，但不再物理删除。
      * 统一将指定盒码在 CodeRelationUpload 中未关联箱码的记录置为未完成（Status=0）。
      * @return 实际更新行数
