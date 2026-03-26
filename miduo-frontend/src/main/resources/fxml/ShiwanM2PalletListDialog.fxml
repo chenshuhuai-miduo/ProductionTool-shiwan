@@ -21,10 +21,7 @@
         <Label text="垛码列表"
                style="-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button text="×" onAction="#onClose"
-                style="-fx-background-color:transparent; -fx-text-fill:#9CA3AF; -fx-font-size:26px;
-                       -fx-cursor:hand; -fx-min-width:44; -fx-min-height:44;
-                       -fx-border-width:0; -fx-background-radius:6; -fx-effect:null; -fx-padding:0;"/>
+        <Button text="×" onAction="#onClose" styleClass="sw2-dialog-title-close-btn"/>
     </HBox>
 
     <!-- 内容区 -->

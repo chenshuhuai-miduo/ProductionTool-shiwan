@@ -8,6 +8,7 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2HelpController"
       prefWidth="920" prefHeight="660"
+      stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css"
       style="-fx-background-color: white;
              -fx-background-radius: 12px;
              -fx-border-color: #D9E1EC;
@@ -27,13 +28,7 @@
                style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;
                       -fx-font-family: 'Microsoft YaHei';"
                HBox.hgrow="ALWAYS"/>
-        <Button fx:id="closeBtn" text="×"
-                style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white;
-                       -fx-font-size: 20px; -fx-font-weight: bold; -fx-cursor: hand;
-                       -fx-border-width: 0; -fx-min-width: 32px; -fx-min-height: 32px;
-                       -fx-max-width: 32px; -fx-max-height: 32px;
-                       -fx-background-radius: 6px; -fx-padding: 0;"
-                onAction="#onClose"/>
+        <Button fx:id="closeBtn" text="×" onAction="#onClose" styleClass="sw2-dialog-title-close-btn-dark"/>
     </HBox>
 
     <!-- ====================================================

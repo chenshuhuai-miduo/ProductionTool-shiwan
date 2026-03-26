@@ -3021,7 +3021,7 @@ public class ShiwanM2MainController implements Initializable {
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
         Button titleCloseBtn = new Button("×");
-        titleCloseBtn.setStyle("-fx-background-color:transparent;-fx-border-width:0;-fx-font-size:26px;-fx-text-fill:#9CA3AF;-fx-cursor:hand;-fx-min-width:44;-fx-min-height:44;-fx-background-radius:6;-fx-effect:null;-fx-padding:0;");
+        titleCloseBtn.getStyleClass().add("sw2-dialog-title-close-btn");
         titleCloseBtn.setOnAction(e -> dialog.close());
         HBox titleBar = new HBox(8, titleLbl, titleSpacer, titleCloseBtn);
         titleBar.setAlignment(Pos.CENTER_LEFT);
@@ -3035,7 +3035,11 @@ public class ShiwanM2MainController implements Initializable {
         // ── 组装场景 ─────────────────────────────────────────────
         VBox root = new VBox(titleBar, content, bottomBar);
         root.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EC;-fx-border-width:1;");
-        dialog.setScene(new Scene(root, 560, -1));
+        Scene scene = new Scene(root, 560, -1);
+        scene.getStylesheets().addAll(
+                ShiwanM2MainController.class.getResource("/css/base-styles.css").toExternalForm(),
+                ShiwanM2MainController.class.getResource("/css/shiwan-m2-styles.css").toExternalForm());
+        dialog.setScene(scene);
         ShiwanM2ScannerConnectHelper.tryReconnectScannersAsync();
         dialog.show();
         boxCodeInput.requestFocus();

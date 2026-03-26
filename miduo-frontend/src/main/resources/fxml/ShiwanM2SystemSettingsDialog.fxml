@@ -36,10 +36,7 @@
         <!-- 占位符，将关闭按钮推到最右 -->
         <Region HBox.hgrow="ALWAYS"/>
         <!-- 关闭按钮，同参考弹窗风格 -->
-        <Button fx:id="closeBtn" text="×" onAction="#onClose"
-                style="-fx-background-color: transparent; -fx-text-fill: #9CA3AF; -fx-font-size: 26px;
-                       -fx-cursor: hand; -fx-min-width: 44; -fx-min-height: 44;
-                       -fx-border-width: 0; -fx-background-radius: 6; -fx-effect: null; -fx-padding: 0;"/>
+        <Button fx:id="closeBtn" text="×" onAction="#onClose" styleClass="sw2-dialog-title-close-btn"/>
     </HBox>
 
     <!-- ====================================================

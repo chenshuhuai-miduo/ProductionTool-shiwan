@@ -600,6 +600,68 @@
     -fx-background-color: #F3F4F6;
 }
 
+/* 自定义弹窗标题栏右上角关闭（×）：统一尺寸与悬浮可点区域反馈 */
+.sw2-dialog-title-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 26px;
+    -fx-font-weight: normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-cursor: hand;
+    -fx-min-width: 44px;
+    -fx-min-height: 44px;
+    -fx-pref-width: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-width: 44px;
+    -fx-max-height: 44px;
+    -fx-border-width: 0;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 0;
+    -fx-effect: null;
+}
+
+.sw2-dialog-title-close-btn:hover {
+    -fx-background-color: #E5E7EB;
+    -fx-text-fill: #4B5563;
+}
+
+.sw2-dialog-title-close-btn:pressed {
+    -fx-background-color: #D1D5DB;
+    -fx-text-fill: #374151;
+}
+
+/* 深色标题栏（如操作帮助蓝底）上的关闭（×）：与同系列一致的 44×44 与悬停高亮 */
+.sw2-dialog-title-close-btn-dark {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-text-fill: white;
+    -fx-font-size: 26px;
+    -fx-font-weight: normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-cursor: hand;
+    -fx-min-width: 44px;
+    -fx-min-height: 44px;
+    -fx-pref-width: 44px;
+    -fx-pref-height: 44px;
+    -fx-max-width: 44px;
+    -fx-max-height: 44px;
+    -fx-border-width: 0;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 0;
+    -fx-effect: null;
+}
+
+.sw2-dialog-title-close-btn-dark:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.28);
+    -fx-text-fill: white;
+}
+
+.sw2-dialog-title-close-btn-dark:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.4);
+    -fx-text-fill: white;
+}
+
 /* 通用控制按钮基础 */
 .shiwan-m2-ctrl-btn {
     -fx-min-height: 40px;
