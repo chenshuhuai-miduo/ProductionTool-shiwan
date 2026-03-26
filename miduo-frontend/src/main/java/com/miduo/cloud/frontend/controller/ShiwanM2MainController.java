@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.application.shiwan.UploadLogBus;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
+import com.miduo.cloud.frontend.ShiwanM2FrontendApplication;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
@@ -75,6 +76,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -277,12 +279,6 @@ public class ShiwanM2MainController implements Initializable {
     private List<Tab> allOriginalTabs;
 
     private static final Logger log = LoggerFactory.getLogger(ShiwanM2MainController.class);
-    /** 启动前产品同步结果（由 Application 在主界面打开前写入）。 */
-    private static volatile boolean startupProductSyncTried = false;
-    private static volatile boolean startupProductSyncSucceeded = false;
-    /** 启动前同步失败后，主界面打开后的补偿重试只执行一次。 */
-    private boolean productSyncRetriedAfterWindowOpen = false;
-
     /** 扫码枪设备类别代码（与 DeviceConnectionManager.convertCategoryTextToCode 保持一致） */
     private static final int CATEGORY_SCANNER = 7;
     /** “提取工单未成垛”弹窗打开期间的扫码输入回调（关闭弹窗时置空）。 */
@@ -395,14 +391,6 @@ public class ShiwanM2MainController implements Initializable {
                 Platform.runLater(() -> deviceStatusLabel.setText("设备状态：状态未知"));
             }
         });
-    }
-
-    /**
-     * 由启动类在主界面打开前调用，记录“启动前预拉产品”结果。
-     */
-    public static void reportStartupProductSyncResult(boolean success) {
-        startupProductSyncTried = true;
-        startupProductSyncSucceeded = success;
     }
 
     /** 为统计/码包管理 Tab 设置懒加载：首次切换到该 Tab 时才触发数据查询，避免启动时未连接数据库的弹窗报错 */
@@ -1160,14 +1148,20 @@ public class ShiwanM2MainController implements Initializable {
         final boolean originalCodeRowVisible = productCodeRow != null && productCodeRow.isVisible();
         final boolean originalCodeRowManaged = productCodeRow != null && productCodeRow.isManaged();
 
-        // 显示加载提示弹窗
+        CompletableFuture<Boolean> syncFuture = ShiwanM2FrontendApplication.getStartupProductSyncFuture();
+        if (syncFuture == null || syncFuture.isDone()) {
+            doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
+            return;
+        }
+
+        // 启动前异步同步尚未完成：显示加载提示，完成后再打开产品选择弹窗。
         Stage loadingStage = new Stage();
         loadingStage.initModality(Modality.APPLICATION_MODAL);
         loadingStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
 
         javafx.scene.control.ProgressIndicator spinner = new javafx.scene.control.ProgressIndicator();
         spinner.setPrefSize(48, 48);
-        Label loadingLabel = new Label("正在加载产品数据，请稍候...");
+        Label loadingLabel = new Label("正在同步产品数据，请稍候...");
         loadingLabel.setStyle("-fx-font-size: 14px; -fx-font-family: 'Microsoft YaHei';");
 
         VBox loadingBox = new VBox(12);
@@ -1179,20 +1173,12 @@ public class ShiwanM2MainController implements Initializable {
         loadingStage.setScene(new Scene(loadingBox, 260, 120));
         loadingStage.show();
 
-        // 后台加载产品列表：
-        // 1) 启动前预同步失败时，在主界面打开后补偿重试一次远端同步；
-        // 2) 然后从本地库加载产品列表刷新弹窗数据。
-        productExecutor.submit(() -> {
-            if (startupProductSyncTried && !startupProductSyncSucceeded && !productSyncRetriedAfterWindowOpen) {
-                productSyncRetriedAfterWindowOpen = true;
-                syncProducts();
-            }
-            fetchProducts("", 50);
-            Platform.runLater(() -> {
+        syncFuture.whenComplete((ok, ex) -> Platform.runLater(() -> {
+            if (loadingStage.isShowing()) {
                 loadingStage.close();
-                doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
-            });
-        });
+            }
+            doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
+        }));
     }
 
     private void doOpenProductSelectDialog(ProductItem originalValue,
