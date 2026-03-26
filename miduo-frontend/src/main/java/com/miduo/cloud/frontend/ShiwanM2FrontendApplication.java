@@ -26,6 +26,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import java.time.LocalDate;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -42,6 +43,8 @@ public class ShiwanM2FrontendApplication extends Application {
     private static volatile CompletableFuture<Boolean> startupProductSyncFuture = CompletableFuture.completedFuture(false);
     /** 前端启动起始时间（用于启动阶段耗时埋点）。 */
     private static volatile long frontendStartupBeginMs = 0L;
+    /** 启动期许可证状态快照，供主界面复用，避免重复采集设备指纹。 */
+    private static volatile LicenseStatusSnapshot startupLicenseStatusSnapshot;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -150,6 +153,10 @@ public class ShiwanM2FrontendApplication extends Application {
         return startupProductSyncFuture;
     }
 
+    public static LicenseStatusSnapshot getStartupLicenseStatusSnapshot() {
+        return startupLicenseStatusSnapshot;
+    }
+
     /**
      * 主界面打开前预同步产品到本地。
      * 失败不阻断启动，仅记录日志。
@@ -206,6 +213,10 @@ public class ShiwanM2FrontendApplication extends Application {
             }
 
             LicenseStatusEnum status = licenseService.getCurrentLicenseStatus(currentDeviceId);
+            LicenseService.LicenseInfo licenseInfo = licenseService.getLicenseInfo(currentDeviceId);
+            long remainingDays = licenseInfo != null ? licenseInfo.getRemainingDays() : -1;
+            LocalDate expireDate = licenseInfo != null ? licenseInfo.getExpireDate() : null;
+            startupLicenseStatusSnapshot = new LicenseStatusSnapshot(status, remainingDays, expireDate);
 
             if (status == LicenseStatusEnum.UNACTIVATED) {
                 UnactivatedDialogController.showUnactivatedDialog();
@@ -213,7 +224,6 @@ public class ShiwanM2FrontendApplication extends Application {
                     || status == LicenseStatusEnum.EXPIRED) {
                 TrialExpireDialogController.showTrialExpireDialog(status);
             } else if (status == LicenseStatusEnum.TRIAL_ACTIVE) {
-                long remainingDays = licenseService.getRemainingDays(currentDeviceId);
                 if (remainingDays >= 0 && remainingDays <= 3) {
                     TrialExpiringDialogController.showTrialExpiringDialog(remainingDays);
                 }
@@ -233,6 +243,30 @@ public class ShiwanM2FrontendApplication extends Application {
                 Platform.exit();
             });
             return false;
+        }
+    }
+
+    public static final class LicenseStatusSnapshot {
+        private final LicenseStatusEnum status;
+        private final long remainingDays;
+        private final LocalDate expireDate;
+
+        public LicenseStatusSnapshot(LicenseStatusEnum status, long remainingDays, LocalDate expireDate) {
+            this.status = status;
+            this.remainingDays = remainingDays;
+            this.expireDate = expireDate;
+        }
+
+        public LicenseStatusEnum getStatus() {
+            return status;
+        }
+
+        public long getRemainingDays() {
+            return remainingDays;
+        }
+
+        public LocalDate getExpireDate() {
+            return expireDate;
         }
     }
 

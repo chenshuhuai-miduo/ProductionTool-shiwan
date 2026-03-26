@@ -41,26 +41,8 @@ public class ShiwanM2ApplicationLauncher {
             long backendThreadDispatchedMs = System.currentTimeMillis();
             System.out.println("[启动耗时] 后端启动线程已派发，耗时 " + (backendThreadDispatchedMs - backendBootBeginMs) + " ms");
 
-            System.out.println("\n【步骤 2/3】等待后端服务完全启动...");
-            long backendWaitBeginMs = System.currentTimeMillis();
-            boolean backendStarted = waitForBackendReady(60);
-            long backendWaitEndMs = System.currentTimeMillis();
-
-            if (!backendStarted) {
-                System.err.println("\n✗ 后端服务启动超时（60秒）！");
-                System.err.println("请检查：");
-                System.err.println("  1. 端口8080是否被占用");
-                System.err.println("  2. 数据库连接是否正常");
-                System.err.println("  3. 配置文件是否正确");
-                shutdownBackend();
-                System.exit(1);
-                return;
-            }
-
-            System.out.println("✓ 后端服务启动成功！");
-            System.out.println("[启动耗时] 后端就绪等待耗时 " + (backendWaitEndMs - backendWaitBeginMs) + " ms");
-            System.out.println("[启动耗时] 启动器累计耗时（到后端可用） " + (backendWaitEndMs - launcherStartMs) + " ms");
-            System.out.println("  API地址：http://localhost:8080/api");
+            System.out.println("\n【步骤 2/3】后端后台启动中（与前端并行）...");
+            monitorBackendStartupAsync(launcherStartMs, 60);
             System.out.println("----------------------------------------");
 
             System.out.println("\n【步骤 3/3】正在启动石湾 2 号机前端...");
@@ -93,6 +75,30 @@ public class ShiwanM2ApplicationLauncher {
             shutdownLogging();
             System.exit(1);
         }
+    }
+
+    private static void monitorBackendStartupAsync(long launcherStartMs, int timeoutSeconds) {
+        Thread monitor = new Thread(() -> {
+            long backendWaitBeginMs = System.currentTimeMillis();
+            boolean backendStarted = waitForBackendReady(timeoutSeconds);
+            long backendWaitEndMs = System.currentTimeMillis();
+            if (backendStarted) {
+                System.out.println("✓ 后端服务启动成功！");
+                System.out.println("[启动耗时] 后端就绪等待耗时 " + (backendWaitEndMs - backendWaitBeginMs) + " ms");
+                System.out.println("[启动耗时] 启动器累计耗时（到后端可用） " + (backendWaitEndMs - launcherStartMs) + " ms");
+                System.out.println("  API地址：http://localhost:8080/api");
+                System.out.println("----------------------------------------");
+            } else {
+                System.err.println("\n✗ 后端服务启动超时（" + timeoutSeconds + "秒）！");
+                System.err.println("请检查：");
+                System.err.println("  1. 端口8080是否被占用");
+                System.err.println("  2. 数据库连接是否正常");
+                System.err.println("  3. 配置文件是否正确");
+                System.err.println("前端已启动，可稍后在系统页面重试相关后端功能。");
+            }
+        }, "ShiwanM2-Backend-Startup-Monitor");
+        monitor.setDaemon(true);
+        monitor.start();
     }
 
     private static void printWelcomeBanner() {

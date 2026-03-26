@@ -299,27 +299,28 @@ public class ShiwanM2MainController implements Initializable {
         setupListViews();
         setupSpecListeners();
         setupClock();
-        setupInitialLogs();
-        initActivationStatus();
-        applyPageConfig();
-        registerPalletEventListener();
-        registerDeviceDataHandler();
-        DeviceConnectionManager.getInstance().setDeviceStatusChangeHandler(this::updateDeviceStatusBar);
-        setupTabLazyLoad();
-        setupScannerWarmupOnRelevantTabs();
-        initOrderNumField();
         // 初始未采集：强制满垛/收回剔除置灰，提取工单未成垛可用
         forcePalletBtn.setDisable(true);
         rejectToggleBtn.setDisable(true);
         extractUnfinishedBtn.setDisable(false);
         SvgIconLoader.installHelpButtonGraphic(taskHelpButton);
+        // 首屏最小化：仅保留首屏必要初始化，其余逻辑在首帧后执行，减少启动阻塞。
         Platform.runLater(() -> {
+            setupInitialLogs();
+            initActivationStatus();
+            applyPageConfig();
+            registerPalletEventListener();
+            registerDeviceDataHandler();
+            DeviceConnectionManager.getInstance().setDeviceStatusChangeHandler(this::updateDeviceStatusBar);
+            setupTabLazyLoad();
+            setupScannerWarmupOnRelevantTabs();
+            initOrderNumField();
+            loadSpecFromSettings();
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
             autoConnectConfiguredDevicesOnStartup();
             updateDeviceStatusBar();
         });
-        loadSpecFromSettings();
     }
 
     /**
@@ -848,6 +849,15 @@ public class ShiwanM2MainController implements Initializable {
     /** 从许可证服务读取状态并更新状态栏 UI */
     private void updateLicenseStatus() {
         try {
+            ShiwanM2FrontendApplication.LicenseStatusSnapshot startupSnapshot =
+                ShiwanM2FrontendApplication.getStartupLicenseStatusSnapshot();
+            if (startupSnapshot != null) {
+                applyLicenseStatusUi(startupSnapshot.getStatus(),
+                        startupSnapshot.getRemainingDays(),
+                        startupSnapshot.getExpireDate());
+                return;
+            }
+
             com.miduo.cloud.frontend.service.DeviceInfoService deviceInfoService =
                 new com.miduo.cloud.frontend.service.DeviceInfoService();
             com.miduo.cloud.frontend.service.LicenseService licenseService =
@@ -863,68 +873,8 @@ public class ShiwanM2MainController implements Initializable {
             com.miduo.cloud.frontend.service.LicenseService.LicenseInfo licenseInfo =
                 licenseService.getLicenseInfo(currentDeviceId);
             long remainingDays = licenseInfo.getRemainingDays();
-
-            String statusType;
-            String statusText;
-            String tooltipText;
-            String expiredDay = licenseInfo.getExpireDate() != null
-                ? licenseInfo.getExpireDate().toString() : "未知";
-
-            switch (status) {
-                case ACTIVATED:
-                    if (remainingDays > 30) {
-                        statusType = "normal";
-                        statusText = "授权剩余: " + remainingDays + "天";
-                        tooltipText = "到期：" + expiredDay;
-                    } else if (remainingDays >= 7) {
-                        statusType = "warning";
-                        statusText = "授权剩余: " + remainingDays + "天";
-                        tooltipText = "到期：" + expiredDay + "\n注意：即将到期，请尽快续期";
-                    } else if (remainingDays > 0) {
-                        statusType = "urgent";
-                        statusText = "授权剩余: " + remainingDays + "天";
-                        tooltipText = "到期：" + expiredDay + "\n注意：紧急，请立即续期！";
-                    } else {
-                        statusType = "urgent";
-                        statusText = "授权剩余: 不足1天";
-                        tooltipText = "到期：" + expiredDay + "\n注意：紧急，请立即续期！";
-                    }
-                    break;
-                case TRIAL_ACTIVE:
-                    statusType = "trial";
-                    statusText = remainingDays > 0
-                        ? "试用剩余: " + remainingDays + "天"
-                        : "试用剩余: 不足1天";
-                    tooltipText = "试用模式\n到期: " + expiredDay + "\n提示：点击激活正式版";
-                    break;
-                case TRIAL_EXPIRED:
-                    statusType = "expired";
-                    statusText = "试用已过期";
-                    tooltipText = "试用期已结束\n必须激活才能使用";
-                    break;
-                case EXPIRED:
-                    statusType = "expired";
-                    statusText = "已过期";
-                    tooltipText = "过期时间：" + expiredDay + "\n错误：已过期，必须续期";
-                    break;
-                case UNACTIVATED:
-                default:
-                    statusType = "expired";
-                    statusText = "未激活";
-                    tooltipText = "软件未激活\n提示：点击进行激活";
-                    break;
-            }
-
-            Platform.runLater(() -> {
-                licenseStatusBox.getStyleClass().removeAll(
-                    "license-normal", "license-warning", "license-urgent",
-                    "license-expired", "license-trial");
-                licenseStatusBox.getStyleClass().add("license-" + statusType);
-                licenseStatusLabel.setText(statusText);
-                javafx.scene.control.Tooltip tooltip = new javafx.scene.control.Tooltip(tooltipText);
-                tooltip.setShowDelay(javafx.util.Duration.millis(200));
-                javafx.scene.control.Tooltip.install(licenseStatusBox, tooltip);
-            });
+            LocalDate expireDate = licenseInfo.getExpireDate();
+            applyLicenseStatusUi(status, remainingDays, expireDate);
 
         } catch (Exception e) {
             Platform.runLater(() -> {
@@ -935,6 +885,71 @@ public class ShiwanM2MainController implements Initializable {
                 licenseStatusLabel.setText("状态未知");
             });
         }
+    }
+
+    private void applyLicenseStatusUi(com.miduo.cloud.entity.enums.LicenseStatusEnum status,
+                                      long remainingDays,
+                                      LocalDate expireDate) {
+        String statusType;
+        String statusText;
+        String tooltipText;
+        String expiredDay = expireDate != null ? expireDate.toString() : "未知";
+
+        switch (status) {
+            case ACTIVATED:
+                if (remainingDays > 30) {
+                    statusType = "normal";
+                    statusText = "授权剩余: " + remainingDays + "天";
+                    tooltipText = "到期：" + expiredDay;
+                } else if (remainingDays >= 7) {
+                    statusType = "warning";
+                    statusText = "授权剩余: " + remainingDays + "天";
+                    tooltipText = "到期：" + expiredDay + "\n注意：即将到期，请尽快续期";
+                } else if (remainingDays > 0) {
+                    statusType = "urgent";
+                    statusText = "授权剩余: " + remainingDays + "天";
+                    tooltipText = "到期：" + expiredDay + "\n注意：紧急，请立即续期！";
+                } else {
+                    statusType = "urgent";
+                    statusText = "授权剩余: 不足1天";
+                    tooltipText = "到期：" + expiredDay + "\n注意：紧急，请立即续期！";
+                }
+                break;
+            case TRIAL_ACTIVE:
+                statusType = "trial";
+                statusText = remainingDays > 0
+                    ? "试用剩余: " + remainingDays + "天"
+                    : "试用剩余: 不足1天";
+                tooltipText = "试用模式\n到期: " + expiredDay + "\n提示：点击激活正式版";
+                break;
+            case TRIAL_EXPIRED:
+                statusType = "expired";
+                statusText = "试用已过期";
+                tooltipText = "试用期已结束\n必须激活才能使用";
+                break;
+            case EXPIRED:
+                statusType = "expired";
+                statusText = "已过期";
+                tooltipText = "过期时间：" + expiredDay + "\n错误：已过期，必须续期";
+                break;
+            case UNACTIVATED:
+            default:
+                statusType = "expired";
+                statusText = "未激活";
+                tooltipText = "软件未激活\n提示：点击进行激活";
+                break;
+        }
+
+        Platform.runLater(() -> {
+            licenseStatusBox.getStyleClass().removeAll(
+                "license-normal", "license-warning", "license-urgent",
+                "license-expired", "license-trial");
+            licenseStatusBox.getStyleClass().add("license-" + statusType);
+            licenseStatusLabel.setText(statusText);
+            javafx.scene.control.Tooltip tooltip = new javafx.scene.control.Tooltip(tooltipText);
+            tooltip.setShowDelay(javafx.util.Duration.millis(200));
+            javafx.scene.control.Tooltip.install(licenseStatusBox, tooltip);
+        });
     }
 
     // ==================== 菜单事件处理 ====================

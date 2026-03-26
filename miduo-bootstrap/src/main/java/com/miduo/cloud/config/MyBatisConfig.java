@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.logging.stdout.StdOutImpl;
+import org.apache.ibatis.logging.nologging.NoLoggingImpl;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
@@ -67,7 +68,10 @@ public class MyBatisConfig {
         MybatisConfiguration configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(false);
         configuration.setJdbcTypeForNull(JdbcType.NULL);
-        configuration.setLogImpl(StdOutImpl.class);
+        // 默认关闭 SQL 明细输出，避免启动期控制台 I/O 开销；需要时可通过配置开启。
+        boolean stdoutSqlLogEnabled = Boolean.parseBoolean(
+            environment.getProperty("mybatis.stdout-log-enabled", "false"));
+        configuration.setLogImpl(stdoutSqlLogEnabled ? StdOutImpl.class : NoLoggingImpl.class);
         
         // 注册 LocalDateTime 类型处理器（关键配置）
         configuration.getTypeHandlerRegistry().register(LocalDateTime.class, new JtdsLocalDateTimeTypeHandler());
