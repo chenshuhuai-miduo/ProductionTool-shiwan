@@ -93,6 +93,21 @@ public class ShiwanM2CaptureController {
     }
 
     /**
+     * 软件启动时预连接相机（持久 TCP 连接）。
+     * POST /api/shiwan-m2/capture/connect-cameras
+     * 前端后端就绪后调用，让采集服务提前建立 TCP 连接；
+     * 开始采集时复用该连接，不再重新建立，避免双重 TCP 端口。
+     */
+    @PostMapping("/connect-cameras")
+    public ApiResult<Map<String, Object>> connectCameras() {
+        if (captureService == null) {
+            return ApiResult.error("TCP采集服务未启用，请配置 shiwan.m2.tcp-capture.enabled=true");
+        }
+        captureService.connectCamerasPersistently();
+        return ApiResult.success("相机持久连接已触发", captureService.getStatus());
+    }
+
+    /**
      * 从数据库恢复未关联盒码到内存队列（软件重启后用于继续未完成采集）。
      * POST /api/shiwan-m2/capture/restore-queue
      * Body: { orderNo }

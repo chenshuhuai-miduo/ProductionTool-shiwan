@@ -336,18 +336,38 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     /**
-     * 主界面打开后按系统设置自动连接已启用 IO 设备（含盒码/箱码采集相机，连接后占用端口供采集链路使用）。
+     * 主界面打开后按系统设置自动连接已启用 IO 设备：
+     * - 非相机设备（扫码枪、报警灯等）由前端 DeviceConnectionManager 直连；
+     * - 盒码/箱码采集相机由后端 TCP 采集服务统一管理持久连接（调用 /capture/connect-cameras），
+     *   开始采集时直接复用该连接，避免双重 TCP 端口。
      */
     private void autoConnectConfiguredDevicesOnStartup() {
         String now = LocalDateTime.now().format(TIME_FMT);
         addOpLog(now + "  正在按系统设置自动连接IO设备...", LogType.INFO);
-        // 启动时包含盒码/箱码相机：连接成功后保持占用端口
-        connectAllDevices(true, true);
+        connectAllDevices(true, false);   // 非相机设备
+        connectCamerasPersistently();     // 相机设备（后端持久连接）
     }
 
-    /** 状态栏统计：所有已启用设备（与启动自动连接范围一致，含盒码/箱码采集）。 */
+    /** 通知后端建立相机持久 TCP 连接，开始采集时复用，不再创建新端口。 */
+    private void connectCamerasPersistently() {
+        productExecutor.submit(() -> {
+            try {
+                HttpUtil.doPost("/api/shiwan-m2/capture/connect-cameras", "");
+                Platform.runLater(() -> addOpLog(
+                        LocalDateTime.now().format(TIME_FMT) + "  相机TCP持久连接已触发", LogType.INFO));
+            } catch (Exception e) {
+                Platform.runLater(() -> addOpLog(
+                        LocalDateTime.now().format(TIME_FMT) + "  相机TCP预连接失败（可在开始采集时重试）：" + e.getMessage(),
+                        LogType.WARN));
+            }
+        });
+    }
+
+    /** 状态栏统计：仅统计由前端连接管理器维护的设备（不含盒码/箱码采集相机）。 */
     private static boolean isDeviceCountedForStatusBar(IoDeviceDTO device) {
-        return device != null && Boolean.TRUE.equals(device.getEnabled());
+        return device != null
+                && Boolean.TRUE.equals(device.getEnabled())
+                && !isCameraCaptureDevice(device);
     }
 
     /** 盒码/箱码采集相机设备识别。 */
@@ -1839,8 +1859,8 @@ public class ShiwanM2MainController implements Initializable {
         startM1Sync();
         // 启动 TCP 相机采集（n=每箱盒数, m=每垛箱数）
         startTcpCapture(orderNo, productNo, n, m);
-        // 最后连接所有已启用设备（含网口相机/串口），汇总日志按全部设备统计 X/M
-        connectAllDevices(false, true);
+        // 最后连接前端托管设备（不含相机，避免与后端 TCP 采集服务形成双连接）
+        connectAllDevices(false, false);
         // 开始采集时：按数据库实时箱数检查是否已达到成垛阈值，达到则直接强制满垛（并触发上传流程）
         checkAndForceFullPalletOnStart(orderNo, m);
         // 如果是恢复上次未完成任务，启动TCP后从数据库恢复待关联盒码到内存队列
