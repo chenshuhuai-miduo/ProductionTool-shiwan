@@ -7986,6 +7986,7 @@
               "name": "搜索区域",
               "width": "fill_container",
               "gap": 12,
+              "alignItems": "center",
               "children": [
                 {
                   "type": "frame",
@@ -8036,6 +8037,57 @@
                       "fill": "#ffffff",
                       "content": "搜索",
                       "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gEoQl",
+                  "name": "刷新按钮",
+                  "width": 80,
+                  "height": 40,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#D1D5DB"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "aEvSt",
+                      "name": "refreshBtnText",
+                      "fill": "#374151",
+                      "content": "刷新",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "98ONA",
+                  "name": "产品选择帮助提示",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "#F3F4F6",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ah4J5",
+                      "name": "helpHintText",
+                      "fill": "#6B7280",
+                      "content": "?",
+                      "fontFamily": "Arial",
                       "fontSize": 16,
                       "fontWeight": "600"
                     }
