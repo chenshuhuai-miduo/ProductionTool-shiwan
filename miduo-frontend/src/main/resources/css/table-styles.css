@@ -7,15 +7,15 @@
     -fx-border-width: 1px;
     -fx-border-radius: 4px;
     -fx-background-radius: 4px;
-    -fx-font-family: -primary-font;
+    -fx-font-family: "Microsoft YaHei";
 }
 
 /* 表格列标题 */
 .table-view .column-header {
     -fx-background-color: -surface-color;
     -fx-text-fill: -text-primary;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-padding: 8px 12px;
     -fx-border-color: -border-color;
@@ -23,8 +23,8 @@
 }
 
 .table-view .column-header .label {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-text-fill: -text-primary;
 }
@@ -33,8 +33,8 @@
 .table-view .table-row-cell {
     -fx-background-color: white;
     -fx-text-fill: -text-primary;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-cell-size: 35px;
     -fx-padding: 0;
 }
@@ -65,15 +65,15 @@
     -fx-padding: 10px 12px;
     -fx-border-color: -border-color;
     -fx-border-width: 0 1px 0 0;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-alignment: CENTER_LEFT;
     -fx-text-overrun: ellipsis;
 }
 
 .table-view .table-cell .label {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-text-alignment: left;
     -fx-text-overrun: ellipsis;
 }
@@ -85,8 +85,8 @@
 
 /* 空表格提示 */
 .table-view .placeholder .label {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-text-fill: -text-muted;
 }
 

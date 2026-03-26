@@ -1,72 +1,57 @@
 /* 字体系统 - Typography */
-
-.root {
-    /* 字体族 */
-    -primary-font: "Microsoft YaHei";
-    -monospace-font: "Courier New";
-    
-    /* 字体大小 */
-    -font-size-small: 11px;
-    -font-size-normal: 14px;
-    -font-size-large: 16px;
-    -font-size-xlarge: 18px;
-    -font-size-xxlarge: 20px;
-    
-    /* 字体重量 */
-    -font-weight-normal: 400;
-    -font-weight-medium: 500;
-    -font-weight-bold: 700;
-}
+/* 注意：JavaFX CSS 的 "looked-up" 机制只支持 Paint（颜色）类型变量，
+   字体族和字号不支持自定义变量，须使用硬编码值。
+   字号规范：small=11px, normal=14px, large=16px, xlarge=18px, xxlarge=20px
+   字体规范：正文="Microsoft YaHei", 等宽="Courier New" */
 
 /* 标题样式 */
 .heading-1 {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-xxlarge;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
 
 .heading-2 {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-xlarge;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
 
 .heading-3 {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-large;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: -text-primary;
 }
 
 /* 正文样式 */
 .body-text {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-font-weight: normal;
     -fx-text-fill: -text-primary;
 }
 
 /* 说明文字 */
 .caption-text {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-small;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 11px;
     -fx-font-weight: normal;
     -fx-text-fill: -text-secondary;
 }
 
 /* 等宽字体 */
 .monospace-text {
-    -fx-font-family: -monospace-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Courier New";
+    -fx-font-size: 14px;
     -fx-text-fill: -text-primary;
 }
 
 /* Label 默认样式 */
 .label {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-text-fill: -text-primary;
 }
-

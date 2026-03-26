@@ -191,12 +191,12 @@ public class ShiwanM2FrontendApplication extends Application {
 
     private boolean performLicenseValidation() {
         try {
-            DeviceInfoService deviceInfoService = new DeviceInfoService();
             LicenseService licenseService = new LicenseService(new LicenseValidationService());
             licenseService.init();
 
-            String currentDeviceId = DeviceUniqueIdGenerator.generateDeviceId(
-                deviceInfoService.getDeviceInfo());
+            // 优先读取缓存设备ID，跳过 OSHI 硬件采集（~1.5s）；缓存缺失时惰性采集。
+            String currentDeviceId = DeviceUniqueIdGenerator.generateDeviceIdCached(
+                () -> new DeviceInfoService().getDeviceInfo());
 
             if (!licenseService.licenseExists()) {
                 UnactivatedDialogController.showUnactivatedDialog();
@@ -207,6 +207,8 @@ public class ShiwanM2FrontendApplication extends Application {
                 licenseService.readLicense(currentDeviceId);
 
             if (validationResult.isDeviceMismatch()) {
+                // 设备不匹配时清除缓存，避免下次启动仍用旧设备ID
+                DeviceUniqueIdGenerator.clearDeviceIdCache();
                 DeviceMismatchDialogController.showDeviceMismatchDialog(
                     validationResult.getMismatchedDeviceId());
                 return false;

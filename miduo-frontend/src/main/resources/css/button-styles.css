@@ -4,8 +4,8 @@
 .primary-button {
     -fx-background-color: -primary-color;
     -fx-text-fill: white;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-padding: 8px 16px;
     -fx-min-height: 36px;
@@ -33,8 +33,8 @@
     -fx-border-width: 1px;
     -fx-border-radius: 4px;
     -fx-background-radius: 4px;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-padding: 8px 16px;
     -fx-min-height: 36px;
     -fx-min-width: 80px;
@@ -53,8 +53,8 @@
 .danger-button {
     -fx-background-color: -error-color;
     -fx-text-fill: white;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-padding: 8px 16px;
     -fx-min-height: 36px;
     -fx-min-width: 80px;
@@ -71,8 +71,8 @@
 .success-button {
     -fx-background-color: -success-color;
     -fx-text-fill: white;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-padding: 8px 16px;
     -fx-min-height: 36px;
     -fx-min-width: 80px;
@@ -93,8 +93,8 @@
     -fx-border-width: 1px;
     -fx-border-radius: 4px;
     -fx-background-radius: 4px;
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-padding: 8px 16px;
     -fx-min-height: 70px;
     -fx-min-width: 80px;
@@ -108,8 +108,8 @@
 
 /* Button默认样式 */
 .button {
-    -fx-font-family: -primary-font;
-    -fx-font-size: -font-size-normal;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 14px;
     -fx-cursor: hand;
 }
 

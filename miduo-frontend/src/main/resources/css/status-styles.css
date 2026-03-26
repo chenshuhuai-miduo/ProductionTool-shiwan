@@ -2,7 +2,7 @@
 
 /* 基础状态标签 */
 .status-label {
-    -fx-font-family: -primary-font;
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 10px;
     -fx-font-weight: 500;
     -fx-padding: 4px 8px;
@@ -63,7 +63,7 @@
 
 /* 许可证状态样式 */
 .license-status-label {
-    -fx-font-family: -primary-font;
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 12px;
     -fx-font-weight: 500;
     -fx-padding: 2px 8px;
@@ -116,7 +116,7 @@
 
 /* 许可证状态文本 */
 .license-status-text {
-    -fx-font-family: -primary-font;
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 12px;
     -fx-font-weight: 500;
     -fx-text-fill: #2e7d32;
