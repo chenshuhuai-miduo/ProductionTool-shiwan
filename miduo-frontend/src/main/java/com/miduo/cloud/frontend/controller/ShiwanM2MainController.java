@@ -703,9 +703,6 @@ public class ShiwanM2MainController implements Initializable {
                             uploadItems.removeIf(it -> it != keepRef && matchesPalletCode(it.palletCode, palletCode));
                         }
                         uploadDataList.refresh();
-                        String base = time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，";
-                        addDataLog(base + "开始上传", LogType.INFO);
-                        addDataLog(base + "上传中…", LogType.UPLOAD_BLUE);
                         break;
                     }
                     case SUCCESS:
