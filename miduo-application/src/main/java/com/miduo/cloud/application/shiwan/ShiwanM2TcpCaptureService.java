@@ -648,13 +648,13 @@ public class ShiwanM2TcpCaptureService {
      *   4. 检查位数通过的盒码在 CodeRelationUpload 中是否有 Status=4 记录
      *
      * 若步骤 1-4 中有任何问题 → 整批剔除：
-     *   - 将位数不符 / Status=4 的码写入 RejectRecord（箱码问题写 CaseCode，盒码问题写 BoxCode+BottleCode）
-     *   - 从 CodeRelationUpload 硬删除该批次所有盒码的未关联记录
+     *   - 将该箱涉及的全部盒/瓶关联数据写入 RejectRecord（整箱全量落表）
+     *   - 将 CodeRelationUpload 对应盒码未关联记录置为未完成（Status=0）
      *   - 发出 ASSOC_FAIL 事件
      *
      * 若全部通过 → 调用 associateCaseCodeWithBoxCodes 正常关联：
      *   - 关联成功 → ASSOCIATED 事件
-     *   - 关联失败 → 写剔除记录 + 删除 CodeRelationUpload + ASSOC_FAIL 事件
+     *   - 关联失败 → 整箱全量写剔除记录 + 置未完成 + ASSOC_FAIL 事件
      */
     private void processMatchedBatch(BoxBatchEntry boxBatch, CaseBatchEntry caseBatch) {
         int    batchNo  = boxBatch.batchNo;
@@ -693,23 +693,6 @@ public class ShiwanM2TcpCaptureService {
         if (hasProblems) {
             // --- 整批剔除 ---
 
-            // 写剔除记录：位数不符条目
-            for (RejectEntry re : rejectEntries) {
-                boxCaseService.insertRejectRecord(
-                        currentOrderNo, re.caseCode, re.boxCode, null, re.problemCode, re.reason);
-            }
-
-            // 写剔除记录：Status=4 条目（含瓶码）
-            for (String status4Box : status4Codes) {
-                boxCaseService.insertStatus4RejectRecordsForBox(currentOrderNo, caseCode, status4Box);
-            }
-
-            // 从 CodeRelationUpload 处理该批次盒码未关联记录：统一置为未完成（Status=0），不再物理删除。
-            if (!allBoxCodes.isEmpty()) {
-                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
-                log.warn("[批{}] 整批剔除：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
-            }
-
             // 构造问题摘要
             StringBuilder summary = new StringBuilder();
             if (!rejectEntries.isEmpty()) {
@@ -737,6 +720,17 @@ public class ShiwanM2TcpCaptureService {
                 summary.append("Status=4×").append(status4Codes.size()).append("；");
             }
 
+            String rejectReason = summary.length() > 0 ? summary.toString() : "整箱剔除";
+
+            // 整箱全量落剔除记录：将该箱对应所有盒/瓶关联数据写入 RejectRecord
+            boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, rejectReason);
+
+            // 将该批次盒码对应未关联记录置为未完成（Status=0），不再物理删除。
+            if (!allBoxCodes.isEmpty()) {
+                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
+                log.warn("[批{}] 整批剔除：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
+            }
+
             addEvent("ASSOC_FAIL",
                     "[批" + batchNo + "] 整批剔除 箱码:" + caseCode + "，原因：" + summary,
                     buildFailData(allBoxCodes, caseCode, summary.toString()));
@@ -750,19 +744,11 @@ public class ShiwanM2TcpCaptureService {
 
         if (res == null || res.getCode() == null || res.getCode() != 200) {
             String errMsg = res != null ? res.getMessage() : "服务返回null";
-            // 关联失败：写剔除记录 + 删除 CodeRelationUpload 记录
+            // 关联失败：整箱全量写剔除记录 + 置未完成
             String caseRejectReason = parseCaseRejectReason(errMsg);
-            if ("大标不通过".equals(caseRejectReason) || "重码".equals(caseRejectReason)) {
-                boxCaseService.insertRejectRecord(
-                        currentOrderNo, caseCode, null, null, caseCode, caseRejectReason);
-            } else {
-                for (String boxCode : digitOkBoxCodes) {
-                    boxCaseService.insertRejectRecord(
-                            currentOrderNo, caseCode, boxCode, null, null, "盒箱校验不通过");
-                }
-            }
-            if (!digitOkBoxCodes.isEmpty()) {
-                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(digitOkBoxCodes);
+            boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, caseRejectReason);
+            if (!allBoxCodes.isEmpty()) {
+                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
                 log.warn("[批{}] 关联失败：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
             }
             addEvent("ASSOC_FAIL",

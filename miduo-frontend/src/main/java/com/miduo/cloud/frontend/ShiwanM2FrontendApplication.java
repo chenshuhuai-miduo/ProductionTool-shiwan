@@ -16,7 +16,6 @@ import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.entity.enums.LicenseStatusEnum;
-import com.fasterxml.jackson.databind.JsonNode;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -27,7 +26,6 @@ import javafx.scene.control.Alert;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import java.time.LocalDate;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 石湾2号机（盒箱垛关联软件）JavaFX 启动类
@@ -39,8 +37,6 @@ import java.util.concurrent.CompletableFuture;
 public class ShiwanM2FrontendApplication extends Application {
 
     private CssHotReloader cssHotReloader;
-    /** 启动前产品同步任务（异步执行，供主界面在“产品选择”时判断是否完成）。 */
-    private static volatile CompletableFuture<Boolean> startupProductSyncFuture = CompletableFuture.completedFuture(false);
     /** 前端启动起始时间（用于启动阶段耗时埋点）。 */
     private static volatile long frontendStartupBeginMs = 0L;
     /** 启动期许可证状态快照，供主界面复用，避免重复采集设备指纹。 */
@@ -105,10 +101,6 @@ public class ShiwanM2FrontendApplication extends Application {
             Platform.exit();
             return;
         }
-        // 启动前产品同步改为异步：不阻塞主界面显示。
-        // 主界面点击“产品选择”时再根据该任务状态决定直接打开或显示加载提示。
-        startStartupProductSyncAsync();
-
         try {
             long fxmlLoadBeginMs = System.currentTimeMillis();
             FXMLLoader loader = new FXMLLoader(
@@ -162,57 +154,8 @@ public class ShiwanM2FrontendApplication extends Application {
         }
     }
 
-    private void startStartupProductSyncAsync() {
-        final long productSyncBeginMs = System.currentTimeMillis();
-        startupProductSyncFuture = CompletableFuture.supplyAsync(this::preSyncProductsBeforeMainWindow)
-            .whenComplete((ok, ex) -> {
-                long now = System.currentTimeMillis();
-                long phaseMs = now - productSyncBeginMs;
-                long sinceStartupMs = frontendStartupBeginMs > 0 ? now - frontendStartupBeginMs : phaseMs;
-                if (ex == null) {
-                    System.out.println("[启动耗时] 启动前产品异步同步完成，耗时 "
-                            + phaseMs + " ms（启动后 " + sinceStartupMs + " ms）"
-                            + "，结果=" + (Boolean.TRUE.equals(ok) ? "成功" : "失败"));
-                } else {
-                    System.out.println("[启动耗时] 启动前产品异步同步异常，耗时 "
-                            + phaseMs + " ms（启动后 " + sinceStartupMs + " ms）");
-                }
-            })
-            .exceptionally(ex -> {
-                System.out.println("⚠ 启动前产品同步异常：" + ex.getMessage() + "（主界面产品选择时可继续操作）");
-                return false;
-            });
-    }
-
-    /** 供主界面判断“启动前产品同步”是否完成。 */
-    public static CompletableFuture<Boolean> getStartupProductSyncFuture() {
-        return startupProductSyncFuture;
-    }
-
     public static LicenseStatusSnapshot getStartupLicenseStatusSnapshot() {
         return startupLicenseStatusSnapshot;
-    }
-
-    /**
-     * 主界面打开前预同步产品到本地。
-     * 失败不阻断启动，仅记录日志。
-     */
-    private boolean preSyncProductsBeforeMainWindow() {
-        try {
-            String resp = HttpUtil.doPost("/api/shiwan-m2/products/sync", "");
-            JsonNode node = HttpUtil.getObjectMapper().readTree(resp);
-            boolean ok = node != null && node.has("code") && node.get("code").asInt() == 200;
-            if (ok) {
-                System.out.println("✓ 启动前产品同步成功");
-            } else {
-                String msg = (node != null && node.has("message")) ? node.get("message").asText() : "未知错误";
-                System.out.println("⚠ 启动前产品同步失败：" + msg + "（不影响主界面使用）");
-            }
-            return ok;
-        } catch (Exception e) {
-            System.out.println("⚠ 启动前产品同步异常：" + e.getMessage() + "（不影响主界面使用）");
-            return false;
-        }
     }
 
     @Override

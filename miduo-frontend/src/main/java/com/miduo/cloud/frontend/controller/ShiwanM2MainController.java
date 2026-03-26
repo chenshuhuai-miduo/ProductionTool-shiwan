@@ -78,7 +78,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -772,9 +771,7 @@ public class ShiwanM2MainController implements Initializable {
             }
         });
 
-        // 启动时仅从本地加载产品列表。
-        // 远端产品同步由 Application 在主界面打开前先尝试一次；
-        // 若该次失败，则在主界面打开后（首次点产品选择）再重试一次。
+        // 启动时仅从本地加载产品列表；若首次点击产品下拉仍为空，再触发云端同步。
         productExecutor.submit(() -> fetchProducts("", 50));
     }
 
@@ -1250,21 +1247,50 @@ public class ShiwanM2MainController implements Initializable {
         final String originalProductCode = productCodeLabel != null ? productCodeLabel.getText() : "";
         final boolean originalCodeRowVisible = productCodeRow != null && productCodeRow.isVisible();
         final boolean originalCodeRowManaged = productCodeRow != null && productCodeRow.isManaged();
+        productExecutor.submit(() -> {
+            List<ProductItem> localProducts = queryProducts("", 50);
+            if (!localProducts.isEmpty()) {
+                Platform.runLater(() -> {
+                    applyProductItems(localProducts);
+                    doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
+                });
+                return;
+            }
 
-        CompletableFuture<Boolean> syncFuture = ShiwanM2FrontendApplication.getStartupProductSyncFuture();
-        if (syncFuture == null || syncFuture.isDone()) {
-            doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
-            return;
-        }
+            Platform.runLater(() -> {
+                addOpLog(LocalDateTime.now().format(TIME_FMT) + "  本地暂无产品数据，正在从云端加载产品信息...", LogType.INFO);
+                Stage loadingStage = showProductLoadingStage("正在加载产品信息，请稍候...");
+                productExecutor.submit(() -> {
+                    boolean syncOk = syncProducts();
+                    List<ProductItem> syncedProducts = queryProducts("", 50);
+                    Platform.runLater(() -> {
+                        if (loadingStage != null && loadingStage.isShowing()) {
+                            loadingStage.close();
+                        }
+                        applyProductItems(syncedProducts);
+                        if (syncedProducts.isEmpty()) {
+                            String tip = syncOk
+                                    ? "产品信息加载完成，但未获取到可用产品，请联系管理员维护产品档案。"
+                                    : "加载产品信息失败，请检查网络或开放平台配置后重试。";
+                            showWarn("产品信息加载提示", tip);
+                        }
+                        doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
+                    });
+                });
+            });
+        });
+    }
 
-        // 启动前异步同步尚未完成：显示加载提示，完成后再打开产品选择弹窗。
+    private Stage showProductLoadingStage(String message) {
         Stage loadingStage = new Stage();
         loadingStage.initModality(Modality.APPLICATION_MODAL);
-        loadingStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
-
+        loadingStage.initStyle(StageStyle.UNDECORATED);
+        if (mainTabPane != null && mainTabPane.getScene() != null) {
+            loadingStage.initOwner(mainTabPane.getScene().getWindow());
+        }
         javafx.scene.control.ProgressIndicator spinner = new javafx.scene.control.ProgressIndicator();
         spinner.setPrefSize(48, 48);
-        Label loadingLabel = new Label("正在同步产品数据，请稍候...");
+        Label loadingLabel = new Label(message);
         loadingLabel.setStyle("-fx-font-size: 14px; -fx-font-family: 'Microsoft YaHei';");
 
         VBox loadingBox = new VBox(12);
@@ -1273,15 +1299,9 @@ public class ShiwanM2MainController implements Initializable {
         loadingBox.setStyle("-fx-background-color: white; -fx-border-color: #cccccc; -fx-border-width: 1;");
         loadingBox.getChildren().addAll(spinner, loadingLabel);
 
-        loadingStage.setScene(new Scene(loadingBox, 260, 120));
+        loadingStage.setScene(new Scene(loadingBox, 280, 120));
         loadingStage.show();
-
-        syncFuture.whenComplete((ok, ex) -> Platform.runLater(() -> {
-            if (loadingStage.isShowing()) {
-                loadingStage.close();
-            }
-            doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
-        }));
+        return loadingStage;
     }
 
     private void doOpenProductSelectDialog(ProductItem originalValue,
@@ -2446,20 +2466,23 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     /** 同步产品到本地（后台线程调用） */
-    private void syncProducts() {
+    private boolean syncProducts() {
         try {
             String resp = HttpUtil.doPost("/api/shiwan-m2/products/sync", "");
             JsonNode n = JSON.readTree(resp);
             if (n == null || !n.has("code") || n.get("code").asInt() != 200) {
                 log.warn("[产品同步] 失败：{}", (n != null && n.has("message") ? n.get("message").asText() : "未知错误"));
+                return false;
             }
+            return true;
         } catch (Exception e) {
             log.warn("[产品同步] 异常：{}", e.getMessage());
+            return false;
         }
     }
 
-    /** 模糊搜索产品并刷新下拉（后台线程调用） */
-    private void fetchProducts(String keyword, int size) {
+    /** 本地模糊搜索产品（后台线程调用） */
+    private List<ProductItem> queryProducts(String keyword, int size) {
         try {
             StringBuilder url = new StringBuilder("/api/shiwan-m2/products/search?size=").append(size);
             if (keyword != null && !keyword.trim().isEmpty()) {
@@ -2467,9 +2490,9 @@ public class ShiwanM2MainController implements Initializable {
             }
             String resp = HttpUtil.doGet(url.toString());
             JsonNode n = JSON.readTree(resp);
-            if (n == null || !n.has("code") || n.get("code").asInt() != 200) return;
+            if (n == null || !n.has("code") || n.get("code").asInt() != 200) return new ArrayList<>();
             JsonNode data = n.get("data");
-            if (data == null || !data.isArray()) return;
+            if (data == null || !data.isArray()) return new ArrayList<>();
             List<ProductItem> list = new ArrayList<>();
             for (JsonNode item : data) {
                 String name = item.has("productName") ? item.get("productName").asText() : "";
@@ -2478,38 +2501,49 @@ public class ShiwanM2MainController implements Initializable {
                 if (no == null || no.isEmpty()) continue;
                 list.add(new ProductItem(name, no, spec));
             }
-            Platform.runLater(() -> {
-                // 刷新条目前记住当前选中，防止 setAll 因引用变化清空 value
-                ProductItem currentValue = productComboBox.getValue();
-                suppressProductSearch = true;
-                productItems.setAll(list);
-                // setAll 后 value 引用可能仍非 null 但已不在新列表中（fallback 对象），
-                // 所以不能只判断 getValue()==null，需检查 value 是否真正在新列表中
-                if (currentValue != null) {
-                    String currentNo = currentValue.getNo();
-                    ProductItem matched = null;
-                    if (currentNo != null && !currentNo.isEmpty()) {
-                        for (ProductItem item : list) {
-                            if (currentNo.equals(item.getNo())) {
-                                matched = item;
-                                break;
-                            }
-                        }
-                    }
-                    if (matched != null) {
-                        // 用新列表中的真实对象替换（避免 fallback 游离导致显示空白）
-                        productComboBox.setValue(matched);
-                        productCodeLabel.setText(matched.getNo());
-                        productCodeRow.setVisible(true);
-                        productCodeRow.setManaged(true);
-                    } else if (productComboBox.getValue() == null) {
-                        // 新列表中无匹配项且 value 已被清空，保留原 fallback 对象
-                        productComboBox.setValue(currentValue);
+            return list;
+        } catch (Exception ignored) {
+            return new ArrayList<>();
+        }
+    }
+
+    /** 模糊搜索产品并刷新下拉（后台线程调用） */
+    private void fetchProducts(String keyword, int size) {
+        List<ProductItem> list = queryProducts(keyword, size);
+        Platform.runLater(() -> applyProductItems(list));
+    }
+
+    /** 刷新产品缓存并尽量保持当前选中项 */
+    private void applyProductItems(List<ProductItem> list) {
+        // 刷新条目前记住当前选中，防止 setAll 因引用变化清空 value
+        ProductItem currentValue = productComboBox.getValue();
+        suppressProductSearch = true;
+        productItems.setAll(list);
+        // setAll 后 value 引用可能仍非 null 但已不在新列表中（fallback 对象），
+        // 所以不能只判断 getValue()==null，需检查 value 是否真正在新列表中
+        if (currentValue != null) {
+            String currentNo = currentValue.getNo();
+            ProductItem matched = null;
+            if (currentNo != null && !currentNo.isEmpty()) {
+                for (ProductItem item : list) {
+                    if (currentNo.equals(item.getNo())) {
+                        matched = item;
+                        break;
                     }
                 }
-                suppressProductSearch = false;
-            });
-        } catch (Exception ignored) {}
+            }
+            if (matched != null) {
+                // 用新列表中的真实对象替换（避免 fallback 游离导致显示空白）
+                productComboBox.setValue(matched);
+                productCodeLabel.setText(matched.getNo());
+                productCodeRow.setVisible(true);
+                productCodeRow.setManaged(true);
+            } else if (productComboBox.getValue() == null) {
+                // 新列表中无匹配项且 value 已被清空，保留原 fallback 对象
+                productComboBox.setValue(currentValue);
+            }
+        }
+        suppressProductSearch = false;
     }
 
     private void persistSpec(int m, int n) {
