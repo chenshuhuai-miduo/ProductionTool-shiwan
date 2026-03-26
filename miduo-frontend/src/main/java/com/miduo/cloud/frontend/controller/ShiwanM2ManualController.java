@@ -277,6 +277,7 @@ public class ShiwanM2ManualController implements Initializable {
                 .operateType(OperateTypeEnum.START)
                 .content("手工采集已启动，规格：每盒" + parseBottlesPerBox() + "瓶")
                 .saveAsync();
+        ShiwanM2MainController.notifyManualCaptureRunning(true);
     }
 
     /** 后台扫码枪重连结束后：仍失败则追加提示（成功则不再刷屏）。 */
@@ -293,6 +294,7 @@ public class ShiwanM2ManualController implements Initializable {
 
     private void stopCapture() {
         isRunning = false;
+        ShiwanM2MainController.notifyManualCaptureRunning(false);
         startBtn.setText("开始采集");
         startBtn.getStyleClass().remove("running");
 

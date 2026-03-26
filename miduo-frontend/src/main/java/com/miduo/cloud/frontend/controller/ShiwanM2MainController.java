@@ -58,6 +58,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -217,17 +218,32 @@ public class ShiwanM2MainController implements Initializable {
     /** 许可证状态文本 */
     @FXML private Label licenseStatusLabel;
 
-    /** 采集中脉冲灯容器 */
+    /** 自动采集（产线）状态条 */
     @FXML private HBox runningStatusBox;
 
-    /** 采集中脉冲灯外层脉冲环 */
+    /** 自动采集脉冲环 */
     @FXML private Region runningPulseRing;
 
-    /** 采集中脉冲灯内层实心点 */
+    /** 自动采集内点 */
     @FXML private Region runningDot;
 
-    /** 脉冲动画（Timeline：雷达扩散环 + 内点心跳弹跳） */
+    /** 自动采集脉冲动画 */
     private Animation runningPulseAnim;
+
+    /** 手工采集状态条 */
+    @FXML private HBox manualRunningStatusBox;
+
+    /** 手工采集扫描线视口 */
+    @FXML private StackPane manualScanViewport;
+
+    /** 手工采集扫描亮线（横向平移） */
+    @FXML private Region manualScanLine;
+
+    /** 手工采集扫描线循环动画 */
+    private Animation manualScanLineAnim;
+
+    /** 供手工采集 Tab 回写状态栏（主窗口单例） */
+    private static volatile ShiwanM2MainController mainWindowControllerRef;
 
     /** 当前时间标签 */
     @FXML private Label currentTimeLabel;
@@ -302,6 +318,8 @@ public class ShiwanM2MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        mainWindowControllerRef = this;
+        setupManualScanViewportClip();
         setupProductComboBox();
         setupListViews();
         setupSpecListeners();
@@ -472,6 +490,73 @@ public class ShiwanM2MainController implements Initializable {
                 ShiwanM2ScannerConnectHelper.tryReconnectScannersAsync();
             }
         });
+    }
+
+    private void setupManualScanViewportClip() {
+        if (manualScanViewport == null) {
+            return;
+        }
+        Rectangle clip = new Rectangle(30, 14);
+        clip.setArcWidth(4);
+        clip.setArcHeight(4);
+        manualScanViewport.setClip(clip);
+    }
+
+    private void ensureManualScanLineAnim() {
+        if (manualScanLine == null || manualScanLineAnim != null) {
+            return;
+        }
+        manualScanLine.setOpacity(0);
+        manualScanLine.setTranslateX(-2);
+        Timeline t = new Timeline(
+                new KeyFrame(Duration.ZERO,
+                        new KeyValue(manualScanLine.translateXProperty(), -2),
+                        new KeyValue(manualScanLine.opacityProperty(), 0)),
+                new KeyFrame(Duration.millis(60),
+                        new KeyValue(manualScanLine.opacityProperty(), 1.0)),
+                new KeyFrame(Duration.millis(420),
+                        new KeyValue(manualScanLine.translateXProperty(), 24, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(540),
+                        new KeyValue(manualScanLine.opacityProperty(), 0.0)),
+                new KeyFrame(Duration.millis(2200),
+                        new KeyValue(manualScanLine.translateXProperty(), -2),
+                        new KeyValue(manualScanLine.opacityProperty(), 0.0)));
+        t.setCycleCount(Animation.INDEFINITE);
+        manualScanLineAnim = t;
+    }
+
+    /** 手工采集 Tab 调用：显示/隐藏「手工采集中」与扫描线动画 */
+    public void setManualCaptureStatusBarRunning(boolean running) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> setManualCaptureStatusBarRunning(running));
+            return;
+        }
+        if (manualRunningStatusBox == null) {
+            return;
+        }
+        manualRunningStatusBox.setVisible(running);
+        manualRunningStatusBox.setManaged(running);
+        if (running) {
+            ensureManualScanLineAnim();
+            if (manualScanLineAnim != null) {
+                manualScanLineAnim.playFromStart();
+            }
+        } else {
+            if (manualScanLineAnim != null) {
+                manualScanLineAnim.stop();
+            }
+            if (manualScanLine != null) {
+                manualScanLine.setTranslateX(-2);
+                manualScanLine.setOpacity(0);
+            }
+        }
+    }
+
+    public static void notifyManualCaptureRunning(boolean running) {
+        ShiwanM2MainController c = mainWindowControllerRef;
+        if (c != null) {
+            c.setManualCaptureStatusBarRunning(running);
+        }
     }
 
     /**

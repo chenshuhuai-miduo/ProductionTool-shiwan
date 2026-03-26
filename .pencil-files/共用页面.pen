@@ -4729,7 +4729,7 @@
                       "type": "text",
                       "id": "JjzEz",
                       "fill": "#6B7280",
-                      "content": "· 配置保存后软件重启生效",
+                      "content": "· 配置保存后生效",
                       "fontFamily": "Microsoft YaHei",
                       "fontSize": 12,
                       "fontWeight": "normal"

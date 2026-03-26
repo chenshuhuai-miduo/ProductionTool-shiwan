@@ -1,6 +1,8 @@
 package com.miduo.cloud.frontend.controller;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -83,6 +85,35 @@ public class IoDeviceDialogController {
         retryField.setText("3");
 
         updateConnectionFields();
+        attachIoDeviceDialogStylesheet();
+    }
+
+    /**
+     * Win7 等环境：输入框需挂到 Scene 的样式表，字号与字体才能作用于 TextField 及 ComboBox 下拉浮层。
+     */
+    private void attachIoDeviceDialogStylesheet() {
+        deviceNameField.sceneProperty().addListener((obs, oldSc, newSc) -> {
+            if (newSc != null) {
+                addIoDeviceDialogStylesheetToScene(newSc);
+            }
+        });
+        Platform.runLater(() -> {
+            Scene sc = deviceNameField.getScene();
+            if (sc != null) {
+                addIoDeviceDialogStylesheetToScene(sc);
+            }
+        });
+    }
+
+    private static void addIoDeviceDialogStylesheetToScene(Scene scene) {
+        var url = IoDeviceDialogController.class.getResource("/css/io-device-dialog.css");
+        if (url == null) {
+            return;
+        }
+        String s = url.toExternalForm();
+        if (!scene.getStylesheets().contains(s)) {
+            scene.getStylesheets().add(s);
+        }
     }
 
     /**

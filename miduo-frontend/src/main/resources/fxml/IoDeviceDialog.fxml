@@ -7,6 +7,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.miduo.cloud.frontend.controller.IoDeviceDialogController"
       spacing="15" prefWidth="600" prefHeight="550"
+      styleClass="io-device-dialog-root"
       style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
 
     <!-- 标题 -->
@@ -31,14 +32,14 @@
                 </HBox>
                 <TextField fx:id="deviceNameField" GridPane.rowIndex="0" GridPane.columnIndex="1"
                            promptText="请输入设备名称"
-                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+                           style="-fx-pref-height: 38px;"/>
 
                 <!-- 第2行：设备类别 -->
                 <Label text="设备类别：" GridPane.rowIndex="1" GridPane.columnIndex="0"
                        style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
                 <ComboBox fx:id="deviceCategoryComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1"
                           promptText="请选择设备类别" maxWidth="Infinity"
-                          style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+                          style="-fx-pref-height: 38px;"/>
 
                 <!-- 第3行：连接方式 -->
                 <Label text="连接方式：" GridPane.rowIndex="2" GridPane.columnIndex="0"
@@ -69,7 +70,7 @@
                 </HBox>
                 <TextField fx:id="ipField" GridPane.rowIndex="4" GridPane.columnIndex="1"
                            promptText="例如：192.168.1.101"
-                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+                           style="-fx-pref-height: 38px;"/>
 
                 <!-- 第6行：端口 / 波特率 -->
                 <HBox spacing="4" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="0">
@@ -78,21 +79,21 @@
                 </HBox>
                 <TextField fx:id="portField" GridPane.rowIndex="5" GridPane.columnIndex="1"
                            promptText="例如：502"
-                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+                           style="-fx-pref-height: 38px;"/>
 
                 <!-- 第7行：超时时间 -->
                 <Label text="超时时间(秒)：" GridPane.rowIndex="6" GridPane.columnIndex="0"
                        style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
                 <TextField fx:id="timeoutField" GridPane.rowIndex="6" GridPane.columnIndex="1"
                            promptText="默认5秒"
-                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+                           style="-fx-pref-height: 38px;"/>
 
                 <!-- 第8行：重试次数 -->
                 <Label text="重试次数：" GridPane.rowIndex="7" GridPane.columnIndex="0"
                        style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
                 <TextField fx:id="retryField" GridPane.rowIndex="7" GridPane.columnIndex="1"
                            promptText="默认3次"
-                           style="-fx-font-size: 14px; -fx-pref-height: 35px;"/>
+                           style="-fx-pref-height: 38px;"/>
 
                 <!-- 第9行：状态 -->
                 <Label text="状态：" GridPane.rowIndex="8" GridPane.columnIndex="0"
@@ -114,8 +115,7 @@
                 </Label>
                 <TextArea fx:id="descriptionArea" GridPane.rowIndex="9" GridPane.columnIndex="1"
                           promptText="请输入设备描述信息"
-                          prefRowCount="3" wrapText="true"
-                          style="-fx-font-size: 14px;"/>
+                          prefRowCount="3" wrapText="true"/>
             </GridPane>
         </VBox>
     </ScrollPane>

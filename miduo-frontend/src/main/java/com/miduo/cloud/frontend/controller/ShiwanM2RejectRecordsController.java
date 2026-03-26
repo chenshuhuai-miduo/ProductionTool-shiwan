@@ -322,10 +322,11 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                     label.setText(item);
                     RejectRow row = getTableRow() == null ? null : getTableRow().getItem();
                     String font = "-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px;";
+                    // 仅按数据着色，与是否选中无关；选中行只靠 .sw2-wrap-table 的 CSS 背景高亮
                     if (row != null && !item.isEmpty() && item.equals(row.problemCode)) {
                         label.setStyle(font + " -fx-text-fill:#F44336; -fx-font-weight:bold;");
                     } else {
-                        label.setStyle(font + " -fx-text-fill:#1F2937;");
+                        label.setStyle(font + " -fx-text-fill:#1F2937; -fx-font-weight:normal;");
                     }
                 }
             }

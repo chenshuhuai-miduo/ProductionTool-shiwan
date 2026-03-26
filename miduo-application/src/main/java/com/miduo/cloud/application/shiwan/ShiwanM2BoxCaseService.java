@@ -1252,13 +1252,13 @@ public class ShiwanM2BoxCaseService {
     private static String replaceHintNotInPackage(int packageType, String code) {
         switch (packageType) {
             case 1:
-                return "瓶码 " + code + " 不在小标码包范围内";
+                return "瓶码 " + code + " 不在小标码包范围内，请确认已导入对应码包";
             case 2:
-                return "盒码 " + code + " 不在中标码包范围内";
+                return "盒码 " + code + " 不在中标码包范围内，请确认已导入对应码包";
             case 3:
-                return "箱码 " + code + " 不在大标码包范围内";
+                return "箱码 " + code + " 不在大标码包范围内，请确认已导入对应码包";
             default:
-                return "新码 " + code + " 不在对应码包范围内";
+                return "新码 " + code + " 不在对应码包范围内，请确认已导入对应码包";
         }
     }
 
@@ -1268,50 +1268,141 @@ public class ShiwanM2BoxCaseService {
     private static String replaceHintDuplicate(int packageType, String code) {
         switch (packageType) {
             case 1:
-                return "瓶码 " + code + " 重复出现";
+                return "瓶码 " + code + " 已存在关联，无法作为替换目标";
             case 2:
-                return "盒码 " + code + " 重复出现";
+                return "盒码 " + code + " 已存在关联，无法作为替换目标";
             case 3:
-                return "箱码 " + code + " 重复出现";
+                return "箱码 " + code + " 已存在关联，无法作为替换目标";
             default:
-                return "新码 " + code + " 重复出现";
+                return "新码 " + code + " 已存在关联，无法作为替换目标";
         }
     }
 
+    private ShiwanM2SettingsDto.CodeDigitsConfig loadCodeDigitsConfig() {
+        ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
+        return cfg != null ? cfg.getCodeDigits() : null;
+    }
+
     /**
-     * P02-06 数据替换：按层级直接更新对应列码值，并同步热冷表。
-     * 流程：原码存在于冷表（已被关联）→ 验证新码在热表中（未使用）→ 更新关联表 → 原码从冷表回迁热表 → 新码从热表落冷。
+     * 数据替换：位数校验（错码）。expected &lt;= 0（含 -1）表示该层级不校验位数。
+     *
+     * @return 错误文案，通过返回 null
+     */
+    private static String replaceValidateDigits(int packageType, String code, ShiwanM2SettingsDto.CodeDigitsConfig digits) {
+        if (digits == null || code == null) {
+            return null;
+        }
+        int expected;
+        String layerLabel;
+        switch (packageType) {
+            case 1:
+                expected = digits.getSmallCodeDigits();
+                layerLabel = "瓶码";
+                break;
+            case 2:
+                expected = digits.getMediumCodeDigits();
+                layerLabel = "盒码";
+                break;
+            case 3:
+                expected = digits.getLargeCodeDigits();
+                layerLabel = "箱码";
+                break;
+            default:
+                return null;
+        }
+        if (expected <= 0) {
+            return null;
+        }
+        if (code.length() == expected) {
+            return null;
+        }
+        return layerLabel + " " + code + " 格式错误（位数应为 " + expected + "，实际 " + code.length() + "）";
+    }
+
+    /**
+     * 原码在库中无记录时：若已启用至少一层位数校验，且码长与所有已启用层级均不一致 → 错码（先于「不存在关联」提示）。
+     */
+    private static String replaceValidateUnknownLayerDigits(String code, ShiwanM2SettingsDto.CodeDigitsConfig digits) {
+        if (digits == null || code == null) {
+            return null;
+        }
+        int small = digits.getSmallCodeDigits();
+        int med = digits.getMediumCodeDigits();
+        int large = digits.getLargeCodeDigits();
+        boolean anyRule = small > 0 || med > 0 || large > 0;
+        if (!anyRule) {
+            return null;
+        }
+        int len = code.length();
+        boolean matchesSome = (small > 0 && len == small) || (med > 0 && len == med) || (large > 0 && len == large);
+        if (matchesSome) {
+            return null;
+        }
+        return "码 " + code + " 格式错误（位数与系统设置中瓶/盒/箱码位数均不符）";
+    }
+
+    /**
+     * P02-05 数据替换：按层级直接更新对应列码值，并同步热冷表。
+     * 校验顺序：入参 → 原码库内层级 → 原码位数（错码）→ 新码位数（错码）→ 码包热表 → 新码占用态 → 上传态与云端 → 本地事务。
      */
     @Transactional(rollbackFor = Exception.class)
     public ApiResult<Boolean> replaceCode(String oldCode, String newCode, String reason) {
-        // 1. 基础入参校验
-        if (oldCode == null || oldCode.trim().isEmpty()) return ApiResult.error(400, "原码不能为空");
-        if (newCode == null || newCode.trim().isEmpty()) return ApiResult.error(400, "新码不能为空");
+        if (oldCode == null || oldCode.trim().isEmpty()) {
+            return ApiResult.error(400, "请输入原码");
+        }
+        if (newCode == null || newCode.trim().isEmpty()) {
+            return ApiResult.error(400, "请输入新码");
+        }
         String oldV = oldCode.trim();
         String newV = newCode.trim();
-        if (oldV.equals(newV)) return ApiResult.error(400, "原码和新码不能相同");
+        if (oldV.equals(newV)) {
+            return ApiResult.error(400, "新码不能与原码相同");
+        }
 
-        // 2. 查询原码所在层级
+        ShiwanM2SettingsDto.CodeDigitsConfig digits = loadCodeDigitsConfig();
+
         long smallCnt  = countByColumn("SmallSerialNumber",  oldV);
         long mediumCnt = countByColumn("MediumSerialNumber", oldV);
         long bigCnt    = countByColumn("BigSerialNumber",    oldV);
         int hitLayers  = (smallCnt > 0 ? 1 : 0) + (mediumCnt > 0 ? 1 : 0) + (bigCnt > 0 ? 1 : 0);
-        if (hitLayers == 0) return ApiResult.error(404, "原码不存在：" + oldV);
-        if (hitLayers > 1)  return ApiResult.error(400, "原码命中多个层级，不允许替换：" + oldV);
 
-        // 3. 确定层级、列名和云端码类型（0=大标/箱码, 1=中标/盒码, 2=小标）
-        int    packageType;
-        String column;
-        int    codeType;
-        if (smallCnt > 0) {
-            packageType = 1; column = "SmallSerialNumber";  codeType = 2;
-        } else if (mediumCnt > 0) {
-            packageType = 2; column = "MediumSerialNumber"; codeType = 1;
-        } else {
-            packageType = 3; column = "BigSerialNumber";    codeType = 0;
+        if (hitLayers == 0) {
+            String unknownLayerDigitErr = replaceValidateUnknownLayerDigits(oldV, digits);
+            if (unknownLayerDigitErr != null) {
+                return ApiResult.error(400, unknownLayerDigitErr);
+            }
+            return ApiResult.error(404, "原码不存在关联，无需或无法替换（码：" + oldV + "）");
+        }
+        if (hitLayers > 1) {
+            return ApiResult.error(400, "原码命中多个层级，不允许替换：" + oldV);
         }
 
-        // 4. 校验新码：必须在对应码包热表中且未被使用（提示与赋码文档「小标/中标/大标不通过」「重码」一致）
+        int packageType;
+        String column;
+        int codeType;
+        if (smallCnt > 0) {
+            packageType = 1;
+            column = "SmallSerialNumber";
+            codeType = 2;
+        } else if (mediumCnt > 0) {
+            packageType = 2;
+            column = "MediumSerialNumber";
+            codeType = 1;
+        } else {
+            packageType = 3;
+            column = "BigSerialNumber";
+            codeType = 0;
+        }
+
+        String oldDigitErr = replaceValidateDigits(packageType, oldV, digits);
+        if (oldDigitErr != null) {
+            return ApiResult.error(400, oldDigitErr);
+        }
+        String newDigitErr = replaceValidateDigits(packageType, newV, digits);
+        if (newDigitErr != null) {
+            return ApiResult.error(400, newDigitErr);
+        }
+
         if (!isCodeInPackage(newV, packageType)) {
             return ApiResult.error(400, replaceHintNotInPackage(packageType, newV));
         }
@@ -1421,19 +1512,19 @@ public class ShiwanM2BoxCaseService {
             int returnCode = root.path("return_code").asInt(-1);
             if (returnCode != 0) {
                 String msg = root.path("return_msg").asText("未知错误");
-                return ApiResult.error(500, "云端替换失败：" + msg);
+                return ApiResult.error(500, "云端替换失败，本地未修改。原因：" + msg);
             }
             JsonNode dataArr = root.path("return_data");
             if (dataArr.isArray() && dataArr.size() > 0) {
                 int status = dataArr.get(0).path("status").asInt(-1);
                 if (status != 0) {
-                    return ApiResult.error(500, "云端替换返回失败状态：" + status);
+                    return ApiResult.error(500, "云端替换失败，本地未修改。原因：接口返回状态 " + status);
                 }
             }
             return ApiResult.success("云端替换成功", true);
         } catch (Exception e) {
             log.error("[码替换云端] 接口调用异常 oldCode={}: {}", oldV, e.getMessage(), e);
-            return ApiResult.error(500, "云端替换接口调用异常：" + e.getMessage());
+            return ApiResult.error(500, "云端替换失败，本地未修改。原因：网络或接口异常，" + e.getMessage());
         }
     }
 

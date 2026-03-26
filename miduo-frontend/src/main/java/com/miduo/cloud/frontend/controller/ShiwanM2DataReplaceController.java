@@ -169,17 +169,17 @@ public class ShiwanM2DataReplaceController {
         String reason  = reasonField.getText() == null ? "" : reasonField.getText().trim();
 
         if (oldCode.isEmpty()) {
-            FxDialog.warn(replaceDialogOwner(), "提示", "请输入原码，原码不能为空。");
+            FxDialog.warn(replaceDialogOwner(), "提示", "请输入原码");
             origCodeField.requestFocus();
             return;
         }
         if (newCode.isEmpty()) {
-            FxDialog.warn(replaceDialogOwner(), "提示", "请输入新码，新码不能为空。");
+            FxDialog.warn(replaceDialogOwner(), "提示", "请输入新码");
             newCodeField.requestFocus();
             return;
         }
         if (oldCode.equals(newCode)) {
-            FxDialog.warn(replaceDialogOwner(), "提示", "原码与新码不能相同，请重新输入。");
+            FxDialog.warn(replaceDialogOwner(), "提示", "新码不能与原码相同");
             return;
         }
 
@@ -234,13 +234,14 @@ public class ShiwanM2DataReplaceController {
                 Platform.runLater(() -> handleReplaceResult(oldCode, newCode, reason, result));
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    appendResultCard(false, oldCode, newCode, "请求异常: " + e.getMessage(), reason);
+                    appendResultCard(false, oldCode, newCode,
+                            "网络异常，替换失败（本地未修改）：" + e.getMessage(), reason);
                     OperateLogBuilder.create()
                             .module(ModuleNameEnum.CODE_REPLACE)
                             .operateType(OperateTypeEnum.REPLACE)
                             .target(oldCode, newCode)
                             .content("石湾M2数据替换失败: " + oldCode + " -> " + newCode)
-                            .failReason("请求异常: " + e.getMessage())
+                            .failReason("网络异常: " + e.getMessage())
                             .deviceInfo("石湾M2-数据替换")
                             .saveAsync();
                 });

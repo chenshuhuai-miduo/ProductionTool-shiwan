@@ -10,6 +10,7 @@ import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.application.Platform;
@@ -21,6 +22,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -36,8 +38,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.Group;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
 
@@ -85,6 +90,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private TextField warehouseNoField;
 
     // ==================== 页面配置开关 ====================
+    @FXML private StackPane pageDataCollectionLockedSwitchHost;
     @FXML private ToggleButton pageManualToggle;
     @FXML private ToggleButton pageQueryToggle;
     @FXML private ToggleButton pageReplaceToggle;
@@ -92,6 +98,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private ToggleButton pagePackageToggle;
     @FXML private ToggleButton pageCancelToggle;
     @FXML private ToggleButton pageUploadToggle;
+    @FXML private Button savePageConfigBtn;
 
     // ==================== 设备 - IO设备管理 ====================
     @FXML private TableView<IoDeviceDTO> ioDeviceTable;
@@ -179,11 +186,68 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        setupPageConfigSwitchGraphics();
         setupToggleStyles();
         setupIoDeviceTable();
         loadSettingsIntoUI();
         loadIoDevices();
         setupDeviceTabListener();
+    }
+
+    /**
+     * 页面配置：用 Group + 轨道 + 圆形滑块实现 Switch。
+     * 注意：不能用 StackPane 承载滑块——StackPane 默认居中对齐子节点，会抵消 Circle 的 centerX 位移，表现为滑块永远在中间。
+     * 滑块固定几何中心 (12,12)，用 translateX 0/24 表示关/开（48 宽轨道，左右各约 2px 边距）。
+     */
+    private void setupPageConfigSwitchGraphics() {
+        if (pageDataCollectionLockedSwitchHost != null) {
+            pageDataCollectionLockedSwitchHost.getChildren().setAll(buildLockedOnGrayedSwitch());
+        }
+        ToggleButton[] pageToggles = {
+                pageManualToggle, pageQueryToggle, pageReplaceToggle,
+                pageStatsToggle, pagePackageToggle, pageCancelToggle, pageUploadToggle
+        };
+        for (ToggleButton tb : pageToggles) {
+            if (tb == null || !tb.getStyleClass().contains("sw2-page-toggle-switch")) {
+                continue;
+            }
+            Group g = new Group();
+            Rectangle track = new Rectangle(0, 0, 48, 24);
+            track.setArcWidth(24);
+            track.setArcHeight(24);
+            track.setStrokeWidth(0);
+            Circle thumb = new Circle(12, 12, 10, Color.WHITE);
+            thumb.setSmooth(true);
+            g.getChildren().addAll(track, thumb);
+            track.fillProperty().bind(Bindings.createObjectBinding(() ->
+                    tb.isSelected() ? Color.web("#2563EB") : Color.web("#E5E7EB"),
+                    tb.selectedProperty()));
+            thumb.translateXProperty().bind(Bindings.createDoubleBinding(() ->
+                            tb.isSelected() ? 24.0 : 0.0,
+                    tb.selectedProperty()));
+            tb.setGraphic(g);
+            tb.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            tb.setText("");
+            tb.setMinSize(48, 24);
+            tb.setPrefSize(48, 24);
+            tb.setMaxSize(48, 24);
+        }
+    }
+
+    /** 必选数据采集：开启态 Switch，灰轨 + 白钮靠右，整体略透明表示不可操作 */
+    private static Group buildLockedOnGrayedSwitch() {
+        Group g = new Group();
+        Rectangle track = new Rectangle(0, 0, 48, 24);
+        track.setArcWidth(24);
+        track.setArcHeight(24);
+        track.setStrokeWidth(0);
+        track.setFill(Color.web("#9CA3AF"));
+        Circle thumb = new Circle(12, 12, 10, Color.WHITE);
+        thumb.setSmooth(true);
+        thumb.setTranslateX(24);
+        g.getChildren().addAll(track, thumb);
+        g.setOpacity(0.82);
+        return g;
     }
 
     /**
@@ -317,18 +381,30 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
     }
 
-    /** 根据选中状态同步 ToggleButton 文字与颜色 */
+    /** 页面配置 Tab 为设计稿滑块样式（sw2-page-toggle-switch），其余 Toggle 为「开/关」药丸 */
     private void syncToggleStyle(ToggleButton tb) {
+        if (tb == null) {
+            return;
+        }
+        if (tb.getStyleClass().contains("sw2-page-toggle-switch")) {
+            tb.setText("");
+            tb.setStyle("-fx-background-color: transparent; -fx-background-insets: 0; -fx-border-width: 0; -fx-padding: 0;"
+                    + "-fx-opacity: 1; -fx-cursor: hand; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+            return;
+        }
+        if (tb.isDisabled()) {
+            return;
+        }
         if (tb.isSelected()) {
             tb.setText("开");
             tb.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white;"
-                + "-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei';"
-                + "-fx-background-radius: 6px; -fx-border-width: 0; -fx-cursor: hand;");
+                + "-fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei';"
+                + "-fx-background-radius: 13px; -fx-padding: 5px 14px; -fx-border-width: 0; -fx-cursor: hand;");
         } else {
             tb.setText("关");
-            tb.setStyle("-fx-background-color: #E5E7EB; -fx-text-fill: #6B7280;"
-                + "-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei';"
-                + "-fx-background-radius: 6px; -fx-border-width: 0; -fx-cursor: hand;");
+            tb.setStyle("-fx-background-color: #E8E8E8; -fx-text-fill: #4B5563;"
+                + "-fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei';"
+                + "-fx-background-radius: 13px; -fx-padding: 5px 14px; -fx-border-width: 0; -fx-cursor: hand;");
         }
     }
 
@@ -622,7 +698,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (pageUploadToggle.isSelected()) order.add("upload");
         s.setPageTabOrder(order);
         saveSettings(s);
-        showSuccess("页面配置", "页面配置已保存至配置文件，重启后生效。");
+        showSuccess("页面配置", "已保存，关闭窗口后主界面生效。");
     }
 
     // ==================== 设备 Tab 事件处理 ====================

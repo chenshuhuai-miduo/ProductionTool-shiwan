@@ -1,0 +1,23 @@
+/* IO 设备添加/编辑弹窗：通过 Scene 加载，使 TextField 与 ComboBox 浮层在 Win7 上字号一致、清晰 */
+
+.io-device-dialog-root .text-field,
+.io-device-dialog-root .text-area {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
+.io-device-dialog-root .combo-box-base {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
+.io-device-dialog-root .combo-box-base > .list-cell {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}
+
+/* 下拉列表挂在 Popup，不是 VBox 子节点；本弹窗独占 Scene 时仅影响当前对话框的下拉 */
+.combo-box-popup .list-view .list-cell {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 16px;
+}

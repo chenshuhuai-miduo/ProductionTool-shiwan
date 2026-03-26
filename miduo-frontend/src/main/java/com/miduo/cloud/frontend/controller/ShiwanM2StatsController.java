@@ -35,6 +35,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -90,10 +91,12 @@ public class ShiwanM2StatsController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        startDate.setValue(LocalDate.now().withDayOfMonth(1));
-        endDate.setValue(LocalDate.now());
-        uploadStartDate.setValue(LocalDate.now().withDayOfMonth(1));
-        uploadEndDate.setValue(LocalDate.now());
+        LocalDate today = LocalDate.now();
+        // P02-07：生产统计、上传统计各自起止默认均为当天
+        startDate.setValue(today);
+        endDate.setValue(today);
+        uploadStartDate.setValue(today);
+        uploadEndDate.setValue(today);
         // 日期组件只允许通过弹出日历选择，禁止手动键入
         startDate.setEditable(false);
         endDate.setEditable(false);
@@ -224,12 +227,31 @@ public class ShiwanM2StatsController implements Initializable {
         return sb.toString();
     }
 
+    /**
+     * P02-07：结束不得早于开始；日历日跨度不超过 365 天（起止同日为 0）。
+     *
+     * @return false 时不应发起查询
+     */
+    private boolean validateDateRange(LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            return true;
+        }
+        if (end.isBefore(start)) {
+            showWarn("结束日期不能早于开始日期");
+            return false;
+        }
+        if (ChronoUnit.DAYS.between(start, end) > 365) {
+            showWarn("查询时间跨度最长为一年，请缩小日期范围");
+            return false;
+        }
+        return true;
+    }
+
     @FXML
     private void onQuery() {
         LocalDate start = startDate.getValue();
         LocalDate end   = endDate.getValue();
-        if (start != null && end != null && end.isBefore(start)) {
-            showWarn("结束日期不能早于开始日期");
+        if (!validateDateRange(start, end)) {
             return;
         }
         String url = "/api/shiwan-m2/stats/production-summary?startDate=" + getDateText(startDate)
@@ -264,8 +286,7 @@ public class ShiwanM2StatsController implements Initializable {
     private void onUploadQuery() {
         LocalDate start = uploadStartDate.getValue();
         LocalDate end   = uploadEndDate.getValue();
-        if (start != null && end != null && end.isBefore(start)) {
-            showWarn("结束日期不能早于开始日期");
+        if (!validateDateRange(start, end)) {
             return;
         }
         currentPage = 1;
@@ -300,6 +321,11 @@ public class ShiwanM2StatsController implements Initializable {
     }
 
     private void loadUploadPage() {
+        LocalDate uStart = uploadStartDate.getValue();
+        LocalDate uEnd   = uploadEndDate.getValue();
+        if (!validateDateRange(uStart, uEnd)) {
+            return;
+        }
         String status = uploadStatusCombo.getValue() == null ? "全部" : uploadStatusCombo.getValue();
         String url = "/api/shiwan-m2/stats/upload-records?startDate=" + getDateText(uploadStartDate)
                 + "&endDate=" + getDateText(uploadEndDate)
@@ -363,6 +389,9 @@ public class ShiwanM2StatsController implements Initializable {
 
     @FXML
     private void onPalletCardClick(MouseEvent e) {
+        if (!validateDateRange(startDate.getValue(), endDate.getValue())) {
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ShiwanM2PalletListDialog.fxml"));
             Parent root = loader.load();
@@ -383,6 +412,9 @@ public class ShiwanM2StatsController implements Initializable {
 
     @FXML
     private void onRejectCardClick(MouseEvent e) {
+        if (!validateDateRange(startDate.getValue(), endDate.getValue())) {
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ShiwanM2RejectRecordsDialog.fxml"));
             Parent root = loader.load();

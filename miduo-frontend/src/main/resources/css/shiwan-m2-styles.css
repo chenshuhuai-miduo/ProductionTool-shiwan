@@ -840,10 +840,39 @@
     -fx-background-radius: 4px;
 }
 
-/* 采集中文字 */
+/* 自动采集中文字（略加大便于状态栏阅读） */
 .shiwan-m2-running-text {
     -fx-text-fill: #16A34A;
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+}
+
+/* 手工采集：扫描条视口（裁剪扫描线） */
+.shiwan-m2-manual-scan-viewport {
+    -fx-padding: 0;
+}
+
+.shiwan-m2-manual-scan-bg {
+    -fx-background-color: #DBEAFE;
+    -fx-background-radius: 4px;
+}
+
+/* 竖向亮线，Timeline 控制 translateX 模拟横向扫过 */
+.shiwan-m2-manual-scan-line {
+    -fx-min-width: 2px;
+    -fx-pref-width: 2px;
+    -fx-max-width: 2px;
+    -fx-min-height: 11px;
+    -fx-pref-height: 11px;
+    -fx-max-height: 11px;
+    -fx-background-color: linear-gradient(to bottom, #BFDBFE, #2563EB 48%, #1D4ED8 52%, #BFDBFE);
+    -fx-background-radius: 1px;
+    -fx-opacity: 0;
+}
+
+.shiwan-m2-manual-running-text {
+    -fx-text-fill: #1D4ED8;
+    -fx-font-size: 15px;
     -fx-font-weight: 600;
 }
 
@@ -1405,6 +1434,21 @@
     -fx-text-fill: #374151;
 }
 
+/* 压过 base .status-bar .label 11px：自动/手工采集中文案 */
+.status-bar .label.shiwan-m2-running-text {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #16A34A;
+}
+
+.status-bar .label.shiwan-m2-manual-running-text {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #1D4ED8;
+}
+
 /* ---- 小操作按钮（表格内查看/删除）---- */
 .sw2-btn-sm-blue {
     -fx-background-color: #EFF6FF;
@@ -1956,27 +2000,81 @@
 }
 
 /* ============================================================
-   ToggleButton 开关样式（通用）
+   ToggleButton 开关样式（通用，对齐页面配置设计稿药丸开关）
    ============================================================ */
 .sw2-toggle-switch {
-    -fx-background-color: #2563EB;
-    -fx-text-fill: white;
-    -fx-font-size: 15px;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
     -fx-font-family: "Microsoft YaHei";
+    -fx-background-radius: 13px;
+    -fx-padding: 5px 14px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: null;
+    -fx-min-width: 48px;
+    -fx-content-display: TEXT_ONLY;
+}
+
+.sw2-toggle-switch:hover {
+    -fx-opacity: 0.92;
+}
+
+/* 页面配置：必选行锁定为「开」（设计稿 #E5E7EB / #9CA3AF） */
+.toggle-button.sw2-toggle-switch.sw2-toggle-disabled {
+    -fx-background-color: #E5E7EB;
+    -fx-text-fill: #9CA3AF;
+    -fx-opacity: 0.95;
+    -fx-cursor: default;
+}
+
+.toggle-button.sw2-toggle-switch.sw2-toggle-disabled:hover {
+    -fx-opacity: 0.95;
+}
+
+/* 页面配置 Switch 由 ToggleButton.graphic（Group+轨道+滑块）绘制 */
+/* 必选行用 StackPane 承载静态 Switch，不用 ToggleButton */
+.sw2-page-config-locked-switch-host {
+    -fx-background-color: transparent;
+}
+
+/* 系统设置 — 页面配置表格外框（Yq73e 8f063） */
+.sw2-page-config-table {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+/* 页面配置「保存」：用 #id 提高优先级，避免 FXML 仅写 styleClass 时未带上默认 button 类导致主色不生效 */
+#savePageConfigBtn {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-font-family: "Microsoft YaHei";
+    -fx-pref-width: 100px;
+    -fx-min-width: 100px;
+    -fx-max-width: 100px;
+    -fx-pref-height: 36px;
+    -fx-min-height: 36px;
     -fx-background-radius: 6px;
     -fx-border-width: 0;
+    -fx-padding: 0 16px;
     -fx-cursor: hand;
     -fx-effect: null;
 }
 
-.sw2-toggle-switch:hover {
+#savePageConfigBtn:hover {
     -fx-background-color: #1d4ed8;
 }
 
-.sw2-toggle-disabled {
-    -fx-opacity: 0.6;
-    -fx-cursor: default;
+#savePageConfigBtn:pressed {
+    -fx-background-color: #1e40af;
+}
+
+#savePageConfigBtn:focused {
+    -fx-background-color: #2563EB;
 }
 
 /* ---- 查看码包 码表（无竖向分隔线，无选中高亮） ---- */
@@ -2100,5 +2198,14 @@
 }
 .sw2-wrap-table .table-row-cell:selected .table-cell {
     -fx-text-fill: #1F2937;
+}
+
+/*
+ * 与 .sw2-table 相同：table-styles.css 对任意 .table-view 选中格写了
+ * .table-row-cell:selected .table-cell .text { -fx-fill: -text-primary; }
+ * 会压过剔除记录表内自定义 Label 的红字，且换行后易残留。
+ */
+.table-view.sw2-wrap-table .table-row-cell:selected .table-cell .text {
+    -fx-fill: inherit;
 }
 

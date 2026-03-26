@@ -63,9 +63,17 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
         // 列宽自动撑满表格，禁止横向滚动
         productTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        // 产品编号列：选中时文字变蓝（#2563EB），未选中时灰色（#6B7280）
-        // 通过监听 tableRowProperty 的 selectedProperty 确保状态同步
-        pronumberColumn.setCellFactory(col -> new TableCell<Map<String, String>, String>() {
+        // 产品名称、产品编号：选中行两列同为蓝字加粗；未选中为灰色（与 table-styles 选中态配合需监听 selectedProperty）
+        installProductSelectTextCell(nameColumn);
+        installProductSelectTextCell(pronumberColumn);
+
+        productTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        loadPage(1);
+    }
+
+    /** 选中行：蓝字加粗；未选中：灰色。名称与编号列共用，避免只有编号列变色。 */
+    private void installProductSelectTextCell(TableColumn<Map<String, String>, String> column) {
+        column.setCellFactory(col -> new TableCell<>() {
             {
                 tableRowProperty().addListener((obs, oldRow, newRow) -> {
                     if (newRow != null) {
@@ -95,9 +103,6 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
                 }
             }
         });
-
-        productTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        loadPage(1);
     }
 
     private void loadPage(int page) {

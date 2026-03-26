@@ -270,165 +270,238 @@
             </TabPane>
         </Tab>
 
-        <!-- ============ Tab2：页面配置 ============ -->
+        <!-- ============ Tab2：页面配置（对齐设计稿 Yq73e / X7LKc：表格→说明→保存） ============ -->
         <Tab text="页面配置">
-            <VBox spacing="0" style="-fx-background-color: white;">
-                <VBox spacing="12" style="-fx-padding: 20px 24px 0 24px;">
-                    <Label text="控制主界面 Tab 栏显示哪些页面。Switch 开启 = Tab 显示，关闭 = Tab 隐藏。配置保存至配置文件，重启后生效。"
-                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                           wrapText="true"/>
-                </VBox>
-
-                <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true" hbarPolicy="NEVER"
+            <VBox spacing="0" style="-fx-background-color: white;" VBox.vgrow="ALWAYS">
+                <ScrollPane VBox.vgrow="ALWAYS" fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER"
                             style="-fx-background-color: white; -fx-border-width: 0; -fx-padding: 0;">
-                    <VBox spacing="0" style="-fx-padding: 0 24px 16px 24px; -fx-background-color: white;">
+                    <VBox spacing="16" style="-fx-padding: 24; -fx-background-color: white;">
+                        <!-- 页面列表表格：圆角边框 + 表头 44 / 数据行 48 -->
+                        <VBox spacing="0" styleClass="sw2-page-config-table">
+                            <HBox alignment="CENTER_LEFT" minHeight="44" prefHeight="44" maxHeight="44"
+                                  style="-fx-background-color: #F3F4F6; -fx-background-radius: 8 8 0 0;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="页面名称"
+                                           style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                                  -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="功能说明"
+                                           style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                                  -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER"
+                                      style="-fx-padding: 0 16;">
+                                    <Label text="显示"
+                                           style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #374151;
+                                                  -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                            </HBox>
 
-                        <!-- 表头 -->
-                        <HBox style="-fx-background-color: #F3F4F6; -fx-border-color: #E5E7EB; -fx-border-width: 1px;
-                                     -fx-padding: 10px 14px;" spacing="12">
-                            <Label text="页面名称"
-                                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                          -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="功能说明"
-                                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                          -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <Label text="显示"
-                                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #374151;
-                                          -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="80" alignment="CENTER"/>
+                            <!-- 行1：数据采集（必选） -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="数据采集（盒箱垛）"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="主界面，盒箱垛关联数据采集（必选，不可关闭）"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <!-- 必选行：非 ToggleButton，仅静态「开+置灰」Switch，避免可点、避免皮肤盖掉 graphic -->
+                                    <StackPane fx:id="pageDataCollectionLockedSwitchHost"
+                                               styleClass="sw2-page-config-locked-switch-host"
+                                               alignment="CENTER"
+                                               minWidth="48" prefWidth="48" maxWidth="48"
+                                               minHeight="24" prefHeight="24" maxHeight="24"
+                                               mouseTransparent="true"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行2：手工采集 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="手工采集"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="扫码枪手工采集，相机损坏时替代"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pageManualToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行3：数据查询 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="数据查询"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="查询采集关联数据"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pageQueryToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行4：数据替换 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="数据替换"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="码替换操作"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pageReplaceToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行5：生产统计 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="生产统计"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="生产统计报表"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pageStatsToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行6：码包管理 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="码包管理"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="码包导入与管理"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pagePackageToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行7：取消关联 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF;
+                                         -fx-border-color: transparent transparent #E5E7EB transparent;
+                                         -fx-border-width: 0 0 1 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="取消关联"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="单个/批量取消关联"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pageCancelToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- 行8：数据上传 -->
+                            <HBox alignment="CENTER_LEFT" minHeight="48" prefHeight="48"
+                                  style="-fx-background-color: #FFFFFF; -fx-background-radius: 0 0 8 8;
+                                         -fx-border-width: 0;">
+                                <HBox minWidth="200" maxWidth="200" prefWidth="200" alignment="CENTER_LEFT"
+                                      style="-fx-padding: 0 0 0 16;">
+                                    <Label text="数据上传"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #1F2937; -fx-font-family: 'Microsoft YaHei';"/>
+                                </HBox>
+                                <HBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" style="-fx-padding: 0 16;">
+                                    <Label text="手动上传、上传状态查询"
+                                           style="-fx-font-size: 14px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                           wrapText="true"/>
+                                </HBox>
+                                <HBox minWidth="100" maxWidth="100" prefWidth="100" alignment="CENTER" style="-fx-padding: 0 16;">
+                                    <ToggleButton fx:id="pageUploadToggle" text="" selected="true"
+                                                  styleClass="sw2-page-toggle-switch"
+                                                  onAction="#onPageToggleChanged"/>
+                                </HBox>
+                            </HBox>
+                        </VBox>
+
+                        <VBox spacing="8">
+                            <Label text="· 控制主界面 Tab 栏显示，开启则显示、关闭则隐藏"
+                                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+                            <Label text="· 列表中开启页面的顺序即为 Tab 栏显示顺序"
+                                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+                            <Label text="· 配置保存后生效"
+                                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+                        </VBox>
+
+                        <Region minHeight="20" prefHeight="20" maxHeight="20"/>
+
+                        <HBox alignment="CENTER_LEFT" spacing="0">
+                            <Button id="savePageConfigBtn" fx:id="savePageConfigBtn" text="保存" mnemonicParsing="false"
+                                    styleClass="button"
+                                    onAction="#onSavePageConfig"/>
                         </HBox>
-
-                        <!-- 行1：数据采集（必选） -->
-                        <HBox style="-fx-background-color: white; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="数据采集（盒箱垛）"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="主界面，盒箱垛关联数据采集（必选不可关闭）"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton text="开" selected="true" disable="true"
-                                          styleClass="sw2-toggle-switch sw2-toggle-disabled"
-                                          minWidth="56" minHeight="28"/>
-                        </HBox>
-
-                        <!-- 行2：手工采集 -->
-                        <HBox style="-fx-background-color: #FAFAFA; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="手工采集"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="扫码枪手工采集，相机损坏时替代"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pageManualToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
-                        <!-- 行3：数据查询 -->
-                        <HBox style="-fx-background-color: white; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="数据查询"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="查询采集关联数据"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pageQueryToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
-                        <!-- 行4：数据替换 -->
-                        <HBox style="-fx-background-color: #FAFAFA; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="数据替换"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="码替换操作"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pageReplaceToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
-                        <!-- 行5：生产统计 -->
-                        <HBox style="-fx-background-color: white; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="生产统计"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="生产统计报表"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pageStatsToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
-                        <!-- 行6：码包管理 -->
-                        <HBox style="-fx-background-color: #FAFAFA; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="码包管理"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="码包导入与管理"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pagePackageToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
-                        <!-- 行7：取消关联 -->
-                        <HBox style="-fx-background-color: white; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="取消关联"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="单个/批量取消关联"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pageCancelToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
-                        <!-- 行8：数据上传 -->
-                        <HBox style="-fx-background-color: #FAFAFA; -fx-border-color: transparent #E5E7EB #E5E7EB #E5E7EB;
-                                     -fx-border-width: 0 1px 1px 1px; -fx-padding: 10px 14px;" spacing="12" alignment="CENTER_LEFT">
-                            <Label text="数据上传"
-                                   style="-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-family: 'Microsoft YaHei';"
-                                   minWidth="140" maxWidth="140"/>
-                            <Label text="手动上传、上传状态查询"
-                                   style="-fx-font-size: 13px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
-                                   HBox.hgrow="ALWAYS"/>
-                            <ToggleButton fx:id="pageUploadToggle" text="开" selected="true"
-                                          styleClass="sw2-toggle-switch"
-                                          minWidth="56" minHeight="28"
-                                          onAction="#onPageToggleChanged"/>
-                        </HBox>
-
                     </VBox>
                 </ScrollPane>
-
-                <!-- 保存按钮 -->
-                <HBox style="-fx-padding: 12px 24px; -fx-border-color: #E5E7EB transparent transparent transparent;
-                             -fx-border-width: 1px 0 0 0;">
-                    <Button text="保 存"
-                            styleClass="primary-button"
-                            onAction="#onSavePageConfig"/>
-                </HBox>
             </VBox>
         </Tab>
 

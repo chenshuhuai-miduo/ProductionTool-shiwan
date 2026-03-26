@@ -116,7 +116,7 @@ public class ShiwanM2ReplaceConfirmDialogController {
             return;
         }
         if (!expectedPassword.equals(pwd)) {
-            showError("密码不正确，请重新输入");
+            showError("密码错误，请重新输入");
             passwordField.clear();
             plainPasswordField.clear();
             if (passwordVisible) {

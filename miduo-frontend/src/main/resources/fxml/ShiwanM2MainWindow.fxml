@@ -299,15 +299,26 @@
             <!-- 弹性空白 -->
             <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- 采集中脉冲动画（采集时可见，位于授权标签左边） -->
+            <!-- 自动采集（产线盒箱垛）脉冲动画 -->
             <HBox fx:id="runningStatusBox" alignment="CENTER" spacing="6"
                   visible="false" managed="false">
-                <!-- StackPane：外层脉冲环 + 内层实心点叠放（不限 max 允许脉冲环视觉溢出） -->
                 <StackPane prefWidth="16" prefHeight="16">
                     <Region fx:id="runningPulseRing" styleClass="shiwan-m2-running-pulse-ring"/>
                     <Region fx:id="runningDot" styleClass="shiwan-m2-running-dot"/>
                 </StackPane>
-                <Label text="采集中" styleClass="shiwan-m2-running-text"/>
+                <Label text="自动采集中" styleClass="shiwan-m2-running-text"/>
+            </HBox>
+            <!-- 手工采集：蓝色扫描线扫过一次，与自动采集可并排 -->
+            <HBox fx:id="manualRunningStatusBox" alignment="CENTER" spacing="6"
+                  visible="false" managed="false">
+                <StackPane fx:id="manualScanViewport" alignment="CENTER_LEFT"
+                           prefWidth="30" prefHeight="14" maxWidth="30" maxHeight="14"
+                           minWidth="30" minHeight="14" styleClass="shiwan-m2-manual-scan-viewport">
+                    <Region styleClass="shiwan-m2-manual-scan-bg" maxWidth="Infinity" maxHeight="Infinity"/>
+                    <Region fx:id="manualScanLine" styleClass="shiwan-m2-manual-scan-line"
+                            mouseTransparent="true"/>
+                </StackPane>
+                <Label text="手工采集中" styleClass="shiwan-m2-manual-running-text"/>
             </HBox>
 
             <!-- 许可证状态 -->
