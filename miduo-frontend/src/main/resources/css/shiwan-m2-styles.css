@@ -580,27 +580,24 @@
    右侧面板 - 任务控制按钮
    ============================================================ */
 .shiwan-m2-help-btn {
-    -fx-background-color: #F3F4F6;
+    /* 透明底：图标自带线框圆环，避免与实心灰底叠成「两重底色」 */
+    -fx-background-color: transparent;
     -fx-text-fill: #9CA3AF;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
     -fx-background-radius: 50%;
-    -fx-border-color: #9CA3AF;
-    -fx-border-width: 1px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
     -fx-border-radius: 50%;
-    -fx-min-width: 20px;
-    -fx-max-width: 20px;
-    -fx-min-height: 20px;
-    -fx-max-height: 20px;
+    -fx-min-width: 26px;
+    -fx-max-width: 26px;
+    -fx-min-height: 26px;
+    -fx-max-height: 26px;
     -fx-cursor: hand;
     -fx-padding: 0;
     -fx-effect: null;
 }
 
 .shiwan-m2-help-btn:hover {
-    -fx-text-fill: #374151;
-    -fx-border-color: #374151;
-    -fx-background-color: #E5E7EB;
+    -fx-background-color: #F3F4F6;
 }
 
 /* 通用控制按钮基础 */
@@ -790,6 +787,7 @@
 
 /* ============================================================
    数据维护页（数据替换 / 取消关联）
+   标题加粗与数据查询「码关联信息」一致：Microsoft YaHei + font-weight:bold
    ============================================================ */
 .shiwan-m2-maint-card {
     -fx-background-color: white;
@@ -801,15 +799,25 @@
 }
 
 .shiwan-m2-maint-title {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 24px;
     -fx-font-weight: bold;
     -fx-text-fill: #1F2937;
 }
 
 .shiwan-m2-maint-label {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-text-fill: #374151;
+}
+
+/* 取消关联右侧「取消记录」等小一号标题 */
+.shiwan-m2-maint-subtitle {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F2937;
 }
 
 .shiwan-m2-maint-input {
@@ -838,9 +846,10 @@
 }
 
 .shiwan-m2-maint-warning {
+    -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 18px;
-    -fx-text-fill: #EF4444;
     -fx-font-weight: bold;
+    -fx-text-fill: #EF4444;
 }
 
 .shiwan-m2-maint-hint {
@@ -915,6 +924,7 @@
 }
 
 .shiwan-m2-maint-btn-primary {
+    -fx-font-family: "Microsoft YaHei";
     -fx-background-color: #2563EB;
     -fx-text-fill: white;
     -fx-font-size: 18px;
@@ -932,6 +942,7 @@
 }
 
 .shiwan-m2-maint-btn-secondary {
+    -fx-font-family: "Microsoft YaHei";
     -fx-background-color: #6B7280;
     -fx-text-fill: white;
     -fx-font-size: 18px;
@@ -949,6 +960,7 @@
 }
 
 .shiwan-m2-maint-btn-danger {
+    -fx-font-family: "Microsoft YaHei";
     -fx-background-color: #EF4444;
     -fx-text-fill: white;
     -fx-font-size: 18px;
@@ -1490,6 +1502,7 @@
     -fx-padding: 0;
 }
 
+/* 数据查询「码关联信息」等：雅黑 + bold；生产统计/数据替换大标题可用此类并内联改字号与 padding */
 .sw2-result-header {
     -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 17px;
@@ -1568,8 +1581,9 @@
     -fx-font-size: 16px;
     -fx-text-fill: #6B7280;
     -fx-alignment: CENTER_RIGHT;
-    -fx-min-width: 76;
-    -fx-pref-width: 76;
+    /* 至少容纳「生产单号：」等 4 字 + 全角冒号，避免 76px 下出现省略号 */
+    -fx-min-width: 112;
+    -fx-pref-width: 112;
 }
 .sw2-dialog-detail-value {
     -fx-font-family: "Microsoft YaHei";
@@ -1687,8 +1701,8 @@
 .sw2-identify-ok  { -fx-background-color: #F0FDF4; -fx-border-color: #86EFAC; -fx-border-width: 0 0 0 4px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10px 12px; -fx-spacing: 4px; }
 .sw2-identify-err { -fx-background-color: #FEF2F2; -fx-border-color: #FCA5A5; -fx-border-width: 0 0 0 4px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10px 12px; -fx-spacing: 4px; }
 
-.sw2-identify-title-ok  { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #15803D; }
-.sw2-identify-title-err { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #DC2626; }
+.sw2-identify-title-ok  { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #15803D; }
+.sw2-identify-title-err { -fx-font-family: "Microsoft YaHei"; -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #DC2626; }
 .sw2-identify-hint      { -fx-font-size: 14px; -fx-text-fill: #DC2626; }
 .sw2-identify-chain     { -fx-font-size: 14px; -fx-text-fill: #6B7280; }
 

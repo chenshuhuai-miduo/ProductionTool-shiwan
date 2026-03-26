@@ -9,6 +9,7 @@ import com.miduo.cloud.entity.dto.codepackage.CodePackagePageQueryDTO;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -76,6 +77,7 @@ public class ShiwanM2PackageController implements Initializable {
     @FXML private Button prevPageBtn;
     @FXML private Button nextPageBtn;
     @FXML private Button lastPageBtn;
+    @FXML private Button helpButton;
 
     private final ObservableList<PackageRow> tableData = FXCollections.observableArrayList();
     private int currentPage = 1;
@@ -89,6 +91,7 @@ public class ShiwanM2PackageController implements Initializable {
         // 日期组件只允许通过弹出日历选择，禁止手动键入
         startDatePicker.setEditable(false);
         endDatePicker.setEditable(false);
+        SvgIconLoader.installHelpButtonGraphic(helpButton);
     }
 
     /** 首次切换到码包管理 Tab 时由主控制器调用，触发数据加载 */

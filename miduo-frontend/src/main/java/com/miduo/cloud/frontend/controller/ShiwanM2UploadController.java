@@ -5,12 +5,14 @@ import com.miduo.cloud.application.shiwan.UploadLogBus;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -39,6 +41,9 @@ public class ShiwanM2UploadController implements Initializable {
     // ==================== FXML 注入 ====================
 
     @FXML private ListView<UploadLogEntry> uploadLogList;
+
+    @FXML private Button helpButton;
+    @FXML private Button statusHelpButton;
 
     @FXML private TextField palletCodeField;
     @FXML private Label     queryResultLabel;
@@ -73,6 +78,9 @@ public class ShiwanM2UploadController implements Initializable {
 
         // 初始查询区状态
         showQueryState(QueryState.PROMPT, null, null);
+
+        SvgIconLoader.installHelpButtonGraphic(helpButton);
+        SvgIconLoader.installHelpButtonGraphic(statusHelpButton);
     }
 
     /** 将 UploadLogBus.Color 映射到本地 UploadColor */

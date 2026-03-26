@@ -49,6 +49,7 @@ public class ShiwanM2QueryController implements Initializable {
     @FXML private TextField queryInput;
     @FXML private Button    queryButton;
     @FXML private Button    clearButton;
+    @FXML private Button    helpButton;
     @FXML private Label     countLabel;
     @FXML private StackPane queryLoadingOverlay;
 
@@ -97,6 +98,7 @@ public class ShiwanM2QueryController implements Initializable {
         if (queryEmptyIconPane != null) {
             SvgIconLoader.loadInto(queryEmptyIconPane, SvgIconLoader.ICON_QUERY, 40, Color.web("#9CA3AF"));
         }
+        SvgIconLoader.installHelpButtonGraphic(helpButton);
     }
 
     private void setupColumns() {

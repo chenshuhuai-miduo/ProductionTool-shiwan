@@ -19,7 +19,7 @@
                     onAction="#onManualUpload"
                     minHeight="48" prefHeight="48"
                     style="-fx-min-width:120px; -fx-font-size:15px;"/>
-            <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
+            <Button fx:id="helpButton" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
         </HBox>
 
         <!-- 上传信息日志 -->
@@ -56,7 +56,7 @@
                 <Button text="设为已上传" styleClass="sw2-btn-outline"
                         onAction="#onSetUploaded"
                         minHeight="48" prefHeight="48" style="-fx-padding:0 14px; -fx-font-size:14px;"/>
-                <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onStatusHelp"/>
+                <Button fx:id="statusHelpButton" styleClass="shiwan-m2-help-btn" onAction="#onStatusHelp"/>
             </HBox>
         </VBox>
 

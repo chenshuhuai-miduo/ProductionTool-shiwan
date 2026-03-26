@@ -2,7 +2,9 @@ package com.miduo.cloud.frontend.util;
 
 import javafx.geometry.Pos;
 import javafx.scene.Group;
+import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
@@ -27,6 +29,15 @@ public final class SvgIconLoader {
     public static final String ICON_EYE_SHOW = "/icons/眼睛-显示.svg";
     public static final String ICON_EYE_HIDE = "/icons/眼睛-隐藏.svg";
     public static final String ICON_QUERY    = "/icons/查询码.svg";
+    /** 帮助提示（圆内问号） */
+    public static final String ICON_HELP     = "/icons/help-hint.svg";
+
+    /** 与表单标签字号视觉协调的默认帮助图标边长 */
+    public static final double DEFAULT_HELP_BUTTON_ICON_SIZE = 20.0;
+
+    private static final Color HELP_ICON_NORMAL   = Color.web("#9CA3AF");
+    private static final Color HELP_ICON_HOVER    = Color.web("#374151");
+    private static final Color HELP_ICON_DISABLED = Color.web("#D1D5DB");
 
     private static final Pattern PATH_TAG = Pattern.compile(
         "<path\\s+([^>]+)/?>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -39,6 +50,40 @@ public final class SvgIconLoader {
         "translate\\s*\\(\\s*([-\\d.]+)\\s*[, ]\\s*([-\\d.]+)\\s*\\)", Pattern.CASE_INSENSITIVE);
 
     private SvgIconLoader() {}
+
+    /**
+     * 将「?」文字帮助按钮改为 SVG 图标，并与 {@code .shiwan-m2-help-btn} 悬停/禁用色一致。
+     * 尺寸使用 {@link #DEFAULT_HELP_BUTTON_ICON_SIZE}。
+     */
+    public static void installHelpButtonGraphic(Button button) {
+        installHelpButtonGraphic(button, DEFAULT_HELP_BUTTON_ICON_SIZE);
+    }
+
+    /**
+     * 将「?」文字帮助按钮改为 SVG 图标，并与 {@code .shiwan-m2-help-btn} 悬停/禁用色一致。
+     */
+    public static void installHelpButtonGraphic(Button button, double iconSize) {
+        if (button == null) {
+            return;
+        }
+        button.setText("");
+        StackPane pane = new StackPane();
+        pane.setMinSize(iconSize, iconSize);
+        pane.setPrefSize(iconSize, iconSize);
+        pane.setMaxSize(iconSize, iconSize);
+        button.setGraphic(pane);
+        Runnable repaint = () -> loadInto(pane, ICON_HELP, iconSize, resolveHelpIconPaint(button));
+        button.hoverProperty().addListener((o, a, h) -> repaint.run());
+        button.disabledProperty().addListener((o, a, d) -> repaint.run());
+        repaint.run();
+    }
+
+    private static Paint resolveHelpIconPaint(Button b) {
+        if (b.isDisabled()) {
+            return HELP_ICON_DISABLED;
+        }
+        return b.isHover() ? HELP_ICON_HOVER : HELP_ICON_NORMAL;
+    }
 
     /**
      * 将 SVG 中的 path 绘制到目标面板，缩放到约 boxSize 见方。

@@ -43,6 +43,10 @@ import java.util.*;
  * 布局：左侧「输入→加入列表→识别→确认取消」；右侧「识别结果 + 取消记录」。
  */
 public class ShiwanM2CancelAssociationController {
+
+    /** 与数据查询结果标题一致：雅黑 + font-weight:bold */
+    private static final String FX_YAHEI_BOLD =
+            "-fx-font-family:'Microsoft YaHei';-fx-font-weight:bold;";
     private static volatile ShiwanM2CancelAssociationController instance;
 
     public static ShiwanM2CancelAssociationController getInstance() {
@@ -63,6 +67,7 @@ public class ShiwanM2CancelAssociationController {
     @FXML private ListView<IdentifyItem>      identifyResultList;
     @FXML private ListView<CancelRecord>      cancelRecordList;
     @FXML private StackPane                   cancelAssocWarnIconPane;
+    @FXML private Button                      helpButton;
 
     // ===== 内部状态：取消范围 =====
     private boolean modeAll = false;
@@ -112,6 +117,7 @@ public class ShiwanM2CancelAssociationController {
         if (cancelAssocWarnIconPane != null) {
             SvgIconLoader.loadInto(cancelAssocWarnIconPane, SvgIconLoader.ICON_WARN, 20, Color.web("#EF4444"));
         }
+        SvgIconLoader.installHelpButtonGraphic(helpButton);
     }
 
     /**
@@ -188,9 +194,9 @@ public class ShiwanM2CancelAssociationController {
 
         // 文字
         Label label = new Label(text);
-        label.setStyle(selected
-                ? "-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#1D4ED8;"
-                : "-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#9CA3AF;");
+        label.setStyle(FX_YAHEI_BOLD + (selected
+                ? " -fx-font-size:15px; -fx-text-fill:#1D4ED8;"
+                : " -fx-font-size:15px; -fx-text-fill:#9CA3AF;"));
 
         HBox box = new HBox(8, circle, label);
         box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -809,8 +815,7 @@ public class ShiwanM2CancelAssociationController {
             String typeName = codeTypeName(item.codeType);
             if (item.cancelable) {
                 Label title = new Label("✓ " + typeName + " " + item.code + "，可解除");
-                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#10B981; " +
-                        "-fx-font-family:'Microsoft YaHei';");
+                title.setStyle(FX_YAHEI_BOLD + " -fx-font-size:18px; -fx-text-fill:#10B981;");
                 Label detail = new Label(item.detailText());
                 detail.setStyle("-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';");
                 detail.setWrapText(true);
@@ -822,15 +827,14 @@ public class ShiwanM2CancelAssociationController {
                 disc.setPrefSize(20, 20);
                 disc.setStyle("-fx-background-color:#EF4444; -fx-background-radius:10;");
                 Label xMark = new Label("×");
-                xMark.setStyle("-fx-text-fill:white; -fx-font-size:12px; -fx-font-weight:bold;");
+                xMark.setStyle(FX_YAHEI_BOLD + " -fx-text-fill:white; -fx-font-size:12px;");
                 StackPane iconStack = new StackPane(disc, xMark);
                 StackPane.setAlignment(xMark, Pos.CENTER);
                 iconStack.setMinSize(20, 20);
                 iconStack.setMaxSize(20, 20);
 
                 Label title = new Label(typeName + " " + item.code + "，不可解除");
-                title.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#EF4444; " +
-                        "-fx-font-family:'Microsoft YaHei';");
+                title.setStyle(FX_YAHEI_BOLD + " -fx-font-size:18px; -fx-text-fill:#EF4444;");
                 HBox titleRow = new HBox(6, iconStack, title);
                 titleRow.setAlignment(Pos.CENTER_LEFT);
                 HBox.setHgrow(title, Priority.ALWAYS);

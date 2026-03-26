@@ -218,7 +218,7 @@
                                 <HBox spacing="20" alignment="CENTER_LEFT">
                                     <Label text="任务控制" styleClass="shiwan-m2-card-title"
                                            style="-fx-border-width: 0; -fx-padding: 0;"/>
-                                    <Button text="?" styleClass="shiwan-m2-help-btn"
+                                    <Button fx:id="taskHelpButton" styleClass="shiwan-m2-help-btn"
                                             onAction="#onTaskHelp"/>
                                 </HBox>
 
@@ -318,7 +318,7 @@
         <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="12">
             <padding><Insets top="0" bottom="0" left="16" right="16"/></padding>
 
-            <!-- IO 设备连接汇总（不含盒码/箱码采集相机，由 TCP 采集服务管理） -->
+            <!-- IO 设备连接汇总（含盒码/箱码采集，与启动自动连接一致） -->
             <Label fx:id="deviceStatusLabel" text="设备状态：全部未连接"
                    styleClass="shiwan-m2-status-bar-text-muted"/>
 

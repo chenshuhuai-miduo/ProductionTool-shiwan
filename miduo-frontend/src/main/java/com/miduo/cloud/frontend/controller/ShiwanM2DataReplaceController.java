@@ -11,12 +11,14 @@ import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
@@ -44,8 +46,14 @@ public class ShiwanM2DataReplaceController {
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /** 与「码关联信息」等一致：雅黑 + font-weight:bold */
+    private static final String FX_YAHEI_BOLD =
+            "-fx-font-family:'Microsoft YaHei';-fx-font-weight:bold;";
+
     @FXML private TextField origCodeField;
+    @FXML private Button    origHelpButton;
     @FXML private TextField newCodeField;
+    @FXML private Button    newHelpButton;
     @FXML private TextArea  reasonField;
 
     @FXML private ScrollPane resultScrollPane;
@@ -65,6 +73,9 @@ public class ShiwanM2DataReplaceController {
         newCodeField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) onConfirmReplace();
         });
+
+        SvgIconLoader.installHelpButtonGraphic(origHelpButton);
+        SvgIconLoader.installHelpButtonGraphic(newHelpButton);
     }
 
     /** 扫码枪：先填原码，再填新码；两者都有时覆盖新码。 */
@@ -286,13 +297,12 @@ public class ShiwanM2DataReplaceController {
         iconLbl.setMinSize(28, 28);
         iconLbl.setMaxSize(28, 28);
         iconLbl.setAlignment(javafx.geometry.Pos.CENTER);
-        iconLbl.setStyle(String.format(
-                "-fx-background-color:%s; -fx-background-radius:14;"
-                        + "-fx-text-fill:white; -fx-font-size:13px; -fx-font-weight:bold;", iconColor));
+        iconLbl.setStyle(FX_YAHEI_BOLD + String.format(
+                " -fx-background-color:%s; -fx-background-radius:14; -fx-text-fill:white; -fx-font-size:13px;",
+                iconColor));
 
         Label titleLbl = new Label(titleText);
-        titleLbl.setStyle(String.format(
-                "-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:%s;", iconColor));
+        titleLbl.setStyle(FX_YAHEI_BOLD + String.format(" -fx-font-size:20px; -fx-text-fill:%s;", iconColor));
 
         HBox headerRow = new HBox(8, iconLbl, titleLbl);
         headerRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -300,7 +310,7 @@ public class ShiwanM2DataReplaceController {
         VBox detailBox = new VBox(8);
         if (!success && failMessage != null && !failMessage.isEmpty()) {
             Label failReasonLbl = new Label("失败原因：" + failMessage);
-            failReasonLbl.setStyle("-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#DC2626;");
+            failReasonLbl.setStyle(FX_YAHEI_BOLD + " -fx-font-size:16px; -fx-text-fill:#DC2626;");
             detailBox.getChildren().add(failReasonLbl);
         }
         detailBox.getChildren().addAll(

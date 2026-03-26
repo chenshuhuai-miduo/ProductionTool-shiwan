@@ -45,6 +45,8 @@ import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import com.miduo.cloud.frontend.util.ShiwanM2ScannerConnectHelper;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javafx.scene.control.TextField;
@@ -176,6 +178,9 @@ public class ShiwanM2MainController implements Initializable {
     /** 提取工单未成垛按钮（采集进行中时置灰，停止后恢复） */
     @FXML private Button extractUnfinishedBtn;
 
+    /** 任务控制区帮助按钮 */
+    @FXML private Button taskHelpButton;
+
     /** 测试报警灯亮/灭按钮（初始文字：测试报警灯亮） */
     @FXML private Button alarmLightTestBtn;
 
@@ -193,7 +198,7 @@ public class ShiwanM2MainController implements Initializable {
 
     // --- 状态栏 ---
 
-    /** IO 设备连接汇总（已启用且由 DeviceConnectionManager 连接，不含盒码/箱码采集相机） */
+    /** IO 设备连接汇总：已启用设备均由 DeviceConnectionManager 管理（含启动自动连接的盒码/箱码采集） */
     @FXML private Label deviceStatusLabel;
 
     /** 许可证状态容器 */
@@ -305,11 +310,13 @@ public class ShiwanM2MainController implements Initializable {
         registerDeviceDataHandler();
         DeviceConnectionManager.getInstance().setDeviceStatusChangeHandler(this::updateDeviceStatusBar);
         setupTabLazyLoad();
+        setupScannerWarmupOnRelevantTabs();
         initOrderNumField();
         // 初始未采集：强制满垛/收回剔除置灰，提取工单未成垛可用
         forcePalletBtn.setDisable(true);
         rejectToggleBtn.setDisable(true);
         extractUnfinishedBtn.setDisable(false);
+        SvgIconLoader.installHelpButtonGraphic(taskHelpButton);
         Platform.runLater(() -> {
             checkDbConnectionOnStartup();
             checkUnfinishedOnStartup();
@@ -320,8 +327,7 @@ public class ShiwanM2MainController implements Initializable {
     }
 
     /**
-     * 主界面打开后按系统设置自动连接已启用 IO 设备。
-     * 排除盒码/箱码采集相机（由后端 TCP 采集服务管理）。
+     * 主界面打开后按系统设置自动连接已启用 IO 设备（含盒码/箱码采集相机，连接后占用端口供采集链路使用）。
      */
     private void autoConnectConfiguredDevicesOnStartup() {
         String now = LocalDateTime.now().format(TIME_FMT);
@@ -330,13 +336,9 @@ public class ShiwanM2MainController implements Initializable {
         connectAllDevices(true, true);
     }
 
-    /** 与 {@link #connectAllDevices} 一致：计入状态栏的已启用设备（排除 TCP 管理的盒码/箱码相机）。 */
+    /** 状态栏统计：所有已启用设备（与启动自动连接范围一致，含盒码/箱码采集）。 */
     private static boolean isDeviceCountedForStatusBar(IoDeviceDTO device) {
-        if (device == null || !Boolean.TRUE.equals(device.getEnabled())) {
-            return false;
-        }
-        String cat = device.getDeviceCategory();
-        return !"盒码采集".equals(cat) && !"箱码采集".equals(cat);
+        return device != null && Boolean.TRUE.equals(device.getEnabled());
     }
 
     /** 盒码/箱码采集相机设备识别。 */
@@ -380,7 +382,7 @@ public class ShiwanM2MainController implements Initializable {
                 Platform.runLater(() -> {
                     String status;
                     if (e == 0) {
-                        status = "设备状态：全部未连接";
+                        status = "设备状态：无启用设备";
                     } else if (c == 0) {
                         status = "设备状态：全部未连接";
                     } else if (c == e) {
@@ -417,6 +419,24 @@ public class ShiwanM2MainController implements Initializable {
         tab.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             if (isSelected && loaded.compareAndSet(false, true)) {
                 loader.run();
+            }
+        });
+    }
+
+    /**
+     * 切换到依赖扫码枪的 Tab 时后台尝试重连（与手工采集「开始采集」、系统设置-设备逻辑一致）。
+     */
+    private void setupScannerWarmupOnRelevantTabs() {
+        if (mainTabPane == null) {
+            return;
+        }
+        mainTabPane.getSelectionModel().selectedIndexProperty().addListener((obs, oldIdx, newIdx) -> {
+            if (newIdx == null) {
+                return;
+            }
+            int idx = newIdx.intValue();
+            if (idx == TAB_IDX_MANUAL || idx == TAB_IDX_QUERY || idx == TAB_IDX_REPLACE || idx == TAB_IDX_CANCEL) {
+                ShiwanM2ScannerConnectHelper.tryReconnectScannersAsync();
             }
         });
     }
@@ -2976,6 +2996,7 @@ public class ShiwanM2MainController implements Initializable {
         VBox root = new VBox(titleBar, content, bottomBar);
         root.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EC;-fx-border-width:1;");
         dialog.setScene(new Scene(root, 560, -1));
+        ShiwanM2ScannerConnectHelper.tryReconnectScannersAsync();
         dialog.show();
         boxCodeInput.requestFocus();
     }

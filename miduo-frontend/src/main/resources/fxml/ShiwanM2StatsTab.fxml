@@ -20,8 +20,8 @@
           styleClass="shiwan-m2-card">
 
         <!-- 标题：与右侧保持相同样式确保顶部对齐 -->
-        <Label text="生产统计" styleClass="shiwan-m2-card-title"
-               style="-fx-font-size:20px; -fx-font-weight:700;"/>
+        <Label text="生产统计" styleClass="sw2-result-header"
+               style="-fx-font-size:20px; -fx-padding:0 0 8px 0;"/>
 
         <!-- 表单区域 -->
         <VBox spacing="12">
@@ -92,8 +92,8 @@
         <!-- 上传统计查询卡片 -->
         <VBox styleClass="shiwan-m2-card" spacing="12">
             <!-- 标题：与左侧同样样式 -->
-            <Label text="上传统计" styleClass="shiwan-m2-card-title"
-                   style="-fx-font-size:20px; -fx-font-weight:700;"/>
+            <Label text="上传统计" styleClass="sw2-result-header"
+                   style="-fx-font-size:20px; -fx-padding:0 0 8px 0;"/>
 
             <!-- 筛选条件第一行：日期 -->
             <HBox spacing="10" alignment="CENTER_LEFT">

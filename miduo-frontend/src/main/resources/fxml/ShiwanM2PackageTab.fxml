@@ -20,7 +20,7 @@
         <Button text="本地导入" styleClass="sw2-btn-secondary"
                 onAction="#onLocalImport"
                 minHeight="40" prefHeight="40" style="-fx-padding:0 20px;"/>
-        <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
+        <Button fx:id="helpButton" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
     </HBox>
 
     <!-- 过滤栏（两行） -->

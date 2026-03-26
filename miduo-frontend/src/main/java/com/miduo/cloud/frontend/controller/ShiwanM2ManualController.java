@@ -1,13 +1,18 @@
 package com.miduo.cloud.frontend.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
+import com.miduo.cloud.frontend.util.ShiwanM2ScannerConnectHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -29,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -110,9 +116,66 @@ public class ShiwanM2ManualController implements Initializable {
 
         String now = now();
         addOpLog(now + "  进入手工采集模式 - 关联类型：瓶盒关联", ShiwanM2MainController.LogType.INFO);
-        addOpLog(now + "  设备状态：扫码枪已就绪，等待扫码", ShiwanM2MainController.LogType.INFO);
+        // 与主界面设备连接一致：异步拉列表 + DeviceConnectionManager，避免未连接仍显示「已就绪」
+        refreshScanGunStatusOpLog();
 
         refreshPrompt();
+    }
+
+    /**
+     * 根据当前设备列表与连接管理器状态，写入操作日志中的扫码枪一行（进入 Tab 时调用）。
+     */
+    private void refreshScanGunStatusOpLog() {
+        HttpUtil.asyncGet(
+                "/api/device/list",
+                responseJson -> {
+                    try {
+                        ApiResult<List<IoDeviceDTO>> result = HttpUtil.parseJson(
+                                responseJson, new TypeReference<ApiResult<List<IoDeviceDTO>>>() {});
+                        if (result == null || result.getCode() != 200 || result.getData() == null) {
+                            addOpLog(now() + "  设备状态：无法获取扫码枪连接状态（接口异常）",
+                                    ShiwanM2MainController.LogType.WARN);
+                            return;
+                        }
+                        List<IoDeviceDTO> scanners = new ArrayList<>();
+                        for (IoDeviceDTO d : result.getData()) {
+                            if (Boolean.TRUE.equals(d.getEnabled()) && "扫码枪".equals(d.getDeviceCategory())) {
+                                scanners.add(d);
+                            }
+                        }
+                        if (scanners.isEmpty()) {
+                            addOpLog(now() + "  设备状态：未启用扫码枪，可使用输入框手动录入码",
+                                    ShiwanM2MainController.LogType.INFO);
+                            return;
+                        }
+                        int connected = 0;
+                        List<String> disconnected = new ArrayList<>();
+                        for (IoDeviceDTO d : scanners) {
+                            if (DeviceConnectionManager.getInstance().isConnected(d.getId())) {
+                                connected++;
+                            } else {
+                                String nm = d.getDeviceName() != null ? d.getDeviceName() : d.getId();
+                                disconnected.add(nm);
+                            }
+                        }
+                        if (connected == scanners.size()) {
+                            addOpLog(now() + "  设备状态：扫码枪已连接（" + scanners.size() + " 台），开始采集后可扫码",
+                                    ShiwanM2MainController.LogType.SUCCESS);
+                        } else if (connected == 0) {
+                            addOpLog(now() + "  设备状态：扫码枪未连接，请检查串口或系统设置；可使用输入框录入",
+                                    ShiwanM2MainController.LogType.WARN);
+                        } else {
+                            addOpLog(now() + "  设备状态：部分扫码枪未连接（"
+                                    + String.join("、", disconnected) + "），未连接时可使用输入框录入",
+                                    ShiwanM2MainController.LogType.WARN);
+                        }
+                    } catch (Exception e) {
+                        log.warn("[手工采集] 解析设备列表失败: {}", e.getMessage());
+                        addOpLog(now() + "  设备状态：解析设备列表失败", ShiwanM2MainController.LogType.WARN);
+                    }
+                },
+                err -> addOpLog(now() + "  设备状态：获取设备列表失败 — " + err.getMessage(),
+                        ShiwanM2MainController.LogType.WARN));
     }
 
     // ==================== 提示区 ====================
@@ -184,6 +247,16 @@ public class ShiwanM2ManualController implements Initializable {
             return;
         }
 
+        // 先进入采集中界面，扫码枪在后台重连；避免等待轮询时按钮仍显示「开始采集」像卡住
+        applyStartedCaptureUiImmediate();
+        ShiwanM2ScannerConnectHelper.fetchListAndEnsureScannersAsync(this::appendScannerWarmupHintsIfNeeded);
+    }
+
+    /** 码包检查通过后立即切换运行态（不等待扫码枪轮询）。 */
+    private void applyStartedCaptureUiImmediate() {
+        if (isRunning) {
+            return;
+        }
         isRunning = true;
         startBtn.setText("停止采集");
         startBtn.getStyleClass().add("running");
@@ -194,16 +267,28 @@ public class ShiwanM2ManualController implements Initializable {
         addBtn.setDisable(false);
         addBtn.setStyle(addBtn.getStyle()
                 .replace("-fx-background-color: #D1D5DB", "-fx-background-color: #2563EB"));
-        Platform.runLater(() -> codeInput.requestFocus());
+        codeInput.requestFocus();
 
         String now = now();
         addOpLog(now + "  手工采集已启动，请按提示扫码", ShiwanM2MainController.LogType.INFO);
-        addDataLog(now + "  系统就绪，请扫描第1个瓶码", ShiwanM2MainController.LogType.INFO);
+        addDataLog(now + "  已启动：请扫描或输入第1个瓶码", ShiwanM2MainController.LogType.INFO);
         OperateLogBuilder.create()
                 .module(ModuleNameEnum.MANUAL_COLLECT)
                 .operateType(OperateTypeEnum.START)
                 .content("手工采集已启动，规格：每盒" + parseBottlesPerBox() + "瓶")
                 .saveAsync();
+    }
+
+    /** 后台扫码枪重连结束后：仍失败则追加提示（成功则不再刷屏）。 */
+    private void appendScannerWarmupHintsIfNeeded(boolean scannersReady) {
+        if (scannersReady) {
+            return;
+        }
+        String t = now();
+        addOpLog(t + "  提示：扫码枪未连接或状态未知，请用输入框录入；连接正常后可扫码",
+                ShiwanM2MainController.LogType.WARN);
+        addDataLog(t + "  扫码枪未连接，请使用输入框录入瓶码（或检查设备后重试）",
+                ShiwanM2MainController.LogType.WARN);
     }
 
     private void stopCapture() {

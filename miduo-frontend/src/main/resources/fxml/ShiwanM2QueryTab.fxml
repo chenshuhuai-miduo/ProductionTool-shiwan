@@ -25,7 +25,7 @@
         <Button fx:id="clearButton" text="清空" styleClass="sw2-btn-outline"
                 onAction="#onClear"
                 minHeight="40" prefHeight="40" style="-fx-padding:0 14px;"/>
-        <Button text="?" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
+        <Button fx:id="helpButton" styleClass="shiwan-m2-help-btn" onAction="#onHelp"/>
         <!-- 右侧占位，与输入框同优先级平分剩余空间，使输入框约占 50% 宽 -->
         <Region HBox.hgrow="ALWAYS"/>
     </HBox>
