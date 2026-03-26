@@ -272,40 +272,14 @@
                     </HBox>
                 </Tab>
 
-                <!-- ========== Tab 2: 手工采集 ========== -->
-                <Tab text="手工采集">
-                    <fx:include source="ShiwanM2ManualTab.fxml"/>
-                </Tab>
-
-                <!-- ========== Tab 3: 数据查询 ========== -->
-                <Tab text="数据查询">
-                    <fx:include source="ShiwanM2QueryTab.fxml"/>
-                </Tab>
-
-                <!-- ========== Tab 4: 数据替换 ========== -->
-                <Tab text="数据替换">
-                    <fx:include source="ShiwanM2DataReplacePane.fxml"/>
-                </Tab>
-
-                <!-- ========== Tab 5: 生产统计 ========== -->
-                <Tab text="生产统计" fx:id="statsTab">
-                    <fx:include fx:id="stats" source="ShiwanM2StatsTab.fxml"/>
-                </Tab>
-
-                <!-- ========== Tab 6: 码包管理 ========== -->
-                <Tab text="码包管理" fx:id="packageTab">
-                    <fx:include fx:id="pkg" source="ShiwanM2PackageTab.fxml"/>
-                </Tab>
-
-                <!-- ========== Tab 7: 取消关联 ========== -->
-                <Tab text="取消关联">
-                    <fx:include source="ShiwanM2CancelAssociationPane.fxml"/>
-                </Tab>
-
-                <!-- ========== Tab 8: 数据上传 ========== -->
-                <Tab text="数据上传">
-                    <fx:include source="ShiwanM2UploadTab.fxml"/>
-                </Tab>
+                <!-- ========== Tab 2-8：内容在首次点击时懒加载，避免拖慢启动 ========== -->
+                <Tab text="手工采集" fx:id="manualTab"/>
+                <Tab text="数据查询"  fx:id="queryTab"/>
+                <Tab text="数据替换"  fx:id="dataReplaceTab"/>
+                <Tab text="生产统计"  fx:id="statsTab"/>
+                <Tab text="码包管理"  fx:id="packageTab"/>
+                <Tab text="取消关联"  fx:id="cancelTab"/>
+                <Tab text="数据上传"  fx:id="uploadTab"/>
 
             </TabPane>
         </VBox>

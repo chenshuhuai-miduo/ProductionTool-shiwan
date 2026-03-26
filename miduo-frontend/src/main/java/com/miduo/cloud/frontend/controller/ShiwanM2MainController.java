@@ -100,11 +100,18 @@ public class ShiwanM2MainController implements Initializable {
     /** 主 TabPane */
     @FXML private TabPane mainTabPane;
 
-    // --- 懒加载 Tab 引用 ---
+    // --- Tab 引用（全部在运行时懒加载内容，勿用 fx:include） ---
+    @FXML private Tab manualTab;
+    @FXML private Tab queryTab;
+    @FXML private Tab dataReplaceTab;
     @FXML private Tab statsTab;
     @FXML private Tab packageTab;
-    @FXML private ShiwanM2StatsController statsController;
-    @FXML private ShiwanM2PackageController pkgController;
+    @FXML private Tab cancelTab;
+    @FXML private Tab uploadTab;
+    /** 生产统计 Tab 控制器（懒加载后赋值） */
+    private ShiwanM2StatsController statsController;
+    /** 码包管理 Tab 控制器（懒加载后赋值） */
+    private ShiwanM2PackageController pkgController;
 
     // --- 左侧面板 ---
 
@@ -396,18 +403,50 @@ public class ShiwanM2MainController implements Initializable {
         });
     }
 
-    /** 为统计/码包管理 Tab 设置懒加载：首次切换到该 Tab 时才触发数据查询，避免启动时未连接数据库的弹窗报错 */
+    /**
+     * Tab 2-8 懒加载：FXML 在首次切换到该 Tab 时才解析并加载，减少启动期 FXML 解析开销。
+     * 生产统计 / 码包管理 Tab 额外在加载后触发 onFirstShow()。
+     */
     private void setupTabLazyLoad() {
-        setupTabLazyLoad(statsTab, () -> { if (statsController != null) statsController.onFirstShow(); });
-        setupTabLazyLoad(packageTab, () -> { if (pkgController != null) pkgController.onFirstShow(); });
+        setupTabFxmlLazy(manualTab,      "ShiwanM2ManualTab.fxml",           null);
+        setupTabFxmlLazy(queryTab,       "ShiwanM2QueryTab.fxml",            null);
+        setupTabFxmlLazy(dataReplaceTab, "ShiwanM2DataReplacePane.fxml",     null);
+        setupTabFxmlLazy(statsTab,       "ShiwanM2StatsTab.fxml", ctrl -> {
+            statsController = (ShiwanM2StatsController) ctrl;
+            if (statsController != null) statsController.onFirstShow();
+        });
+        setupTabFxmlLazy(packageTab,     "ShiwanM2PackageTab.fxml", ctrl -> {
+            pkgController = (ShiwanM2PackageController) ctrl;
+            if (pkgController != null) pkgController.onFirstShow();
+        });
+        setupTabFxmlLazy(cancelTab,      "ShiwanM2CancelAssociationPane.fxml", null);
+        setupTabFxmlLazy(uploadTab,      "ShiwanM2UploadTab.fxml",           null);
     }
 
-    private void setupTabLazyLoad(Tab tab, Runnable loader) {
+    /**
+     * 为指定 Tab 注册首次激活时的 FXML 懒加载监听器。
+     * Tab 内容在第一次被选中后才通过 FXMLLoader 加载，之后不再重复加载。
+     *
+     * @param tab       目标 Tab（为 null 则跳过）
+     * @param fxmlName  FXML 文件名（位于 /fxml/ 目录下）
+     * @param onLoaded  加载完成后的回调，参数为子控制器实例（可为 null）
+     */
+    private void setupTabFxmlLazy(Tab tab, String fxmlName, Consumer<Object> onLoaded) {
         if (tab == null) return;
         AtomicBoolean loaded = new AtomicBoolean(false);
         tab.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             if (isSelected && loaded.compareAndSet(false, true)) {
-                loader.run();
+                try {
+                    FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/fxml/" + fxmlName));
+                    Parent content = loader.load();
+                    tab.setContent(content);
+                    if (onLoaded != null) {
+                        onLoaded.accept(loader.getController());
+                    }
+                } catch (Exception e) {
+                    log.error("懒加载 Tab FXML 失败: {}", fxmlName, e);
+                }
             }
         });
     }
