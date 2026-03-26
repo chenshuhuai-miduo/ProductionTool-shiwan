@@ -28,17 +28,23 @@ public class ShiwanM2ApplicationLauncher {
     private static final CountDownLatch backendReadyLatch = new CountDownLatch(1);
 
     public static void main(String[] args) {
+        long launcherStartMs = System.currentTimeMillis();
         // 「关于系统」内容在 ShiwanM2FrontendApplication.main() 中配置
         initializeLogging();
         printWelcomeBanner();
 
         try {
+            long backendBootBeginMs = System.currentTimeMillis();
             System.out.println("【步骤 1/3】正在启动后端服务...");
             System.out.println("----------------------------------------");
             startBackendService();
+            long backendThreadDispatchedMs = System.currentTimeMillis();
+            System.out.println("[启动耗时] 后端启动线程已派发，耗时 " + (backendThreadDispatchedMs - backendBootBeginMs) + " ms");
 
             System.out.println("\n【步骤 2/3】等待后端服务完全启动...");
+            long backendWaitBeginMs = System.currentTimeMillis();
             boolean backendStarted = waitForBackendReady(60);
+            long backendWaitEndMs = System.currentTimeMillis();
 
             if (!backendStarted) {
                 System.err.println("\n✗ 后端服务启动超时（60秒）！");
@@ -52,11 +58,15 @@ public class ShiwanM2ApplicationLauncher {
             }
 
             System.out.println("✓ 后端服务启动成功！");
+            System.out.println("[启动耗时] 后端就绪等待耗时 " + (backendWaitEndMs - backendWaitBeginMs) + " ms");
+            System.out.println("[启动耗时] 启动器累计耗时（到后端可用） " + (backendWaitEndMs - launcherStartMs) + " ms");
             System.out.println("  API地址：http://localhost:8080/api");
             System.out.println("----------------------------------------");
 
             System.out.println("\n【步骤 3/3】正在启动石湾 2 号机前端...");
             System.out.println("----------------------------------------");
+            long frontendHandoffMs = System.currentTimeMillis();
+            System.out.println("[启动耗时] 进入前端启动前累计耗时 " + (frontendHandoffMs - launcherStartMs) + " ms");
             startFrontendApplication();
 
             System.out.println("\n========================================");
@@ -127,7 +137,6 @@ public class ShiwanM2ApplicationLauncher {
         try {
             boolean success = backendReadyLatch.await(timeoutSeconds, TimeUnit.SECONDS);
             if (!success) return false;
-            Thread.sleep(1000);
             return isBackendReady && backendContext != null && backendContext.isActive();
         } catch (InterruptedException e) {
             System.err.println("等待后端启动时被中断：" + e.getMessage());
