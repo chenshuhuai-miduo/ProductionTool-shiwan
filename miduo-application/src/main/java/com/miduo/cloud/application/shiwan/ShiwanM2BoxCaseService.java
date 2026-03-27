@@ -2,9 +2,12 @@ package com.miduo.cloud.application.shiwan;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.miduo.cloud.application.log.OperateLogApplicationService;
 import com.miduo.cloud.common.config.ShiwanM2SettingsDto;
 import com.miduo.cloud.common.config.ShiwanM2SettingsFileLoader;
 import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.entity.enums.ModuleNameEnum;
+import com.miduo.cloud.entity.po.OperateLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -67,13 +70,16 @@ public class ShiwanM2BoxCaseService {
     private final JdbcTemplate jdbcTemplate;
     private final VirtualPalletSequenceService virtualPalletSequenceService;
     private final TransactionTemplate transactionTemplate;
+    private final OperateLogApplicationService operateLogApplicationService;
 
     public ShiwanM2BoxCaseService(JdbcTemplate jdbcTemplate,
                                   VirtualPalletSequenceService virtualPalletSequenceService,
-                                  PlatformTransactionManager transactionManager) {
+                                  PlatformTransactionManager transactionManager,
+                                  OperateLogApplicationService operateLogApplicationService) {
         this.jdbcTemplate = jdbcTemplate;
         this.virtualPalletSequenceService = virtualPalletSequenceService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.operateLogApplicationService = operateLogApplicationService;
     }
 
     /**
@@ -572,7 +578,7 @@ public class ShiwanM2BoxCaseService {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         boolean autoUpload = cfg == null || cfg.getUpload() == null || cfg.getUpload().isAutoUpload();
         if (autoUpload) {
-            syncVirtualPalletToCloud(orderNo, productNo, palletCode, boxCount);
+            syncVirtualPalletToCloud(orderNo, productNo, palletCode, boxCount, "自动上传");
         }
         return palletCode;
     }
@@ -2013,16 +2019,20 @@ public class ShiwanM2BoxCaseService {
      *
      * @param boxCount 本垛箱数（用于日志显示）
      */
-    void syncVirtualPalletToCloud(String orderNo, String productNo, String palletCode, int boxCount) {
+    void syncVirtualPalletToCloud(String orderNo, String productNo, String palletCode, int boxCount, String uploadMode) {
+        String mode = (uploadMode == null || uploadMode.trim().isEmpty()) ? "自动上传" : uploadMode.trim();
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         if (cfg == null || cfg.getApi() == null) {
             log.warn("[虚拟垛标上传] 未配置开放平台API，跳过 palletCode={}", palletCode);
+            saveUploadOperateLog(mode, palletCode, orderNo, boxCount, "失败", "未配置开放平台API");
             return;
         }
         String baseUrl    = trimStr(cfg.getApi().getBaseUrl());
         String uploadPath = trimStr(cfg.getApi().getSyncCodeAndVirtualRelationPath());
         if (baseUrl == null || uploadPath == null) {
             log.warn("[虚拟垛标上传] 缺少 baseUrl 或 syncCodeAndVirtualRelationPath，跳过 palletCode={}", palletCode);
+            saveUploadOperateLog(mode, palletCode, orderNo, boxCount, "失败",
+                    "缺少 baseUrl 或 syncCodeAndVirtualRelationPath");
             return;
         }
         String appId     = cfg.getApi().getAppId();
@@ -2035,6 +2045,7 @@ public class ShiwanM2BoxCaseService {
                 palletCode, orderNo.trim());
         if (rows == null || rows.isEmpty()) {
             log.warn("[虚拟垛标上传] 未查询到垛标 {} 的码关系数据，跳过上传", palletCode);
+            saveUploadOperateLog(mode, palletCode, orderNo, boxCount, "失败", "未查询到垛标码关系数据");
             return;
         }
 
@@ -2055,6 +2066,7 @@ public class ShiwanM2BoxCaseService {
                 UploadLogBus.Color.GRAY);
         UploadLogBus.firePalletEvent(palletCode, boxCount,
                 UploadLogBus.PalletUploadStatus.UPLOADING, null);
+        saveUploadOperateLog(mode, palletCode, orderNo, boxCount, "成功", "开始上传");
 
         try {
             // 组装 coderelation 列表
@@ -2108,7 +2120,7 @@ public class ShiwanM2BoxCaseService {
 
             // ④ 10 秒后开始轮询上传结果（最多 5 次）
             pollScheduler.schedule(
-                    () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, 1),
+                    () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, mode, 1),
                     10, TimeUnit.SECONDS);
 
         } catch (Exception e) {
@@ -2126,6 +2138,8 @@ public class ShiwanM2BoxCaseService {
                     formatUploadLogLine(logTime, palletCode, boxCount,
                             "上传失败（" + (e.getMessage() != null ? e.getMessage() : "未知错误") + "）"),
                     UploadLogBus.Color.RED);
+            saveUploadOperateLog(mode, palletCode, orderNo, boxCount, "失败",
+                    "上传请求异常：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
     }
 
@@ -2135,7 +2149,7 @@ public class ShiwanM2BoxCaseService {
      * return_msg=虚拟垛正...在处理中 → 每 10 秒重试一次，最多 5 次；
      * 其余结果或重试上限耗尽 → IsUpload=2（上传失败）。
      */
-    private void pollAndUpdatePalletStatus(String palletCode, String orderNo, int boxCount, int attemptNo) {
+    private void pollAndUpdatePalletStatus(String palletCode, String orderNo, int boxCount, String uploadMode, int attemptNo) {
         final int maxAttempts = 5;
         try {
             ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
@@ -2185,6 +2199,7 @@ public class ShiwanM2BoxCaseService {
                         UploadLogBus.Color.GREEN);
                 UploadLogBus.firePalletEvent(palletCode, boxCount,
                         UploadLogBus.PalletUploadStatus.SUCCESS, null);
+                saveUploadOperateLog(uploadMode, palletCode, orderNo, boxCount, "成功", "上传成功");
             } else if (isVirtualPalletProcessing(returnMsg)) {
                 // return_code!=0 且 return_msg 为"虚拟垛XXX正在处理中"，云端仍在处理，继续等待重试
                 if (attemptNo < maxAttempts) {
@@ -2192,7 +2207,7 @@ public class ShiwanM2BoxCaseService {
                     log.info("[垛标结果查询] 垛 {} 第 {}/{} 次查询返回处理中，10 秒后重试。return_code={} msg={}",
                             palletCode, attemptNo, maxAttempts, returnCode, returnMsg);
                     pollScheduler.schedule(
-                            () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, nextAttempt),
+                            () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, uploadMode, nextAttempt),
                             10, TimeUnit.SECONDS);
                 } else {
                     // 已达最大重试次数（5次×10秒=50秒），仍为处理中，视作失败
@@ -2207,6 +2222,7 @@ public class ShiwanM2BoxCaseService {
                             UploadLogBus.Color.RED);
                     UploadLogBus.firePalletEvent(palletCode, boxCount,
                             UploadLogBus.PalletUploadStatus.FAILED, failMsg);
+                    saveUploadOperateLog(uploadMode, palletCode, orderNo, boxCount, "失败", failMsg);
                 }
             } else {
                 // return_code!=0 且 return_msg 不是处理中，直接视为失败
@@ -2220,9 +2236,13 @@ public class ShiwanM2BoxCaseService {
                         UploadLogBus.Color.RED);
                 UploadLogBus.firePalletEvent(palletCode, boxCount,
                         UploadLogBus.PalletUploadStatus.FAILED, returnMsg);
+                saveUploadOperateLog(uploadMode, palletCode, orderNo, boxCount, "失败",
+                        returnMsg != null && !returnMsg.isEmpty() ? returnMsg : "未知错误");
             }
         } catch (Exception e) {
             log.error("[垛标结果查询] palletCode={} 异常: {}", palletCode, e.getMessage(), e);
+            saveUploadOperateLog(uploadMode, palletCode, orderNo, boxCount, "失败",
+                    "上传结果查询异常：" + (e.getMessage() != null ? e.getMessage() : "未知错误"));
         }
     }
 
@@ -2309,12 +2329,14 @@ public class ShiwanM2BoxCaseService {
             UploadLogBus.log(
                     LocalDateTime.now().format(LOG_TIME_FMT) + "  无待上传的垛数据",
                     UploadLogBus.Color.GRAY);
+            saveBatchManualUploadOperateLog(0, "手动上传未执行");
             return 0;
         }
         UploadLogBus.log(
                 LocalDateTime.now().format(LOG_TIME_FMT) +
                 "  手动上传任务已启动，共 " + pending.size() + " 个待上传垛...",
                 UploadLogBus.Color.GRAY);
+        saveBatchManualUploadOperateLog(pending.size(), "手动上传任务已启动");
         // 在后台定时线程中逐垛串行上传
         pollScheduler.submit(() -> {
             for (Map<String, Object> pallet : pending) {
@@ -2323,10 +2345,70 @@ public class ShiwanM2BoxCaseService {
                 String productNo  = toStr(pallet.get("productNo"));
                 int    boxCount   = pallet.get("boxCount") instanceof Number
                         ? ((Number) pallet.get("boxCount")).intValue() : 0;
-                syncVirtualPalletToCloud(orderNo, productNo, palletCode, boxCount);
+                syncVirtualPalletToCloud(orderNo, productNo, palletCode, boxCount, "手动上传");
             }
         });
         return pending.size();
+    }
+
+    private void saveBatchManualUploadOperateLog(int pendingCount, String content) {
+        try {
+            OperateLog op = new OperateLog();
+            op.setOperatorName("系统");
+            op.setOperatorIp("");
+            op.setModuleName(ModuleNameEnum.PALLET_MANAGE.getDescription());
+            op.setType(1);
+            op.setOperateType("上传");
+            op.setTargetId("MANUAL_UPLOAD_BATCH");
+            op.setTargetName("手动上传任务");
+            op.setOperateContent(content + "，待上传垛数：" + pendingCount);
+            op.setOperateResult("成功");
+            op.setOperateTime(LocalDateTime.now());
+            op.setDeviceInfo("石湾2号机后端服务");
+            op.setRemark("手动上传");
+            operateLogApplicationService.saveLogAsync(op);
+        } catch (Exception e) {
+            log.warn("[操作日志] 写入手动上传批次日志失败: {}", e.getMessage());
+        }
+    }
+
+    private void saveUploadOperateLog(String uploadMode, String palletCode, String orderNo, int boxCount,
+                                      String result, String detail) {
+        try {
+            String mode = (uploadMode == null || uploadMode.trim().isEmpty()) ? "自动上传" : uploadMode.trim();
+            OperateLog op = new OperateLog();
+            op.setOperatorName("系统");
+            op.setOperatorIp("");
+            op.setModuleName(ModuleNameEnum.PALLET_MANAGE.getDescription());
+            op.setType(1);
+            op.setOperateType("上传");
+            op.setTargetId(palletCode != null ? palletCode : "");
+            op.setTargetName(orderNo != null ? orderNo : "");
+            op.setOperateContent(mode + " - 垛码：" + (palletCode != null ? palletCode : "")
+                    + "，箱数：" + boxCount + "，订单：" + (orderNo != null ? orderNo : "")
+                    + "，结果：" + result + "，详情：" + limitText(detail, 500));
+            op.setOperateResult("失败".equals(result) ? "失败" : "成功");
+            if ("失败".equals(result)) {
+                op.setFailReason(limitText(detail, 500));
+            }
+            op.setOperateTime(LocalDateTime.now());
+            op.setDeviceInfo("石湾2号机后端服务");
+            op.setRemark(mode);
+            operateLogApplicationService.saveLogAsync(op);
+        } catch (Exception e) {
+            log.warn("[操作日志] 写入上传日志失败: {}", e.getMessage());
+        }
+    }
+
+    private String limitText(String text, int maxLen) {
+        if (text == null) {
+            return "";
+        }
+        String t = text.trim();
+        if (t.length() <= maxLen) {
+            return t;
+        }
+        return t.substring(0, Math.max(maxLen - 3, 0)) + "...";
     }
 
     /** 与产品文档 P02-08 一致：HH:mm:ss 垛码 xxx，箱数 n，状态… */
