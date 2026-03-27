@@ -222,34 +222,55 @@ public class FxDialog {
         return box;
     }
 
+    /** 标题栏左侧圆标尺寸；内嵌 SVG 略小以留白 */
+    private static final double DIALOG_ICON_BADGE = 28;
+    private static final double DIALOG_ICON_INNER = 18;
+
     private static HBox buildHeader(String title, Type type) {
-        String iconChar, iconColor, iconBg;
+        String svgResource;
+        Color iconPaint;
+        String iconBgCss;
         switch (type) {
             case DANGER:
-                iconChar = "!"; iconColor = "#DC2626"; iconBg = "#FEE2E2"; break;
+                svgResource = SvgIconLoader.ICON_ERROR;
+                iconPaint = Color.web("#DC2626");
+                iconBgCss = "#FEE2E2";
+                break;
             case INFO:
-                iconChar = "i"; iconColor = "#2563EB"; iconBg = "#DBEAFE"; break;
+                // 约定：¡ 表示信息 / 提示；! 表示警告（见 SvgIconLoader 对话框专用图标）
+                svgResource = SvgIconLoader.ICON_DIALOG_INVERTED_EXCLAM;
+                iconPaint = Color.web("#2563EB");
+                iconBgCss = "#DBEAFE";
+                break;
             case SUCCESS:
-                iconChar = "✓"; iconColor = "#16A34A"; iconBg = "#DCFCE7"; break;
+                svgResource = SvgIconLoader.ICON_SUCCESS;
+                iconPaint = Color.web("#16A34A");
+                iconBgCss = "#DCFCE7";
+                break;
             default: // WARN
-                iconChar = "!"; iconColor = "#D97706"; iconBg = "#FEF3C7"; break;
+                svgResource = SvgIconLoader.ICON_DIALOG_EXCLAM;
+                iconPaint = Color.web("#D97706");
+                iconBgCss = "#FEF3C7";
+                break;
         }
 
-        Label icon = new Label(iconChar);
-        icon.setStyle(
-                "-fx-font-size: 14px; -fx-font-weight: bold;" +
-                "-fx-text-fill: " + iconColor + ";" +
-                "-fx-min-width: 28; -fx-min-height: 28;" +
-                "-fx-max-width: 28; -fx-max-height: 28;" +
-                "-fx-alignment: center;" +
-                "-fx-background-color: " + iconBg + ";" +
-                "-fx-background-radius: 14;"
+        StackPane badge = new StackPane();
+        badge.setMinSize(DIALOG_ICON_BADGE, DIALOG_ICON_BADGE);
+        badge.setPrefSize(DIALOG_ICON_BADGE, DIALOG_ICON_BADGE);
+        badge.setMaxSize(DIALOG_ICON_BADGE, DIALOG_ICON_BADGE);
+        badge.setStyle(
+                "-fx-background-color: " + iconBgCss + ";" +
+                "-fx-background-radius: " + (DIALOG_ICON_BADGE / 2) + ";"
         );
+
+        StackPane iconPane = new StackPane();
+        SvgIconLoader.loadInto(iconPane, svgResource, DIALOG_ICON_INNER, iconPaint);
+        badge.getChildren().add(iconPane);
 
         Label titleLabel = new Label(title);
         titleLabel.setStyle(MiduoFxTextStyles.DIALOG_TITLE);
 
-        HBox header = new HBox(10, icon, titleLabel);
+        HBox header = new HBox(10, badge, titleLabel);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(20, 24, 20, 24));
         return header;

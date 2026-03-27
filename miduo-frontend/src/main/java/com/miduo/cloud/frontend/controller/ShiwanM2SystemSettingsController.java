@@ -5,8 +5,8 @@ import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
 import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
@@ -20,7 +20,6 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
@@ -43,8 +42,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.stage.Stage;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
@@ -195,13 +195,41 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     }
 
     /**
-     * 页面配置：用 Group + 轨道 + 圆形滑块实现 Switch。
-     * 注意：不能用 StackPane 承载滑块——StackPane 默认居中对齐子节点，会抵消 Circle 的 centerX 位移，表现为滑块永远在中间。
-     * 滑块固定几何中心 (12,12)，用 translateX 0/24 表示关/开（48 宽轨道，左右各约 2px 边距）。
+     * 系统设置内可交互 Switch：Group + 轨道 + 白滑块（与页面配置一致，勿用 StackPane 承载滑块）。
      */
+    private static void attachInteractiveSwitchGraphic(ToggleButton tb) {
+        if (tb == null) {
+            return;
+        }
+        Group g = new Group();
+        Rectangle track = new Rectangle(0, 0, 48, 24);
+        track.setArcWidth(24);
+        track.setArcHeight(24);
+        track.setStrokeWidth(0);
+        Circle thumb = new Circle(12, 12, 10, Color.WHITE);
+        thumb.setSmooth(true);
+        g.getChildren().addAll(track, thumb);
+        track.fillProperty().bind(Bindings.createObjectBinding(() ->
+                tb.isSelected() ? Color.web("#2563EB") : Color.web("#E5E7EB"),
+                tb.selectedProperty()));
+        thumb.translateXProperty().bind(Bindings.createDoubleBinding(() ->
+                        tb.isSelected() ? 24.0 : 0.0,
+                tb.selectedProperty()));
+        tb.setGraphic(g);
+        tb.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        tb.setText("");
+        tb.setMinSize(48, 24);
+        tb.setPrefSize(48, 24);
+        tb.setMaxSize(48, 24);
+    }
+
+    /** 页面配置锁定行、上传配置「自动上传」、各页面开关：挂载同一套 Switch 图形 */
     private void setupPageConfigSwitchGraphics() {
         if (pageDataCollectionLockedSwitchHost != null) {
             pageDataCollectionLockedSwitchHost.getChildren().setAll(buildLockedOnGrayedSwitch());
+        }
+        if (autoUploadToggle != null && autoUploadToggle.getStyleClass().contains("sw2-page-toggle-switch")) {
+            attachInteractiveSwitchGraphic(autoUploadToggle);
         }
         ToggleButton[] pageToggles = {
                 pageManualToggle, pageQueryToggle, pageReplaceToggle,
@@ -211,26 +239,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             if (tb == null || !tb.getStyleClass().contains("sw2-page-toggle-switch")) {
                 continue;
             }
-            Group g = new Group();
-            Rectangle track = new Rectangle(0, 0, 48, 24);
-            track.setArcWidth(24);
-            track.setArcHeight(24);
-            track.setStrokeWidth(0);
-            Circle thumb = new Circle(12, 12, 10, Color.WHITE);
-            thumb.setSmooth(true);
-            g.getChildren().addAll(track, thumb);
-            track.fillProperty().bind(Bindings.createObjectBinding(() ->
-                    tb.isSelected() ? Color.web("#2563EB") : Color.web("#E5E7EB"),
-                    tb.selectedProperty()));
-            thumb.translateXProperty().bind(Bindings.createDoubleBinding(() ->
-                            tb.isSelected() ? 24.0 : 0.0,
-                    tb.selectedProperty()));
-            tb.setGraphic(g);
-            tb.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-            tb.setText("");
-            tb.setMinSize(48, 24);
-            tb.setPrefSize(48, 24);
-            tb.setMaxSize(48, 24);
+            attachInteractiveSwitchGraphic(tb);
         }
     }
 
@@ -280,8 +289,10 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             palletPrefixField.setText(s.getPalletRule().getPrefix() != null ? s.getPalletRule().getPrefix() : "V");
             palletLineNumField.setText(s.getPalletRule().getLineCode() != null ? s.getPalletRule().getLineCode() : "A");
         }
-        if (s.getUpload() != null) {
-            autoUploadToggle.setSelected(s.getUpload().isAutoUpload());
+        if (autoUploadToggle != null) {
+            if (s.getUpload() != null) {
+                autoUploadToggle.setSelected(s.getUpload().isAutoUpload());
+            }
             syncToggleStyle(autoUploadToggle);
         }
         if (warehouseNoField != null) {
@@ -607,7 +618,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getCodeDigits().setMediumCodeDigits(Integer.parseInt(medium));
         s.getCodeDigits().setLargeCodeDigits(Integer.parseInt(large));
         saveSettings(s);
-        showSuccess("码位数配置", "码位数配置已保存。\n小标：" + small + "位  中标：" + medium + "位  大标：" + large + "位");
+        showSuccess("码位数配置", "保存成功");
     }
 
     @FXML
@@ -623,7 +634,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getPalletRule().setPrefix(prefix);
         s.getPalletRule().setLineCode(lineNum);
         saveSettings(s);
-        showSuccess("虚拟垛标规则", "虚拟垛标规则已保存。\n前缀：" + prefix + "  产线号：" + lineNum);
+        showSuccess("虚拟垛标规则", "保存成功");
     }
 
     @FXML
@@ -637,7 +648,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (s.getUpload() == null) s.setUpload(new ShiwanM2Settings.UploadConfig());
         s.getUpload().setAutoUpload(autoUploadToggle.isSelected());
         saveSettings(s);
-        showSuccess("上传配置", "上传配置已保存。\n自动上传：" + (autoUploadToggle.isSelected() ? "开启" : "关闭"));
+        showSuccess("上传配置", "保存成功");
     }
 
     @FXML
@@ -651,7 +662,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         ShiwanM2Settings s = ShiwanM2SettingsStore.get();
         s.setWarehouseNo(wno);
         saveSettings(s);
-        showSuccess("入库仓库设置", "仓库编号已保存：" + wno);
+        showSuccess("入库仓库设置", "保存成功");
     }
 
     private void saveSettings(ShiwanM2Settings s) {
@@ -698,7 +709,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (pageUploadToggle.isSelected()) order.add("upload");
         s.setPageTabOrder(order);
         saveSettings(s);
-        showSuccess("页面配置", "已保存，关闭窗口后主界面生效。");
+        showSuccess("页面配置", "保存成功");
     }
 
     // ==================== 设备 Tab 事件处理 ====================
@@ -890,13 +901,12 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                     String msg = String.format(
                             "测试完成！\n\n总设备数：%d\n已连接：%d\n重新连接成功：%d\n连接失败：%d",
                             finalTotal, finalConnected, finalReconnected, failed);
-                    Alert alert = new Alert(
-                            failed > 0 ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
-                            msg, javafx.scene.control.ButtonType.OK);
-                    alert.setTitle("设备测试结果");
-                    alert.setHeaderText("IO设备连接测试完成");
-                    ShiwanM2AlertUtil.applyStyle(alert);
-                    alert.showAndWait();
+                    Window owner = settingsDialogOwner();
+                    if (failed > 0) {
+                        FxDialog.warn(owner, "设备测试结果", msg);
+                    } else {
+                        FxDialog.success(owner, "设备测试结果", msg);
+                    }
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("测试异常", "测试所有设备时发生异常：" + e.getMessage()));
@@ -1033,31 +1043,26 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     private void onDeleteDevice(int index) {
         if (index < 0 || index >= ioDeviceList.size()) return;
         IoDeviceDTO device = ioDeviceList.get(index);
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("删除设备");
-        confirm.setHeaderText("确认删除设备「" + device.getDeviceName() + "」？");
-        confirm.setContentText("删除后不可恢复，需重新添加。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        confirm.showAndWait().ifPresent(bt -> {
-            if (bt == javafx.scene.control.ButtonType.OK) {
-                new Thread(() -> {
-                    try {
-                        String resp = HttpUtil.doDelete("/api/device/delete/" + (device.getId() != null ? device.getId() : device.getDeviceName()));
-                        ApiResult<Boolean> result = HttpUtil.parseJson(resp, new TypeReference<ApiResult<Boolean>>() {});
-                        Platform.runLater(() -> {
-                            if (result.getCode() == 200) {
-                                showSuccess("删除设备", "设备已删除");
-                                loadIoDevices();
-                            } else {
-                                showError("删除失败", result.getMessage());
-                            }
-                        });
-                    } catch (Exception e) {
-                        Platform.runLater(() -> showError("删除失败", "调用接口异常：" + e.getMessage()));
+        String body = "确认删除设备「" + device.getDeviceName() + "」？\n\n删除后不可恢复，需重新添加。";
+        if (!FxDialog.confirm(settingsDialogOwner(), "删除设备", body)) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                String resp = HttpUtil.doDelete("/api/device/delete/" + (device.getId() != null ? device.getId() : device.getDeviceName()));
+                ApiResult<Boolean> result = HttpUtil.parseJson(resp, new TypeReference<ApiResult<Boolean>>() {});
+                Platform.runLater(() -> {
+                    if (result.getCode() == 200) {
+                        showSuccess("删除设备", "设备已删除");
+                        loadIoDevices();
+                    } else {
+                        showError("删除失败", result.getMessage());
                     }
-                }).start();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("删除失败", "调用接口异常：" + e.getMessage()));
             }
-        });
+        }).start();
     }
 
     @FXML
@@ -1069,8 +1074,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getPrinter().setPrinterPort(printerPortField.getText().trim());
         if (paperSizeCombo != null) s.getPrinter().setPaperSize(paperSizeCombo.getValue());
         saveSettings(s);
-        showSuccess("打印机配置", "打印机配置已保存。\n打印机：" + printerNameField.getText()
-            + "\nIP：" + printerIpField.getText() + ":" + printerPortField.getText());
+        showSuccess("打印机配置", "保存成功");
     }
 
     @FXML
@@ -1095,8 +1099,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getAlarm().setAlarmDelayMs(Integer.parseInt(alarmDelayField.getText().trim()));
         s.getAlarm().setAlarmIntervalMs(Integer.parseInt(alarmIntervalField.getText().trim()));
         saveSettings(s);
-        showSuccess("报警设置", "报警设置已保存。\n声音报警：" + (soundAlarmToggle.isSelected() ? "开启" : "关闭")
-            + "\n延时：" + alarmDelayField.getText() + "ms  间隔：" + alarmIntervalField.getText() + "ms");
+        showSuccess("报警设置", "保存成功");
     }
 
     @FXML
@@ -1131,7 +1134,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             return;
         }
         saveSettings(s);
-        showSuccess("设备信号配置", "设备信号配置已保存。");
+        showSuccess("设备信号配置", "保存成功");
     }
 
     @FXML
@@ -1158,7 +1161,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             return;
         }
         saveSettings(s);
-        showSuccess("盒箱相机采集间隔", "已保存。\n双相机等待超时：" + boxCaseCameraMatchWaitTimeoutField.getText().trim() + " ms");
+        showSuccess("盒箱相机采集间隔", "保存成功");
     }
 
     // ==================== 连接 Tab 事件处理 ====================
@@ -1245,7 +1248,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getDbConnection().setUsername(user);
         s.getDbConnection().setPassword(pwd != null ? pwd : "");
         saveSettings(s);
-        showSuccess("数据库连接", "数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name);
+        showSuccess("数据库连接", "保存成功");
     }
 
     @FXML
@@ -1324,7 +1327,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getM1DbConnection().setPassword(pwd != null ? pwd : "");
         s.getM1DbConnection().setInitialSerialNo(initialSerialNo);
         saveSettings(s);
-        showSuccess("1号机连接", "1号机数据库连接配置已保存。\n连接地址：" + host + ":" + port + "/" + name + " 表：" + (tableName.isEmpty() ? "T_Code" : tableName));
+        showSuccess("1号机连接", "保存成功");
     }
 
     @FXML
@@ -1344,7 +1347,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         saveSettings(s);
         HttpUtil.setBaseUrl(url);
         applySettingsResultRow(backendBaseUrlResultRow, backendBaseUrlResultIconPane, backendBaseUrlResultLabel,
-            "已保存，当前请求将发往：" + url, "#059669", 13, SvgIconLoader.ICON_SUCCESS);
+            "保存成功", "#059669", 13, SvgIconLoader.ICON_SUCCESS);
     }
 
     // ==================== 自定义标题栏（拖拽 & 关闭） ====================
@@ -1389,30 +1392,23 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
     }
 
+    /** 系统设置弹窗作为 owner，供 {@link FxDialog} 居中与模态 */
+    private Window settingsDialogOwner() {
+        if (rootBox != null && rootBox.getScene() != null) {
+            return rootBox.getScene().getWindow();
+        }
+        return null;
+    }
+
     private void showSuccess(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.success(settingsDialogOwner(), title, content);
     }
 
     private void showError(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.warn(settingsDialogOwner(), title, content);
     }
 
     private void showInfo(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.alert(settingsDialogOwner(), title, content);
     }
 }

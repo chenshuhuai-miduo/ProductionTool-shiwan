@@ -25,6 +25,12 @@ public final class SvgIconLoader {
     public static final String ICON_WARN     = "/icons/警告.svg";
     public static final String ICON_SUCCESS  = "/icons/成功.svg";
     public static final String ICON_ERROR    = "/icons/错误.svg";
+    /** 信息 / 提示（圆内 i） */
+    public static final String ICON_INFO     = "/icons/信息.svg";
+    /** FxDialog 信息「¡」→ {@code 信息_info.svg} */
+    public static final String ICON_DIALOG_INVERTED_EXCLAM = "/icons/信息_info.svg";
+    /** FxDialog 警告「!」→ {@code 警告_warn.svg} */
+    public static final String ICON_DIALOG_EXCLAM = "/icons/警告_warn.svg";
     public static final String ICON_LOCK     = "/icons/锁.svg";
     public static final String ICON_EYE_SHOW = "/icons/眼睛-显示.svg";
     public static final String ICON_EYE_HIDE = "/icons/眼睛-隐藏.svg";

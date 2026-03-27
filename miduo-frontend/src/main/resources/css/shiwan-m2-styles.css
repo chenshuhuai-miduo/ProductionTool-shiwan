@@ -2046,16 +2046,14 @@
     -fx-background-radius: 8px;
 }
 
-/* 页面配置「保存」：用 #id 提高优先级，避免 FXML 仅写 styleClass 时未带上默认 button 类导致主色不生效 */
-#savePageConfigBtn {
+/* 系统设置内主色「保存」：叠在 primary-button 上（FXML 多 class 须用逗号分隔），统一 #2563EB */
+.primary-button.sw2-settings-save-btn {
     -fx-background-color: #2563EB;
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
     -fx-font-weight: 600;
     -fx-font-family: "Microsoft YaHei";
-    -fx-pref-width: 100px;
     -fx-min-width: 100px;
-    -fx-max-width: 100px;
     -fx-pref-height: 36px;
     -fx-min-height: 36px;
     -fx-background-radius: 6px;
@@ -2065,16 +2063,19 @@
     -fx-effect: null;
 }
 
-#savePageConfigBtn:hover {
+.primary-button.sw2-settings-save-btn:hover {
     -fx-background-color: #1d4ed8;
+    -fx-effect: null;
 }
 
-#savePageConfigBtn:pressed {
+.primary-button.sw2-settings-save-btn:pressed {
     -fx-background-color: #1e40af;
+    -fx-effect: null;
 }
 
-#savePageConfigBtn:focused {
+.primary-button.sw2-settings-save-btn:focused {
     -fx-background-color: #2563EB;
+    -fx-effect: null;
 }
 
 /* ---- 查看码包 码表（无竖向分隔线，无选中高亮） ---- */
