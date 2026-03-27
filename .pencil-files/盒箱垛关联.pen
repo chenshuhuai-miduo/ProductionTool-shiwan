@@ -15299,6 +15299,1167 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "4J8s2",
+      "x": 5909,
+      "y": 2669,
+      "name": "剔除记录弹窗-新设计",
+      "width": 1200,
+      "height": 700,
+      "fill": "#FFFFFF",
+      "cornerRadius": 12,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#D9E1EC"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "u4xuK",
+          "name": "弹窗标题栏",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#F5F7FA",
+          "stroke": {
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "#E5E7EB"
+          },
+          "padding": [
+            0,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "TMHIq",
+              "name": "v2Title",
+              "fill": "#1F2937",
+              "content": "剔除记录",
+              "fontFamily": "Microsoft YaHei",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "c4tq7",
+              "name": "关闭",
+              "width": 36,
+              "height": 36,
+              "fill": "#F5F7FA",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "RxQKL",
+                  "width": 22,
+                  "height": 22,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "#6B7280"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "XVItC",
+          "name": "内容区",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "vCUzR",
+              "name": "筛选组",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "glzao",
+                  "name": "箱码输入",
+                  "width": 300,
+                  "height": 40,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#D1D5DB"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "9Tq4p",
+                      "name": "v2BoxPh",
+                      "fill": "#6B7280",
+                      "content": "请输入箱码",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "6HKMa",
+                  "name": "筛选按钮",
+                  "width": 80,
+                  "height": 40,
+                  "fill": "#2563EB",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Dm2BN",
+                      "name": "v2FilterTxt",
+                      "fill": "#FFFFFF",
+                      "content": "筛选",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mDquU",
+                  "name": "重置按钮",
+                  "width": 80,
+                  "height": 40,
+                  "fill": "#F3F4F6",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#D1D5DB"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fLITA",
+                      "name": "v2ResetTxt",
+                      "fill": "#374151",
+                      "content": "重置",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "VWIZz",
+              "name": "内容分栏",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "cv4wY",
+                  "name": "左侧主表区",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "oXpz0",
+                      "name": "左侧表与分页",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "I7FdD",
+                          "name": "主表表格",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 0,
+                            "fill": "#E5E7EB"
+                          },
+                          "layout": "vertical",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "0THpp",
+                              "name": "主表表头",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": 48,
+                              "fill": "#F9FAFB",
+                              "stroke": {
+                                "thickness": {
+                                  "bottom": 1
+                                },
+                                "fill": "#E5E7EB"
+                              },
+                              "gap": 4,
+                              "padding": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "9aFLX",
+                                  "name": "h1",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": 52,
+                                  "content": "序号",
+                                  "textAlign": "center",
+                                  "textAlignVertical": "middle",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "UocfN",
+                                  "name": "h2",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": 172,
+                                  "content": "箱码",
+                                  "textAlignVertical": "middle",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "iHoah",
+                                  "name": "h3",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": 168,
+                                  "content": "剔除时间",
+                                  "textAlignVertical": "middle",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "tfChV",
+                                  "name": "h4",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "原因摘要",
+                                  "textAlignVertical": "middle",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "GstKF",
+                              "name": "主表行1选中",
+                              "clip": true,
+                              "width": "fill_container",
+                              "fill": "#EFF6FF",
+                              "stroke": {
+                                "thickness": {
+                                  "bottom": 1
+                                },
+                                "fill": "#BFDBFE"
+                              },
+                              "gap": 4,
+                              "padding": 8,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "nj04C",
+                                  "name": "r1a",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 52,
+                                  "content": "1",
+                                  "textAlign": "center",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "sptkr",
+                                  "name": "r1b",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 172,
+                                  "content": "20241201C0099",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "kaSlS",
+                                  "name": "r1c",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": 168,
+                                  "content": "2024-12-01 10:28:00",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "aqe3C",
+                                  "name": "摘要单元1",
+                                  "clip": true,
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "LB0ZG",
+                                      "name": "摘要文1",
+                                      "fill": "#374151",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "箱码 20241201C0099 盒数不符",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "b1e5n",
+                              "name": "主表行2",
+                              "clip": true,
+                              "width": "fill_container",
+                              "fill": "#FFFFFF",
+                              "stroke": {
+                                "thickness": {
+                                  "bottom": 1
+                                },
+                                "fill": "#F3F4F6"
+                              },
+                              "gap": 4,
+                              "padding": 8,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Jaivm",
+                                  "name": "r2a",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 52,
+                                  "content": "2",
+                                  "textAlign": "center",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "P5VRR",
+                                  "name": "r2b",
+                                  "fill": "#6B7280",
+                                  "textGrowth": "fixed-width",
+                                  "width": 172,
+                                  "content": "—",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "f53Gx",
+                                  "name": "r2c",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": 168,
+                                  "content": "2024-12-01 10:29:00",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "05CBY",
+                                  "name": "摘要单元2",
+                                  "clip": true,
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "r4wDt",
+                                      "name": "摘要文2",
+                                      "fill": "#374151",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "单侧超时，未见箱码",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "mUy2Q",
+                              "name": "主表行3",
+                              "clip": true,
+                              "width": "fill_container",
+                              "fill": "#FFFFFF",
+                              "stroke": {
+                                "thickness": 0
+                              },
+                              "gap": 4,
+                              "padding": 8,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "1EUKS",
+                                  "name": "r3a",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 52,
+                                  "content": "3",
+                                  "textAlign": "center",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "1MhMO",
+                                  "name": "r3b",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 172,
+                                  "content": "20241201C0101",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "zZ2sD",
+                                  "name": "r3c",
+                                  "fill": "#374151",
+                                  "textGrowth": "fixed-width",
+                                  "width": 168,
+                                  "content": "2024-12-01 10:31:00",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "QmHnI",
+                                  "name": "摘要单元3",
+                                  "clip": true,
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "xYUEQ",
+                                      "name": "摘要文3",
+                                      "fill": "#374151",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "箱码 20241201C0101 重复出现",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "K5OvM",
+                          "name": "主表分页",
+                          "width": "fill_container",
+                          "height": 48,
+                          "gap": 8,
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "dnsKD",
+                              "name": "左侧分组",
+                              "gap": 16,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "wqBVo",
+                                  "name": "popupTotalCount",
+                                  "fill": "#6B7280",
+                                  "content": "共 8 条",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "XuGsq",
+                              "name": "右侧分组",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "5ECKu",
+                                  "name": "每页显示",
+                                  "gap": 6,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "tvHxN",
+                                      "name": "popupSizeLabel",
+                                      "fill": "#6B7280",
+                                      "content": "每页",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "dGGOQ",
+                                      "name": "条数选择",
+                                      "width": 64,
+                                      "height": 32,
+                                      "fill": "#FFFFFF",
+                                      "cornerRadius": 6,
+                                      "stroke": {
+                                        "align": "inside",
+                                        "thickness": 1,
+                                        "fill": "#D1D5DB"
+                                      },
+                                      "padding": [
+                                        0,
+                                        12
+                                      ],
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "uehoq",
+                                          "name": "popupSizeText",
+                                          "fill": "#374151",
+                                          "content": "20",
+                                          "fontFamily": "Microsoft YaHei",
+                                          "fontSize": 14,
+                                          "fontWeight": "normal"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "mOu28",
+                                          "name": "popupSizeArrow",
+                                          "fill": "#6B7280",
+                                          "content": "▼",
+                                          "fontFamily": "Microsoft YaHei",
+                                          "fontSize": 11,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "T3NjR",
+                                      "name": "c3",
+                                      "fill": "#6B7280",
+                                      "content": "条",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "dS6tY",
+                                  "name": "上一页",
+                                  "width": 64,
+                                  "height": 32,
+                                  "fill": "#FFFFFF",
+                                  "cornerRadius": 6,
+                                  "stroke": {
+                                    "align": "inside",
+                                    "thickness": 1,
+                                    "fill": "#D1D5DB"
+                                  },
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "vz6jH",
+                                      "name": "popupPrevBtnText",
+                                      "fill": "#6B7280",
+                                      "content": "上一页",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "tacpr",
+                                  "name": "页码输入",
+                                  "gap": 6,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "rmMgk",
+                                      "name": "popupPageInputLabel",
+                                      "fill": "#374151",
+                                      "content": "第",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "4Wokx",
+                                      "name": "页码输入框",
+                                      "width": 48,
+                                      "height": 32,
+                                      "fill": "#FFFFFF",
+                                      "cornerRadius": 6,
+                                      "stroke": {
+                                        "align": "inside",
+                                        "thickness": 1,
+                                        "fill": "#D1D5DB"
+                                      },
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "5Bl6Q",
+                                          "name": "popupPageInputValue",
+                                          "fill": "#374151",
+                                          "content": "1",
+                                          "fontFamily": "Microsoft YaHei",
+                                          "fontSize": 14,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "da7bI",
+                                      "name": "popupPageInputUnit",
+                                      "fill": "#374151",
+                                      "content": "/ 1 页",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "1W1WN",
+                                  "name": "下一页",
+                                  "width": 64,
+                                  "height": 32,
+                                  "fill": "#FFFFFF",
+                                  "cornerRadius": 6,
+                                  "stroke": {
+                                    "align": "inside",
+                                    "thickness": 1,
+                                    "fill": "#D1D5DB"
+                                  },
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "FF2rI",
+                                      "name": "popupNextBtnText",
+                                      "fill": "#6B7280",
+                                      "content": "下一页",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 14,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yrlq4",
+                  "name": "右侧详情区",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "eV1b8",
+                      "name": "概要卡片",
+                      "width": "fill_container",
+                      "fill": "#F9FAFB",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E5E7EB"
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 16,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rnhIP",
+                          "name": "s1",
+                          "fill": "#1F2937",
+                          "content": "箱码：20241201C0099",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "YmrCS",
+                          "name": "s2",
+                          "fill": "#1F2937",
+                          "content": "剔除时间：2024-12-01 10:28:00",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "DBTbZ",
+                          "name": "s3",
+                          "fill": "#1F2937",
+                          "content": "生产单号：PO202412018710",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "qktuQ",
+                          "name": "s4",
+                          "fill": "#1F2937",
+                          "content": "产品编号：SW-001",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "s7wrO",
+                          "name": "s5",
+                          "fill": "#1F2937",
+                          "content": "产品名称：石湾头曲52度",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "gOWrR",
+                          "name": "s6",
+                          "fill": "#2563EB",
+                          "content": "共 6 条留痕",
+                          "fontFamily": "Microsoft YaHei",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "gNFPd",
+                      "name": "明细标题",
+                      "fill": "#374151",
+                      "content": "留痕明细",
+                      "fontFamily": "Microsoft YaHei",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "7Ldaa",
+                      "name": "明细表容器",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E5E7EB"
+                      },
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "AGu6t",
+                          "name": "明细表头",
+                          "width": "fill_container",
+                          "height": 44,
+                          "fill": "#F9FAFB",
+                          "stroke": {
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#E5E7EB"
+                          },
+                          "gap": 4,
+                          "padding": [
+                            0,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "s0W1B",
+                              "name": "dh1",
+                              "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 44,
+                              "content": "序号",
+                              "textAlign": "center",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "5oyzv",
+                              "name": "dh2",
+                              "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "关联码",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "exGRl",
+                              "name": "dh3",
+                              "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": 120,
+                              "content": "问题码",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "4MIkZ",
+                              "name": "dh4",
+                              "fill": "#374151",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "剔除原因",
+                              "fontFamily": "Microsoft YaHei",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "hIV56",
+                          "name": "明细行1",
+                          "width": "fill_container",
+                          "stroke": {
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#F3F4F6"
+                          },
+                          "layout": "vertical",
+                          "padding": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "sij1c",
+                              "name": "dr1t",
+                              "clip": true,
+                              "width": "fill_container",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "sPqdT",
+                                  "name": "dr1a",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 44,
+                                  "content": "1",
+                                  "textAlign": "center",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "V6HzR",
+                                  "name": "关联码三行1",
+                                  "clip": true,
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 2,
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "BTFaA",
+                                      "name": "dr1b1",
+                                      "fill": "#1F2937",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "瓶：—",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "00kEs",
+                                      "name": "dr1b2",
+                                      "fill": "#1F2937",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "盒：B001",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "WX9A6",
+                                      "name": "dr1b3",
+                                      "fill": "#1F2937",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "箱：C99",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "L2Vhm",
+                                  "name": "dr1c",
+                                  "fill": "#F44336",
+                                  "textGrowth": "fixed-width",
+                                  "width": 120,
+                                  "content": "—",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "i2Mm7",
+                                  "name": "dr1d",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "箱码 20241201C0099 盒数不符",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "hE5Pu",
+                          "name": "明细行2",
+                          "width": "fill_container",
+                          "stroke": {
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#F3F4F6"
+                          },
+                          "layout": "vertical",
+                          "padding": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "bTVoR",
+                              "name": "dr2t",
+                              "clip": true,
+                              "width": "fill_container",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "XaBbj",
+                                  "name": "dr2a",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": 44,
+                                  "content": "2",
+                                  "textAlign": "center",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 14,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "uVs3y",
+                                  "name": "关联码三行2",
+                                  "clip": true,
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 2,
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "j8uQb",
+                                      "name": "dr2b1",
+                                      "fill": "#1F2937",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "瓶：6923…001",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "9578z",
+                                      "name": "dr2b2",
+                                      "fill": "#1F2937",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "盒：B002",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "Jahm9",
+                                      "name": "dr2b3",
+                                      "fill": "#1F2937",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "箱：C99",
+                                      "fontFamily": "Microsoft YaHei",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "MiZge",
+                                  "name": "dr2c",
+                                  "fill": "#F44336",
+                                  "textGrowth": "fixed-width",
+                                  "width": 120,
+                                  "content": "20241201P8899",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "mtHjY",
+                                  "name": "dr2d",
+                                  "fill": "#1F2937",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "瓶码 6923088801001 重复出现",
+                                  "fontFamily": "Microsoft YaHei",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
