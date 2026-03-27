@@ -2,9 +2,9 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -12,6 +12,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -236,23 +237,34 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
         confirmButton.setDisable(on || totalCount <= 0);
     }
 
-    // ──────────────── 错误提示（含重试） ────────────────
+    // ──────────────── 错误提示（含重试，通用 FxDialog） ────────────────
+
+    private Window dialogOwner() {
+        if (keywordField != null && keywordField.getScene() != null) {
+            return keywordField.getScene().getWindow();
+        }
+        if (productTable != null && productTable.getScene() != null) {
+            return productTable.getScene().getWindow();
+        }
+        return null;
+    }
 
     private void showSyncError(String message, boolean allowRetry) {
-        ButtonType retryBtn  = new ButtonType("重试", ButtonBar.ButtonData.YES);
-        ButtonType closeBtn  = new ButtonType("关闭", ButtonBar.ButtonData.NO);
-        Alert alert = allowRetry
-                ? new Alert(Alert.AlertType.ERROR, message, retryBtn, closeBtn)
-                : new Alert(Alert.AlertType.ERROR, message, closeBtn);
-        alert.setTitle("获取产品数据失败");
-        alert.setHeaderText("产品数据拉取失败");
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait().ifPresent(btn -> {
-            if (btn == retryBtn) {
+        String body = "产品数据拉取失败\n\n" + message;
+        if (allowRetry) {
+            int idx = FxDialog.choice(
+                    dialogOwner(),
+                    "获取产品数据失败",
+                    body,
+                    FxDialog.BtnDef.cancel("关闭"),
+                    FxDialog.BtnDef.primary("重试"));
+            if (idx == 1) {
                 setLoading(true);
-                syncFromServer(allowRetry);
+                syncFromServer(true);
             }
-        });
+        } else {
+            FxDialog.warn(dialogOwner(), "获取产品数据失败", body);
+        }
     }
 
     // ──────────────── FXML 事件处理 ────────────────
@@ -328,11 +340,7 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     private void onConfirm() {
         Map<String, String> sel = productTable.getSelectionModel().getSelectedItem();
         if (sel == null) {
-            Alert a = new Alert(Alert.AlertType.WARNING);
-            a.setTitle("提示");
-            a.setHeaderText("请先在列表中选择一行产品");
-            ShiwanM2AlertUtil.applyStyle(a);
-            a.showAndWait();
+            FxDialog.warn(dialogOwner(), "提示", "请先在列表中选择一行产品");
             return;
         }
         selectedProduct = sel;
