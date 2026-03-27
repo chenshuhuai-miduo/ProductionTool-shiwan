@@ -664,10 +664,13 @@ public class ShiwanM2BoxCaseService {
         if (packageType != 1 && packageType != 2) {
             return ApiResult.error(400, "packageType 仅支持 1（瓶码）或 2（盒码）");
         }
-        String codeTypeName = packageType == 1 ? "瓶码" : "盒码";
         try {
             if (!isCodeInPackage(code, packageType)) {
-                return ApiResult.error(400, codeTypeName + "不在有效码包热表中：" + code);
+                // AI 文档 10.1.7 小标/中标不通过界面句式（校验仍只查热表）
+                if (packageType == 1) {
+                    return ApiResult.error(400, "瓶码 " + code + " 不在小标码包范围内");
+                }
+                return ApiResult.error(400, "盒码 " + code + " 不在中标码包范围内");
             }
             boolean hasRelation;
             if (packageType == 1) {
@@ -682,7 +685,11 @@ public class ShiwanM2BoxCaseService {
                 hasRelation = c != null && c > 0;
             }
             if (hasRelation) {
-                return ApiResult.error(400, codeTypeName + "已存在码关系（重码）：" + code);
+                // AI 文档 10.1.7 重码界面句式
+                if (packageType == 1) {
+                    return ApiResult.error(400, "瓶码 " + code + " 重复出现");
+                }
+                return ApiResult.error(400, "盒码 " + code + " 重复出现");
             }
             Map<String, Object> data = new HashMap<>();
             data.put("code", code);

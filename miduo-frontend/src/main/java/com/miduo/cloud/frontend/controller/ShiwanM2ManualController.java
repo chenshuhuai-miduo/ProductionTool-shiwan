@@ -369,7 +369,7 @@ public class ShiwanM2ManualController implements Initializable {
 
     /**
      * 收到一条扫码数据（由 ShiwanM2MainController 在扫码枪设备 category=7 数据到达时调用）。
-     * 校验顺序：码位数（本地）→ 热表 → CodeRelationUpload 重码（后端 API）。
+     * 校验顺序：错码/位数（本地，AI 文档 10.1.7 句式）→ 本批次重码 → 小标/中标不通过与系统重码（后端 API）。
      *
      * @param code 扫描到的码值
      */
@@ -403,9 +403,11 @@ public class ShiwanM2ManualController implements Initializable {
                 if (expectedDigits > 0 && trimmedCode.length() != expectedDigits) {
                     log.warn("[手工采集] {}位数不符 code={} expected={} actual={}",
                             codeTypeName, trimmedCode, expectedDigits, trimmedCode.length());
-                    addDataLog(now + "  【" + codeTypeName + "位数不符】需 " + expectedDigits
-                            + " 位，实 " + trimmedCode.length() + " 位：" + trimmedCode,
-                            ShiwanM2MainController.LogType.ERROR);
+                    // AI 文档 10.1.7 错码界面句式（位数不符属错码）
+                    String errLine = packageType == 1
+                            ? "瓶码 " + trimmedCode + " 格式错误"
+                            : "盒码 " + trimmedCode + " 格式错误";
+                    addDataLog(now + "  " + errLine, ShiwanM2MainController.LogType.ERROR);
                     return;
                 }
             }
@@ -413,7 +415,8 @@ public class ShiwanM2ManualController implements Initializable {
             // 2. 本批次内瓶码重复检查（本地，快速，无需网络）
             if (packageType == 1 && pendingBottleCodes.contains(trimmedCode)) {
                 log.warn("[手工采集] 瓶码重复 code={} 已在本批次中", trimmedCode);
-                addDataLog(now + "  【瓶码重复】" + trimmedCode + " 已在本批次中，该码不计入，请重新扫码",
+                // 与 AI 文档 10.1.7 重码句式一致（本批次内重复）
+                addDataLog(now + "  瓶码 " + trimmedCode + " 重复出现",
                         ShiwanM2MainController.LogType.ERROR);
                 return;
             }
@@ -433,13 +436,13 @@ public class ShiwanM2ManualController implements Initializable {
                             if (respCode != 200) {
                                 String msg = node.has("message") ? node.get("message").asText() : "校验失败";
                                 log.warn("[手工采集] {}校验不通过 code={} msg={}", codeTypeName, trimmedCode, msg);
-                                addDataLog(nowInner + "  【" + codeTypeName + "校验不通过】" + msg,
-                                        ShiwanM2MainController.LogType.ERROR);
+                                // 后端已按 AI 文档 10.1.7 返回句式，日志直接展示文案
+                                addDataLog(nowInner + "  " + msg, ShiwanM2MainController.LogType.ERROR);
                                 OperateLogBuilder.create()
                                         .module(ModuleNameEnum.MANUAL_COLLECT)
                                         .operateType(OperateTypeEnum.VALIDATE)
                                         .target(trimmedCode, codeTypeName)
-                                        .content("手工采集" + codeTypeName + "校验不通过：" + trimmedCode)
+                                        .content(msg)
                                         .failReason(msg)
                                         .saveAsync();
                                 return;
