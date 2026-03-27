@@ -1718,8 +1718,8 @@ public class ShiwanM2BoxCaseService {
         if (status4Rows == null || status4Rows.isEmpty()) return false;
         for (Map<String, Object> row : status4Rows) {
             String bottleCode  = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
-            String msgReason   = row.get("Msg") != null && !row.get("Msg").toString().isEmpty()
-                    ? row.get("Msg").toString() : "码包热表校验不通过";
+            String rawMsg = row.get("Msg") != null ? row.get("Msg").toString() : "";
+            String msgReason = ShiwanM2RejectUserMessages.formatStatus4Row(mediumSerialNumber, bottleCode, rawMsg);
             insertRejectRecord(orderNo, null, mediumSerialNumber, bottleCode,
                     bottleCode != null ? bottleCode : mediumSerialNumber, msgReason);
         }
@@ -1752,6 +1752,37 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
+     * 查询指定盒码在 CodeRelationUpload 中 Status=4 的明细，生成与产品文档一致的操作工提示（多条去重后拼接）。
+     */
+    public String buildStatus4UserSummary(List<String> boxCodes) {
+        if (boxCodes == null || boxCodes.isEmpty()) {
+            return "";
+        }
+        try {
+            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT MediumSerialNumber, SmallSerialNumber, Msg FROM CodeRelationUpload " +
+                            "WHERE MediumSerialNumber IN (" + placeholders + ") AND Status = 4 AND IsDel = 0 " +
+                            "ORDER BY MediumSerialNumber, SmallSerialNumber",
+                    boxCodes.toArray());
+            if (rows == null || rows.isEmpty()) {
+                return "待剔除校验不通过（共 " + boxCodes.size() + " 个盒码）；";
+            }
+            LinkedHashSet<String> lines = new LinkedHashSet<>();
+            for (Map<String, Object> row : rows) {
+                String box = row.get("MediumSerialNumber") == null ? "" : row.get("MediumSerialNumber").toString().trim();
+                String bottle = row.get("SmallSerialNumber") == null ? "" : row.get("SmallSerialNumber").toString().trim();
+                String msg = row.get("Msg") == null ? "" : row.get("Msg").toString();
+                lines.add(ShiwanM2RejectUserMessages.formatStatus4Row(box, bottle, msg));
+            }
+            return String.join("；", lines) + "；";
+        } catch (Exception e) {
+            log.warn("[Status=4摘要] 查询失败: {}", e.getMessage());
+            return "待剔除校验不通过（共 " + boxCodes.size() + " 个盒码）；";
+        }
+    }
+
+    /**
      * 批次关联 - 为 Status=4 的盒码写入剔除记录（每条瓶码写一条 RejectRecord）。
      * @param caseCode 当前批次的箱码（用于填充 RejectRecord.CaseCode）
      */
@@ -1762,13 +1793,14 @@ public class ShiwanM2BoxCaseService {
                     "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
                     boxCode);
             if (rows == null || rows.isEmpty()) {
-                insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode, "码包热表校验不通过");
+                insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode,
+                        ShiwanM2RejectUserMessages.formatStatus4Row(boxCode, "", ""));
                 return;
             }
             for (Map<String, Object> row : rows) {
                 String bottleCode = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
-                String msgReason  = row.get("Msg") != null && !row.get("Msg").toString().isEmpty()
-                        ? row.get("Msg").toString() : "码包热表校验不通过";
+                String rawMsg = row.get("Msg") != null ? row.get("Msg").toString() : "";
+                String msgReason = ShiwanM2RejectUserMessages.formatStatus4Row(boxCode, bottleCode, rawMsg);
                 insertRejectRecord(orderNo, caseCode, boxCode, bottleCode,
                         bottleCode != null && !bottleCode.isEmpty() ? bottleCode : boxCode, msgReason);
             }

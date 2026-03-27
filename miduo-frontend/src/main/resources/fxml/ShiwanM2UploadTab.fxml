@@ -91,8 +91,8 @@
                     <Label text="箱数：" styleClass="sw2-upload-query-label"/>
                     <Label fx:id="resultBoxCount" text="-" styleClass="sw2-upload-query-value"/>
                 </HBox>
-                <!-- 失败原因 -->
-                <HBox spacing="8" alignment="CENTER_LEFT">
+                <!-- 失败原因（仅上传失败时显示，成功/待传/上传中均隐藏） -->
+                <HBox fx:id="failReasonRow" spacing="8" alignment="CENTER_LEFT">
                     <Label text="失败原因：" styleClass="sw2-upload-query-label"/>
                     <Label fx:id="resultFailReason" text="-" styleClass="sw2-upload-query-value"
                            wrapText="true" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>

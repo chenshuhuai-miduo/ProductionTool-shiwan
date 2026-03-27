@@ -2,29 +2,30 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.miduo.cloud.application.shiwan.UploadLogBus;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
+import java.time.format.DateTimeParseException;
 import java.util.ResourceBundle;
 
 /**
@@ -37,6 +38,8 @@ import java.util.ResourceBundle;
 public class ShiwanM2UploadController implements Initializable {
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    /** 查询结果区上传时间展示：与需求 P02-08 一致（yyyy-MM-dd HH:mm:ss） */
+    private static final DateTimeFormatter UPLOAD_TIME_DISPLAY = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // ==================== FXML 注入 ====================
 
@@ -52,6 +55,7 @@ public class ShiwanM2UploadController implements Initializable {
     @FXML private Label     resultStatus;
     @FXML private Label     resultUploadTime;
     @FXML private Label     resultBoxCount;
+    @FXML private HBox      failReasonRow;
     @FXML private Label     resultFailReason;
 
     // ==================== 内部状态 ====================
@@ -98,13 +102,11 @@ public class ShiwanM2UploadController implements Initializable {
 
     @FXML
     private void onManualUpload() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("手动上传");
-        confirm.setHeaderText("确认批量上传所有未上传的垛数据？");
-        confirm.setContentText("将按队列顺序依次上传，上传过程中请勿关闭软件。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) return;
+        boolean ok = FxDialog.confirm(
+                uploadDialogOwner(),
+                "手动上传",
+                "确认批量上传所有未上传的垛数据？\n将按队列顺序依次上传，上传过程中请勿关闭软件。");
+        if (!ok) return;
 
         // 后台发起，服务端负责写日志到实时上传区
         HttpUtil.asyncPost("/api/shiwan-m2/upload/manual-upload", "{}",
@@ -152,13 +154,11 @@ public class ShiwanM2UploadController implements Initializable {
         String code = palletCodeField.getText().trim();
         if (code.isEmpty()) { showWarn("请输入垛码", "请先输入要操作的垛码。"); return; }
 
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("设为未上传");
-        confirm.setHeaderText("确认将垛码「" + code + "」的状态重置为未上传？");
-        confirm.setContentText("状态重置后，可通过手动上传重新上传此垛。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> r = confirm.showAndWait();
-        if (r.isEmpty() || r.get() != ButtonType.OK) return;
+        boolean ok = FxDialog.confirm(
+                uploadDialogOwner(),
+                "设为未上传",
+                "确认将垛码「" + code + "」的状态重置为未上传？\n状态重置后，可通过手动上传重新上传此垛。");
+        if (!ok) return;
 
         HttpUtil.asyncPost("/api/shiwan-m2/upload/set-not-uploaded",
                 "{\"palletCode\":\"" + code + "\"}",
@@ -183,13 +183,11 @@ public class ShiwanM2UploadController implements Initializable {
         String code = palletCodeField.getText().trim();
         if (code.isEmpty()) { showWarn("请输入垛码", "请先输入要操作的垛码。"); return; }
 
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("设为已上传");
-        confirm.setHeaderText("确认将垛码「" + code + "」手动标记为已上传？");
-        confirm.setContentText("此操作将跳过该垛的自动上传，避免重复上传。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> r = confirm.showAndWait();
-        if (r.isEmpty() || r.get() != ButtonType.OK) return;
+        boolean ok = FxDialog.confirm(
+                uploadDialogOwner(),
+                "设为已上传",
+                "确认将垛码「" + code + "」手动标记为已上传？\n此操作将跳过该垛的自动上传，避免重复上传。");
+        if (!ok) return;
 
         HttpUtil.asyncPost("/api/shiwan-m2/upload/set-uploaded",
                 "{\"palletCode\":\"" + code + "\"}",
@@ -279,13 +277,18 @@ public class ShiwanM2UploadController implements Initializable {
                 resultStatus.getStyleClass().add(statusClass);
 
                 String uploadTime = data != null ? data.path("uploadTime").asText("") : "";
-                resultUploadTime.setText(isNullOrBlank(uploadTime) ? "-" : uploadTime);
+                resultUploadTime.setText(formatUploadTimeForDisplay(uploadTime));
 
                 int boxCount = data != null ? data.path("boxCount").asInt(0) : 0;
                 resultBoxCount.setText(String.valueOf(boxCount));
 
-                String msg = data != null ? data.path("msg").asText("") : "";
-                resultFailReason.setText(isNullOrBlank(msg) ? "-" : softWrapLongToken(msg));
+                boolean showFailReason = (isUpload == 2);
+                failReasonRow.setVisible(showFailReason);
+                failReasonRow.setManaged(showFailReason);
+                if (showFailReason) {
+                    String msg = data != null ? data.path("msg").asText("") : "";
+                    resultFailReason.setText(isNullOrBlank(msg) ? "-" : softWrapLongToken(msg));
+                }
                 break;
         }
     }
@@ -335,22 +338,50 @@ public class ShiwanM2UploadController implements Initializable {
         return s == null || s.trim().isEmpty() || "null".equalsIgnoreCase(s.trim());
     }
 
-    private void showInfo(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+    /**
+     * 将接口返回的时间（常见为 ISO-8601 本地时间带 'T'）格式化为 yyyy-MM-dd HH:mm:ss；空则 "-"。
+     */
+    private static String formatUploadTimeForDisplay(String raw) {
+        if (isNullOrBlank(raw)) {
+            return "-";
+        }
+        String s = raw.trim();
+        try {
+            return LocalDateTime.parse(s, DateTimeFormatter.ISO_LOCAL_DATE_TIME).format(UPLOAD_TIME_DISPLAY);
+        } catch (DateTimeParseException ignored) {
+            // fall through
+        }
+        try {
+            return LocalDateTime.parse(s, UPLOAD_TIME_DISPLAY).format(UPLOAD_TIME_DISPLAY);
+        } catch (DateTimeParseException ignored) {
+            // fall through
+        }
+        try {
+            return OffsetDateTime.parse(s).toLocalDateTime().format(UPLOAD_TIME_DISPLAY);
+        } catch (DateTimeParseException ignored) {
+            // fall through
+        }
+        return s;
     }
 
+    private Window uploadDialogOwner() {
+        if (palletCodeField != null && palletCodeField.getScene() != null) {
+            return palletCodeField.getScene().getWindow();
+        }
+        if (uploadLogList != null && uploadLogList.getScene() != null) {
+            return uploadLogList.getScene().getWindow();
+        }
+        return null;
+    }
+
+    /** 通用警告提示（可从后台线程调用，内部切回 FX 线程）。 */
     private void showWarn(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        Runnable r = () -> FxDialog.warn(uploadDialogOwner(), title, content);
+        if (Platform.isFxApplicationThread()) {
+            r.run();
+        } else {
+            Platform.runLater(r);
+        }
     }
 
     // ==================== 枚举与数据模型 ====================

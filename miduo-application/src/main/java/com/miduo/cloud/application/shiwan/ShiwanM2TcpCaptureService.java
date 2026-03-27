@@ -579,7 +579,7 @@ public class ShiwanM2TcpCaptureService {
     /** 盒码批次超时（未等到同批次箱码）→ 整批剔除。 */
     private void handleBoxBatchTimeoutReject(BoxBatchEntry boxBatch) {
         alignBatchCountersAfterTimeout(boxBatch.batchNo);
-        String reason = "箱相机未在双相机等待超时时间内采集到箱码，剔除整箱";
+        String reason = "批次匹配超时-未见箱码";
         List<String> boxCodes = boxBatch.codes == null
                 ? Collections.emptyList()
                 : boxBatch.codes.stream().map(i -> i.code).filter(Objects::nonNull).collect(Collectors.toList());
@@ -604,7 +604,7 @@ public class ShiwanM2TcpCaptureService {
     /** 箱码批次超时（未等到同批次盒码）→ 整批剔除。 */
     private void handleCaseBatchTimeoutReject(CaseBatchEntry caseBatch) {
         alignBatchCountersAfterTimeout(caseBatch.batchNo);
-        String reason = "盒相机未在双相机等待超时时间内采集到盒码，剔除整箱";
+        String reason = "批次匹配超时-未见盒码";
         String caseCode = caseBatch.code != null ? caseBatch.code : "";
 
         // 落库：按箱码记录剔除条目
@@ -630,7 +630,7 @@ public class ShiwanM2TcpCaptureService {
                 timeoutBatchNo, alignedBox, alignedCase);
     }
 
-        /** 读取系统设置中的双相机批次匹配等待超时（ms），默认 3000；0 表示禁用。 */
+    /** 读取系统设置中的双相机批次匹配等待超时（ms），默认 3000；0 表示禁用。 */
     private long resolveMatchWaitTimeoutMs() {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         if (cfg == null || cfg.getBoxCaseCameraCapture() == null) return 3000L;
@@ -662,20 +662,11 @@ public class ShiwanM2TcpCaptureService {
         List<BoxCodeItem> boxItems    = boxBatch.codes;
         List<String>      allBoxCodes = boxItems.stream().map(i -> i.code).collect(Collectors.toList());
 
-        // 有问题的条目（写 RejectRecord 用）
-        List<RejectEntry> rejectEntries = new ArrayList<>();
+        // 1. 箱码位数 / 队列重复
+        boolean caseProblem = !caseBatch.digitOk || caseBatch.queueDuplicate;
 
-        // 1. 箱码位数校验
-        if (!caseBatch.digitOk || caseBatch.queueDuplicate) {
-            rejectEntries.add(new RejectEntry(caseCode, null, caseCode, caseBatch.reason));
-        }
-
-        // 2. 盒码位数校验
-        for (BoxCodeItem item : boxItems) {
-            if (!item.digitOk || item.queueDuplicate) {
-                rejectEntries.add(new RejectEntry(caseCode, item.code, item.code, item.reason));
-            }
-        }
+        // 2. 盒码位数 / 队列重复
+        boolean anyBoxProblem = boxItems.stream().anyMatch(i -> !i.digitOk || i.queueDuplicate);
 
         // 3. 数量校验
         boolean countOk = boxBatch.countOk;
@@ -688,36 +679,34 @@ public class ShiwanM2TcpCaptureService {
             status4Codes = boxCaseService.getStatus4BoxCodes(digitOkBoxCodes);
         }
 
-        boolean hasProblems = !rejectEntries.isEmpty() || !countOk || !status4Codes.isEmpty();
+        boolean hasProblems = caseProblem || anyBoxProblem || !countOk || !status4Codes.isEmpty();
 
         if (hasProblems) {
             // --- 整批剔除 ---
 
-            // 构造问题摘要
+            // 构造问题摘要（与产品文档 10.1.x 界面显示格式一致）
             StringBuilder summary = new StringBuilder();
-            if (!rejectEntries.isEmpty()) {
-                long digitFailBox  = rejectEntries.stream().filter(e -> e.boxCode != null).count();
-                boolean caseDigitFail = rejectEntries.stream().anyMatch(e -> e.boxCode == null);
-                long queueDupFail = rejectEntries.stream().filter(e -> "检测到采集的码重复".equals(e.reason)).count();
-                if (caseDigitFail && "检测到采集的码重复".equals(caseBatch.reason)) {
-                    summary.append("检测到采集的码重复；");
-                } else if (caseDigitFail) {
-                    summary.append("箱码位数不符；");
-                }
-                if (digitFailBox > 0) {
-                    summary.append("盒码异常×").append(digitFailBox).append("；");
-                }
-                if (queueDupFail > 0 && !(caseDigitFail && "检测到采集的码重复".equals(caseBatch.reason))) {
-                    summary.append("检测到采集的码重复×").append(queueDupFail).append("；");
+            if (!caseBatch.digitOk) {
+                summary.append("箱码 ").append(caseCode).append(" 格式错误；");
+            } else if (caseBatch.queueDuplicate) {
+                summary.append("箱码 ").append(caseCode).append(" 重复出现；");
+            }
+            for (BoxCodeItem item : boxItems) {
+                if (!item.digitOk) {
+                    summary.append("盒码 ").append(item.code).append(" 格式错误；");
+                } else if (item.queueDuplicate) {
+                    summary.append("盒码 ").append(item.code).append(" 重复出现；");
                 }
             }
             if (!countOk) {
-                String cr = boxBatch.codes.size() < boxesPerCase ? "缺码" : "超码";
-                summary.append("盒码").append(cr).append("（实际").append(boxBatch.codes.size())
-                        .append("个，期望").append(boxesPerCase).append("个）；");
+                summary.append("箱码 ").append(caseCode).append(" 盒数不符（实际")
+                        .append(boxBatch.codes.size()).append("盒，期望").append(boxesPerCase).append("盒）；");
             }
             if (!status4Codes.isEmpty()) {
-                summary.append("Status=4×").append(status4Codes.size()).append("；");
+                String s4 = boxCaseService.buildStatus4UserSummary(status4Codes);
+                if (s4 != null && !s4.isEmpty()) {
+                    summary.append(s4);
+                }
             }
 
             String rejectReason = summary.length() > 0 ? summary.toString() : "整箱剔除";
@@ -745,7 +734,7 @@ public class ShiwanM2TcpCaptureService {
         if (res == null || res.getCode() == null || res.getCode() != 200) {
             String errMsg = res != null ? res.getMessage() : "服务返回null";
             // 关联失败：整箱全量写剔除记录 + 置未完成
-            String caseRejectReason = parseCaseRejectReason(errMsg);
+            String caseRejectReason = ShiwanM2RejectUserMessages.formatAssociateApiError(errMsg);
             boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, caseRejectReason);
             if (!allBoxCodes.isEmpty()) {
                 int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
@@ -810,16 +799,6 @@ public class ShiwanM2TcpCaptureService {
             if (recentEvents.size() >= MAX_EVENTS) recentEvents.pollFirst();
             recentEvents.addLast(evt);
         }
-    }
-
-    /**
-     * 从 ASSOC_FAIL 错误信息推断箱码级剔除原因。
-     */
-    private static String parseCaseRejectReason(String errMsg) {
-        if (errMsg == null) return "盒箱校验不通过";
-        if (errMsg.contains("大标码包")) return "大标不通过";
-        if (errMsg.contains("重码"))     return "重码";
-        return "盒箱校验不通过";
     }
 
     private static Map<String, Object> buildFailData(List<String> boxCodes, String caseCode, String reason) {
@@ -925,21 +904,6 @@ public class ShiwanM2TcpCaptureService {
             this.queueDuplicate = queueDuplicate;
             this.reason   = reason;
             this.receivedAtMs = System.currentTimeMillis();
-        }
-    }
-
-    /** 剔除记录条目（仅在 processMatchedBatch 内部使用）。 */
-    private static class RejectEntry {
-        final String caseCode;
-        final String boxCode;       // null 表示是箱码本身的问题
-        final String problemCode;
-        final String reason;
-
-        RejectEntry(String caseCode, String boxCode, String problemCode, String reason) {
-            this.caseCode    = caseCode;
-            this.boxCode     = boxCode;
-            this.problemCode = problemCode;
-            this.reason      = reason;
         }
     }
 
