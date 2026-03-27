@@ -2156,8 +2156,7 @@ public class ShiwanM2BoxCaseService {
             String   returnMsg  = root.has("return_msg")  ? root.get("return_msg").asText()  : "未知错误";
             String   logTime    = LocalDateTime.now().format(LOG_TIME_FMT);
 
-            if ("0".equals(returnCode)) {
-                // return_code=0 表示云端处理完成且成功
+            if ("处理成功".equals(returnMsg)&&("0".equals(returnCode))) {
                 jdbcTemplate.update(
                         "UPDATE CodeRelationUpload SET IsUpload = 1, UploadTime = NOW() WHERE VirtualSerialNumber = ? AND IsDel = 0",
                         palletCode);
