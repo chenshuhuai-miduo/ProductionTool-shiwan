@@ -584,9 +584,10 @@ public class ShiwanM2TcpCaptureService {
                 ? Collections.emptyList()
                 : boxBatch.codes.stream().map(i -> i.code).filter(Objects::nonNull).collect(Collectors.toList());
 
-        // 落库：按盒码记录剔除条目（无箱码时 CaseCode 为空）
+        // 落库：按超时事件写主表 + 每个盒码一条明细（无箱码时 CaseCode 为空）
+        Long eventId = boxCaseService.insertRejectEvent(currentOrderNo, null, reason);
         for (String boxCode : boxCodes) {
-            boxCaseService.insertRejectRecord(currentOrderNo, null, boxCode, null, boxCode, reason);
+            boxCaseService.insertRejectDetail(eventId, null, boxCode, null, null, reason);
         }
         // 将该批次盒码在关联表中的未关联记录状态置为未完成（Status=0）
         if (!boxCodes.isEmpty()) {
@@ -607,8 +608,8 @@ public class ShiwanM2TcpCaptureService {
         String reason = "批次匹配超时-未见盒码";
         String caseCode = caseBatch.code != null ? caseBatch.code : "";
 
-        // 落库：按箱码记录剔除条目
-        boxCaseService.insertRejectRecord(currentOrderNo, caseCode, null, null, caseCode, reason);
+        // 落库：按超时事件写主表（无盒码时无明细）
+        boxCaseService.insertRejectEvent(currentOrderNo, caseCode, reason);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("boxCodes", Collections.emptyList());
@@ -671,15 +672,15 @@ public class ShiwanM2TcpCaptureService {
         // 3. 数量校验
         boolean countOk = boxBatch.countOk;
 
-        // 4. Status=4 检查（仅对位数通过的盒码）
+        // 4. 问题状态检查（status=4/5/6，仅对位数通过的盒码）
         List<String> digitOkBoxCodes = boxItems.stream()
                 .filter(i -> i.digitOk).map(i -> i.code).collect(Collectors.toList());
-        List<String> status4Codes = Collections.emptyList();
+        Map<String, Integer> problematicCodes = Collections.emptyMap();
         if (!digitOkBoxCodes.isEmpty()) {
-            status4Codes = boxCaseService.getStatus4BoxCodes(digitOkBoxCodes);
+            problematicCodes = boxCaseService.getProblematicBoxCodes(digitOkBoxCodes);
         }
 
-        boolean hasProblems = caseProblem || anyBoxProblem || !countOk || !status4Codes.isEmpty();
+        boolean hasProblems = caseProblem || anyBoxProblem || !countOk || !problematicCodes.isEmpty();
 
         if (hasProblems) {
             // --- 整批剔除 ---
@@ -702,23 +703,20 @@ public class ShiwanM2TcpCaptureService {
                 summary.append("箱码 ").append(caseCode).append(" 盒数不符（实际")
                         .append(boxBatch.codes.size()).append("盒，期望").append(boxesPerCase).append("盒）；");
             }
-            if (!status4Codes.isEmpty()) {
-                String s4 = boxCaseService.buildStatus4UserSummary(status4Codes);
-                if (s4 != null && !s4.isEmpty()) {
-                    summary.append(s4);
+            if (!problematicCodes.isEmpty()) {
+                String ps = boxCaseService.buildProblematicBoxSummary(new ArrayList<>(problematicCodes.keySet()));
+                if (ps != null && !ps.isEmpty()) {
+                    summary.append(ps);
                 }
             }
 
             String rejectReason = summary.length() > 0 ? summary.toString() : "整箱剔除";
 
-            // 整箱全量落剔除记录：将该箱对应所有盒/瓶关联数据写入 RejectRecord
+            // 整箱全量落剔除记录（主表事件 + 明细）
             boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, rejectReason);
 
-            // 将该批次盒码对应未关联记录置为未完成（Status=0），不再物理删除。
-            if (!allBoxCodes.isEmpty()) {
-                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
-                log.warn("[批{}] 整批剔除：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
-            }
+            // 按状态更新 CodeRelationUpload：status=4→6，status=5→物理删除，正常→0
+            boxCaseService.applyRejectionStatusUpdates(allBoxCodes, problematicCodes);
 
             addEvent("ASSOC_FAIL",
                     "[批" + batchNo + "] 整批剔除 箱码:" + caseCode + "，原因：" + summary,
@@ -733,13 +731,11 @@ public class ShiwanM2TcpCaptureService {
 
         if (res == null || res.getCode() == null || res.getCode() != 200) {
             String errMsg = res != null ? res.getMessage() : "服务返回null";
-            // 关联失败：整箱全量写剔除记录 + 置未完成
+            // 关联失败：整箱全量写剔除记录 + 状态更新
             String caseRejectReason = ShiwanM2RejectUserMessages.formatAssociateApiError(errMsg);
             boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, caseRejectReason);
-            if (!allBoxCodes.isEmpty()) {
-                int updated = boxCaseService.markCodeRelationUploadUnfinishedByBoxCodes(allBoxCodes);
-                log.warn("[批{}] 关联失败：CodeRelationUpload 置未完成 {} 条记录", batchNo, updated);
-            }
+            // 关联失败时无预定义问题码，好盒码置为 status=0
+            boxCaseService.applyRejectionStatusUpdates(allBoxCodes, Collections.emptyMap());
             addEvent("ASSOC_FAIL",
                     "[批" + batchNo + "] 关联失败 箱码:" + caseCode + "，原因：" + errMsg,
                     buildFailData(allBoxCodes, caseCode, errMsg));

@@ -11,6 +11,8 @@ import com.miduo.cloud.entity.po.OperateLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -754,39 +758,73 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
-     * 写入单条剔除记录到 RejectRecord 表。
-     * <p>
-     * 字段说明（对应需求文档 10.1.6）：
-     * <ul>
-     *   <li>caseCode   — 被剔除箱的箱码（必填）</li>
-     *   <li>boxCode    — 问题盒码；大标/重码场景为 null</li>
-     *   <li>bottleCode — 问题瓶码；当前 TCP 采集场景暂为 null</li>
-     *   <li>problemCode— 导致剔除的具体码（大标/重码时为箱码，中标不通过时为盒码，盒箱校验不通过时为 null）</li>
-     *   <li>rejectReason— 枚举文本：大标不通过/重码/盒箱校验不通过/中标不通过 等</li>
-     * </ul>
-     * 写入失败仅记录日志，不向上抛异常，避免影响主流程。
+     * 写入剔除事件主表（RejectRecord），返回生成的事件 ID（EventId）。
+     * 写入失败仅记录日志，返回 null，不影响主流程。
      */
-    public void insertRejectRecord(String orderNo, String caseCode, String boxCode,
-                                   String bottleCode, String problemCode, String rejectReason) {
+    public Long insertRejectEvent(String orderNo, String caseCode, String rejectReason) {
         try {
-            jdbcTemplate.update(
-                    "INSERT INTO RejectRecord (OrderNo, CaseCode, BoxCode, BottleCode, ProblemCode, RejectReason, RejectTime) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, NOW())",
-                    orderNo, caseCode, boxCode, bottleCode, problemCode, rejectReason);
-            log.info("[剔除记录] 写入成功 orderNo={} caseCode={} boxCode={} problemCode={} reason={}",
-                    orderNo, caseCode, boxCode, problemCode, rejectReason);
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            jdbcTemplate.update(conn -> {
+                PreparedStatement ps = conn.prepareStatement(
+                        "INSERT INTO RejectRecord (OrderNo, CaseCode, RejectReason, RejectTime) VALUES (?, ?, ?, NOW())",
+                        Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, orderNo);
+                ps.setString(2, caseCode);
+                ps.setString(3, rejectReason);
+                return ps;
+            }, keyHolder);
+            Number key = keyHolder.getKey();
+            Long eventId = key != null ? key.longValue() : null;
+            log.info("[剔除事件] 写入成功 eventId={} orderNo={} caseCode={} reason={}",
+                    eventId, orderNo, caseCode, rejectReason);
+            return eventId;
         } catch (Exception e) {
-            log.error("[剔除记录] 写入失败 orderNo={} caseCode={} boxCode={} reason={}: {}",
-                    orderNo, caseCode, boxCode, rejectReason, e.getMessage(), e);
+            log.error("[剔除事件] 写入失败 orderNo={} caseCode={} reason={}: {}",
+                    orderNo, caseCode, rejectReason, e.getMessage(), e);
+            return null;
         }
     }
 
-    /** 总剔除数：RejectRecord 表按 OrderNo 统计条数。 */
+    /**
+     * 写入一条剔除明细到 RejectRecordDetail 表。
+     * smallCode=瓶码，mediumCode=盒码，bigCode=箱码，对应 CodeRelationUpload 一行。
+     * 写入失败仅记录日志，不向上抛异常。
+     */
+    public void insertRejectDetail(Long eventId, String smallCode, String mediumCode,
+                                   String bigCode, String problemCode, String rejectReason) {
+        if (eventId == null) return;
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO RejectRecordDetail " +
+                    "(EventId, SmallSerialNumber, MediumSerialNumber, BigSerialNumber, ProblemCode, RejectReason, CreateTime) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                    eventId, smallCode, mediumCode, bigCode, problemCode, rejectReason);
+        } catch (Exception e) {
+            log.error("[剔除明细] 写入失败 eventId={} medium={} small={} reason={}: {}",
+                    eventId, mediumCode, smallCode, rejectReason, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 兼容旧调用的剔除记录写入接口（超时剔除场景）。
+     * 内部创建一个事件主表记录 + 一条明细，保持调用方无感知迁移。
+     * @deprecated 新代码请直接使用 insertRejectEvent + insertRejectDetail
+     */
+    @Deprecated
+    public void insertRejectRecord(String orderNo, String caseCode, String boxCode,
+                                   String bottleCode, String problemCode, String rejectReason) {
+        Long eventId = insertRejectEvent(orderNo, caseCode, rejectReason);
+        if (eventId != null && (boxCode != null || bottleCode != null || problemCode != null)) {
+            insertRejectDetail(eventId, bottleCode, boxCode, caseCode, problemCode, rejectReason);
+        }
+    }
+
+    /** 总剔除数：RejectRecord 主表按 OrderNo 统计事件数（DISTINCT CaseCode）。 */
     public int getRejectCount(String orderNo) {
         if (orderNo == null || orderNo.trim().isEmpty()) return 0;
         try {
             Long n = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM RejectRecord WHERE OrderNo = ?",
+                    "SELECT COUNT(DISTINCT CaseCode) FROM RejectRecord WHERE OrderNo = ?",
                     Long.class, orderNo.trim());
             return n != null ? n.intValue() : 0;
         } catch (Exception e) {
@@ -1124,12 +1162,13 @@ public class ShiwanM2BoxCaseService {
                     log.info("[取消关联] 箱码 {} 全部解除，盒 {} + 瓶-盒行 {}", code, boxes.size(), rows.size());
                     r.put("cancelledCount", count);
                 } else {
-                    // 只解一层：清 BigSerialNumber 字段，盒码留冷
+                    // 只解一层：清 BigSerialNumber 字段，盒码留冷；同时将 status=6 的盒码重置为 status=0
                     List<Map<String, Object>> boxRows = jdbcTemplate.queryForList(
                             "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
                             "WHERE BigSerialNumber=? AND IsDel=0", code);
                     jdbcTemplate.update(
-                            "UPDATE CodeRelationUpload SET BigSerialNumber='', BiggerSerialNumber='', VirtualSerialNumber='' " +
+                            "UPDATE CodeRelationUpload SET BigSerialNumber='', BiggerSerialNumber='', VirtualSerialNumber='', " +
+                            "Status = CASE WHEN Status = 6 THEN 0 ELSE Status END " +
                             "WHERE BigSerialNumber=? AND IsDel=0", code);
                     returnCodeToHot(3, code);
                     log.info("[取消关联] 箱码 {} 只解一层，断盒-箱 {} 条", code, boxRows.size());
@@ -1481,8 +1520,10 @@ public class ShiwanM2BoxCaseService {
         // 7. 本地数据库操作（事务保护：全部成功或全部回滚）
         try {
             transactionTemplate.execute(status -> {
+                // 替换码值，同时若原记录为 status=6（待处理），重置为 status=0（已修复）
                 int updated = jdbcTemplate.update(
-                        "UPDATE CodeRelationUpload SET " + column + " = ? WHERE " + column + " = ?", newV, oldV);
+                        "UPDATE CodeRelationUpload SET " + column + " = ?, Status = CASE WHEN Status = 6 THEN 0 ELSE Status END " +
+                        "WHERE " + column + " = ?", newV, oldV);
                 if (updated <= 0) {
                     throw new RuntimeException("替换失败，未更新到记录");
                 }
@@ -1634,6 +1675,10 @@ public class ShiwanM2BoxCaseService {
         return buildPageResult(records, total, current, size);
     }
 
+    /**
+     * P02-07 剔除记录弹窗主表数据：每条剔除事件一行，含明细条数。
+     * 对应弹窗左侧列表：序号 / 箱码 / 剔除时间 / 原因摘要 / 明细数。
+     */
     public Map<String, Object> getRejectRecords(String startDate, String endDate, String orderNo, String caseCode, int page, int pageSize) {
         Timestamp start = parseStartDate(startDate);
         Timestamp end = parseEndDate(endDate);
@@ -1658,8 +1703,9 @@ public class ShiwanM2BoxCaseService {
         listArgs.add(size);
         listArgs.add(offset);
         List<Map<String, Object>> records = jdbcTemplate.queryForList(
-                "SELECT r.Id, r.OrderNo, r.CaseCode, r.BoxCode, r.BottleCode, r.ProblemCode, r.RejectReason, r.RejectTime, " +
-                        "p.ProductNo, p.ProductName " +
+                "SELECT r.Id, r.OrderNo, r.CaseCode, r.RejectReason, r.RejectTime, " +
+                        "p.ProductNo, p.ProductName, " +
+                        "(SELECT COUNT(*) FROM RejectRecordDetail d WHERE d.EventId = r.Id) AS detailCount " +
                         "FROM RejectRecord r " +
                         "LEFT JOIN ProductInfo p ON p.ProductNo = (" +
                         "  SELECT c.ProductNO FROM CodeRelationUpload c WHERE c.OrderNo = r.OrderNo LIMIT 1" +
@@ -1667,6 +1713,24 @@ public class ShiwanM2BoxCaseService {
                         where + " ORDER BY r.RejectTime DESC LIMIT ? OFFSET ?",
                 listArgs.toArray());
         return buildPageResult(records, total, current, size);
+    }
+
+    /**
+     * P02-07 剔除明细：按事件 ID 查询 RejectRecordDetail。
+     * 对应弹窗右侧明细列表：序号 / 关联码（瓶/盒/箱）/ 问题码 / 剔除原因。
+     */
+    public List<Map<String, Object>> getRejectRecordDetails(Long eventId) {
+        if (eventId == null) return Collections.emptyList();
+        try {
+            return jdbcTemplate.queryForList(
+                    "SELECT Id, EventId, SmallSerialNumber AS bottleCode, MediumSerialNumber AS boxCode, " +
+                    "BigSerialNumber AS caseCode, ProblemCode AS problemCode, RejectReason AS rejectReason " +
+                    "FROM RejectRecordDetail WHERE EventId = ? ORDER BY Id ASC",
+                    eventId);
+        } catch (Exception e) {
+            log.warn("[剔除明细查询] 查询失败 eventId={}: {}", eventId, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     public Map<String, Object> getUploadRecords(String startDate, String endDate, String orderNo, String status, int page, int pageSize) {
@@ -1713,62 +1777,56 @@ public class ShiwanM2BoxCaseService {
     }
 
     /**
-     * 检查盒码（MediumSerialNumber）关联的所有 Status=4（待剔除）记录，写入剔除记录表。
-     * 返回 true 表示存在 Status=4 记录（调用方应将该盒码视为失败，不入队列）。
+     * 查询指定盒码列表中存在问题状态（4=待剔除/5=重码/6=待处理）的盒码及其状态。
+     * 返回 Map：key=盒码，value=status（4/5/6），仅包含有问题的盒码。
      */
-    public boolean checkAndWriteRejectsForStatus4(String orderNo, String mediumSerialNumber) {
-        List<Map<String, Object>> status4Rows = jdbcTemplate.queryForList(
-                "SELECT SmallSerialNumber, Msg FROM CodeRelationUpload " +
-                "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
-                mediumSerialNumber);
-        if (status4Rows == null || status4Rows.isEmpty()) return false;
-        for (Map<String, Object> row : status4Rows) {
-            String bottleCode  = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
-            String rawMsg = row.get("Msg") != null ? row.get("Msg").toString() : "";
-            String msgReason = ShiwanM2RejectUserMessages.formatStatus4Row(mediumSerialNumber, bottleCode, rawMsg);
-            insertRejectRecord(orderNo, null, mediumSerialNumber, bottleCode,
-                    bottleCode != null ? bottleCode : mediumSerialNumber, msgReason);
-        }
-        // 写入剔除记录后将这些数据从 CodeRelationUpload 中删除（M1同步的数据）
-        jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET IsDel = 1 " +
-                "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
-                mediumSerialNumber);
-        log.warn("[Status=4] 盒码 {} 关联记录 {} 条已写入剔除记录并标记删除",
-                mediumSerialNumber, status4Rows.size());
-        return true;
-    }
-
-    /**
-     * 批次关联 - 查询指定盒码中存在 Status=4 记录的盒码列表（码包热表校验不通过）。
-     * 仅返回在 CodeRelationUpload 中有 Status=4 记录的盒码。
-     */
-    public List<String> getStatus4BoxCodes(List<String> boxCodes) {
-        if (boxCodes == null || boxCodes.isEmpty()) return Collections.emptyList();
-        try {
-            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
-            return jdbcTemplate.queryForList(
-                    "SELECT DISTINCT MediumSerialNumber FROM CodeRelationUpload " +
-                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND Status = 4 AND IsDel = 0",
-                    String.class, boxCodes.toArray());
-        } catch (Exception e) {
-            log.warn("[Status=4检查] 查询失败: {}", e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-    /**
-     * 查询指定盒码在 CodeRelationUpload 中 Status=4 的明细，生成与产品文档一致的操作工提示（多条去重后拼接）。
-     */
-    public String buildStatus4UserSummary(List<String> boxCodes) {
-        if (boxCodes == null || boxCodes.isEmpty()) {
-            return "";
-        }
+    public Map<String, Integer> getProblematicBoxCodes(List<String> boxCodes) {
+        if (boxCodes == null || boxCodes.isEmpty()) return Collections.emptyMap();
         try {
             String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT MediumSerialNumber, SmallSerialNumber, Msg FROM CodeRelationUpload " +
-                            "WHERE MediumSerialNumber IN (" + placeholders + ") AND Status = 4 AND IsDel = 0 " +
+                    "SELECT DISTINCT MediumSerialNumber, Status FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND Status IN (4, 5, 6) AND IsDel = 0",
+                    boxCodes.toArray());
+            Map<String, Integer> result = new LinkedHashMap<>();
+            for (Map<String, Object> row : rows) {
+                String code = row.get("MediumSerialNumber") != null ? row.get("MediumSerialNumber").toString() : null;
+                Object statusObj = row.get("Status");
+                if (code != null && statusObj instanceof Number) {
+                    result.put(code, ((Number) statusObj).intValue());
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            log.warn("[问题盒码检查] 查询失败: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * 兼容旧调用：返回 Status=4 的盒码列表。
+     * @deprecated 使用 getProblematicBoxCodes 替代
+     */
+    @Deprecated
+    public List<String> getStatus4BoxCodes(List<String> boxCodes) {
+        Map<String, Integer> map = getProblematicBoxCodes(boxCodes);
+        return map.entrySet().stream()
+                .filter(e -> e.getValue() == 4)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 生成问题盒码的操作工可读摘要（多条去重后拼接）。
+     * 包含 status=4/5/6 的盒码，按 Msg 字段格式化。
+     */
+    public String buildProblematicBoxSummary(List<String> boxCodes) {
+        if (boxCodes == null || boxCodes.isEmpty()) return "";
+        try {
+            String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT MediumSerialNumber, SmallSerialNumber, Msg, Status FROM CodeRelationUpload " +
+                            "WHERE MediumSerialNumber IN (" + placeholders + ") AND Status IN (4, 5, 6) AND IsDel = 0 " +
                             "ORDER BY MediumSerialNumber, SmallSerialNumber",
                     boxCodes.toArray());
             if (rows == null || rows.isEmpty()) {
@@ -1776,100 +1834,215 @@ public class ShiwanM2BoxCaseService {
             }
             LinkedHashSet<String> lines = new LinkedHashSet<>();
             for (Map<String, Object> row : rows) {
-                String box = row.get("MediumSerialNumber") == null ? "" : row.get("MediumSerialNumber").toString().trim();
+                String box    = row.get("MediumSerialNumber") == null ? "" : row.get("MediumSerialNumber").toString().trim();
                 String bottle = row.get("SmallSerialNumber") == null ? "" : row.get("SmallSerialNumber").toString().trim();
-                String msg = row.get("Msg") == null ? "" : row.get("Msg").toString();
-                lines.add(ShiwanM2RejectUserMessages.formatStatus4Row(box, bottle, msg));
+                String msg    = row.get("Msg") == null ? "" : row.get("Msg").toString();
+                int status    = row.get("Status") instanceof Number ? ((Number) row.get("Status")).intValue() : 4;
+                if (status == 5) {
+                    lines.add(ShiwanM2RejectUserMessages.formatStatus5Row(box, bottle, msg));
+                } else {
+                    lines.add(ShiwanM2RejectUserMessages.formatStatus4Row(box, bottle, msg));
+                }
             }
             return String.join("；", lines) + "；";
         } catch (Exception e) {
-            log.warn("[Status=4摘要] 查询失败: {}", e.getMessage());
+            log.warn("[问题盒码摘要] 查询失败: {}", e.getMessage());
             return "待剔除校验不通过（共 " + boxCodes.size() + " 个盒码）；";
         }
     }
 
+    /** 兼容旧调用。@deprecated 使用 buildProblematicBoxSummary 替代 */
+    @Deprecated
+    public String buildStatus4UserSummary(List<String> boxCodes) {
+        return buildProblematicBoxSummary(boxCodes);
+    }
+
     /**
-     * 批次关联 - 为 Status=4 的盒码写入剔除记录（每条瓶码写一条 RejectRecord）。
-     * @param caseCode 当前批次的箱码（用于填充 RejectRecord.CaseCode）
+     * 整箱剔除：写入剔除事件主表 + 明细表，返回事件 ID。
+     * 明细覆盖该箱所有采集到的盒码对应瓶码数据（CodeRelationUpload 中 IsDel=0 的行）。
+     * 若查不到明细则按盒码兜底写入，确保至少有一条明细可追溯。
      */
+    public Long insertFullCaseRejectRecords(String orderNo, String caseCode, List<String> boxCodes, String rejectReason) {
+        Long eventId = insertRejectEvent(orderNo, caseCode, rejectReason);
+        if (eventId == null) return null;
+
+        List<String> validBoxCodes = boxCodes == null ? Collections.emptyList() :
+                boxCodes.stream().filter(Objects::nonNull).map(String::trim)
+                        .filter(s -> !s.isEmpty()).distinct().collect(Collectors.toList());
+
+        if (validBoxCodes.isEmpty()) {
+            insertRejectDetail(eventId, null, null, caseCode, caseCode, rejectReason);
+            return eventId;
+        }
+
+        try {
+            String placeholders = String.join(",", Collections.nCopies(validBoxCodes.size(), "?"));
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT MediumSerialNumber, SmallSerialNumber, Msg, Status FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND IsDel = 0 " +
+                    "ORDER BY MediumSerialNumber, SmallSerialNumber",
+                    validBoxCodes.toArray());
+
+            if (rows == null || rows.isEmpty()) {
+                for (String boxCode : validBoxCodes) {
+                    insertRejectDetail(eventId, null, boxCode, caseCode, boxCode, rejectReason);
+                }
+            } else {
+                for (Map<String, Object> row : rows) {
+                    String boxCode    = row.get("MediumSerialNumber") == null ? null : row.get("MediumSerialNumber").toString();
+                    String bottleCode = row.get("SmallSerialNumber") == null ? null : row.get("SmallSerialNumber").toString();
+                    String msg        = row.get("Msg") == null ? "" : row.get("Msg").toString();
+                    int rowStatus     = row.get("Status") instanceof Number ? ((Number) row.get("Status")).intValue() : 0;
+                    // 问题码：有问题状态的行用该行的 Msg 格式化，否则留空（正常瓶盒，仅作留痕）
+                    String problemCode = null;
+                    String detailReason = rejectReason;
+                    if (rowStatus == 4 || rowStatus == 5 || rowStatus == 6) {
+                        problemCode = (bottleCode != null && !bottleCode.isEmpty()) ? bottleCode : boxCode;
+                        detailReason = rowStatus == 5
+                                ? ShiwanM2RejectUserMessages.formatStatus5Row(boxCode, bottleCode, msg)
+                                : ShiwanM2RejectUserMessages.formatStatus4Row(boxCode, bottleCode, msg);
+                    }
+                    insertRejectDetail(eventId, bottleCode, boxCode, caseCode, problemCode, detailReason);
+                }
+                log.warn("[整箱剔除] 全量明细写入完成 eventId={} caseCode={} boxCount={} rowCount={} reason={}",
+                        eventId, caseCode, validBoxCodes.size(), rows.size(), rejectReason);
+            }
+        } catch (Exception e) {
+            log.error("[整箱剔除] 全量写入失败 eventId={} caseCode={} reason={}: {}",
+                    eventId, caseCode, rejectReason, e.getMessage(), e);
+            for (String boxCode : validBoxCodes) {
+                insertRejectDetail(eventId, null, boxCode, caseCode, boxCode, rejectReason);
+            }
+        }
+        return eventId;
+    }
+
+    /**
+     * 整箱剔除后，按每个盒码的问题状态更新 CodeRelationUpload：
+     * - status=4 → 置为 status=6（待处理，保留供数据替换/取消关联）
+     * - status=5 → 物理删除
+     * - status=6 → 不做任何更新
+     * - 其余无问题的盒码 → 置为 status=0（可重新被关联）
+     *
+     * @param allBoxCodes      本次参与剔除的所有盒码
+     * @param problematicCodes 有问题的盒码 Map（key=盒码, value=status）
+     */
+    public void applyRejectionStatusUpdates(List<String> allBoxCodes, Map<String, Integer> problematicCodes) {
+        if (allBoxCodes == null || allBoxCodes.isEmpty()) return;
+        List<String> status4Codes = new ArrayList<>();
+        List<String> status5Codes = new ArrayList<>();
+        List<String> goodCodes    = new ArrayList<>();
+
+        for (String code : allBoxCodes) {
+            if (code == null || code.trim().isEmpty()) continue;
+            Integer pStatus = problematicCodes != null ? problematicCodes.get(code) : null;
+            if (pStatus == null) {
+                goodCodes.add(code);
+            } else if (pStatus == 4) {
+                status4Codes.add(code);
+            } else if (pStatus == 5) {
+                status5Codes.add(code);
+            }
+            // status=6：不处理
+        }
+
+        if (!status4Codes.isEmpty()) {
+            String p = String.join(",", Collections.nCopies(status4Codes.size(), "?"));
+            jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET Status = 6 " +
+                    "WHERE MediumSerialNumber IN (" + p + ") AND Status = 4 AND IsDel = 0",
+                    status4Codes.toArray());
+            log.info("[剔除状态更新] status=4 → status=6，盒码数={}", status4Codes.size());
+        }
+
+        if (!status5Codes.isEmpty()) {
+            String p = String.join(",", Collections.nCopies(status5Codes.size(), "?"));
+            int deleted = jdbcTemplate.update(
+                    "DELETE FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber IN (" + p + ") AND Status = 5 AND IsDel = 0",
+                    status5Codes.toArray());
+            log.info("[剔除状态更新] status=5 → 物理删除 {} 条，盒码数={}", deleted, status5Codes.size());
+        }
+
+        if (!goodCodes.isEmpty()) {
+            String p = String.join(",", Collections.nCopies(goodCodes.size(), "?"));
+            jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET Status = 0 " +
+                    "WHERE MediumSerialNumber IN (" + p + ") AND Status NOT IN (5, 6) AND IsDel = 0",
+                    goodCodes.toArray());
+            log.info("[剔除状态更新] 正常盒码置为 status=0，盒码数={}", goodCodes.size());
+        }
+    }
+
+    /**
+     * 检查盒码（MediumSerialNumber）关联的所有问题状态（4/5/6）记录，写入剔除事件+明细。
+     * 返回 true 表示存在问题记录（调用方应将该盒码视为失败，不入队列）。
+     * 处理完成后：status=4 → 6，status=5 → 物理删除，status=6 → 不变。
+     */
+    public boolean checkAndWriteRejectsForProblematic(String orderNo, String mediumSerialNumber) {
+        List<Map<String, Object>> problemRows = jdbcTemplate.queryForList(
+                "SELECT SmallSerialNumber, Msg, Status FROM CodeRelationUpload " +
+                "WHERE MediumSerialNumber = ? AND Status IN (4, 5, 6) AND IsDel = 0",
+                mediumSerialNumber);
+        if (problemRows == null || problemRows.isEmpty()) return false;
+
+        Long eventId = insertRejectEvent(orderNo, null, mediumSerialNumber + " 预检测问题");
+        for (Map<String, Object> row : problemRows) {
+            String bottleCode = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
+            String rawMsg     = row.get("Msg") != null ? row.get("Msg").toString() : "";
+            int rowStatus     = row.get("Status") instanceof Number ? ((Number) row.get("Status")).intValue() : 4;
+            String msgReason  = rowStatus == 5
+                    ? ShiwanM2RejectUserMessages.formatStatus5Row(mediumSerialNumber, bottleCode, rawMsg)
+                    : ShiwanM2RejectUserMessages.formatStatus4Row(mediumSerialNumber, bottleCode, rawMsg);
+            String problemCode = bottleCode != null ? bottleCode : mediumSerialNumber;
+            insertRejectDetail(eventId, bottleCode, mediumSerialNumber, null, problemCode, msgReason);
+        }
+
+        // 按状态处理：4→6，5→物理删除，6→不变
+        jdbcTemplate.update(
+                "UPDATE CodeRelationUpload SET Status = 6 " +
+                "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
+                mediumSerialNumber);
+        jdbcTemplate.update(
+                "DELETE FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND Status = 5 AND IsDel = 0",
+                mediumSerialNumber);
+
+        log.warn("[问题预检] 盒码 {} 检测到 {} 条问题记录，已写入剔除事件 eventId={}", mediumSerialNumber, problemRows.size(), eventId);
+        return true;
+    }
+
+    /** 兼容旧调用。@deprecated 使用 checkAndWriteRejectsForProblematic 替代 */
+    @Deprecated
+    public boolean checkAndWriteRejectsForStatus4(String orderNo, String mediumSerialNumber) {
+        return checkAndWriteRejectsForProblematic(orderNo, mediumSerialNumber);
+    }
+
+    /** 兼容旧调用。@deprecated 新流程通过 insertFullCaseRejectRecords + applyRejectionStatusUpdates 处理 */
+    @Deprecated
     public void insertStatus4RejectRecordsForBox(String orderNo, String caseCode, String boxCode) {
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT SmallSerialNumber, Msg FROM CodeRelationUpload " +
-                    "WHERE MediumSerialNumber = ? AND Status = 4 AND IsDel = 0",
+                    "SELECT SmallSerialNumber, Msg, Status FROM CodeRelationUpload " +
+                    "WHERE MediumSerialNumber = ? AND Status IN (4, 5, 6) AND IsDel = 0",
                     boxCode);
+            Long eventId = insertRejectEvent(orderNo, caseCode, "盒码 " + boxCode + " 问题剔除");
             if (rows == null || rows.isEmpty()) {
-                insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode,
+                insertRejectDetail(eventId, null, boxCode, caseCode, boxCode,
                         ShiwanM2RejectUserMessages.formatStatus4Row(boxCode, "", ""));
                 return;
             }
             for (Map<String, Object> row : rows) {
                 String bottleCode = row.get("SmallSerialNumber") != null ? row.get("SmallSerialNumber").toString() : null;
-                String rawMsg = row.get("Msg") != null ? row.get("Msg").toString() : "";
-                String msgReason = ShiwanM2RejectUserMessages.formatStatus4Row(boxCode, bottleCode, rawMsg);
-                insertRejectRecord(orderNo, caseCode, boxCode, bottleCode,
+                String rawMsg     = row.get("Msg") != null ? row.get("Msg").toString() : "";
+                int rowStatus     = row.get("Status") instanceof Number ? ((Number) row.get("Status")).intValue() : 4;
+                String msgReason  = rowStatus == 5
+                        ? ShiwanM2RejectUserMessages.formatStatus5Row(boxCode, bottleCode, rawMsg)
+                        : ShiwanM2RejectUserMessages.formatStatus4Row(boxCode, bottleCode, rawMsg);
+                insertRejectDetail(eventId, bottleCode, boxCode, caseCode,
                         bottleCode != null && !bottleCode.isEmpty() ? bottleCode : boxCode, msgReason);
             }
         } catch (Exception e) {
-            log.warn("[Status=4剔除] 写入失败 boxCode={}: {}", boxCode, e.getMessage());
-        }
-    }
-
-    /**
-     * 整箱剔除时写入全量剔除记录：
-     * - 按本箱涉及的所有盒码查询 CodeRelationUpload 明细（盒/瓶）；
-     * - 每条明细写一条 RejectRecord，确保整箱全部关联数据可追溯；
-     * - 若查不到明细，按盒码兜底写入，避免整箱剔除时无记录。
-     *
-     * @param orderNo      订单号
-     * @param caseCode     当前箱码
-     * @param boxCodes     当前箱对应盒码列表
-     * @param rejectReason 剔除原因（同箱内各条记录统一原因）
-     */
-    public void insertFullCaseRejectRecords(String orderNo, String caseCode, List<String> boxCodes, String rejectReason) {
-        if (boxCodes == null || boxCodes.isEmpty()) {
-            insertRejectRecord(orderNo, caseCode, null, null, caseCode, rejectReason);
-            return;
-        }
-        List<String> validBoxCodes = boxCodes.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .collect(Collectors.toList());
-        if (validBoxCodes.isEmpty()) {
-            insertRejectRecord(orderNo, caseCode, null, null, caseCode, rejectReason);
-            return;
-        }
-        try {
-            String placeholders = String.join(",", Collections.nCopies(validBoxCodes.size(), "?"));
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT MediumSerialNumber, SmallSerialNumber FROM CodeRelationUpload " +
-                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND IsDel = 0 " +
-                    "ORDER BY MediumSerialNumber, SmallSerialNumber",
-                    validBoxCodes.toArray());
-            if (rows == null || rows.isEmpty()) {
-                for (String boxCode : validBoxCodes) {
-                    insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode, rejectReason);
-                }
-                return;
-            }
-            for (Map<String, Object> row : rows) {
-                String boxCode = row.get("MediumSerialNumber") == null ? null : row.get("MediumSerialNumber").toString();
-                String bottleCode = row.get("SmallSerialNumber") == null ? null : row.get("SmallSerialNumber").toString();
-                String problemCode = (bottleCode != null && !bottleCode.trim().isEmpty())
-                        ? bottleCode : boxCode;
-                insertRejectRecord(orderNo, caseCode, boxCode, bottleCode, problemCode, rejectReason);
-            }
-            log.warn("[整箱剔除] 全量剔除记录已写入 caseCode={} boxCount={} rowCount={} reason={}",
-                    caseCode, validBoxCodes.size(), rows.size(), rejectReason);
-        } catch (Exception e) {
-            log.error("[整箱剔除] 全量写入失败 caseCode={} reason={}: {}",
-                    caseCode, rejectReason, e.getMessage(), e);
-            // 异常兜底：至少按盒码写入，避免整箱剔除无记录。
-            for (String boxCode : validBoxCodes) {
-                insertRejectRecord(orderNo, caseCode, boxCode, null, boxCode, rejectReason);
-            }
+            log.warn("[问题盒码剔除] 写入失败 boxCode={}: {}", boxCode, e.getMessage());
         }
     }
 

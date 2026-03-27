@@ -182,7 +182,7 @@ public class ShiwanM2BoxCaseController {
     }
 
     /**
-     * P02-07 剔除记录弹窗数据。
+     * P02-07 剔除记录弹窗主表数据（每条剔除事件一行）。
      * GET /api/shiwan-m2/stats/reject-records
      */
     @GetMapping("/stats/reject-records")
@@ -195,6 +195,16 @@ public class ShiwanM2BoxCaseController {
             @RequestParam(defaultValue = "20") Integer pageSize) {
         return ApiResult.success("查询成功",
                 shiwanM2BoxCaseService.getRejectRecords(startDate, endDate, orderNo, caseCode, page, pageSize));
+    }
+
+    /**
+     * P02-07 剔除明细：按事件 ID 查询留痕明细（弹窗右侧列表）。
+     * GET /api/shiwan-m2/stats/reject-record-details?eventId=xxx
+     */
+    @GetMapping("/stats/reject-record-details")
+    public ApiResult<java.util.List<Map<String, Object>>> rejectRecordDetails(@RequestParam Long eventId) {
+        return ApiResult.success("查询成功",
+                shiwanM2BoxCaseService.getRejectRecordDetails(eventId));
     }
 
     /**

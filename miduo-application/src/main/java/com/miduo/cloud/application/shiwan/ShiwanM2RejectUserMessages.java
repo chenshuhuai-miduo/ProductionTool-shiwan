@@ -8,6 +8,21 @@ public final class ShiwanM2RejectUserMessages {
     private ShiwanM2RejectUserMessages() {}
 
     /**
+     * 将 CodeRelationUpload 中 Status=5（重码）记录的 Msg 与瓶/盒码转为操作工可读文案。
+     */
+    public static String formatStatus5Row(String boxCode, String bottleCode, String dbMsg) {
+        String box = trimOrEmpty(boxCode);
+        String bot = trimOrEmpty(bottleCode);
+        if (!bot.isEmpty()) {
+            return "瓶码 " + bot + " 重复出现（重码）";
+        }
+        if (!box.isEmpty()) {
+            return "盒码 " + box + " 重复出现（重码）";
+        }
+        return "重码";
+    }
+
+    /**
      * 将 CodeRelationUpload 中 Status=4 记录的 Msg 与瓶/盒码转为操作工可读文案。
      */
     public static String formatStatus4Row(String boxCode, String bottleCode, String dbMsg) {
