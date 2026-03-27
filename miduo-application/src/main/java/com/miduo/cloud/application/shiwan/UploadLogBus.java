@@ -30,12 +30,34 @@ public final class UploadLogBus {
 
     private static volatile Listener listener;
     private static volatile PalletEventListener palletEventListener;
+    private static final int MAX_LOG_HISTORY = 500;
+    private static final java.util.Deque<LogRecord> logHistory = new java.util.ArrayDeque<>();
+
+    private static final class LogRecord {
+        private final String message;
+        private final Color color;
+
+        private LogRecord(String message, Color color) {
+            this.message = message;
+            this.color = color;
+        }
+    }
 
     private UploadLogBus() {}
 
     /** 注册文字日志监听器（前端初始化时调用） */
     public static void register(Listener l) {
-        listener = l;
+        java.util.List<LogRecord> snapshot;
+        synchronized (UploadLogBus.class) {
+            listener = l;
+            snapshot = new java.util.ArrayList<>(logHistory);
+        }
+        if (l != null) {
+            // 按时间正序回放；前端列表通常按“头插”显示，最终效果仍为最新在上。
+            for (LogRecord r : snapshot) {
+                l.onLog(r.message, r.color);
+            }
+        }
     }
 
     /** 注册垛状态事件监听器（前端主界面初始化时调用） */
@@ -45,7 +67,14 @@ public final class UploadLogBus {
 
     /** 发布一条文字上传日志（后端服务调用） */
     public static void log(String message, Color color) {
-        Listener l = listener;
+        Listener l;
+        synchronized (UploadLogBus.class) {
+            logHistory.addLast(new LogRecord(message, color));
+            while (logHistory.size() > MAX_LOG_HISTORY) {
+                logHistory.removeFirst();
+            }
+            l = listener;
+        }
         if (l != null) {
             l.onLog(message, color);
         }
