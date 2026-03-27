@@ -235,7 +235,7 @@ public class ShiwanM2DataReplaceController {
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     appendResultCard(false, oldCode, newCode,
-                            "网络异常，替换失败（本地未修改）：" + e.getMessage(), reason);
+                            "网络异常，替换失败（本地未修改）（失败原因：" + e.getMessage() + "）", reason);
                     OperateLogBuilder.create()
                             .module(ModuleNameEnum.CODE_REPLACE)
                             .operateType(OperateTypeEnum.REPLACE)
