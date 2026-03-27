@@ -6,6 +6,7 @@ import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.FxDialog;
+import com.miduo.cloud.frontend.util.FxToast;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -902,6 +903,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                             "测试完成！\n\n总设备数：%d\n已连接：%d\n重新连接成功：%d\n连接失败：%d",
                             finalTotal, finalConnected, finalReconnected, failed);
                     Window owner = settingsDialogOwner();
+                    // 文案较多，用通用弹窗便于阅读；短提示仍走 FxToast
                     if (failed > 0) {
                         FxDialog.warn(owner, "设备测试结果", msg);
                     } else {
@@ -1166,6 +1168,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
 
     // ==================== 连接 Tab 事件处理 ====================
 
+    /** 隐藏行内结果区（与 Toast 提示二选一，避免保存成功既弹 Toast 又留行内文案） */
+    private void clearInlineResultRow(HBox row) {
+        if (row == null) {
+            return;
+        }
+        row.setVisible(false);
+        row.setManaged(false);
+    }
+
     private void applySettingsResultRow(HBox row, StackPane iconPane, Label label,
                                         String text, String textColor, int fontSize, String svgPathOrNull) {
         if (row == null || label == null) {
@@ -1335,8 +1346,11 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         if (backendBaseUrlField == null) return;
         String url = backendBaseUrlField.getText().trim();
         if (url.isEmpty()) {
-            applySettingsResultRow(backendBaseUrlResultRow, backendBaseUrlResultIconPane, backendBaseUrlResultLabel,
-                "请填写后端 API 地址", "#DC2626", 13, SvgIconLoader.ICON_ERROR);
+            clearInlineResultRow(backendBaseUrlResultRow);
+            Window w = settingsDialogOwner();
+            if (w != null) {
+                FxToast.error(w, "请填写后端 API 地址");
+            }
             return;
         }
         if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url;
@@ -1346,8 +1360,11 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.getApi().setBackendBaseUrl(url);
         saveSettings(s);
         HttpUtil.setBaseUrl(url);
-        applySettingsResultRow(backendBaseUrlResultRow, backendBaseUrlResultIconPane, backendBaseUrlResultLabel,
-            "保存成功", "#059669", 13, SvgIconLoader.ICON_SUCCESS);
+        clearInlineResultRow(backendBaseUrlResultRow);
+        Window w = settingsDialogOwner();
+        if (w != null) {
+            FxToast.success(w, "保存成功");
+        }
     }
 
     // ==================== 自定义标题栏（拖拽 & 关闭） ====================
@@ -1392,7 +1409,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         }
     }
 
-    /** 系统设置弹窗作为 owner，供 {@link FxDialog} 居中与模态 */
+    /** 系统设置弹窗作为 owner，供 {@link FxToast} / {@link FxDialog#confirm(Window, String, String)} 等使用 */
     private Window settingsDialogOwner() {
         if (rootBox != null && rootBox.getScene() != null) {
             return rootBox.getScene().getWindow();
@@ -1400,15 +1417,41 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         return null;
     }
 
+    /** 轻量提示：保存成功等（不阻塞） */
     private void showSuccess(String title, String content) {
-        FxDialog.success(settingsDialogOwner(), title, content);
+        Window w = settingsDialogOwner();
+        if (w == null) {
+            return;
+        }
+        String msg = (content != null && !content.isEmpty()) ? content : title;
+        FxToast.success(w, msg);
     }
 
     private void showError(String title, String content) {
-        FxDialog.warn(settingsDialogOwner(), title, content);
+        Window w = settingsDialogOwner();
+        if (w == null) {
+            return;
+        }
+        String msg;
+        if (content != null && !content.isEmpty()) {
+            msg = (title != null && !title.isEmpty()) ? title + "：" + content : content;
+        } else {
+            msg = title != null ? title : "";
+        }
+        if (!msg.isEmpty()) {
+            FxToast.error(w, msg);
+        }
     }
 
+    /** 一般说明（无专用「信息」样式，用 warn 色区分于成功/失败） */
     private void showInfo(String title, String content) {
-        FxDialog.alert(settingsDialogOwner(), title, content);
+        Window w = settingsDialogOwner();
+        if (w == null) {
+            return;
+        }
+        String msg = (content != null && !content.isEmpty()) ? content : title;
+        if (msg != null && !msg.isEmpty()) {
+            FxToast.warn(w, msg);
+        }
     }
 }

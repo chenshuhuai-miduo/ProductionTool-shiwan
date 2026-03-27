@@ -107,8 +107,10 @@ public class FxToast {
                 "-fx-background-radius: 10px;"
         );
 
-        // ── 文字 ──
+        // ── 文字（支持多行，避免长文案撑破布局） ──
         Label textLabel = new Label(message);
+        textLabel.setWrapText(true);
+        textLabel.setMaxWidth(520);
         textLabel.setStyle(
                 "-fx-font-size: 15px;" +
                 "-fx-font-family: 'Microsoft YaHei';" +
