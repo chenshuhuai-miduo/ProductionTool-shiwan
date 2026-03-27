@@ -2210,3 +2210,63 @@
     -fx-fill: inherit;
 }
 
+/* 覆盖 table-styles：仅水平分隔线，不要列间竖线；表头文字不因列宽过窄被省略号截断 */
+.table-view.sw2-wrap-table .table-cell {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-text-overrun: clip;
+}
+.table-view.sw2-wrap-table .table-cell .label {
+    -fx-text-overrun: clip;
+}
+.table-view.sw2-wrap-table .column-header {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.table-view.sw2-wrap-table .column-header .label {
+    -fx-text-overrun: clip;
+}
+
+/* ---- 剔除记录弹窗（Pencil 4J8s2 / P02-07） ---- */
+.sw2-reject-summary-card {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-spacing: 10;
+}
+.sw2-reject-summary-line {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 15px;
+    -fx-text-fill: #1F2937;
+}
+.sw2-reject-summary-count {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2563EB;
+}
+.sw2-reject-detail-section-title {
+    -fx-font-family: "Microsoft YaHei";
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+.sw2-reject-master-table .column-header-background {
+    -fx-background-color: #F9FAFB;
+}
+.sw2-reject-master-table .column-header {
+    -fx-size: 48px;
+}
+.sw2-reject-master-table .column-header .label {
+    -fx-font-size: 15px;
+}
+.sw2-reject-detail-table .column-header {
+    -fx-size: 44px;
+}
+.sw2-reject-detail-table .column-header .label {
+    -fx-font-size: 14px;
+}
+

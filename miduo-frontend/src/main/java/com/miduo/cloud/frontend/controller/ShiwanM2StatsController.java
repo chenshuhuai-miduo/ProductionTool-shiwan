@@ -424,9 +424,12 @@ public class ShiwanM2StatsController implements Initializable {
             stage.initStyle(StageStyle.UNDECORATED);
             stage.initOwner(rejectCard.getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setScene(new Scene(root));
+            Scene scene = new Scene(root, 1200, 700);
+            stage.setScene(scene);
             stage.setMinWidth(1200);
             stage.setMinHeight(700);
+            stage.setWidth(1200);
+            stage.setHeight(700);
             stage.showAndWait();
         } catch (Exception ex) {
             showWarn("打开剔除记录失败：" + ex.getMessage());

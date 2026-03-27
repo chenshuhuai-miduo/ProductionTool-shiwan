@@ -11,7 +11,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.text.Font;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -20,6 +19,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.text.Font;
 import javafx.application.Platform;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -33,16 +33,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+/**
+ * 剔除记录弹窗：左侧剔除事件主表，右侧概要 + 留痕明细（对齐设计 4J8s2 / P02-07）。
+ */
 public class ShiwanM2RejectRecordsController implements Initializable {
 
     @FXML private HBox titleBar;
     @FXML private TextField caseCodeField;
-    @FXML private TableView<RejectRow> rejectTable;
-    @FXML private TableColumn<RejectRow, String> seqCol;
-    @FXML private TableColumn<RejectRow, String> bottleCol;
-    @FXML private TableColumn<RejectRow, String> boxCol;
-    @FXML private TableColumn<RejectRow, String> caseCol;
-    @FXML private TableColumn<RejectRow, String> reasonCol;
+    @FXML private TableView<EventRow> eventTable;
+    @FXML private TableColumn<EventRow, String> seqCol;
+    @FXML private TableColumn<EventRow, String> caseCol;
+    @FXML private TableColumn<EventRow, String> timeCol;
+    @FXML private TableColumn<EventRow, String> summaryCol;
     @FXML private Label totalLabel;
     @FXML private TextField pageInputField;
     @FXML private Label totalPagesLabel;
@@ -52,15 +54,21 @@ public class ShiwanM2RejectRecordsController implements Initializable {
 
     @FXML private VBox detailEmptyPane;
     @FXML private VBox detailPane;
-    @FXML private Label detProblemCode;
-    @FXML private Label detCaseCode;
-    @FXML private Label detReason;
-    @FXML private Label detTime;
-    @FXML private Label detProductNo;
-    @FXML private Label detProductName;
-    @FXML private Label detOrderNo;
+    @FXML private Label sumCase;
+    @FXML private Label sumTime;
+    @FXML private Label sumOrder;
+    @FXML private Label sumProductNo;
+    @FXML private Label sumProductName;
+    @FXML private Label sumTraceCount;
+    @FXML private TableView<DetailRow> detailTable;
+    @FXML private TableColumn<DetailRow, String> dSeqCol;
+    @FXML private TableColumn<DetailRow, String> dLinkCol;
+    @FXML private TableColumn<DetailRow, String> dProblemCol;
+    @FXML private TableColumn<DetailRow, String> dReasonCol;
 
-    private final ObservableList<RejectRow> rows = FXCollections.observableArrayList();
+    private final ObservableList<EventRow> events = FXCollections.observableArrayList();
+    private final ObservableList<DetailRow> details = FXCollections.observableArrayList();
+
     private String startDate = "";
     private String endDate = "";
     private String orderNo = "";
@@ -71,7 +79,6 @@ public class ShiwanM2RejectRecordsController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // 拖拽支持
         titleBar.setOnMousePressed(e -> {
             dragOffsetX = e.getSceneX();
             dragOffsetY = e.getSceneY();
@@ -82,25 +89,72 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             stage.setY(e.getScreenY() - dragOffsetY);
         });
 
-        // 列自适应，禁止水平滚动条
-        rejectTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        // 行高随内容自动撑开
-        rejectTable.setFixedCellSize(-1);
+        initEventTable();
+        initDetailTable();
 
-        // 序号列（居中，不换行，固定最小行高 44px）
+        eventTable.setItems(events);
+        detailTable.setItems(details);
+        eventTable.getSelectionModel().selectedItemProperty().addListener((obs, o, row) -> onEventSelected(row));
+
+        pageSizeCombo.setValue("20条");
+        pageSizeCombo.setOnAction(e -> {
+            pageSize = parsePageSize(pageSizeCombo.getValue());
+            page = 1;
+            loadData();
+        });
+        showEmptyRight();
+    }
+
+    private void initEventTable() {
+        eventTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        eventTable.setFixedCellSize(-1);
+
         seqCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().seq));
-        seqCol.setCellFactory(col -> new TableCell<>() {
+        seqCol.setCellFactory(col -> centeredLabelCell(15, "#1F2937"));
+
+        caseCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().displayCaseCode()));
+        caseCol.setCellFactory(col -> new CaseCodeTableCell());
+
+        timeCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().rejectTime));
+        timeCol.setCellFactory(col -> wrapEventCell(14, "#374151", timeCol));
+
+        summaryCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().reasonSummary));
+        summaryCol.setCellFactory(col -> wrapEventCell(14, "#374151", summaryCol));
+    }
+
+    private void initDetailTable() {
+        detailTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        detailTable.setFixedCellSize(-1);
+
+        dSeqCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().seq));
+        dSeqCol.setCellFactory(col -> centeredDetailSeqCell(14, "#1F2937"));
+
+        dLinkCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().linkLines()));
+        dLinkCol.setCellFactory(col -> wrapDetailCell(13, "#1F2937", dLinkCol));
+
+        dProblemCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().displayProblem()));
+        dProblemCol.setCellFactory(col -> new ProblemCodeTableCell(dProblemCol));
+
+        dReasonCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().rejectReason));
+        dReasonCol.setCellFactory(col -> wrapDetailCell(13, "#1F2937", dReasonCol));
+    }
+
+    private static TableCell<EventRow, String> centeredLabelCell(int sizePx, String color) {
+        return new TableCell<>() {
             private final Label label = new Label();
             {
-                label.setFont(Font.font("Microsoft YaHei", 16));
-                label.setStyle("-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px; -fx-text-fill:#1F2937;");
+                label.setFont(Font.font("Microsoft YaHei", sizePx));
+                label.setStyle(style(sizePx, color));
                 label.setAlignment(Pos.CENTER);
+                label.setWrapText(true);
                 setGraphic(label);
                 setText(null);
                 setPadding(Insets.EMPTY);
             }
             @Override
-            protected double computePrefHeight(double width) { return 44; }
+            protected double computePrefHeight(double width) {
+                return 44;
+            }
             @Override
             protected void layoutChildren() {
                 label.resizeRelocate(0, 0, getWidth(), getHeight());
@@ -110,25 +164,47 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 super.updateItem(item, empty);
                 label.setText(empty || item == null ? null : item);
             }
-        });
+        };
+    }
 
-        // 码列（自动换行 + 问题码红色高亮）
-        bottleCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().bottleCode));
-        boxCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().boxCode));
-        caseCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().caseCode));
-        applyWrapHighlightCellFactory(bottleCol);
-        applyWrapHighlightCellFactory(boxCol);
-        applyWrapHighlightCellFactory(caseCol);
+    private static TableCell<DetailRow, String> centeredDetailSeqCell(int sizePx, String color) {
+        return new TableCell<>() {
+            private final Label label = new Label();
+            {
+                label.setFont(Font.font("Microsoft YaHei", sizePx));
+                label.setStyle(style(sizePx, color));
+                label.setAlignment(Pos.CENTER);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+            }
+            @Override
+            protected double computePrefHeight(double width) {
+                return 44;
+            }
+            @Override
+            protected void layoutChildren() {
+                label.resizeRelocate(0, 0, getWidth(), getHeight());
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                label.setText(empty || item == null ? null : item);
+            }
+        };
+    }
 
-        // 剔除原因列（自动换行，行高自适应）
-        reasonCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().rejectReason));
-        reasonCol.setCellFactory(col -> new TableCell<>() {
+    private static String style(int sizePx, String color) {
+        return "-fx-font-family:'Microsoft YaHei'; -fx-font-size:" + sizePx + "px; -fx-text-fill:" + color + ";";
+    }
+
+    private TableCell<EventRow, String> wrapEventCell(int sizePx, String color, TableColumn<EventRow, String> column) {
+        return new TableCell<>() {
             private final Label label = new Label();
             {
                 label.setWrapText(true);
-                label.setFont(Font.font("Microsoft YaHei", 16));
-                label.setStyle("-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px; -fx-text-fill:#1F2937;");
-                label.setAlignment(Pos.CENTER);
+                label.setFont(Font.font("Microsoft YaHei", sizePx));
+                label.setAlignment(Pos.CENTER_LEFT);
                 setGraphic(label);
                 setText(null);
                 setPadding(Insets.EMPTY);
@@ -137,8 +213,7 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             protected double computePrefHeight(double width) {
                 String text = label.getText();
                 if (text == null || text.isEmpty()) return 44;
-                // width=-1 表示 JavaFX 还未分配列宽，用列的当前宽度兜底
-                double w = width > 0 ? width : col.getWidth();
+                double w = width > 0 ? width : column.getWidth();
                 double lw = Math.max(0, w - 16);
                 return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
             }
@@ -152,19 +227,136 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 label.setText(empty || item == null ? null : item);
+                label.setStyle(style(sizePx, color));
             }
-        });
+        };
+    }
 
-        rejectTable.setItems(rows);
-        rejectTable.getSelectionModel().selectedItemProperty().addListener((obs, old, row) -> showDetail(row));
+    private TableCell<DetailRow, String> wrapDetailCell(int sizePx, String color, TableColumn<DetailRow, String> column) {
+        return new TableCell<>() {
+            private final Label label = new Label();
+            {
+                label.setWrapText(true);
+                label.setFont(Font.font("Microsoft YaHei", sizePx));
+                label.setAlignment(Pos.CENTER_LEFT);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+            }
+            @Override
+            protected double computePrefHeight(double width) {
+                String text = label.getText();
+                if (text == null || text.isEmpty()) return 44;
+                double w = width > 0 ? width : column.getWidth();
+                double lw = Math.max(0, w - 16);
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            }
+            @Override
+            protected void layoutChildren() {
+                double lw = Math.max(0, getWidth() - 16);
+                label.resize(lw, label.prefHeight(lw));
+                label.relocate(8, 8);
+            }
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                label.setText(empty || item == null ? null : item);
+                label.setStyle(style(sizePx, color));
+            }
+        };
+    }
 
-        pageSizeCombo.setValue("20条");
-        pageSizeCombo.setOnAction(e -> {
-            pageSize = parsePageSize(pageSizeCombo.getValue());
-            page = 1;
-            loadData();
-        });
-        showDetail(null);
+    private final class CaseCodeTableCell extends TableCell<EventRow, String> {
+        private final Label label = new Label();
+
+        CaseCodeTableCell() {
+            label.setWrapText(true);
+            label.setFont(Font.font("Microsoft YaHei", 15));
+            label.setAlignment(Pos.CENTER_LEFT);
+            setGraphic(label);
+            setText(null);
+            setPadding(Insets.EMPTY);
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            EventRow row = getTableRow() != null ? getTableRow().getItem() : null;
+            String t = row == null ? "" : row.displayCaseCode();
+            if (t.isEmpty()) return 44;
+            double w = width > 0 ? width : caseCol.getWidth();
+            double lw = Math.max(0, w - 16);
+            label.setText(t);
+            applyCaseStyle(row);
+            return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+        }
+
+        @Override
+        protected void layoutChildren() {
+            double lw = Math.max(0, getWidth() - 16);
+            label.resize(lw, label.prefHeight(lw));
+            label.relocate(8, 8);
+        }
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            EventRow row = getTableRow() != null ? getTableRow().getItem() : null;
+            if (empty || row == null) {
+                label.setText(null);
+                return;
+            }
+            label.setText(row.displayCaseCode());
+            applyCaseStyle(row);
+        }
+
+        private void applyCaseStyle(EventRow row) {
+            boolean em = row != null && row.caseCodeIsEmpty();
+            label.setStyle(style(15, em ? "#6B7280" : "#1F2937"));
+        }
+    }
+
+    private static final class ProblemCodeTableCell extends TableCell<DetailRow, String> {
+        private final Label label = new Label();
+        private final TableColumn<DetailRow, String> column;
+
+        ProblemCodeTableCell(TableColumn<DetailRow, String> column) {
+            this.column = column;
+            label.setWrapText(true);
+            label.setFont(Font.font("Microsoft YaHei", 13));
+            label.setAlignment(Pos.CENTER_LEFT);
+            setGraphic(label);
+            setText(null);
+            setPadding(Insets.EMPTY);
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            String text = label.getText();
+            if (text == null || text.isEmpty()) return 44;
+            double w = width > 0 ? width : column.getWidth();
+            double lw = Math.max(0, w - 16);
+            return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+        }
+
+        @Override
+        protected void layoutChildren() {
+            double lw = Math.max(0, getWidth() - 16);
+            label.resize(lw, label.prefHeight(lw));
+            label.relocate(8, 8);
+        }
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                label.setText(null);
+                label.setStyle("");
+                return;
+            }
+            label.setText(item);
+            int sz = "—".equals(item) ? 14 : 13;
+            label.setStyle("-fx-font-family:'Microsoft YaHei'; -fx-font-size:" + sz + "px; -fx-text-fill:#F44336;");
+        }
     }
 
     public void setContext(String startDate, String endDate, String orderNo) {
@@ -242,95 +434,83 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 Map<String, Object> data = result.getData();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> records = (List<Map<String, Object>>) data.getOrDefault("records", new ArrayList<>());
-                List<RejectRow> mapped = new ArrayList<>();
+                List<EventRow> mapped = new ArrayList<>();
                 for (int i = 0; i < records.size(); i++) {
-                    mapped.add(RejectRow.from(i + 1 + (page - 1) * pageSize, records.get(i)));
+                    mapped.add(EventRow.from(i + 1 + (page - 1) * pageSize, records.get(i)));
                 }
-                rows.setAll(mapped);
-                // 数据设置后列宽已确定，延迟一帧刷新让 VirtualFlow 用正确列宽重算行高
-                Platform.runLater(() -> rejectTable.refresh());
-                long total = num(data.get("total"));
-                pages = Math.max(1, (int) num(data.get("pages")));
-                page = Math.max(1, Math.min(page, pages));
-                totalLabel.setText("共 " + total + " 条");
-                pageInputField.setText(String.valueOf(page));
-                totalPagesLabel.setText("/ " + pages + " 页");
-                prevBtn.setDisable(page <= 1);
-                nextBtn.setDisable(page >= pages);
-                showDetail(null);
+                Platform.runLater(() -> {
+                    events.setAll(mapped);
+                    eventTable.refresh();
+                    long total = num(data.get("total"));
+                    pages = Math.max(1, (int) num(data.get("pages")));
+                    page = Math.max(1, Math.min(page, pages));
+                    totalLabel.setText("共 " + total + " 条");
+                    pageInputField.setText(String.valueOf(page));
+                    totalPagesLabel.setText("/ " + pages + " 页");
+                    prevBtn.setDisable(page <= 1);
+                    nextBtn.setDisable(page >= pages);
+                    eventTable.getSelectionModel().clearSelection();
+                    showEmptyRight();
+                });
             } catch (Exception ex) {
-                showWarn("解析失败：" + ex.getMessage());
+                Platform.runLater(() -> showWarn("解析失败：" + ex.getMessage()));
             }
-        }, ex -> showWarn("查询异常：" + ex.getMessage()));
+        }, ex -> Platform.runLater(() -> showWarn("查询异常：" + ex.getMessage())));
     }
 
-    private void showDetail(RejectRow row) {
-        boolean empty = row == null;
-        detailEmptyPane.setVisible(empty);
-        detailEmptyPane.setManaged(empty);
-        detailPane.setVisible(!empty);
-        detailPane.setManaged(!empty);
-        if (empty) return;
+    private void onEventSelected(EventRow row) {
+        if (row == null || row.eventId == null) {
+            showEmptyRight();
+            return;
+        }
+        detailEmptyPane.setVisible(false);
+        detailEmptyPane.setManaged(false);
+        detailPane.setVisible(true);
+        detailPane.setManaged(true);
 
-        detProblemCode.setText(safeDash(row.problemCode));
-        detCaseCode.setText(safeDash(row.caseCode));
-        detReason.setText(safeDash(row.rejectReason));
-        detTime.setText(safeDash(row.rejectTime));
-        detProductNo.setText(safeDash(row.productNo));
-        detProductName.setText(safeDash(row.productName));
-        detOrderNo.setText(safeDash(row.orderNo));
+        sumCase.setText("箱码：" + row.displayCaseCode());
+        sumTime.setText("剔除时间：" + dash(row.rejectTime));
+        sumOrder.setText("生产单号：" + dash(row.orderNo));
+        sumProductNo.setText("产品编号：" + dash(row.productNo));
+        sumProductName.setText("产品名称：" + dash(row.productName));
+        sumTraceCount.setText("共 " + row.detailCount + " 条留痕");
+
+        details.clear();
+        detailTable.refresh();
+        loadDetails(row.eventId);
     }
 
-    private void applyWrapHighlightCellFactory(TableColumn<RejectRow, String> col) {
-        col.setCellFactory(c -> new TableCell<>() {
-            private final Label label = new Label();
-            {
-                label.setWrapText(true);
-                // 显式设置字体，保证 prefHeight() 计算时字体度量正确
-                label.setFont(Font.font("Microsoft YaHei", 16));
-                label.setAlignment(Pos.CENTER);
-                setGraphic(label);
-                setText(null);
-                setPadding(Insets.EMPTY);
-            }
+    private void showEmptyRight() {
+        detailEmptyPane.setVisible(true);
+        detailEmptyPane.setManaged(true);
+        detailPane.setVisible(false);
+        detailPane.setManaged(false);
+        details.clear();
+    }
 
-            /** JavaFX 询问行高时，依据换行后的真实文字高度返回，不再截断 */
-            @Override
-            protected double computePrefHeight(double width) {
-                String text = label.getText();
-                if (text == null || text.isEmpty()) return 44;
-                // width=-1 表示列宽还未确定，用列的当前宽度兜底
-                double w = width > 0 ? width : col.getWidth();
-                double lw = Math.max(0, w - 16);
-                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
-            }
-
-            @Override
-            protected void layoutChildren() {
-                double lw = Math.max(0, getWidth() - 16);
-                label.resize(lw, label.prefHeight(lw));
-                label.relocate(8, 8);
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    label.setText(null);
-                    label.setStyle("");
-                } else {
-                    label.setText(item);
-                    RejectRow row = getTableRow() == null ? null : getTableRow().getItem();
-                    String font = "-fx-font-family:'Microsoft YaHei'; -fx-font-size:16px;";
-                    // 仅按数据着色，与是否选中无关；选中行只靠 .sw2-wrap-table 的 CSS 背景高亮
-                    if (row != null && !item.isEmpty() && item.equals(row.problemCode)) {
-                        label.setStyle(font + " -fx-text-fill:#F44336; -fx-font-weight:bold;");
-                    } else {
-                        label.setStyle(font + " -fx-text-fill:#1F2937; -fx-font-weight:normal;");
-                    }
+    private void loadDetails(Long eventId) {
+        String url = "/api/shiwan-m2/stats/reject-record-details?eventId=" + eventId;
+        HttpUtil.asyncGet(url, json -> {
+            try {
+                ApiResult<List<Map<String, Object>>> result = HttpUtil.parseJson(
+                        json, new TypeReference<ApiResult<List<Map<String, Object>>>>() {});
+                if (result == null || result.getCode() != 200 || result.getData() == null) {
+                    Platform.runLater(() -> showWarn(result == null ? "明细查询失败" : result.getMessage()));
+                    return;
                 }
+                List<Map<String, Object>> list = result.getData();
+                List<DetailRow> rows = new ArrayList<>();
+                for (int i = 0; i < list.size(); i++) {
+                    rows.add(DetailRow.from(i + 1, list.get(i)));
+                }
+                Platform.runLater(() -> {
+                    details.setAll(rows);
+                    detailTable.refresh();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> showWarn("明细解析失败：" + ex.getMessage()));
             }
-        });
+        }, ex -> Platform.runLater(() -> showWarn("明细查询异常：" + ex.getMessage())));
     }
 
     private long num(Object v) {
@@ -350,13 +530,13 @@ public class ShiwanM2RejectRecordsController implements Initializable {
         }
     }
 
-    private String safe(String text) {
+    private static String safe(String text) {
         return text == null ? "" : text.trim();
     }
 
-    private String safeDash(String text) {
+    private static String dash(String text) {
         String v = safe(text);
-        return v.isEmpty() ? "-" : v;
+        return v.isEmpty() ? "—" : v;
     }
 
     private String enc(String value) {
@@ -372,31 +552,57 @@ public class ShiwanM2RejectRecordsController implements Initializable {
         alert.showAndWait();
     }
 
-    public static class RejectRow {
-        private String seq = "";
-        private String bottleCode = "";
-        private String boxCode = "";
-        private String caseCode = "";
-        private String problemCode = "";
-        private String rejectReason = "";
-        private String rejectTime = "";
-        private String productNo = "";
-        private String productName = "";
-        private String orderNo = "";
+    static final class EventRow {
+        Long eventId;
+        String seq = "";
+        String caseCode = "";
+        String rejectTime = "";
+        String reasonSummary = "";
+        String orderNo = "";
+        String productNo = "";
+        String productName = "";
+        long detailCount;
 
-        static RejectRow from(int seqNo, Map<String, Object> map) {
-            RejectRow row = new RejectRow();
+        boolean caseCodeIsEmpty() {
+            return caseCode == null || caseCode.isBlank();
+        }
+
+        String displayCaseCode() {
+            return caseCodeIsEmpty() ? "—" : caseCode.trim();
+        }
+
+        static EventRow from(int seqNo, Map<String, Object> map) {
+            EventRow row = new EventRow();
+            row.eventId = longOrNull(map.get("Id"), map.get("id"));
             row.seq = String.valueOf(seqNo);
-            row.bottleCode = str(map.get("BottleCode"), map.get("bottleCode"));
-            row.boxCode = str(map.get("BoxCode"), map.get("boxCode"));
             row.caseCode = str(map.get("CaseCode"), map.get("caseCode"));
-            row.problemCode = str(map.get("ProblemCode"), map.get("problemCode"));
-            row.rejectReason = str(map.get("RejectReason"), map.get("rejectReason"));
             row.rejectTime = formatDateTime(str(map.get("RejectTime"), map.get("rejectTime")));
+            row.reasonSummary = str(map.get("RejectReason"), map.get("rejectReason"));
+            row.orderNo = str(map.get("OrderNo"), map.get("orderNo"));
             row.productNo = str(map.get("ProductNo"), map.get("productNo"));
             row.productName = str(map.get("ProductName"), map.get("productName"));
-            row.orderNo = str(map.get("OrderNo"), map.get("orderNo"));
+            row.detailCount = num(map.get("detailCount"));
             return row;
+        }
+
+        private static long num(Object v) {
+            if (v instanceof Number) return ((Number) v).longValue();
+            try {
+                return Long.parseLong(String.valueOf(v));
+            } catch (Exception ex) {
+                return 0L;
+            }
+        }
+
+        private static Long longOrNull(Object a, Object b) {
+            Object v = a != null ? a : b;
+            if (v == null) return null;
+            if (v instanceof Number) return ((Number) v).longValue();
+            try {
+                return Long.parseLong(String.valueOf(v));
+            } catch (Exception ex) {
+                return null;
+            }
         }
 
         private static String str(Object primary, Object fallback) {
@@ -406,6 +612,49 @@ public class ShiwanM2RejectRecordsController implements Initializable {
 
         private static String formatDateTime(String s) {
             return s == null || s.isEmpty() ? s : s.replace("T", " ");
+        }
+    }
+
+    static final class DetailRow {
+        String seq = "";
+        String bottle = "";
+        String box = "";
+        String caseCode = "";
+        String problemCode = "";
+        String rejectReason = "";
+
+        String linkLines() {
+            return "瓶：" + nz(bottle) + "\n盒：" + nz(box) + "\n箱：" + nz(caseCode);
+        }
+
+        String displayProblem() {
+            String p = safe(problemCode);
+            return p.isEmpty() ? "—" : p;
+        }
+
+        private static String nz(String s) {
+            String v = safe(s);
+            return v.isEmpty() ? "—" : v;
+        }
+
+        private static String safe(String s) {
+            return s == null ? "" : s.trim();
+        }
+
+        static DetailRow from(int seqNo, Map<String, Object> map) {
+            DetailRow r = new DetailRow();
+            r.seq = String.valueOf(seqNo);
+            r.bottle = str(map.get("bottleCode"), map.get("BottleCode"));
+            r.box = str(map.get("boxCode"), map.get("BoxCode"));
+            r.caseCode = str(map.get("caseCode"), map.get("CaseCode"));
+            r.problemCode = str(map.get("problemCode"), map.get("ProblemCode"));
+            r.rejectReason = str(map.get("rejectReason"), map.get("RejectReason"));
+            return r;
+        }
+
+        private static String str(Object a, Object b) {
+            Object v = a != null ? a : b;
+            return v == null ? "" : String.valueOf(v);
         }
     }
 }

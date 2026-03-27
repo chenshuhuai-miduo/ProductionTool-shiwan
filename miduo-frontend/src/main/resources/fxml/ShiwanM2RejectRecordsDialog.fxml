@@ -9,14 +9,14 @@
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2RejectRecordsController"
       prefWidth="1200" prefHeight="700"
       stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css"
-      style="-fx-background-color:white; -fx-border-color:#D9E1EC; -fx-border-width:1;">
+      style="-fx-background-color:white; -fx-border-color:#D9E1EC; -fx-border-width:1; -fx-border-radius:12; -fx-background-radius:12;">
 
-    <!-- 标题栏 -->
+    <!-- 标题栏（对齐设计稿 4J8s2） -->
     <HBox fx:id="titleBar" alignment="CENTER_LEFT"
           style="-fx-background-color:#F5F7FA;
                  -fx-border-color:transparent transparent #E5E7EB transparent;
                  -fx-border-width:0 0 1 0;
-                 -fx-padding:0 8 0 24;
+                 -fx-padding:0 24;
                  -fx-min-height:56; -fx-pref-height:56;">
         <Label text="剔除记录"
                style="-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"/>
@@ -25,9 +25,9 @@
     </HBox>
 
     <!-- 内容区 -->
-    <VBox spacing="16" VBox.vgrow="ALWAYS" style="-fx-padding:24;">
+    <VBox spacing="12" VBox.vgrow="ALWAYS" style="-fx-padding:24;">
 
-        <!-- 搜索行 -->
+        <!-- 筛选行 -->
         <HBox spacing="12" alignment="CENTER_LEFT">
             <TextField fx:id="caseCodeField" promptText="请输入箱码"
                        prefWidth="300" minWidth="300" maxWidth="300"
@@ -49,32 +49,26 @@
                            -fx-cursor:hand; -fx-effect:null; -fx-font-family:'Microsoft YaHei';"/>
         </HBox>
 
-        <!-- 左右分栏 -->
+        <!-- 左右分栏：均分剩余宽度（约各占 50%，扣减间距与内边距后每栏约 568@1200 宽） -->
         <HBox spacing="16" VBox.vgrow="ALWAYS">
 
-            <!-- 左侧表格区（固定宽度） -->
-            <VBox spacing="8" prefWidth="800" minWidth="720" maxWidth="860"
-                  style="-fx-background-color:#F9FAFB; -fx-border-color:#E5E7EB;
-                         -fx-border-width:1; -fx-border-radius:8; -fx-background-radius:8;
-                         -fx-padding:16;">
+            <!-- 左侧：事件主表 + 分页 -->
+            <VBox spacing="10" minWidth="280" prefWidth="568" HBox.hgrow="ALWAYS">
 
-                <!-- 表格 -->
-                <TableView fx:id="rejectTable" VBox.vgrow="ALWAYS"
-                           styleClass="sw2-wrap-table">
+                <TableView fx:id="eventTable" VBox.vgrow="ALWAYS"
+                           styleClass="sw2-wrap-table sw2-reject-master-table">
                     <columns>
-                        <TableColumn fx:id="seqCol"    text="序号"       prefWidth="60"  minWidth="60"  maxWidth="60"/>
-                        <TableColumn fx:id="bottleCol" text="第一层(瓶码)" prefWidth="180" minWidth="180" maxWidth="180"/>
-                        <TableColumn fx:id="boxCol"    text="第二层(盒码)" prefWidth="140" minWidth="140" maxWidth="140"/>
-                        <TableColumn fx:id="caseCol"   text="第三层(箱码)" prefWidth="140" minWidth="140" maxWidth="140"/>
-                        <TableColumn fx:id="reasonCol" text="剔除原因"    prefWidth="180"/>
+                        <TableColumn fx:id="seqCol" text="序号" prefWidth="52" minWidth="52" maxWidth="52"/>
+                        <TableColumn fx:id="caseCol" text="箱码" prefWidth="140" minWidth="80"/>
+                        <TableColumn fx:id="timeCol" text="剔除时间" prefWidth="168" minWidth="150"/>
+                        <TableColumn fx:id="summaryCol" text="原因摘要" prefWidth="200" minWidth="80"/>
                     </columns>
                     <placeholder>
                         <Label text="无匹配数据" styleClass="sw2-query-empty-hint"/>
                     </placeholder>
                 </TableView>
 
-                <!-- 分页 -->
-                <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-min-height:40;">
+                <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-min-height:48;">
                     <Label fx:id="totalLabel" text="共 0 条"
                            style="-fx-font-size:14px; -fx-text-fill:#6B7280; -fx-font-family:'Microsoft YaHei';"/>
                     <Region HBox.hgrow="ALWAYS"/>
@@ -114,60 +108,36 @@
                 </HBox>
             </VBox>
 
-            <!-- 右侧详情卡片 -->
-            <VBox HBox.hgrow="ALWAYS" minWidth="260" maxWidth="380"
-                  style="-fx-background-color:white; -fx-border-color:#D9E1EC;
-                         -fx-border-width:1; -fx-border-radius:12; -fx-background-radius:12;
-                         -fx-padding:24;">
-                <Label text="具体信息" styleClass="sw2-query-detail-main-title"
-                       style="-fx-padding:0 0 8 0;"/>
+            <!-- 右侧：概要卡片 + 留痕明细 -->
+            <VBox fx:id="rightPane" spacing="12" minWidth="280" prefWidth="568" HBox.hgrow="ALWAYS">
 
-                <!-- 空状态 -->
-                <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS" alignment="CENTER">
-                    <Label text="请点击左侧记录查看详细信息" styleClass="sw2-query-empty-hint"/>
+                <VBox fx:id="detailEmptyPane" VBox.vgrow="ALWAYS" alignment="TOP_LEFT"
+                      style="-fx-padding:8 0;">
+                    <Label text="请点击左侧某次剔除记录查看明细" styleClass="sw2-query-empty-hint"/>
                 </VBox>
 
-                <!-- 详情内容 -->
-                <VBox fx:id="detailPane" spacing="10" visible="false" managed="false">
-                    <Label text="剔除汇总" styleClass="sw2-query-detail-section-title"/>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="问题码：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detProblemCode" styleClass="sw2-dialog-detail-value-problem"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="箱码：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detCaseCode" styleClass="sw2-dialog-detail-value"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="剔除原因：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detReason" styleClass="sw2-dialog-detail-value"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="剔除时间：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detTime" styleClass="sw2-dialog-detail-value-muted"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
+                <VBox fx:id="detailPane" spacing="12" visible="false" managed="false" VBox.vgrow="ALWAYS">
 
-                    <Label text="产品信息"
-                           styleClass="sw2-query-detail-section-title sw2-dialog-detail-section-follow"/>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="产品编号：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detProductNo" styleClass="sw2-dialog-detail-value-muted"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="产品名称：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detProductName" styleClass="sw2-dialog-detail-value-muted"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                    <HBox spacing="4" alignment="TOP_LEFT">
-                        <Label text="生产单号：" styleClass="sw2-dialog-detail-label"/>
-                        <Label fx:id="detOrderNo" styleClass="sw2-dialog-detail-value-muted"
-                               prefWidth="0" minWidth="0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                    </HBox>
+                    <VBox spacing="10" styleClass="sw2-reject-summary-card">
+                        <Label fx:id="sumCase" styleClass="sw2-reject-summary-line" wrapText="true"/>
+                        <Label fx:id="sumTime" styleClass="sw2-reject-summary-line" wrapText="true"/>
+                        <Label fx:id="sumOrder" styleClass="sw2-reject-summary-line" wrapText="true"/>
+                        <Label fx:id="sumProductNo" styleClass="sw2-reject-summary-line" wrapText="true"/>
+                        <Label fx:id="sumProductName" styleClass="sw2-reject-summary-line" wrapText="true"/>
+                        <Label fx:id="sumTraceCount" styleClass="sw2-reject-summary-count" wrapText="true"/>
+                    </VBox>
+
+                    <Label text="留痕明细" styleClass="sw2-reject-detail-section-title"/>
+
+                    <TableView fx:id="detailTable" VBox.vgrow="ALWAYS"
+                               styleClass="sw2-wrap-table sw2-reject-detail-table">
+                        <columns>
+                            <TableColumn fx:id="dSeqCol" text="序号" prefWidth="64" minWidth="56"/>
+                            <TableColumn fx:id="dLinkCol" text="关联码" prefWidth="220" minWidth="120"/>
+                            <TableColumn fx:id="dProblemCol" text="问题码" prefWidth="120" minWidth="100" maxWidth="160"/>
+                            <TableColumn fx:id="dReasonCol" text="剔除原因" prefWidth="200" minWidth="80"/>
+                        </columns>
+                    </TableView>
                 </VBox>
             </VBox>
         </HBox>
