@@ -2,14 +2,17 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.miduo.cloud.frontend.util.FxDialog;
+import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
+import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @FXML private TextField keywordField;
+    @FXML private Button helpButton;
     @FXML private Button refreshButton;
     @FXML private TableView<Map<String, String>> productTable;
     @FXML private TableColumn<Map<String, String>, String> nameColumn;
@@ -74,6 +78,8 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
 
         // 初始确认按钮禁用，等数据加载完成后按实际数量决定
         confirmButton.setDisable(true);
+
+        SvgIconLoader.installHelpButtonGraphic(helpButton);
 
         // 检查本地产品表，按规则决定是直接展示还是先从服务端拉取
         checkAndAutoLoad();
@@ -231,23 +237,34 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
         confirmButton.setDisable(on || totalCount <= 0);
     }
 
-    // ──────────────── 错误提示（含重试） ────────────────
+    // ──────────────── 错误提示（含重试，通用 FxDialog） ────────────────
+
+    private Window dialogOwner() {
+        if (keywordField != null && keywordField.getScene() != null) {
+            return keywordField.getScene().getWindow();
+        }
+        if (productTable != null && productTable.getScene() != null) {
+            return productTable.getScene().getWindow();
+        }
+        return null;
+    }
 
     private void showSyncError(String message, boolean allowRetry) {
-        ButtonType retryBtn  = new ButtonType("重试", ButtonBar.ButtonData.YES);
-        ButtonType closeBtn  = new ButtonType("关闭", ButtonBar.ButtonData.NO);
-        Alert alert = allowRetry
-                ? new Alert(Alert.AlertType.ERROR, message, retryBtn, closeBtn)
-                : new Alert(Alert.AlertType.ERROR, message, closeBtn);
-        alert.setTitle("获取产品数据失败");
-        alert.setHeaderText("产品数据拉取失败");
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait().ifPresent(btn -> {
-            if (btn == retryBtn) {
+        String body = "产品数据拉取失败\n\n" + message;
+        if (allowRetry) {
+            int idx = FxDialog.choice(
+                    dialogOwner(),
+                    "获取产品数据失败",
+                    body,
+                    FxDialog.BtnDef.cancel("关闭"),
+                    FxDialog.BtnDef.primary("重试"));
+            if (idx == 1) {
                 setLoading(true);
-                syncFromServer(allowRetry);
+                syncFromServer(true);
             }
-        });
+        } else {
+            FxDialog.warn(dialogOwner(), "获取产品数据失败", body);
+        }
     }
 
     // ──────────────── FXML 事件处理 ────────────────
@@ -267,24 +284,21 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
         syncFromServer(false);
     }
 
-    /** 帮助说明 */
+    /** 帮助说明（通用帮助弹窗，与数据上传等 Tab 一致） */
     @FXML
     private void onHelp() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("帮助");
-        alert.setHeaderText("关于产品数据");
-        alert.setContentText(
-                "• 第一次打开本窗口时，软件会联网拉取产品数据并保存在本机；"
-                + "以后再打开，一般直接用已保存的数据，打开更快。\n\n"
-                + "• 想用到最新的产品数据，请点击「刷新」；"
-                + "更新过程中界面会显示加载中，请稍候。\n\n"
-                + "• 「搜索」用来在当前这份数据里按关键字找产品；"
-                + "搜的是本机里已经保存好的数据，不是临时未保存的内容。\n\n"
-                + "• 数据里没有产品、或拉取失败时，不能完成选品；"
-                + "拉取失败时请检查网络或稍后重试。"
+        var scene = keywordField != null ? keywordField.getScene() : productTable.getScene();
+        if (scene == null) {
+            return;
+        }
+        FxHelpDialog.show(
+                scene.getWindow(),
+                "选择产品 - 帮助说明",
+                "- **首次打开**：软件会联网拉取产品数据并保存在本机；以后再打开一般直接使用已保存的数据，打开更快。",
+                "- **刷新**：需要最新产品数据时请点击「刷新」；更新过程中界面会显示加载中，请稍候。",
+                "- **搜索**：在当前已保存的数据中按关键字查找产品；搜索针对本机已落库数据，不含未保存的临时内容。",
+                "- **选品限制**：列表无产品或拉取失败时无法完成选品；拉取失败请检查网络或稍后重试。"
         );
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
     }
 
     @FXML
@@ -326,11 +340,7 @@ public class ShiwanM2ProductSelectDialogController implements Initializable {
     private void onConfirm() {
         Map<String, String> sel = productTable.getSelectionModel().getSelectedItem();
         if (sel == null) {
-            Alert a = new Alert(Alert.AlertType.WARNING);
-            a.setTitle("提示");
-            a.setHeaderText("请先在列表中选择一行产品");
-            ShiwanM2AlertUtil.applyStyle(a);
-            a.showAndWait();
+            FxDialog.warn(dialogOwner(), "提示", "请先在列表中选择一行产品");
             return;
         }
         selectedProduct = sel;
