@@ -6,6 +6,7 @@ import com.miduo.cloud.common.dto.PageOutput;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageImportVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackageOnlineImportResultVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackagePageQueryDTO;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
@@ -22,7 +23,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -34,13 +34,13 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -425,13 +425,9 @@ public class ShiwanM2PackageController implements Initializable {
     }
 
     private void onDeletePackage(PackageRow row) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("删除确认");
-        confirm.setHeaderText("确认删除码包「" + row.packageName + "」？");
-        confirm.setContentText("若该码包内存在已关联码，将被禁止删除。");
-        ShiwanM2AlertUtil.applyStyle(confirm);
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) {
+        Window owner = packageTable.getScene() != null ? packageTable.getScene().getWindow() : null;
+        String body = "确认删除码包「" + row.packageName + "」？\n\n若该码包内存在已关联码，将被禁止删除。";
+        if (!FxDialog.danger(owner, "删除确认", body)) {
             return;
         }
 

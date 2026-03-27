@@ -348,8 +348,9 @@ public class ShiwanM2QueryController implements Initializable {
         }
         detTime.setText(t.isEmpty() ? "—" : t);
 
-        // 是否关联：有箱码或垛码视为已关联，否则显示未关联
-        boolean linked = !row.caseCode.isEmpty() || !row.palletCode.isEmpty();
+        // 是否关联：该码已写入关联表且任一层级有值即视为已关联（瓶盒亦为关联关系）
+        boolean linked = !row.bottleCode.isEmpty() || !row.boxCode.isEmpty()
+                || !row.caseCode.isEmpty() || !row.palletCode.isEmpty();
         detLinked.setText(linked ? "已关联" : "未关联");
         detLinked.getStyleClass().removeAll(
                 "sw2-query-detail-value-muted",
