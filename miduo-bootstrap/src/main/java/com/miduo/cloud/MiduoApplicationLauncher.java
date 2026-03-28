@@ -1,6 +1,8 @@
 package com.miduo.cloud;
 
 import com.miduo.cloud.config.GlobalExceptionHandler;
+import com.miduo.cloud.frontend.service.DeviceConnectionManager;
+import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
 import com.miduo.cloud.frontend.util.FileLogManager;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -266,6 +268,16 @@ public class MiduoApplicationLauncher {
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\n检测到系统关闭信号，正在清理资源...");
+            try {
+                ShiwanM2HardwareService.getInstance().allOff();
+            } catch (Exception e) {
+                System.err.println("[关闭钩子] 设备全关信号发送失败: " + e.getMessage());
+            }
+            try {
+                DeviceConnectionManager.getInstance().stopAllConnections();
+            } catch (Exception e) {
+                System.err.println("[关闭钩子] 设备连接释放失败: " + e.getMessage());
+            }
             shutdownBackend();
             shutdownLogging();
         }, "Shutdown-Hook-Thread"));

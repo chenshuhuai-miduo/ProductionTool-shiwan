@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -770,6 +771,7 @@ public class ShiwanM2BoxCaseService {
      */
     public Long insertRejectEvent(String orderNo, String caseCode, String rejectReason) {
         try {
+            String dbReason = rejectReason;
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(conn -> {
                 PreparedStatement ps = conn.prepareStatement(
@@ -777,15 +779,40 @@ public class ShiwanM2BoxCaseService {
                         Statement.RETURN_GENERATED_KEYS);
                 ps.setString(1, orderNo);
                 ps.setString(2, caseCode);
-                ps.setString(3, rejectReason);
+                ps.setString(3, dbReason);
                 return ps;
             }, keyHolder);
             Number key = keyHolder.getKey();
             Long eventId = key != null ? key.longValue() : null;
             log.info("[剔除事件] 写入成功 eventId={} orderNo={} caseCode={} reason={}",
-                    eventId, orderNo, caseCode, rejectReason);
+                    eventId, orderNo, caseCode, dbReason);
             return eventId;
         } catch (Exception e) {
+            if (isIncorrectStringValue(e)) {
+                String fallbackReason = toLatin1Escaped(rejectReason);
+                if (!Objects.equals(fallbackReason, rejectReason)) {
+                    try {
+                        KeyHolder keyHolder = new GeneratedKeyHolder();
+                        jdbcTemplate.update(conn -> {
+                            PreparedStatement ps = conn.prepareStatement(
+                                    "INSERT INTO RejectRecord (OrderNo, CaseCode, RejectReason, RejectTime) VALUES (?, ?, ?, NOW())",
+                                    Statement.RETURN_GENERATED_KEYS);
+                            ps.setString(1, orderNo);
+                            ps.setString(2, caseCode);
+                            ps.setString(3, fallbackReason);
+                            return ps;
+                        }, keyHolder);
+                        Number key = keyHolder.getKey();
+                        Long eventId = key != null ? key.longValue() : null;
+                        log.warn("[剔除事件] 原因含非兼容字符，已降级写入 eventId={} orderNo={} caseCode={} reason={}",
+                                eventId, orderNo, caseCode, fallbackReason);
+                        return eventId;
+                    } catch (Exception retryEx) {
+                        log.error("[剔除事件] 降级重试仍失败 orderNo={} caseCode={} reason={}: {}",
+                                orderNo, caseCode, fallbackReason, retryEx.getMessage(), retryEx);
+                    }
+                }
+            }
             log.error("[剔除事件] 写入失败 orderNo={} caseCode={} reason={}: {}",
                     orderNo, caseCode, rejectReason, e.getMessage(), e);
             return null;
@@ -801,15 +828,69 @@ public class ShiwanM2BoxCaseService {
                                    String bigCode, String problemCode, String rejectReason) {
         if (eventId == null) return;
         try {
+            String dbReason = rejectReason;
             jdbcTemplate.update(
                     "INSERT INTO RejectRecordDetail " +
                     "(EventId, SmallSerialNumber, MediumSerialNumber, BigSerialNumber, ProblemCode, RejectReason, CreateTime) " +
                     "VALUES (?, ?, ?, ?, ?, ?, NOW())",
-                    eventId, smallCode, mediumCode, bigCode, problemCode, rejectReason);
+                    eventId, smallCode, mediumCode, bigCode, problemCode, dbReason);
         } catch (Exception e) {
+            if (isIncorrectStringValue(e)) {
+                String fallbackReason = toLatin1Escaped(rejectReason);
+                if (!Objects.equals(fallbackReason, rejectReason)) {
+                    try {
+                        jdbcTemplate.update(
+                                "INSERT INTO RejectRecordDetail " +
+                                        "(EventId, SmallSerialNumber, MediumSerialNumber, BigSerialNumber, ProblemCode, RejectReason, CreateTime) " +
+                                        "VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                                eventId, smallCode, mediumCode, bigCode, problemCode, fallbackReason);
+                        log.warn("[剔除明细] 原因含非兼容字符，已降级写入 eventId={} medium={} small={} reason={}",
+                                eventId, mediumCode, smallCode, fallbackReason);
+                        return;
+                    } catch (Exception retryEx) {
+                        log.error("[剔除明细] 降级重试仍失败 eventId={} medium={} small={} reason={}: {}",
+                                eventId, mediumCode, smallCode, fallbackReason, retryEx.getMessage(), retryEx);
+                    }
+                }
+            }
             log.error("[剔除明细] 写入失败 eventId={} medium={} small={} reason={}: {}",
                     eventId, mediumCode, smallCode, rejectReason, e.getMessage(), e);
         }
+    }
+
+    /** 将非 latin1 字符转义为 \\uXXXX，保证字符串可用 ASCII 表达。 */
+    private String toLatin1Escaped(String text) {
+        if (text == null || text.isEmpty()) return text;
+        StringBuilder sb = new StringBuilder(text.length() + 16);
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch <= 0xFF) {
+                sb.append(ch);
+            } else {
+                sb.append("\\u");
+                String hex = Integer.toHexString(ch).toUpperCase(Locale.ROOT);
+                for (int j = hex.length(); j < 4; j++) sb.append('0');
+                sb.append(hex);
+            }
+        }
+        return sb.toString();
+    }
+
+    private boolean isIncorrectStringValue(Throwable t) {
+        Throwable cur = t;
+        while (cur != null) {
+            if (cur instanceof SQLException) {
+                SQLException sqlEx = (SQLException) cur;
+                if (sqlEx.getErrorCode() == 1366) return true;
+                String msg = sqlEx.getMessage();
+                if (msg != null && msg.contains("Incorrect string value")) return true;
+            } else {
+                String msg = cur.getMessage();
+                if (msg != null && msg.contains("Incorrect string value")) return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
     }
 
     /**
@@ -826,12 +907,12 @@ public class ShiwanM2BoxCaseService {
         }
     }
 
-    /** 总剔除数：RejectRecord 主表按 OrderNo 统计事件数（DISTINCT CaseCode）。 */
+    /** 总剔除数：RejectRecord 主表按事件 ID 统计事件数。 */
     public int getRejectCount(String orderNo) {
         if (orderNo == null || orderNo.trim().isEmpty()) return 0;
         try {
             Long n = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(DISTINCT CaseCode) FROM RejectRecord WHERE OrderNo = ?",
+                    "SELECT COUNT(1) FROM RejectRecord WHERE OrderNo = ?",
                     Long.class, orderNo.trim());
             return n != null ? n.intValue() : 0;
         } catch (Exception e) {
@@ -1640,13 +1721,13 @@ public class ShiwanM2BoxCaseService {
             rejectWhere.append(" AND OrderNo LIKE ? ");
             rejectArgs.add("%" + orderNo.trim() + "%");
         }
-        long rejectCaseCount = queryLong("SELECT COUNT(DISTINCT CaseCode) " + rejectWhere, rejectArgs);
+        long rejectEventCount = queryLong("SELECT COUNT(1) " + rejectWhere, rejectArgs);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("palletCount", palletCount);
         data.put("caseCount", caseCount);
         data.put("boxCount", boxCount);
-        data.put("rejectCount", rejectCaseCount);
+        data.put("rejectCount", rejectEventCount);
         return data;
     }
 
@@ -2307,9 +2388,7 @@ public class ShiwanM2BoxCaseService {
             log.error("[虚拟垛标上传] palletCode={} 接口调用异常: {}", palletCode, e.getMessage(), e);
             // 标记为上传失败
             try {
-                jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
-                e.getMessage(), palletCode);
+                updateUploadFailMsg(palletCode, e.getMessage());
             } catch (Exception ex) {
                 log.error("[虚拟垛标上传] 更新 IsUpload=2 失败 palletCode={}", palletCode, ex);
             }
@@ -2391,9 +2470,7 @@ public class ShiwanM2BoxCaseService {
                 } else {
                     // 已达最大重试次数（5次×10秒=50秒），仍为处理中，视作失败
                     String failMsg = "上传结果查询超时（连续" + maxAttempts + "次返回处理中）：" + returnMsg;
-                    jdbcTemplate.update(
-                            "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
-                            failMsg, palletCode);
+                    updateUploadFailMsg(palletCode, failMsg);
                     log.warn("[垛标结果查询] 垛 {} 查询超时失败: {}", palletCode, failMsg);
                     UploadLogBus.log(
                             formatUploadLogLine(logTime, palletCode, boxCount,
@@ -2405,9 +2482,7 @@ public class ShiwanM2BoxCaseService {
                 }
             } else {
                 // return_code!=0 且 return_msg 不是处理中，直接视为失败
-                jdbcTemplate.update(
-                        "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
-                        returnMsg, palletCode);
+                updateUploadFailMsg(palletCode, returnMsg);
                 log.warn("[垛标结果查询] 垛 {} 上传失败: return_code={} msg={}", palletCode, returnCode, returnMsg);
                 UploadLogBus.log(
                         formatUploadLogLine(logTime, palletCode, boxCount,
@@ -2432,6 +2507,27 @@ public class ShiwanM2BoxCaseService {
         }
         String msg = returnMsg.trim();
         return msg.contains("虚拟垛") && msg.contains("正在处理中");
+    }
+
+    /**
+     * 更新上传失败信息（CodeRelationUpload.Msg），若库字段字符集不支持中文则自动降级为 ASCII 转义。
+     */
+    private void updateUploadFailMsg(String palletCode, String msg) {
+        try {
+            jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
+                    msg, palletCode);
+        } catch (Exception e) {
+            if (isIncorrectStringValue(e)) {
+                String fallback = toLatin1Escaped(msg);
+                jdbcTemplate.update(
+                        "UPDATE CodeRelationUpload SET IsUpload = 2, Msg = ? WHERE VirtualSerialNumber = ? AND IsDel = 0",
+                        fallback, palletCode);
+                log.warn("[上传失败信息] Msg 含非兼容字符，已降级写入 palletCode={} msg={}", palletCode, fallback);
+                return;
+            }
+            throw e;
+        }
     }
 
     // ================================================================

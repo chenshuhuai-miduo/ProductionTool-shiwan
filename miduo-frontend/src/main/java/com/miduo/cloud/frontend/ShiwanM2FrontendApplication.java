@@ -5,6 +5,8 @@ import com.miduo.cloud.frontend.controller.ShiwanM2MainController;
 import com.miduo.cloud.frontend.controller.TrialExpireDialogController;
 import com.miduo.cloud.frontend.controller.TrialExpiringDialogController;
 import com.miduo.cloud.frontend.controller.UnactivatedDialogController;
+import com.miduo.cloud.frontend.service.DeviceConnectionManager;
+import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
 import com.miduo.cloud.frontend.service.DeviceInfoService;
 import com.miduo.cloud.frontend.service.LicenseService;
 import com.miduo.cloud.frontend.service.LicenseValidationService;
@@ -162,6 +164,17 @@ public class ShiwanM2FrontendApplication extends Application {
     public void stop() throws Exception {
         if (cssHotReloader != null) {
             cssHotReloader.stop();
+        }
+        // 退出时兜底释放所有IO连接，避免串口/网口占用残留
+        try {
+            ShiwanM2HardwareService.getInstance().allOff();
+        } catch (Exception e) {
+            System.err.println("[退出清理] 发送设备全关信号失败: " + e.getMessage());
+        }
+        try {
+            DeviceConnectionManager.getInstance().stopAllConnections();
+        } catch (Exception e) {
+            System.err.println("[退出清理] 断开设备连接失败: " + e.getMessage());
         }
         OperateLogBatchManager.getInstance().stop();
         super.stop();

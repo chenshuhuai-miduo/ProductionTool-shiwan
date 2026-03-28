@@ -21,7 +21,10 @@ import javax.sql.DataSource;
 @ConditionalOnProperty(name = "shiwan.m2.datasource.enabled", havingValue = "true")
 public class ShiwanM2DataSourceConfig {
 
-    private static final String JDBC_URL_TEMPLATE = "jdbc:mysql://%s:%s/%s?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8";
+    // characterEncoding 必须用 Java charset 名称（UTF-8），而非 MySQL 的 utf8mb4。
+    // 服务端字符集由 MySQL 自身配置决定；驱动层 UTF-8 已可正确传输全 Unicode。
+    private static final String JDBC_URL_TEMPLATE =
+            "jdbc:mysql://%s:%s/%s?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8";
 
     @Bean
     @Primary
@@ -44,7 +47,7 @@ public class ShiwanM2DataSourceConfig {
             // 配置文件缺失或无 dbConnection 时，回退到 spring.datasource.*，避免启动阶段硬失败
             config.setJdbcUrl(env.getProperty(
                     "spring.datasource.url",
-                    "jdbc:mysql://127.0.0.1:3306/mysql?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8"));
+                    "jdbc:mysql://127.0.0.1:3306/mysql?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8"));
             config.setUsername(env.getProperty("spring.datasource.username", "root"));
             config.setPassword(env.getProperty("spring.datasource.password", ""));
             config.setDriverClassName(env.getProperty("spring.datasource.driver-class-name", "com.mysql.cj.jdbc.Driver"));

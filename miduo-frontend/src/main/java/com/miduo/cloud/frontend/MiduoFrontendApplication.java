@@ -1,6 +1,8 @@
 package com.miduo.cloud.frontend;
 
 import com.miduo.cloud.frontend.controller.*;
+import com.miduo.cloud.frontend.service.DeviceConnectionManager;
+import com.miduo.cloud.frontend.service.ShiwanM2HardwareService;
 import com.miduo.cloud.frontend.service.DeviceInfoService;
 import com.miduo.cloud.frontend.service.LicenseService;
 import com.miduo.cloud.frontend.util.DeviceUniqueIdGenerator;
@@ -107,6 +109,18 @@ public class MiduoFrontendApplication extends Application {
         System.out.println("========================================");
         System.out.println("米多赋码采集关联系统正在关闭...");
         System.out.println("========================================");
+
+        // 退出时兜底释放所有IO连接，避免串口/网口占用残留
+        try {
+            ShiwanM2HardwareService.getInstance().allOff();
+        } catch (Exception e) {
+            System.err.println("[退出清理] 发送设备全关信号失败: " + e.getMessage());
+        }
+        try {
+            DeviceConnectionManager.getInstance().stopAllConnections();
+        } catch (Exception e) {
+            System.err.println("[退出清理] 断开设备连接失败: " + e.getMessage());
+        }
         
         // 停止操作日志批量管理器（会先保存所有待保存的日志）
         OperateLogBatchManager.getInstance().stop();

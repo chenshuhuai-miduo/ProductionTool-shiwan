@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -183,6 +184,34 @@ public class ShiwanM2TcpCaptureService {
         stopTimeoutChecker();
         addEvent("STOPPED", "TCP采集已停止", null);
         log.info("TCP采集已停止");
+    }
+
+    /**
+     * 应用退出时强制释放所有资源（TCP端口、接收线程、超时巡检线程）。
+     * 与 stop() 的区别：这里会关闭持久连接并终止线程，确保不残留端口占用。
+     */
+    @PreDestroy
+    public synchronized void shutdownOnExit() {
+        try {
+            active = false;
+            persistentConnection = false;
+            stopTimeoutChecker();
+            timeoutScheduler.shutdownNow();
+
+            closeSocket(boxSocket);
+            closeSocket(caseSocket);
+            boxSocket = null;
+            caseSocket = null;
+
+            if (boxReceiverThread != null) boxReceiverThread.interrupt();
+            if (caseReceiverThread != null) caseReceiverThread.interrupt();
+
+            boxBatchQueue.clear();
+            caseBatchQueue.clear();
+            log.info("[TCP采集] 应用退出，已释放相机连接与线程资源");
+        } catch (Exception e) {
+            log.warn("[TCP采集] 退出清理异常: {}", e.getMessage());
+        }
     }
 
     /**
@@ -608,8 +637,10 @@ public class ShiwanM2TcpCaptureService {
         String reason = "批次匹配超时-未见盒码";
         String caseCode = caseBatch.code != null ? caseBatch.code : "";
 
-        // 落库：按超时事件写主表（无盒码时无明细）
-        boxCaseService.insertRejectEvent(currentOrderNo, caseCode, reason);
+        // 落库：按超时事件写主表 + 兜底一条明细，确保事件在剔除弹窗中可下钻到留痕明细
+        Long eventId = boxCaseService.insertRejectEvent(currentOrderNo, caseCode, reason);
+        String safeCaseCode = caseCode.trim().isEmpty() ? null : caseCode.trim();
+        boxCaseService.insertRejectDetail(eventId, null, null, safeCaseCode, safeCaseCode, reason);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("boxCodes", Collections.emptyList());
