@@ -130,7 +130,7 @@ public class FxDialog {
 
     // ── 提示弹窗（单按钮，阻塞直到用户关闭）────────────────────────────────
 
-    /** 信息提示弹窗，蓝色图标 */
+    /** 信息提示弹窗（与 {@link #warn} 相同：橙色警告图标，仅语义为「告知」） */
     public static void alert(Window owner, String title, String content) {
         showAlert(owner, title, content, Type.INFO);
     }
@@ -236,19 +236,14 @@ public class FxDialog {
                 iconPaint = Color.web("#DC2626");
                 iconBgCss = "#FEE2E2";
                 break;
-            case INFO:
-                // 约定：¡ 表示信息 / 提示；! 表示警告（见 SvgIconLoader 对话框专用图标）
-                svgResource = SvgIconLoader.ICON_DIALOG_INVERTED_EXCLAM;
-                iconPaint = Color.web("#2563EB");
-                iconBgCss = "#DBEAFE";
-                break;
             case SUCCESS:
                 svgResource = SvgIconLoader.ICON_SUCCESS;
                 iconPaint = Color.web("#16A34A");
                 iconBgCss = "#DCFCE7";
                 break;
-            default: // WARN
-                svgResource = SvgIconLoader.ICON_DIALOG_EXCLAM;
+            case INFO:
+            default: // WARN — 信息与普通警告共用橙色感叹号图标
+                svgResource = SvgIconLoader.ICON_DIALOG_INVERTED_EXCLAM;
                 iconPaint = Color.web("#D97706");
                 iconBgCss = "#FEF3C7";
                 break;

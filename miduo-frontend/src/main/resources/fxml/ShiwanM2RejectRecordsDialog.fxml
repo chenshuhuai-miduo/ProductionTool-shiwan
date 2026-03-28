@@ -132,7 +132,7 @@
                     <TableView fx:id="detailTable" VBox.vgrow="ALWAYS"
                                styleClass="sw2-wrap-table sw2-reject-detail-table">
                         <columns>
-                            <TableColumn fx:id="dSeqCol" text="序号" prefWidth="64" minWidth="56"/>
+                            <TableColumn fx:id="dSeqCol" text="序号" minWidth="55" maxWidth="55"/>
                             <TableColumn fx:id="dLinkCol" text="关联码" prefWidth="220" minWidth="120"/>
                             <TableColumn fx:id="dProblemCol" text="问题码" prefWidth="120" minWidth="100" maxWidth="160"/>
                             <TableColumn fx:id="dReasonCol" text="剔除原因" prefWidth="200" minWidth="80"/>

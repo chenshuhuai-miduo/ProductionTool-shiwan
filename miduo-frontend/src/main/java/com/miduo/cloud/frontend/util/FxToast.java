@@ -11,6 +11,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -24,10 +25,14 @@ import javafx.util.Duration;
  * FxToast.warn(window, "请先选择文件");
  * FxToast.error(window, "导入失败：网络超时");
  * </pre>
+ * 左侧图标使用 {@link SvgIconLoader} 与通用弹窗同一套 SVG，避免依赖系统字体渲染 ✓!✕。
  */
 public class FxToast {
 
     public enum Type { SUCCESS, WARN, ERROR }
+
+    private static final double TOAST_ICON_BADGE = 20;
+    private static final double TOAST_ICON_INNER = 14;
 
     /** 默认停留时长（ms） */
     private static final int DEFAULT_STAY_MS = 3000;
@@ -71,24 +76,28 @@ public class FxToast {
     public static void show(Window owner, String message, Type type, int stayMs) {
         if (owner == null) return;
 
-        String icon, dotColor, textColor, bgColor, borderColor;
+        String svgResource;
+        String dotColor;
+        String textColor;
+        String bgColor;
+        String borderColor;
         switch (type) {
             case SUCCESS:
-                icon        = "✓";
+                svgResource = SvgIconLoader.ICON_SUCCESS;
                 dotColor    = "#16A34A";
                 textColor   = "#14532D";
                 bgColor     = "#F0FDF4";
                 borderColor = "#86EFAC";
                 break;
             case WARN:
-                icon        = "!";
+                svgResource = SvgIconLoader.ICON_DIALOG_INVERTED_EXCLAM;
                 dotColor    = "#D97706";
                 textColor   = "#78350F";
                 bgColor     = "#FFFBEB";
                 borderColor = "#FCD34D";
                 break;
             default: // ERROR
-                icon        = "✕";
+                svgResource = SvgIconLoader.ICON_ERROR;
                 dotColor    = "#DC2626";
                 textColor   = "#7F1D1D";
                 bgColor     = "#FEF2F2";
@@ -96,16 +105,18 @@ public class FxToast {
                 break;
         }
 
-        // ── 图标 ──
-        Label iconLabel = new Label(icon);
-        iconLabel.setStyle(
-                "-fx-font-size: 13px; -fx-font-weight: bold;" +
-                "-fx-text-fill: " + dotColor + ";" +
-                "-fx-min-width: 20px; -fx-min-height: 20px;" +
-                "-fx-alignment: center;" +
+        // ── 图标（与 FxDialog 同源 SVG，小圆底与原先字符占位一致） ──
+        StackPane iconBadge = new StackPane();
+        iconBadge.setMinSize(TOAST_ICON_BADGE, TOAST_ICON_BADGE);
+        iconBadge.setPrefSize(TOAST_ICON_BADGE, TOAST_ICON_BADGE);
+        iconBadge.setMaxSize(TOAST_ICON_BADGE, TOAST_ICON_BADGE);
+        iconBadge.setStyle(
                 "-fx-background-color: " + dotColor + "22;" +
-                "-fx-background-radius: 10px;"
+                "-fx-background-radius: " + (TOAST_ICON_BADGE / 2) + ";"
         );
+        StackPane iconPane = new StackPane();
+        SvgIconLoader.loadInto(iconPane, svgResource, TOAST_ICON_INNER, Color.web(dotColor));
+        iconBadge.getChildren().add(iconPane);
 
         // ── 文字（支持多行，避免长文案撑破布局） ──
         Label textLabel = new Label(message);
@@ -118,7 +129,7 @@ public class FxToast {
         );
 
         // ── 卡片容器 ──
-        HBox content = new HBox(8, iconLabel, textLabel);
+        HBox content = new HBox(8, iconBadge, textLabel);
         content.setAlignment(Pos.CENTER_LEFT);
         content.setStyle(
                 "-fx-background-color: " + bgColor + ";" +
