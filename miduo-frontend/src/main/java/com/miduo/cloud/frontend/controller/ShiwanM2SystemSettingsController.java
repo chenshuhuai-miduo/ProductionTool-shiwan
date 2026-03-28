@@ -331,9 +331,15 @@ public class ShiwanM2SystemSettingsController implements Initializable {
                 m1InitialSerialNoField.setText(initSn != null ? String.valueOf(initSn) : "");
             }
         }
-        if (s.getApi() != null && backendBaseUrlField != null) {
-            String url = s.getApi().getBackendBaseUrl();
-            backendBaseUrlField.setText(url != null && !url.isEmpty() ? url : "http://localhost:8080");
+        if (s.getApi() != null) {
+            if (backendBaseUrlField != null) {
+                String url = s.getApi().getBackendBaseUrl();
+                backendBaseUrlField.setText(url != null && !url.isEmpty() ? url : "http://localhost:8080");
+            }
+            if (openPlatformUrlField != null) {
+                String base = s.getApi().getBaseUrl();
+                openPlatformUrlField.setText(base != null && !base.isEmpty() ? base : "https://openapi.weixin12315.com");
+            }
         }
         if (s.getPrinter() != null) {
             if (printerNameField != null) printerNameField.setText(s.getPrinter().getPrinterName() != null ? s.getPrinter().getPrinterName() : "");
@@ -1344,27 +1350,46 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML
     private void onSaveBackendBaseUrl() {
         if (backendBaseUrlField == null) return;
-        String url = backendBaseUrlField.getText().trim();
-        if (url.isEmpty()) {
+        Window w = settingsDialogOwner();
+        String url = normalizeHttpBaseUrl(backendBaseUrlField.getText());
+        if (url == null) {
             clearInlineResultRow(backendBaseUrlResultRow);
-            Window w = settingsDialogOwner();
             if (w != null) {
                 FxToast.error(w, "请填写后端 API 地址");
             }
             return;
         }
-        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url;
-        url = url.replaceAll("/+$", "");
+        String openBase = openPlatformUrlField != null
+                ? normalizeHttpBaseUrl(openPlatformUrlField.getText())
+                : null;
+        if (openBase == null) {
+            clearInlineResultRow(backendBaseUrlResultRow);
+            if (w != null) {
+                FxToast.error(w, "请填写开放平台地址（对应配置 api.baseUrl）");
+            }
+            return;
+        }
         ShiwanM2Settings s = ShiwanM2SettingsStore.get();
         if (s.getApi() == null) s.setApi(new ShiwanM2Settings.ApiConfig());
         s.getApi().setBackendBaseUrl(url);
+        s.getApi().setBaseUrl(openBase);
         saveSettings(s);
         HttpUtil.setBaseUrl(url);
         clearInlineResultRow(backendBaseUrlResultRow);
-        Window w = settingsDialogOwner();
         if (w != null) {
             FxToast.success(w, "保存成功");
         }
+    }
+
+    /** 去首尾空白；无 scheme 则补 http://；去掉末尾 /。空串返回 null */
+    private static String normalizeHttpBaseUrl(String raw) {
+        if (raw == null) return null;
+        String u = raw.trim();
+        if (u.isEmpty()) return null;
+        if (!u.startsWith("http://") && !u.startsWith("https://")) {
+            u = "http://" + u;
+        }
+        return u.replaceAll("/+$", "");
     }
 
     // ==================== 自定义标题栏（拖拽 & 关闭） ====================

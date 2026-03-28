@@ -31,8 +31,10 @@ public class ShiwanM2ApplicationLauncher {
 
     public static void main(String[] args) {
         long launcherStartMs = System.currentTimeMillis();
+        ShiwanM2FrontendApplication.setProcessEntryEpochMs(launcherStartMs);
         // 「关于系统」内容在 ShiwanM2FrontendApplication.main() 中配置
         initializeLogging();
+        ShiwanM2FrontendApplication.traceStartup("石湾统一启动器 main 入口（文件日志已就绪）");
         printWelcomeBanner();
 
         try {
@@ -42,6 +44,7 @@ public class ShiwanM2ApplicationLauncher {
             startBackendService();
             long backendThreadDispatchedMs = System.currentTimeMillis();
             System.out.println("[启动耗时] 后端启动线程已派发，耗时 " + (backendThreadDispatchedMs - backendBootBeginMs) + " ms");
+            ShiwanM2FrontendApplication.traceStartup("后端 Spring Boot 启动线程已派发");
 
             System.out.println("\n【步骤 2/3】后端后台启动中（与前端并行）...");
             monitorBackendStartupAsync(launcherStartMs, 60);
@@ -51,6 +54,7 @@ public class ShiwanM2ApplicationLauncher {
             System.out.println("----------------------------------------");
             long frontendHandoffMs = System.currentTimeMillis();
             System.out.println("[启动耗时] 进入前端启动前累计耗时 " + (frontendHandoffMs - launcherStartMs) + " ms");
+            ShiwanM2FrontendApplication.traceStartup("即将调用 JavaFX Application.launch（与后端并行，此时尚未出现 JavaFX 窗口）");
             startFrontendApplication();
 
             System.out.println("\n========================================");
@@ -90,6 +94,8 @@ public class ShiwanM2ApplicationLauncher {
                 System.out.println("[启动耗时] 启动器累计耗时（到后端可用） " + (backendWaitEndMs - launcherStartMs) + " ms");
                 System.out.println("  API地址：http://localhost:8080/api");
                 System.out.println("----------------------------------------");
+                ShiwanM2FrontendApplication.traceStartup("Spring Boot 后端已就绪(监控线程确认)，距进程入口 "
+                        + (backendWaitEndMs - launcherStartMs) + "ms");
             } else {
                 System.err.println("\n✗ 后端服务启动超时（" + timeoutSeconds + "秒）！");
                 System.err.println("请检查：");
@@ -97,6 +103,8 @@ public class ShiwanM2ApplicationLauncher {
                 System.err.println("  2. 数据库连接是否正常");
                 System.err.println("  3. 配置文件是否正确");
                 System.err.println("前端已启动，可稍后在系统页面重试相关后端功能。");
+                ShiwanM2FrontendApplication.traceStartup("Spring Boot 后端启动超时或失败(监控线程)，距进程入口 "
+                        + (backendWaitEndMs - launcherStartMs) + "ms");
             }
         }, "ShiwanM2-Backend-Startup-Monitor");
         monitor.setDaemon(true);
@@ -133,9 +141,11 @@ public class ShiwanM2ApplicationLauncher {
                 // 通知前端控制器：后端已就绪，可以执行 DB 检测和 IO 连接
                 ShiwanM2FrontendApplication.signalBackendReady();
                 System.out.println("✓ Spring Boot 后端启动完成");
+                ShiwanM2FrontendApplication.traceStartup("SpringApplication.run 返回，后端上下文已激活");
             } catch (Exception e) {
                 System.err.println("✗ 后端服务启动失败：" + e.getMessage());
                 e.printStackTrace();
+                ShiwanM2FrontendApplication.traceStartup("Spring Boot 启动失败: " + e.getMessage());
                 backendReadyLatch.countDown();
             }
         }, "ShiwanM2-Backend-Startup-Thread");

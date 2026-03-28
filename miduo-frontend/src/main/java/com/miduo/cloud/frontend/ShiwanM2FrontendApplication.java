@@ -15,18 +15,31 @@ import com.miduo.cloud.frontend.util.OperateLogBatchManager;
 import com.miduo.cloud.frontend.util.CssHotReloader;
 import com.miduo.cloud.frontend.util.StageIconUtil;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
+import com.miduo.cloud.frontend.util.FileLogManager;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.entity.enums.LicenseStatusEnum;
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.effect.BlurType;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Duration;
 import java.time.LocalDate;
 
 /**
@@ -39,8 +52,15 @@ import java.time.LocalDate;
 public class ShiwanM2FrontendApplication extends Application {
 
     private CssHotReloader cssHotReloader;
+    /** 启动等待小窗：尽早显示，避免用户误以为未响应而重复双击 exe */
+    private Stage startupSplashStage;
     /** 前端启动起始时间（用于启动阶段耗时埋点）。 */
     private static volatile long frontendStartupBeginMs = 0L;
+    /**
+     * 进程入口时间：统一启动器 {@code main} 或仅前端 {@code ShiwanM2FrontendApplication.main} 第一条语句，
+     * 用于日志中「从双击 exe 起算」的耗时。
+     */
+    private static volatile long processEntryEpochMs = 0L;
     /** 启动期许可证状态快照，供主界面复用，避免重复采集设备指纹。 */
     private static volatile LicenseStatusSnapshot startupLicenseStatusSnapshot;
 
@@ -58,6 +78,36 @@ public class ShiwanM2FrontendApplication extends Application {
      */
     public static void signalBackendReady() {
         BACKEND_READY_LATCH.countDown();
+    }
+
+    /**
+     * 由统一启动器在 {@code main} 入口尽早调用，便于日志从「进程启动」连续计时。
+     */
+    public static void setProcessEntryEpochMs(long epochMs) {
+        if (epochMs > 0L) {
+            processEntryEpochMs = epochMs;
+        }
+    }
+
+    /**
+     * 启动阶段埋点：写入当日文件日志（模块「启动追踪」）并打印控制台，便于排查「多久才看见界面」。
+     */
+    public static void traceStartup(String phase) {
+        long now = System.currentTimeMillis();
+        StringBuilder sb = new StringBuilder(phase);
+        if (processEntryEpochMs > 0L) {
+            sb.append(" | +").append(now - processEntryEpochMs).append("ms(进程入口)");
+        }
+        if (frontendStartupBeginMs > 0L) {
+            sb.append(" | +").append(now - frontendStartupBeginMs).append("ms(JavaFX.start)");
+        }
+        String msg = sb.toString();
+        try {
+            FileLogManager.getInstance().logInfo("启动追踪", msg);
+        } catch (Throwable ignored) {
+            // 文件日志未启动或异常时不影响启动
+        }
+        System.out.println("[启动追踪] " + msg);
     }
 
     /**
@@ -83,37 +133,72 @@ public class ShiwanM2FrontendApplication extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         frontendStartupBeginMs = System.currentTimeMillis();
-        System.out.println("========================================");
-        System.out.println("石湾2号机（盒箱垛关联软件）正在启动...");
-        System.out.println("========================================");
+        FileLogManager.getInstance().start();
+        traceStartup("JavaFX Application.start 入口");
+        // ① 最先出窗：避免在读配置/许可证阻塞 FX 线程前长时间无任何界面（用户易重复双击 exe）
+        showStartupSplash();
+        traceStartup("启动等待小窗已显示");
 
-        OperateLogBatchManager.getInstance().start();
+        // ② 短延迟后再做读盘与许可证：慢机/Win7 上需留出时间让启动窗真正合成到屏幕
+        PauseTransition splashPaintDelay = new PauseTransition(Duration.millis(280));
+        splashPaintDelay.setOnFinished(ev -> {
+            try {
+                traceStartup("首帧延迟结束，开始初始化(日志批量器/读配置/许可证)");
+                System.out.println("========================================");
+                System.out.println("石湾2号机（盒箱垛关联软件）正在启动...");
+                System.out.println("========================================");
 
-        // 从系统配置读取后端 API 地址（默认 http://localhost:8080），前端请求都发往该地址
-        String backendUrl = ShiwanM2SettingsStore.getBackendBaseUrl();
-        HttpUtil.setBaseUrl(backendUrl);
-        System.out.println("  后端 API 地址: " + backendUrl + "（可在系统设置中修改「后端服务地址」）");
+                OperateLogBatchManager.getInstance().start();
 
-        long licenseBeginMs = System.currentTimeMillis();
-        boolean licenseOk = performLicenseValidation();
-        long licenseEndMs = System.currentTimeMillis();
-        System.out.println("[启动耗时] 许可证校验耗时 " + (licenseEndMs - licenseBeginMs) + " ms");
-        if (!licenseOk) {
-            System.err.println("✗ 许可证验证失败，应用程序退出");
-            Platform.exit();
-            return;
-        }
+                String backendUrl = ShiwanM2SettingsStore.getBackendBaseUrl();
+                HttpUtil.setBaseUrl(backendUrl);
+                System.out.println("  后端 API 地址: " + backendUrl + "（可在系统设置中修改「后端服务地址」）");
+                traceStartup("后端 API 基址已配置: " + backendUrl);
+
+                long licenseBeginMs = System.currentTimeMillis();
+                boolean licenseOk = performLicenseValidation();
+                long licenseEndMs = System.currentTimeMillis();
+                long licenseCost = licenseEndMs - licenseBeginMs;
+                System.out.println("[启动耗时] 许可证校验耗时 " + licenseCost + " ms");
+                traceStartup("许可证校验结束，耗时 " + licenseCost + "ms，结果=" + (licenseOk ? "通过" : "未通过"));
+                if (!licenseOk) {
+                    System.err.println("✗ 许可证验证失败，应用程序退出");
+                    traceStartup("许可证未通过，退出(启动小窗将关闭)");
+                    closeStartupSplash();
+                    Platform.exit();
+                    return;
+                }
+
+                traceStartup("即将进入主界面 FXML 加载前短延迟(200ms)");
+                // ③ 再留一截时间加载主 FXML（FXML 很重），避免小窗与主窗切换看起来像「没提示」
+                PauseTransition beforeFxml = new PauseTransition(Duration.millis(200));
+                beforeFxml.setOnFinished(e2 -> loadMainWindowAfterSplash(primaryStage));
+                beforeFxml.play();
+            } catch (Exception e) {
+                closeStartupSplash();
+                traceStartup("启动初始化异常: " + e.getMessage());
+                System.err.println("✗ 启动失败！" + e.getMessage());
+                e.printStackTrace();
+                Platform.exit();
+            }
+        });
+        splashPaintDelay.play();
+    }
+
+    private void loadMainWindowAfterSplash(Stage primaryStage) {
         try {
+            traceStartup("开始加载主界面 FXML(ShiwanM2MainWindow.fxml)");
             long fxmlLoadBeginMs = System.currentTimeMillis();
             FXMLLoader loader = new FXMLLoader(
                 getClass().getResource("/fxml/ShiwanM2MainWindow.fxml"));
             Parent root = loader.load();
             long fxmlLoadEndMs = System.currentTimeMillis();
-            System.out.println("[启动耗时] 主界面FXML加载耗时 " + (fxmlLoadEndMs - fxmlLoadBeginMs) + " ms");
+            long fxmlCost = fxmlLoadEndMs - fxmlLoadBeginMs;
+            System.out.println("[启动耗时] 主界面FXML加载耗时 " + fxmlCost + " ms");
+            traceStartup("主界面 FXML 加载完成，耗时 " + fxmlCost + "ms");
 
             ShiwanM2MainController mainController = loader.getController();
 
-            // 动态适配屏幕分辨率：高度占屏幕 80%，宽度取适当值
             Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
             double windowHeight = screenBounds.getHeight() * 0.80;
             double windowWidth = Math.min(1400, screenBounds.getWidth() - 20);
@@ -125,7 +210,6 @@ public class ShiwanM2FrontendApplication extends Application {
             primaryStage.setResizable(true);
             primaryStage.setMaximized(false);
 
-            // 水平居中，Y 靠近屏幕顶部以确保标题栏（缩小/放大/关闭按钮）可见
             primaryStage.setX(screenBounds.getMinX() + (screenBounds.getWidth() - windowWidth) / 2);
             primaryStage.setY(screenBounds.getMinY() + 20);
 
@@ -136,23 +220,109 @@ public class ShiwanM2FrontendApplication extends Application {
                 cssHotReloader.start();
             }
 
-            // 点 X 执行与菜单「退出软件」一致的退出逻辑（检查是否有正在进行的采集任务等）
             primaryStage.setOnCloseRequest(event -> {
                 event.consume();
                 mainController.requestExit();
             });
 
+            closeStartupSplash();
             primaryStage.show();
             long firstShowMs = System.currentTimeMillis();
+            long totalFx = firstShowMs - frontendStartupBeginMs;
             System.out.println("[启动耗时] 前端启动总耗时（到主界面显示） "
-                    + (firstShowMs - frontendStartupBeginMs) + " ms");
+                    + totalFx + " ms");
 
             System.out.println("✓ 石湾 2 号机界面启动成功！窗口大小：" + (int) windowWidth + "x" + (int) windowHeight);
+            traceStartup("主界面窗口已显示(可见)，JavaFX.start 起累计 " + totalFx + "ms — 启动到此阶段结束");
 
         } catch (Exception e) {
+            closeStartupSplash();
+            traceStartup("主界面加载失败: " + e.getMessage());
             System.err.println("✗ 启动失败！" + e.getMessage());
             e.printStackTrace();
-            throw e;
+            Platform.exit();
+        }
+    }
+
+    private void showStartupSplash() {
+        // 若 exe4j/JVM 配置了 -splash:xxx.png，此处关闭原生闪屏，改由 JavaFX 小窗承接
+        try {
+            java.awt.SplashScreen ss = java.awt.SplashScreen.getSplashScreen();
+            if (ss != null && ss.isVisible()) {
+                ss.close();
+            }
+        } catch (Throwable ignored) {
+            // 无桌面环境或未配置 -splash 时忽略
+        }
+
+        startupSplashStage = new Stage();
+        // TRANSPARENT + 透明 Scene：去掉系统矩形窗体外沿，圆角与内容一致（UNDECORATED 仍会有直角底板）
+        startupSplashStage.initStyle(StageStyle.TRANSPARENT);
+        // 不使用 alwaysOnTop：避免压住许可证等模态对话框
+
+        final double splashW = 440;
+        final double splashH = 248;
+        final double shadowPad = 28;
+
+        Label title = new Label("米多赋码采集关联系统");
+        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        title.setMaxWidth(splashW - 48);
+        title.setAlignment(Pos.CENTER);
+
+        Label sub = new Label("程序已启动，正在加载…");
+        sub.setStyle("-fx-font-size: 15px; -fx-text-fill: #475569;");
+        sub.setMaxWidth(splashW - 48);
+        sub.setAlignment(Pos.CENTER);
+
+        ProgressIndicator pi = new ProgressIndicator();
+        pi.setPrefSize(56, 56);
+
+        Label warn = new Label("请勿重复双击桌面图标\n多开会占用端口或导致异常");
+        warn.setWrapText(true);
+        warn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #b45309; "
+                + "-fx-background-color: #fffbeb; -fx-padding: 10 14 10 14; -fx-background-radius: 6;");
+        warn.setMaxWidth(splashW - 40);
+        warn.setAlignment(Pos.CENTER);
+
+        VBox box = new VBox(16, title, sub, pi, warn);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(32, 28, 32, 28));
+        box.setPrefSize(splashW, splashH);
+        box.setMinSize(splashW, splashH);
+        box.setMaxSize(splashW, splashH);
+        // 仅圆角底，无描边（描边与 -fx-background-radius 在部分系统上易错位）
+        box.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12;");
+        box.setEffect(new DropShadow(BlurType.GAUSSIAN, Color.color(0, 0, 0, 0.22), 18, 0, 0, 3));
+
+        StackPane root = new StackPane(box);
+        root.setPadding(new Insets(shadowPad));
+        root.setStyle("-fx-background-color: transparent;");
+
+        double sceneW = splashW + shadowPad * 2;
+        double sceneH = splashH + shadowPad * 2;
+        Scene splashScene = new Scene(root, sceneW, sceneH);
+        splashScene.setFill(Color.TRANSPARENT);
+        startupSplashStage.setScene(splashScene);
+        startupSplashStage.setTitle("米多赋码采集关联系统");
+
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        startupSplashStage.setX(bounds.getMinX() + (bounds.getWidth() - sceneW) / 2);
+        startupSplashStage.setY(bounds.getMinY() + (bounds.getHeight() - sceneH) / 2);
+
+        try {
+            StageIconUtil.setStageIcon(startupSplashStage);
+        } catch (Exception ignored) {
+            // 与主窗一致图标，缺失资源时不影响启动
+        }
+        startupSplashStage.show();
+        startupSplashStage.toFront();
+        startupSplashStage.requestFocus();
+    }
+
+    private void closeStartupSplash() {
+        if (startupSplashStage != null) {
+            startupSplashStage.close();
+            startupSplashStage = null;
         }
     }
 
@@ -162,6 +332,7 @@ public class ShiwanM2FrontendApplication extends Application {
 
     @Override
     public void stop() throws Exception {
+        closeStartupSplash();
         if (cssHotReloader != null) {
             cssHotReloader.stop();
         }
@@ -265,6 +436,9 @@ public class ShiwanM2FrontendApplication extends Application {
     }
 
     public static void main(String[] args) {
+        if (processEntryEpochMs == 0L) {
+            processEntryEpochMs = System.currentTimeMillis();
+        }
         // 「关于系统」弹窗展示内容，发版时在此修改，用 \n 分隔多行
         System.setProperty("app.about.text",
             "米多赋码采集关联系统 v1.0.0\n关联模式：盒箱垛关联\n部署站点：石湾产线\n版权所有 © 米多科技");

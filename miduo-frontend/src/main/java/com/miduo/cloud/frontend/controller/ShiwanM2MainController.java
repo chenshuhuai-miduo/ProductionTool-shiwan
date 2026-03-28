@@ -713,9 +713,9 @@ public class ShiwanM2MainController implements Initializable {
                         break;
                     case FAILED:
                         updateUploadItemStatus(palletCode, UploadStatus.FAILED);
-                        String reason = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "未知错误";
-                        addDataLog(time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，上传失败（" + reason + "）", LogType.ERROR);
-                        addAlarmLog(time + "  上传失败：" + palletCode + "（" + reason + "）", LogType.ERROR);
+                        // 数据接收区、报警区均不展示冗长服务端原因，引导至「数据上传」Tab 查看详情
+                        addDataLog(time + " 垛码 " + palletCode + "，箱数 " + boxCount + "，上传失败（到数据上传中查看）", LogType.ERROR);
+                        addAlarmLog(time + "  上传失败：" + palletCode + "（到数据上传中查看）", LogType.ERROR);
                         // 文档：上传失败 → 红灯常亮 + 蜂鸣
                         hw.redLightAndBuzzer();
                         break;
@@ -3352,7 +3352,7 @@ public class ShiwanM2MainController implements Initializable {
      * 向数据接收区添加日志条目
      */
     public void addDataLog(String message, LogType type) {
-        String line = softWrapLongToken(message);
+        String line = softWrapLongToken(maskUploadFailureParenDetail(message));
         Platform.runLater(() -> {
             trimList(dataLogItems);
             dataLogItems.add(0, new LogEntry(line, type));
@@ -3373,9 +3373,10 @@ public class ShiwanM2MainController implements Initializable {
      * 向报警信息添加条目
      */
     public void addAlarmLog(String message, LogType type) {
+        String line = softWrapLongToken(maskUploadFailureParenDetail(message));
         Platform.runLater(() -> {
             trimList(alarmLogItems);
-            alarmLogItems.add(0, new LogEntry(message, type));
+            alarmLogItems.add(0, new LogEntry(line, type));
         });
     }
 
@@ -3383,6 +3384,59 @@ public class ShiwanM2MainController implements Initializable {
         while (list.size() >= MAX_LOG_ENTRIES) {
             list.remove(list.size() - 1);
         }
+    }
+
+    /**
+     * 数据接收区 / 报警区：将上传失败括号内具体原因替换为「到数据上传中查看」。
+     * 支持两种文案形态：<br>
+     * 1) …上传失败（原因）<br>
+     * 2) …上传失败：垛码（原因）<br>
+     * 嵌套中文括号按深度配对；若无闭合括号则原样返回。
+     */
+    private static String maskUploadFailureParenDetail(String message) {
+        if (message == null || message.isEmpty()) {
+            return message;
+        }
+        final String markerDirect = "上传失败（";
+        int failIdx = message.indexOf(markerDirect);
+        if (failIdx >= 0) {
+            int contentStart = failIdx + markerDirect.length();
+            int depth = 1;
+            for (int k = contentStart; k < message.length(); k++) {
+                char c = message.charAt(k);
+                if (c == '（') {
+                    depth++;
+                } else if (c == '）') {
+                    depth--;
+                    if (depth == 0) {
+                        return message.substring(0, contentStart) + "到数据上传中查看" + message.substring(k);
+                    }
+                }
+            }
+            return message;
+        }
+        final String markerColon = "上传失败：";
+        int colonIdx = message.indexOf(markerColon);
+        if (colonIdx < 0) {
+            return message;
+        }
+        int open = message.indexOf('（', colonIdx + markerColon.length());
+        if (open < 0) {
+            return message;
+        }
+        int depth = 1;
+        for (int k = open + 1; k < message.length(); k++) {
+            char c = message.charAt(k);
+            if (c == '（') {
+                depth++;
+            } else if (c == '）') {
+                depth--;
+                if (depth == 0) {
+                    return message.substring(0, open + 1) + "到数据上传中查看" + message.substring(k);
+                }
+            }
+        }
+        return message;
     }
 
     /** 为超长连续串插入零宽断点，便于 Label 换行展示完整内容、不出现末尾省略号。 */

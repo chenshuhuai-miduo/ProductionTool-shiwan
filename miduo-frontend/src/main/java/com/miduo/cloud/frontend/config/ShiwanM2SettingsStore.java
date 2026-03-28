@@ -91,7 +91,11 @@ public final class ShiwanM2SettingsStore {
     /** 供码包、上传等模块使用：获取接口 base URL（已随 get() 加载到内存）。 */
     public static String getApiBaseUrl() {
         ShiwanM2Settings.ApiConfig api = get().getApi();
-        return api != null && api.getBaseUrl() != null ? api.getBaseUrl() : "https://openapi.weixin12315.com";
+        if (api == null) {
+            return "https://openapi.weixin12315.com";
+        }
+        String u = api.getBaseUrl();
+        return u != null && !u.isEmpty() ? u : "https://openapi.weixin12315.com";
     }
 
     /** 供前端 HttpUtil 使用：获取本地后端 REST API 根地址（如 http://localhost:8080）。 */
