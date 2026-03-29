@@ -557,7 +557,7 @@ public class ShiwanM2BoxCaseService {
         args.add(orderNo.trim());
         args.addAll(toClose);
         jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET VirtualSerialNumber = ?, Status = 1 " +
+                "UPDATE CodeRelationUpload SET VirtualSerialNumber = ?, Status = 1, PalletTime = NOW() " +
                         "WHERE OrderNo = ? AND IsDel = 0 AND BigSerialNumber IN (" + placeholders + ")",
                 args.toArray());
 
@@ -1221,7 +1221,7 @@ public class ShiwanM2BoxCaseService {
                         String.class, code);
                 int rows = jdbcTemplate.update(
                         "UPDATE CodeRelationUpload " +
-                        "SET VirtualSerialNumber='', BiggerSerialNumber='', Status=3, IsUpload=0 " +
+                        "SET VirtualSerialNumber='', BiggerSerialNumber='', Status=3, IsUpload=0, AddTime=NOW(), PalletTime=NULL " +
                         "WHERE VirtualSerialNumber=? AND IsDel=0", code);
                 int caseCount = caseCodes == null ? 0 : caseCodes.size();
                 log.info("[取消关联] 垛码 {} 断箱-垛 {} 箱（影响 {} 行），状态置为未成垛", code, caseCount, rows);
@@ -1256,7 +1256,7 @@ public class ShiwanM2BoxCaseService {
                             "WHERE BigSerialNumber=? AND IsDel=0", code);
                     jdbcTemplate.update(
                             "UPDATE CodeRelationUpload SET BigSerialNumber='', BiggerSerialNumber='', VirtualSerialNumber='', " +
-                            "Status = CASE WHEN Status = 6 THEN 0 ELSE Status END " +
+                            "Status = CASE WHEN Status = 6 THEN 0 ELSE Status END, AddTime=NOW(), PalletTime=NULL " +
                             "WHERE BigSerialNumber=? AND IsDel=0", code);
                     returnCodeToHot(3, code);
                     log.info("[取消关联] 箱码 {} 只解一层，断盒-箱 {} 条", code, boxRows.size());
@@ -1700,7 +1700,7 @@ public class ShiwanM2BoxCaseService {
     public Map<String, Object> getProductionSummary(String startDate, String endDate, String orderNo) {
         Timestamp start = parseStartDate(startDate);
         Timestamp end = parseEndDate(endDate);
-        StringBuilder commonWhere = new StringBuilder(" FROM CodeRelationUpload WHERE AddTime BETWEEN ? AND ? ");
+        StringBuilder commonWhere = new StringBuilder(" FROM CodeRelationUpload WHERE PalletTime BETWEEN ? AND ? ");
         List<Object> commonArgs = new ArrayList<>();
         commonArgs.add(start);
         commonArgs.add(end);
@@ -1738,7 +1738,7 @@ public class ShiwanM2BoxCaseService {
         int size = normalizePageSize(pageSize);
         int offset = (current - 1) * size;
 
-        StringBuilder where = new StringBuilder(" FROM CodeRelationUpload WHERE AddTime BETWEEN ? AND ? AND VirtualSerialNumber != '' ");
+        StringBuilder where = new StringBuilder(" FROM CodeRelationUpload WHERE PalletTime BETWEEN ? AND ? AND VirtualSerialNumber != '' ");
         List<Object> args = new ArrayList<>();
         args.add(start);
         args.add(end);
@@ -1757,7 +1757,7 @@ public class ShiwanM2BoxCaseService {
         listArgs.add(offset);
         List<Map<String, Object>> records = jdbcTemplate.queryForList(
                 "SELECT VirtualSerialNumber AS palletCode, COUNT(DISTINCT BigSerialNumber) AS caseCount, " +
-                        "MAX(OrderNo) AS orderNo, MAX(AddTime) AS associateTime " +
+                        "MAX(OrderNo) AS orderNo, MAX(PalletTime) AS associateTime " +
                         where + " GROUP BY VirtualSerialNumber ORDER BY associateTime DESC LIMIT ? OFFSET ?",
                 listArgs.toArray());
         return buildPageResult(records, total, current, size);
