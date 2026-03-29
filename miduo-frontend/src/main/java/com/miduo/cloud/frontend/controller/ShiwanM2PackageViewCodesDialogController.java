@@ -17,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 import java.net.URLEncoder;
@@ -44,6 +45,7 @@ public class ShiwanM2PackageViewCodesDialogController {
     @FXML private TextField pageInputField;
     @FXML private Label totalPagesLabel;
     @FXML private ComboBox<String> pageSizeCombo;
+    @FXML private StackPane loadingOverlay;
 
     private final ObservableList<ViewCodeRow> rows = FXCollections.observableArrayList();
 
@@ -153,6 +155,7 @@ public class ShiwanM2PackageViewCodesDialogController {
         if (importId == null) {
             return;
         }
+        setLoading(true);
         String keyword = keywordField.getText() == null ? "" : keywordField.getText().trim();
         new Thread(() -> {
             try {
@@ -169,29 +172,47 @@ public class ShiwanM2PackageViewCodesDialogController {
                         responseJson, new TypeReference<ApiResult<PageOutput<CodePackageViewCodeVO>>>() {});
 
                 Platform.runLater(() -> {
-                    if (result == null || result.getCode() != 200 || result.getData() == null) {
-                        rows.clear();
-                        totalLabel.setText("共 0 条");
-                        pageInputField.setText("1");
-                        totalPagesLabel.setText("/ 1 页");
-                        if (result != null && result.getMessage() != null) {
-                            showAlert("查询失败", result.getMessage());
+                    try {
+                        if (result == null || result.getCode() != 200 || result.getData() == null) {
+                            rows.clear();
+                            totalLabel.setText("共 0 条");
+                            pageInputField.setText("1");
+                            totalPagesLabel.setText("/ 1 页");
+                            if (result != null && result.getMessage() != null) {
+                                showAlert("查询失败", result.getMessage());
+                            }
+                            return;
                         }
-                        return;
+                        PageOutput<CodePackageViewCodeVO> pageOutput = result.getData();
+                        rows.setAll(pageOutput.getRecords() == null ? FXCollections.observableArrayList()
+                                : pageOutput.getRecords().stream().map(ViewCodeRow::fromVO).collect(Collectors.toList()));
+                        currentPage = pageOutput.getCurrent() == null ? 1 : pageOutput.getCurrent().intValue();
+                        totalPages = pageOutput.getPages() == null || pageOutput.getPages() <= 0 ? 1 : pageOutput.getPages().intValue();
+                        totalLabel.setText("共 " + (pageOutput.getTotal() == null ? 0 : pageOutput.getTotal()) + " 条");
+                        pageInputField.setText(String.valueOf(currentPage));
+                        totalPagesLabel.setText("/ " + totalPages + " 页");
+                    } finally {
+                        setLoading(false);
                     }
-                    PageOutput<CodePackageViewCodeVO> pageOutput = result.getData();
-                    rows.setAll(pageOutput.getRecords() == null ? FXCollections.observableArrayList()
-                            : pageOutput.getRecords().stream().map(ViewCodeRow::fromVO).collect(Collectors.toList()));
-                    currentPage = pageOutput.getCurrent() == null ? 1 : pageOutput.getCurrent().intValue();
-                    totalPages = pageOutput.getPages() == null || pageOutput.getPages() <= 0 ? 1 : pageOutput.getPages().intValue();
-                    totalLabel.setText("共 " + (pageOutput.getTotal() == null ? 0 : pageOutput.getTotal()) + " 条");
-                    pageInputField.setText(String.valueOf(currentPage));
-                    totalPagesLabel.setText("/ " + totalPages + " 页");
                 });
             } catch (Exception e) {
-                Platform.runLater(() -> showAlert("查询异常", e.getMessage()));
+                Platform.runLater(() -> {
+                    try {
+                        showAlert("查询异常", e.getMessage());
+                    } finally {
+                        setLoading(false);
+                    }
+                });
             }
         }, "package-view-codes").start();
+    }
+
+    private void setLoading(boolean on) {
+        if (loadingOverlay == null) {
+            return;
+        }
+        loadingOverlay.setVisible(on);
+        loadingOverlay.setManaged(on);
     }
 
     private int resolvePageSize(String value) {

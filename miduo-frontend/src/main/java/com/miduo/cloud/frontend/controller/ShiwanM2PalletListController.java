@@ -16,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 import java.net.URL;
@@ -41,6 +42,7 @@ public class ShiwanM2PalletListController implements Initializable {
     @FXML private ComboBox<String> pageSizeCombo;
     @FXML private Button prevBtn;
     @FXML private Button nextBtn;
+    @FXML private StackPane loadingOverlay;
 
     private double dragOffsetX, dragOffsetY;
 
@@ -137,6 +139,7 @@ public class ShiwanM2PalletListController implements Initializable {
     }
 
     private void loadData() {
+        setLoading(true);
         String url = "/api/shiwan-m2/stats/pallet-list?startDate=" + enc(startDate)
                 + "&endDate=" + enc(endDate)
                 + "&orderNo=" + enc(orderNo)
@@ -167,8 +170,21 @@ public class ShiwanM2PalletListController implements Initializable {
                 nextBtn.setDisable(page >= pages);
             } catch (Exception ex) {
                 showWarn("解析失败：" + ex.getMessage());
+            } finally {
+                setLoading(false);
             }
-        }, ex -> showWarn("查询异常：" + ex.getMessage()));
+        }, ex -> {
+            setLoading(false);
+            showWarn("查询异常：" + ex.getMessage());
+        });
+    }
+
+    private void setLoading(boolean on) {
+        if (loadingOverlay == null) {
+            return;
+        }
+        loadingOverlay.setVisible(on);
+        loadingOverlay.setManaged(on);
     }
 
     private long num(Object v) {
