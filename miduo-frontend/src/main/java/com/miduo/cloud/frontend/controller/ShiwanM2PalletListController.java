@@ -2,14 +2,13 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -18,6 +17,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.net.URLEncoder;
@@ -209,13 +209,18 @@ public class ShiwanM2PalletListController implements Initializable {
         return URLEncoder.encode(v, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
+    private Window dialogOwner() {
+        if (titleBar != null && titleBar.getScene() != null) {
+            return titleBar.getScene().getWindow();
+        }
+        if (palletTable != null && palletTable.getScene() != null) {
+            return palletTable.getScene().getWindow();
+        }
+        return null;
+    }
+
     private void showWarn(String msg) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("提示");
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.warn(dialogOwner(), "提示", msg);
     }
 
     public static class PalletRow {

@@ -2,8 +2,8 @@ package com.miduo.cloud.frontend.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.miduo.cloud.common.dto.ApiResult;
+import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
-import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,7 +15,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.text.Font;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -30,6 +29,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.net.URLEncoder;
@@ -458,13 +458,21 @@ public class ShiwanM2StatsController implements Initializable {
         return URLEncoder.encode(safe(value), StandardCharsets.UTF_8).replace("+", "%20");
     }
 
+    private Window dialogOwner() {
+        if (palletCard != null && palletCard.getScene() != null) {
+            return palletCard.getScene().getWindow();
+        }
+        if (statsLoadingOverlay != null && statsLoadingOverlay.getScene() != null) {
+            return statsLoadingOverlay.getScene().getWindow();
+        }
+        if (startDate != null && startDate.getScene() != null) {
+            return startDate.getScene().getWindow();
+        }
+        return null;
+    }
+
     private void showWarn(String msg) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("提示");
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        ShiwanM2AlertUtil.applyStyle(alert);
-        alert.showAndWait();
+        FxDialog.warn(dialogOwner(), "提示", msg);
     }
 
     public static class UploadRow {
