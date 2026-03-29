@@ -58,6 +58,10 @@ public class M1TCodeSyncService {
 
     /** 前端开始采集后调用：激活同步 */
     public void startSync() {
+        // 清空待拉取事件，避免停止后再开始采集时前端 lastSeq 从 0 把历史事件整批重复展示
+        synchronized (this) {
+            syncEventQueue.clear();
+        }
         syncActive = true;
         log.info("1号机 T_Code 同步已启动");
     }

@@ -2471,7 +2471,7 @@ public class ShiwanM2MainController implements Initializable {
 
     /** 通知后端启动 1 号机 T_Code 同步（后台线程执行，不阻塞 UI） */
     private void startM1Sync() {
-        lastM1SyncEventSeq = 0;
+        // 不在此处重置 lastM1SyncEventSeq：后端 start 会清空事件队列，保留已确认的 seq 仅消费新增事件
         productExecutor.submit(() -> {
             try {
                 String resp = HttpUtil.doPost("/api/shiwan-m2/m1-sync/start", "");
