@@ -749,9 +749,10 @@ public class ShiwanM2TcpCaptureService {
             // 按状态更新 CodeRelationUpload：status=4→6，status=5→物理删除，正常→0
             boxCaseService.applyRejectionStatusUpdates(allBoxCodes, problematicCodes);
 
+            String uiReason = simplifyReceiveError(summary.toString());
             addEvent("ASSOC_FAIL",
-                    "[批" + batchNo + "] 整批剔除 箱码:" + caseCode + "，原因：" + summary,
-                    buildFailData(allBoxCodes, caseCode, summary.toString()));
+                    "[批" + batchNo + "] 整批剔除 箱码:" + caseCode + "，原因：" + uiReason,
+                    buildFailData(allBoxCodes, caseCode, uiReason));
             log.warn("[批{}] 整批剔除 caseCode={} summary={}", batchNo, caseCode, summary);
             return;
         }
@@ -767,9 +768,10 @@ public class ShiwanM2TcpCaptureService {
             boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, caseRejectReason);
             // 关联失败时无预定义问题码，好盒码置为 status=0
             boxCaseService.applyRejectionStatusUpdates(allBoxCodes, Collections.emptyMap());
+            String uiReason = simplifyReceiveError(errMsg);
             addEvent("ASSOC_FAIL",
-                    "[批" + batchNo + "] 关联失败 箱码:" + caseCode + "，原因：" + errMsg,
-                    buildFailData(allBoxCodes, caseCode, errMsg));
+                    "[批" + batchNo + "] 关联失败 箱码:" + caseCode + "，原因：" + uiReason,
+                    buildFailData(allBoxCodes, caseCode, uiReason));
             log.warn("[批{}] 关联失败 caseCode={} err={}", batchNo, caseCode, errMsg);
             return;
         }
@@ -834,6 +836,22 @@ public class ShiwanM2TcpCaptureService {
         m.put("caseCode", caseCode);
         m.put("reason",   reason);
         return m;
+    }
+
+    /**
+     * 数据接收区失败文案简化：重复码场景避免超长文本。
+     */
+    private static String simplifyReceiveError(String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            return reason;
+        }
+        if (reason.contains("瓶码") && reason.contains("重复")) {
+            return "瓶码重复，到生产统计-剔除数查看详情";
+        }
+        if (reason.contains("盒码") && reason.contains("重复")) {
+            return "盒码重复，到生产统计-剔除数查看详情";
+        }
+        return reason;
     }
 
     /** 快照当前内存盒码队列中的所有盒码，用于重复校验。 */
