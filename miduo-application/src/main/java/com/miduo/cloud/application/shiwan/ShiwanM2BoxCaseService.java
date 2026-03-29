@@ -127,6 +127,7 @@ public class ShiwanM2BoxCaseService {
             }
             String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
             if (useProductNo == null) useProductNo = "";
+            syncUnpalletProductNo(orderNo.trim(), useProductNo);
 
             // 2. 箱码在大标码包(PackageType=3)内
             if (!isCodeInPackage(caseCode, 3)) {
@@ -217,6 +218,7 @@ public class ShiwanM2BoxCaseService {
             }
             String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
             if (useProductNo == null) useProductNo = "";
+            syncUnpalletProductNo(orderNo.trim(), useProductNo);
             // 中标码包热表校验（错误信息含"中标码包"，供 parseBoxRejectReason 识别为"中标不通过"）
             if (!isCodeInPackage(boxCode, 2)) {
                 return ApiResult.error(400, "盒码不在中标码包热表中：" + boxCode);
@@ -272,6 +274,7 @@ public class ShiwanM2BoxCaseService {
             }
             String useProductNo = (productNo != null && !productNo.isEmpty()) ? productNo : (String) task.get("productNo");
             if (useProductNo == null) useProductNo = "";
+            syncUnpalletProductNo(orderNo.trim(), useProductNo);
             if (!isCodeInPackage(caseCode, 3)) {
                 return ApiResult.error(400, "箱码不在大标码包内：" + caseCode);
             }
@@ -555,10 +558,12 @@ public class ShiwanM2BoxCaseService {
         List<Object> args = new ArrayList<>();
         args.add(palletCode);
         args.add(orderNo.trim());
+        args.add(productNo == null ? "" : productNo.trim());
         args.addAll(toClose);
         jdbcTemplate.update(
-                "UPDATE CodeRelationUpload SET VirtualSerialNumber = ?, Status = 1, PalletTime = NOW() " +
-                        "WHERE OrderNo = ? AND IsDel = 0 AND BigSerialNumber IN (" + placeholders + ")",
+                "UPDATE CodeRelationUpload SET VirtualSerialNumber = ?, Status = 1, PalletTime = NOW(), " +
+                        "OrderNo = ?, ProductNO = ? " +
+                        "WHERE IsDel = 0 AND VirtualSerialNumber = '' AND BigSerialNumber IN (" + placeholders + ")",
                 args.toArray());
 
         // 成垛后更新该垛 TagNo 对应的所有记录的 Qty，并重置内存中的 TagNo 供下垛使用
@@ -624,6 +629,28 @@ public class ShiwanM2BoxCaseService {
                         "WHERE po.OrderNo = ? AND po.OrderStatus = 1 ORDER BY po.Id DESC LIMIT 1",
                 orderNo.trim());
         return (list != null && !list.isEmpty()) ? list.get(0) : null;
+    }
+
+    /**
+     * 同步当前工单下未成垛数据的产品编码，避免换产品后仍保留旧 ProductNO。
+     */
+    private void syncUnpalletProductNo(String orderNo, String productNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return;
+        if (productNo == null || productNo.trim().isEmpty()) return;
+        String order = orderNo.trim();
+        String prod = productNo.trim();
+        try {
+            int rows = jdbcTemplate.update(
+                    "UPDATE CodeRelationUpload SET ProductNO = ? " +
+                            "WHERE IsDel = 0 AND OrderNo = ? AND VirtualSerialNumber = '' " +
+                            "AND (ProductNO IS NULL OR ProductNO = '' OR ProductNO <> ?)",
+                    prod, order, prod);
+            if (rows > 0) {
+                log.info("[产品同步] 订单 {} 未成垛数据 ProductNO 同步为 {}，影响 {} 行", order, prod, rows);
+            }
+        } catch (Exception e) {
+            log.warn("[产品同步] 同步失败 orderNo={} productNo={}: {}", order, prod, e.getMessage());
+        }
     }
 
     private boolean isCodeInPackage(String codeValue, int packageType) {
@@ -1966,9 +1993,15 @@ public class ShiwanM2BoxCaseService {
         try {
             String placeholders = String.join(",", Collections.nCopies(validBoxCodes.size(), "?"));
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT MediumSerialNumber, SmallSerialNumber, Msg, Status FROM CodeRelationUpload " +
-                    "WHERE MediumSerialNumber IN (" + placeholders + ") AND IsDel = 0 " +
-                    "ORDER BY MediumSerialNumber, SmallSerialNumber",
+                    "SELECT t.MediumSerialNumber, t.SmallSerialNumber, t.Msg, t.Status " +
+                            "FROM CodeRelationUpload t " +
+                            "INNER JOIN (" +
+                            "  SELECT MediumSerialNumber, SmallSerialNumber, MAX(ID) AS MaxId " +
+                            "  FROM CodeRelationUpload " +
+                            "  WHERE MediumSerialNumber IN (" + placeholders + ") AND IsDel = 0 " +
+                            "  GROUP BY MediumSerialNumber, SmallSerialNumber" +
+                            ") d ON d.MaxId = t.ID " +
+                            "ORDER BY t.MediumSerialNumber, t.SmallSerialNumber",
                     validBoxCodes.toArray());
 
             if (rows == null || rows.isEmpty()) {
