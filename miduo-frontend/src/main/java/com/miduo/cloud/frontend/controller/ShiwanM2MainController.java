@@ -304,6 +304,8 @@ public class ShiwanM2MainController implements Initializable {
 
     /** 保存初始化时 FXML 中全部 8 个 Tab 的原始引用，供 applyPageConfig() 多次调用时使用 */
     private List<Tab> allOriginalTabs;
+    /** 主界面启动后，串口连接正常时仅发送一次附录00信号。 */
+    private volatile boolean startupAllOffSent = false;
 
     private static final Logger log = LoggerFactory.getLogger(ShiwanM2MainController.class);
     /** 扫码枪设备类别代码（与 DeviceConnectionManager.convertCategoryTextToCode 保持一致） */
@@ -2145,6 +2147,18 @@ public class ShiwanM2MainController implements Initializable {
                             LocalDateTime.now().format(TIME_FMT) + "  设备初始化完成，已连接 " + cnt + " / " + total + " 台",
                             LogType.INFO);
                     updateDeviceStatusBar();
+                    // 主界面打开后：若串口连接正常（至少有1台非相机设备连通），发送附录00信号
+                    if (!isRunning && !includeCameraDevices && cnt > 0 && !startupAllOffSent) {
+                        ShiwanM2HardwareService.getInstance().allOff();
+                        startupAllOffSent = true;
+                        addOpLog(
+                                LocalDateTime.now().format(TIME_FMT) + "  主界面初始化完成，已发送附录00信号",
+                                LogType.INFO);
+                    }
+                    // 开始采集后，按附录发送生产中信号（04）
+                    if (isRunning && !includeCameraDevices) {
+                        ShiwanM2HardwareService.getInstance().enterNormalState();
+                    }
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
@@ -2396,7 +2410,6 @@ public class ShiwanM2MainController implements Initializable {
                     // 文档：盒箱关联失败 → 触发剔除装置 + 红灯+蜂鸣
                     ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
                     hw.triggerRejection();
-                    hw.redLightAndBuzzer();
                     totalRejectCount++;
                     if (rejectCountLabel != null) rejectCountLabel.setText(String.valueOf(totalRejectCount));
                     break;
@@ -2691,6 +2704,9 @@ public class ShiwanM2MainController implements Initializable {
 
         // 停止 TCP 相机采集
         stopTcpCapture();
+
+        // 停止采集发送附录 00 信号（全关）
+        ShiwanM2HardwareService.getInstance().allOff();
 
         // 断开所有IO设备连接（释放网口和串口占用）
         productExecutor.submit(() -> {

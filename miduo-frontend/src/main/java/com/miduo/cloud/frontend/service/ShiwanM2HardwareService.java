@@ -316,7 +316,23 @@ public class ShiwanM2HardwareService {
 
     /** 主界面"关闭报警"按钮：发送 alarmCloseHex 信号 */
     public void closeAlarm() {
-        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getAlarmCloseHex(), "手动关闭报警");
+        // 关闭报警 = 当前基础状态 + 报警位 Y3=0
+        // NORMAL        -> 04/05（按是否剔除）
+        // UPLOAD_SUCCESS-> 06/07（按是否剔除）
+        // UPLOAD_FAIL   -> 04/05（仅清 Y3，Y0/Y2 按当前保持）
+        ShiwanM2Settings.DeviceSignalConfig sig = getSignalConfig();
+        String hex;
+        if (currentBaseState == BaseState.UPLOAD_SUCCESS) {
+            hex = rejectActive ? sig.getCmdUploadSuccessWithReject() : sig.getCmdUploadSuccess();
+        } else {
+            hex = rejectActive ? sig.getCmdNormalWithReject() : sig.getCmdNormalOn();
+        }
+        byte[] bytes = hexStringToBytes(hex);
+        if (bytes != null) {
+            send(CATEGORY_ALARM, bytes, "关闭报警(当前状态+Y3=0)");
+            return;
+        }
+        System.err.println("[硬件] [关闭报警] 对应信号未配置，跳过发送");
     }
 
     /** 主界面"测试报警灯亮"按钮：发送 alarmLightOnHex 信号 */

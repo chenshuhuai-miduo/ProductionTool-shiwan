@@ -34,6 +34,11 @@ public class DeviceConnectionManager {
     
     // 存储类别代码到设备ID的反向映射（类别代码 -> 设备ID），用于快速查找
     private Map<Integer, String> categoryToDeviceMap = new HashMap<>();
+
+    // 非扫码枪串口共享连接：同一串口只打开一次，多个设备类别复用同一 SerialConnectionService
+    private Map<String, SerialConnectionService> sharedSerialServices = new HashMap<>();
+    private Map<String, Integer> sharedSerialRefCounts = new HashMap<>();
+    private Map<String, String> deviceSharedSerialKeyMap = new HashMap<>();
     
     // 已连接的设备列表（按连接顺序）
     private List<String> connectedDeviceIds = new ArrayList<>();
@@ -213,14 +218,33 @@ public class DeviceConnectionManager {
             System.out.println("[连接管理器] 扫码枪串口连接启动成功: " + device.getDeviceName() + 
                              " (串口:" + portName + ", 数据接收串口COM(N+1)由外部程序管理)");
         } else {
-            // 普通串口设备
-            SerialConnectionService serialService = new SerialConnectionService();
-            serialService.setMessageHandler(data -> handleReceivedData(deviceId, data));
-            serialService.setErrorHandler(error -> handleError(deviceId, error)); // 传递设备ID
-            serialService.connect(portName, baudRate, timeoutMs); // 传递超时参数
-            connectionServices.put(deviceId, serialService);
-            System.out.println("[连接管理器] 串口连接启动成功: " + device.getDeviceName() + " (串口:" + portName + ", 超时: " + timeoutMs + "ms)");
+            // 其余串口设备共用同一个串口连接（按串口号聚合），避免多个设备重复占用同一 COM
+            String sharedKey = buildSharedSerialKey(portName);
+            SerialConnectionService serialService = sharedSerialServices.get(sharedKey);
+            if (serialService != null && serialService.isConnected()) {
+                int ref = sharedSerialRefCounts.getOrDefault(sharedKey, 0) + 1;
+                sharedSerialRefCounts.put(sharedKey, ref);
+                connectionServices.put(deviceId, serialService);
+                deviceSharedSerialKeyMap.put(deviceId, sharedKey);
+                System.out.println("[连接管理器] 复用共享串口连接: " + device.getDeviceName()
+                        + " (串口:" + portName + ", 引用数:" + ref + ")");
+            } else {
+                serialService = new SerialConnectionService();
+                serialService.setMessageHandler(data -> handleReceivedData(deviceId, data));
+                serialService.setErrorHandler(error -> handleError(deviceId, error)); // 传递设备ID
+                serialService.connect(portName, baudRate, timeoutMs); // 传递超时参数
+                sharedSerialServices.put(sharedKey, serialService);
+                sharedSerialRefCounts.put(sharedKey, 1);
+                connectionServices.put(deviceId, serialService);
+                deviceSharedSerialKeyMap.put(deviceId, sharedKey);
+                System.out.println("[连接管理器] 串口连接启动成功(共享主连接): " + device.getDeviceName()
+                        + " (串口:" + portName + ", 超时: " + timeoutMs + "ms)");
+            }
         }
+    }
+
+    private String buildSharedSerialKey(String portName) {
+        return portName == null ? "" : portName.trim().toUpperCase();
     }
     
     /**
@@ -234,7 +258,22 @@ public class DeviceConnectionManager {
             } else if (service instanceof UdpConnectionService) {
                 ((UdpConnectionService) service).disconnect();
             } else if (service instanceof SerialConnectionService) {
-                ((SerialConnectionService) service).disconnect();
+                String sharedKey = deviceSharedSerialKeyMap.get(deviceId);
+                if (sharedKey != null) {
+                    int ref = sharedSerialRefCounts.getOrDefault(sharedKey, 0) - 1;
+                    if (ref <= 0) {
+                        ((SerialConnectionService) service).disconnect();
+                        sharedSerialRefCounts.remove(sharedKey);
+                        sharedSerialServices.remove(sharedKey);
+                        System.out.println("[连接管理器] 共享串口主连接已关闭: " + sharedKey);
+                    } else {
+                        sharedSerialRefCounts.put(sharedKey, ref);
+                        System.out.println("[连接管理器] 共享串口连接释放引用: " + sharedKey + " (剩余引用数:" + ref + ")");
+                    }
+                    deviceSharedSerialKeyMap.remove(deviceId);
+                } else {
+                    ((SerialConnectionService) service).disconnect();
+                }
             } else if (service instanceof BarcodeScannerConnectionService) {
                 ((BarcodeScannerConnectionService) service).disconnect();
             }
@@ -276,6 +315,9 @@ public class DeviceConnectionManager {
         connectedDeviceIds.clear();
         deviceCategoryMap.clear();
         categoryToDeviceMap.clear();
+        sharedSerialRefCounts.clear();
+        sharedSerialServices.clear();
+        deviceSharedSerialKeyMap.clear();
         
         System.out.println("[连接管理器] 所有连接已停止");
     }
