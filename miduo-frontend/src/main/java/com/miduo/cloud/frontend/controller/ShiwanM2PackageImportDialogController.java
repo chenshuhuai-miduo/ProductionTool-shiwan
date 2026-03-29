@@ -21,11 +21,16 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 /**
  * 码包本地导入弹窗控制器
  */
 public class ShiwanM2PackageImportDialogController {
+
+    private static final Preferences PACKAGE_IMPORT_PREFS =
+            Preferences.userNodeForPackage(ShiwanM2PackageImportDialogController.class);
+    private static final String KEY_LAST_IMPORT_DIR = "codePackageImport.lastDirectory";
 
     @FXML private HBox       titleBar;
     @FXML private ComboBox<String> packageTypeCombo;
@@ -74,11 +79,22 @@ public class ShiwanM2PackageImportDialogController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("选择码包 TXT 文件");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TXT 文件", "*.txt"));
+        String lastDirPath = PACKAGE_IMPORT_PREFS.get(KEY_LAST_IMPORT_DIR, null);
+        if (lastDirPath != null) {
+            File lastDir = new File(lastDirPath);
+            if (lastDir.isDirectory()) {
+                fileChooser.setInitialDirectory(lastDir);
+            }
+        }
         File file = fileChooser.showOpenDialog(getStage());
         if (file != null) {
             selectedFile = file;
             selectedFileField.setText(file.getName());
             tipsLabel.setText("");
+            File parent = file.getParentFile();
+            if (parent != null && parent.isDirectory()) {
+                PACKAGE_IMPORT_PREFS.put(KEY_LAST_IMPORT_DIR, parent.getAbsolutePath());
+            }
         }
     }
 

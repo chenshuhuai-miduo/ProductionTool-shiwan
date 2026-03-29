@@ -69,7 +69,8 @@
 
     <!-- 表格卡片（填充剩余高度）-->
     <VBox styleClass="sw2-table-card" VBox.vgrow="ALWAYS">
-        <TableView fx:id="packageTable" VBox.vgrow="ALWAYS" styleClass="sw2-table,sw2-table-no-select">
+        <TableView fx:id="packageTable" VBox.vgrow="ALWAYS"
+                   styleClass="sw2-table,sw2-table-no-select,sw2-package-table">
             <columns>
                 <TableColumn fx:id="colType"       text="码包类型"       prefWidth="110" minWidth="90"/>
                 <TableColumn fx:id="colName"       text="码包名称"       prefWidth="160" minWidth="120"/>

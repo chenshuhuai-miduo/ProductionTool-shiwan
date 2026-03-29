@@ -18,6 +18,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -31,6 +32,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -102,6 +104,7 @@ public class ShiwanM2PackageController implements Initializable {
 
     private void setupTableColumns() {
         packageTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        packageTable.setFixedCellSize(-1);
         colType.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().typeName));
         colName.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().packageName));
         colImportTime.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().importTimeText));
@@ -120,26 +123,63 @@ public class ShiwanM2PackageController implements Initializable {
 
         colStatus.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().statusName));
         colStatus.setCellFactory(col -> new TableCell<>() {
+            private final Label label = new Label();
+
+            {
+                label.setWrapText(true);
+                label.setFont(Font.font("Microsoft YaHei", 15));
+                label.setAlignment(Pos.CENTER);
+                label.setMinWidth(0);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+                setAlignment(Pos.CENTER);
+            }
+
+            @Override
+            protected double computePrefHeight(double width) {
+                String text = label.getText();
+                if (text == null || text.isEmpty()) {
+                    return 44;
+                }
+                double w = width > 0 ? width : col.getWidth();
+                double lw = Math.max(0, w - 16);
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            }
+
+            @Override
+            protected void layoutChildren() {
+                double lw = Math.max(0, getWidth() - 16);
+                label.resize(lw, label.prefHeight(lw));
+                label.relocate(8, 8);
+            }
+
             @Override
             protected void updateItem(String status, boolean empty) {
                 super.updateItem(status, empty);
-                setGraphic(null);
                 if (empty || status == null) {
-                    setText(null);
-                    setStyle("");
+                    label.setText(null);
+                    label.setStyle("");
                     return;
                 }
-                setText(status);
-                String font = "-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 16px;";
+                label.setText(softWrapLongToken(status));
+                String font = "-fx-font-family: 'Microsoft YaHei'; -fx-font-size: 15px;";
                 if ("正常".equals(status)) {
-                    setStyle(font + " -fx-text-fill: #16A34A; -fx-font-weight: bold;");
+                    label.setStyle(font + "-fx-text-fill: #16A34A; -fx-font-weight: bold;");
                 } else if ("已删除".equals(status)) {
-                    setStyle(font + " -fx-text-fill: #9CA3AF;");
+                    label.setStyle(font + "-fx-text-fill: #9CA3AF;");
                 } else {
-                    setStyle(font + " -fx-text-fill: #D97706;");
+                    label.setStyle(font + "-fx-text-fill: #D97706;");
                 }
             }
         });
+
+        applyPackageWrapCellFactory(colType, Pos.CENTER);
+        applyPackageWrapCellFactory(colName, Pos.CENTER);
+        applyPackageWrapCellFactory(colImportTime, Pos.CENTER);
+        applyPackageWrapCellFactory(colImportWay, Pos.CENTER);
+        applyPackageWrapCellFactory(colCount, Pos.CENTER);
+        applyPackageWrapCellFactory(colRemark, Pos.CENTER);
 
         colAction.setCellFactory(col -> new TableCell<>() {
             private final Button viewBtn = new Button("查看");
@@ -184,6 +224,75 @@ public class ShiwanM2PackageController implements Initializable {
                 return getTableView().getItems().get(index);
             }
         });
+    }
+
+    /** 码包表专用：多行展示，避免省略号；不影响其它 TableView */
+    private static void applyPackageWrapCellFactory(TableColumn<PackageRow, String> col, Pos labelAlignment) {
+        col.setCellFactory(c -> new TableCell<>() {
+            private final Label label = new Label();
+
+            {
+                label.setWrapText(true);
+                label.setFont(Font.font("Microsoft YaHei", 15));
+                label.setAlignment(labelAlignment);
+                label.setMinWidth(0);
+                setGraphic(label);
+                setText(null);
+                setPadding(Insets.EMPTY);
+                setAlignment(labelAlignment);
+            }
+
+            @Override
+            protected double computePrefHeight(double width) {
+                String text = label.getText();
+                if (text == null || text.isEmpty()) {
+                    return 44;
+                }
+                double w = width > 0 ? width : col.getWidth();
+                double lw = Math.max(0, w - 16);
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            }
+
+            @Override
+            protected void layoutChildren() {
+                double lw = Math.max(0, getWidth() - 16);
+                label.resize(lw, label.prefHeight(lw));
+                label.relocate(8, 8);
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    label.setText(null);
+                } else {
+                    label.setText(softWrapLongToken(item));
+                }
+            }
+        });
+    }
+
+    private static String softWrapLongToken(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        final int chunk = 12;
+        StringBuilder sb = new StringBuilder(text.length() + 16);
+        int run = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            sb.append(ch);
+            if (Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == ':') {
+                run++;
+                if (run >= chunk) {
+                    sb.append('\u200B');
+                    run = 0;
+                }
+            } else {
+                run = 0;
+            }
+        }
+        return sb.toString();
     }
 
     @FXML
