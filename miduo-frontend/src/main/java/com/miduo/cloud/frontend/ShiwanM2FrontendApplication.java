@@ -130,8 +130,48 @@ public class ShiwanM2FrontendApplication extends Application {
         waiter.start();
     }
 
+    /**
+     * 关闭 exe4j native splash 及 JVM {@code -splash} 闪屏。
+     *
+     * <p><b>背景：</b>exe4j 在 JVM 启动前由原生层显示 splash，与 {@link java.awt.SplashScreen} 无关。
+     * exe4j 默认在"第一个 AWT/Swing 窗口出现"时关闭 splash；纯 JavaFX 程序没有 AWT 窗口，因此
+     * splash 永远不会自动关闭。解决方案：创建并立即销毁一个 0 像素隐藏 AWT Frame，触发 exe4j
+     * 的关闭条件。同时顺手关闭 JVM {@code -splash}（若有）。</p>
+     */
+    public static void closeNativeJvmSplashIfPresent() {
+        // ① 触发 exe4j native splash 关闭：创建 0 像素隐藏 AWT 窗口后立即销毁
+        try {
+            java.awt.Frame dummy = new java.awt.Frame();
+            dummy.setUndecorated(true);
+            dummy.setSize(0, 0);
+            dummy.setOpacity(0.0f);
+            dummy.setVisible(true);
+            dummy.dispose();
+        } catch (Throwable ignored) {
+            // 无 AWT 环境时忽略
+        }
+        // ② 关闭 JVM -splash（exe4j 某些版本会设此参数）
+        try {
+            java.awt.SplashScreen ss = java.awt.SplashScreen.getSplashScreen();
+            if (ss != null && ss.isVisible()) {
+                ss.close();
+            }
+        } catch (Throwable ignored) {}
+    }
+
     @Override
     public void start(Stage primaryStage) throws Exception {
+        // exe4j native splash 关闭触发：创建 0 像素隐藏 AWT 窗口后立即销毁。
+        // exe4j 监测到第一个 AWT/Swing 窗口可见时会自动关闭 native splash，
+        // 纯 JavaFX 程序无 AWT 窗口，必须用此技巧主动触发，否则闪屏永远不关。
+        try {
+            java.awt.Frame dummyFrame = new java.awt.Frame();
+            dummyFrame.setUndecorated(true);
+            dummyFrame.setSize(0, 0);
+            dummyFrame.setVisible(true);
+            dummyFrame.dispose();
+        } catch (Throwable ignored) {}
+        closeNativeJvmSplashIfPresent();
         frontendStartupBeginMs = System.currentTimeMillis();
         FileLogManager.getInstance().start();
         traceStartup("JavaFX Application.start 入口");
@@ -242,7 +282,10 @@ public class ShiwanM2FrontendApplication extends Application {
             });
 
             closeStartupSplash();
+            // 主窗显示前再次关闭 JVM 原生闪屏（部分 exe4j/Win 环境下仅关一次仍残留）
+            closeNativeJvmSplashIfPresent();
             primaryStage.show();
+            Platform.runLater(ShiwanM2FrontendApplication::closeNativeJvmSplashIfPresent);
             long firstShowMs = System.currentTimeMillis();
             long totalFx = firstShowMs - frontendStartupBeginMs;
             System.out.println("[启动耗时] 前端启动总耗时（到主界面显示） "
@@ -262,14 +305,7 @@ public class ShiwanM2FrontendApplication extends Application {
 
     private void showStartupSplash() {
         // 若 exe4j/JVM 配置了 -splash:xxx.png，此处关闭原生闪屏，改由 JavaFX 小窗承接
-        try {
-            java.awt.SplashScreen ss = java.awt.SplashScreen.getSplashScreen();
-            if (ss != null && ss.isVisible()) {
-                ss.close();
-            }
-        } catch (Throwable ignored) {
-            // 无桌面环境或未配置 -splash 时忽略
-        }
+        closeNativeJvmSplashIfPresent();
 
         startupSplashStage = new Stage();
         // TRANSPARENT + 透明 Scene：去掉系统矩形窗体外沿，圆角与内容一致（UNDECORATED 仍会有直角底板）
@@ -340,6 +376,7 @@ public class ShiwanM2FrontendApplication extends Application {
             startupSplashStage.close();
             startupSplashStage = null;
         }
+        closeNativeJvmSplashIfPresent();
     }
 
     public static LicenseStatusSnapshot getStartupLicenseStatusSnapshot() {
@@ -379,7 +416,10 @@ public class ShiwanM2FrontendApplication extends Application {
 
             if (!licenseService.licenseExists()) {
                 UnactivatedDialogController.showUnactivatedDialog();
-                return true;
+                LicenseStatusEnum statusAfterDialog = licenseService.getCurrentLicenseStatus(currentDeviceId);
+                if (!isLicenseAllowedToEnter(statusAfterDialog)) {
+                    return false;
+                }
             }
 
             LicenseValidationService.LicenseValidationResult validationResult =
@@ -401,15 +441,22 @@ public class ShiwanM2FrontendApplication extends Application {
 
             if (status == LicenseStatusEnum.UNACTIVATED) {
                 UnactivatedDialogController.showUnactivatedDialog();
+                status = licenseService.getCurrentLicenseStatus(currentDeviceId);
             } else if (status == LicenseStatusEnum.TRIAL_EXPIRED
                     || status == LicenseStatusEnum.EXPIRED) {
                 TrialExpireDialogController.showTrialExpireDialog(status);
+                status = licenseService.getCurrentLicenseStatus(currentDeviceId);
             } else if (status == LicenseStatusEnum.TRIAL_ACTIVE) {
                 if (remainingDays >= 0 && remainingDays <= 3) {
                     TrialExpiringDialogController.showTrialExpiringDialog(remainingDays);
                 }
             }
-            return true;
+
+            LicenseService.LicenseInfo latestLicenseInfo = licenseService.getLicenseInfo(currentDeviceId);
+            long latestRemainingDays = latestLicenseInfo != null ? latestLicenseInfo.getRemainingDays() : -1;
+            LocalDate latestExpireDate = latestLicenseInfo != null ? latestLicenseInfo.getExpireDate() : null;
+            startupLicenseStatusSnapshot = new LicenseStatusSnapshot(status, latestRemainingDays, latestExpireDate);
+            return isLicenseAllowedToEnter(status);
 
         } catch (Exception e) {
             System.err.println("许可证验证异常: " + e.getMessage());
@@ -425,6 +472,15 @@ public class ShiwanM2FrontendApplication extends Application {
             });
             return false;
         }
+    }
+
+    /**
+     * 仅允许有效许可证进入主界面：
+     * - ACTIVATED
+     * - TRIAL_ACTIVE
+     */
+    private boolean isLicenseAllowedToEnter(LicenseStatusEnum status) {
+        return status == LicenseStatusEnum.ACTIVATED || status == LicenseStatusEnum.TRIAL_ACTIVE;
     }
 
     public static final class LicenseStatusSnapshot {

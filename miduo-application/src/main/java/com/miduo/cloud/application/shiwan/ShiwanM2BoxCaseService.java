@@ -1682,10 +1682,10 @@ public class ShiwanM2BoxCaseService {
 
     /**
      * 调用云端码替换接口（CodeSubstitution）。
-     * 仅当原码已上传（IsUpload=1）或曾尝试上传（IsUpload=2）时调用。
+     * 请求体：Code、RCode、MemberLogin（见配置 {@code api.memberlogin}），签名仍走 {@link #palletSign}。
      * 若配置缺失则跳过（返回 null）；若接口调用失败则返回错误结果。
      *
-     * @param codeType 0=小标/瓶码, 1=中标/盒码, 2=大标/箱码
+     * @param codeType 本地层级（0=小标/瓶码, 1=中标/盒码, 2=大标/箱码），仅用于日志，不参与云端 JSON
      */
     private ApiResult<Boolean> callCloudCodeSubstitution(String oldV, String newV, int codeType) {
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
@@ -1708,11 +1708,11 @@ public class ShiwanM2BoxCaseService {
             String time  = sdf.format(new Date());
             String nonce = "123";
 
+            // 云端 CodeSubstitution 入参：Code=旧码，RCode=新码，MemberLogin=配置 api.memberlogin
             Map<String, Object> requestData = new LinkedHashMap<>();
-            requestData.put("Memberlogin", memberlogin != null ? memberlogin : "");
-            requestData.put("oldcode", oldV);
-            requestData.put("newcode", newV);
-            requestData.put("codetype", codeType);
+            requestData.put("Code", oldV);
+            requestData.put("RCode", newV);
+            requestData.put("MemberLogin", memberlogin != null ? memberlogin : "");
 
             String sign = palletSign(time, nonce, appSecret, requestData);
 
@@ -1723,7 +1723,9 @@ public class ShiwanM2BoxCaseService {
             headers.put("sign",         sign);
             headers.put("Content-type", "application/json");
 
-            String response = sendPost(baseUrl + path, headers, MAPPER.writeValueAsString(requestData));
+            String reqBody = MAPPER.writeValueAsString(requestData);
+            log.info("[码替换云端] 请求 URL={} body={}", baseUrl + path, reqBody);
+            String response = sendPost(baseUrl + path, headers, reqBody);
             log.info("[码替换云端] oldCode={} newCode={} codeType={} 响应: {}", oldV, newV, codeType, response);
 
             JsonNode root = MAPPER.readTree(response);
@@ -2799,11 +2801,21 @@ public class ShiwanM2BoxCaseService {
                 byte[] input = data.getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    response.append(line.trim());
+            int httpCode = conn.getResponseCode();
+            // 非 2xx 时从 ErrorStream 读取错误响应体，方便定位服务端错误原因
+            java.io.InputStream is = (httpCode >= 200 && httpCode < 300)
+                    ? conn.getInputStream()
+                    : conn.getErrorStream();
+            if (is != null) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line.trim());
+                    }
                 }
+            }
+            if (httpCode < 200 || httpCode >= 300) {
+                throw new Exception("HTTP " + httpCode + " 响应体: " + response);
             }
         } finally {
             conn.disconnect();
