@@ -158,12 +158,12 @@ public class BarcodeScannerConnectionService {
                 
                 String message = messageBuffer.toString().trim();
                 if (!message.isEmpty() && messageHandler != null) {
-                    String normalizedCode = extractCodeAfterLastBackslash(message);
+                    String normalizedCode = extractCodeAfterLastSlash(message);
                     if (normalizedCode != null) {
                         System.out.println("[扫码枪] 接收到完整数据: " + normalizedCode);
                         messageHandler.accept(normalizedCode);
                     } else {
-                        System.out.println("[扫码枪] 丢弃数据（未找到反斜杠）: " + message);
+                        System.out.println("[扫码枪] 丢弃数据（未找到斜杠 /）: " + message);
                     }
                 }
                 messageBuffer.setLength(0);
@@ -191,12 +191,12 @@ public class BarcodeScannerConnectionService {
                             if (messageBuffer.length() > 0) {
                                 String message = messageBuffer.toString().trim();
                                 if (!message.isEmpty() && messageHandler != null) {
-                                    String normalizedCode = extractCodeAfterLastBackslash(message);
+                                    String normalizedCode = extractCodeAfterLastSlash(message);
                                     if (normalizedCode != null) {
                                         System.out.println("[扫码枪] 接收到数据（延迟处理）: " + normalizedCode);
                                         messageHandler.accept(normalizedCode);
                                     } else {
-                                        System.out.println("[扫码枪] 丢弃数据（未找到反斜杠）: " + message);
+                                        System.out.println("[扫码枪] 丢弃数据（未找到斜杠 /）: " + message);
                                     }
                                 }
                                 messageBuffer.setLength(0);
@@ -218,12 +218,12 @@ public class BarcodeScannerConnectionService {
             }
             String message = messageBuffer.toString().trim();
             if (!message.isEmpty() && messageHandler != null) {
-                String normalizedCode = extractCodeAfterLastBackslash(message);
+                String normalizedCode = extractCodeAfterLastSlash(message);
                 if (normalizedCode != null) {
                     System.out.println("[扫码枪] 缓冲区过长，强制处理: " + normalizedCode);
                     messageHandler.accept(normalizedCode);
                 } else {
-                    System.out.println("[扫码枪] 丢弃数据（未找到反斜杠）: " + message);
+                    System.out.println("[扫码枪] 丢弃数据（未找到斜杠 /）: " + message);
                 }
             }
             messageBuffer.setLength(0);
@@ -232,10 +232,10 @@ public class BarcodeScannerConnectionService {
 
     /**
      * 扫码枪数据归一化：
-     * 仅保留最后一个反斜杠 "\" 后的码值。
-     * 若不存在反斜杠或反斜杠后为空，则返回 null（不处理该条数据）。
+     * 仅保留最后一个斜杠 "/" 后的码值。
+     * 若不存在斜杠或斜杠后为空，则返回 null（不处理该条数据）。
      */
-    private String extractCodeAfterLastBackslash(String raw) {
+    private String extractCodeAfterLastSlash(String raw) {
         if (raw == null) {
             return null;
         }
@@ -243,7 +243,7 @@ public class BarcodeScannerConnectionService {
         if (trimmed.isEmpty()) {
             return null;
         }
-        int idx = trimmed.lastIndexOf('\\');
+        int idx = trimmed.lastIndexOf('/');
         if (idx < 0 || idx >= trimmed.length() - 1) {
             return null;
         }
