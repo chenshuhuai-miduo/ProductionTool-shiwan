@@ -32,6 +32,8 @@ public class ShiwanM2ApplicationLauncher {
     public static void main(String[] args) {
         long launcherStartMs = System.currentTimeMillis();
         ShiwanM2FrontendApplication.setProcessEntryEpochMs(launcherStartMs);
+        // JVM 起即触发 exe4j 原生闪屏关闭；若等到 JavaFX start，GIF 会与 Spring 启动并行挂很久
+        ShiwanM2FrontendApplication.closeNativeJvmSplashIfPresent();
         // 「关于系统」内容在 ShiwanM2FrontendApplication.main() 中配置
         initializeLogging();
         ShiwanM2FrontendApplication.traceStartup("石湾统一启动器 main 入口（文件日志已就绪）");

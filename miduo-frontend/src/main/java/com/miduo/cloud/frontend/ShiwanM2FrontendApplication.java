@@ -63,6 +63,8 @@ public class ShiwanM2FrontendApplication extends Application {
     private static volatile long processEntryEpochMs = 0L;
     /** 启动期许可证状态快照，供主界面复用，避免重复采集设备指纹。 */
     private static volatile LicenseStatusSnapshot startupLicenseStatusSnapshot;
+    /** exe4j 原生闪屏已通过 AWT 技巧触发过一次，避免启动链上多次 sleep。 */
+    private static volatile boolean exe4jNativeSplashAwtTriggered = false;
 
     /**
      * 后端就绪信号门（初始 count=1）。
@@ -139,16 +141,59 @@ public class ShiwanM2FrontendApplication extends Application {
      * 的关闭条件。同时顺手关闭 JVM {@code -splash}（若有）。</p>
      */
     public static void closeNativeJvmSplashIfPresent() {
-        // ① 触发 exe4j native splash 关闭：创建 0 像素隐藏 AWT 窗口后立即销毁
-        try {
-            java.awt.Frame dummy = new java.awt.Frame();
-            dummy.setUndecorated(true);
-            dummy.setSize(0, 0);
-            dummy.setOpacity(0.0f);
-            dummy.setVisible(true);
-            dummy.dispose();
-        } catch (Throwable ignored) {
-            // 无 AWT 环境时忽略
+        // ① 触发 exe4j native splash：需在 EDT 上创建真实 peer，且保持可见一瞬再关。
+        // exe4j 10 + GIF 等场景下，0×0 或立刻 dispose 可能来不及被原生层识别。
+        if (!exe4jNativeSplashAwtTriggered && !java.awt.GraphicsEnvironment.isHeadless()) {
+            synchronized (ShiwanM2FrontendApplication.class) {
+                if (!exe4jNativeSplashAwtTriggered) {
+                    final javax.swing.JWindow[] holder = new javax.swing.JWindow[1];
+                    try {
+                        java.awt.EventQueue.invokeAndWait(() -> {
+                            try {
+                                javax.swing.JWindow win = new javax.swing.JWindow();
+                                win.setSize(1, 1);
+                                win.setLocation(-16000, -16000);
+                                win.setVisible(true);
+                                java.awt.Toolkit.getDefaultToolkit().sync();
+                                holder[0] = win;
+                            } catch (Throwable ignored) {
+                            }
+                        });
+                    } catch (Exception ignored) {
+                        try {
+                            java.awt.Frame f = new java.awt.Frame();
+                            f.setUndecorated(true);
+                            f.setSize(1, 1);
+                            f.setLocation(-16000, -16000);
+                            f.setVisible(true);
+                            f.dispose();
+                        } catch (Throwable ignored2) {
+                        }
+                    }
+                    javax.swing.JWindow w = holder[0];
+                    if (w != null) {
+                        try {
+                            Thread.sleep(80);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                        try {
+                            java.awt.EventQueue.invokeAndWait(() -> {
+                                try {
+                                    w.dispose();
+                                } catch (Throwable ignored) {
+                                }
+                            });
+                        } catch (Exception ignored) {
+                            try {
+                                w.dispose();
+                            } catch (Throwable ignored2) {
+                            }
+                        }
+                    }
+                    exe4jNativeSplashAwtTriggered = true;
+                }
+            }
         }
         // ② 关闭 JVM -splash（exe4j 某些版本会设此参数）
         try {
@@ -156,21 +201,12 @@ public class ShiwanM2FrontendApplication extends Application {
             if (ss != null && ss.isVisible()) {
                 ss.close();
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // exe4j native splash 关闭触发：创建 0 像素隐藏 AWT 窗口后立即销毁。
-        // exe4j 监测到第一个 AWT/Swing 窗口可见时会自动关闭 native splash，
-        // 纯 JavaFX 程序无 AWT 窗口，必须用此技巧主动触发，否则闪屏永远不关。
-        try {
-            java.awt.Frame dummyFrame = new java.awt.Frame();
-            dummyFrame.setUndecorated(true);
-            dummyFrame.setSize(0, 0);
-            dummyFrame.setVisible(true);
-            dummyFrame.dispose();
-        } catch (Throwable ignored) {}
         closeNativeJvmSplashIfPresent();
         frontendStartupBeginMs = System.currentTimeMillis();
         FileLogManager.getInstance().start();
@@ -511,6 +547,8 @@ public class ShiwanM2FrontendApplication extends Application {
         if (processEntryEpochMs == 0L) {
             processEntryEpochMs = System.currentTimeMillis();
         }
+        // 仅前端入口：JVM 一起动就关 exe4j 闪屏，不必等 JavaFX start（后者再关一次幂等）
+        closeNativeJvmSplashIfPresent();
         // 「关于系统」弹窗展示内容，发版时在此修改，用 \n 分隔多行
         System.setProperty("app.about.text",
             "米多赋码采集关联系统 v1.0.0\n关联模式：盒箱垛关联\n部署站点：石湾产线\n版权所有 © 米多科技");
