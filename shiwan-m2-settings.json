@@ -76,6 +76,7 @@
     "codePackageQueryPath" : "/api/sign/md.fc.LevelPackage/v1/querycompleted",
     "productsListPath" : "/api/sign/md.shop.products/v1/list",
     "codeSubstitutionPath" : "/api/sign/md.fc.store/v1/CodeSubstitution",
+    "codeUnbindRelationPath" : "/api/sign/md.fc.Store/v1/UnbindRelation",
     "appId" : "VrDiiCwOzGCbtrwhUqW51yA9"
   },
   "warehouseNo" : "001",

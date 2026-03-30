@@ -161,7 +161,7 @@
                                 <Label text="单位实时统计" styleClass="shiwan-m2-card-title"/>
 
                                 <!-- 第1行：当前箱数 | 每垛箱数 -->
-                                <HBox spacing="8" prefHeight="115" maxHeight="115">
+                                <HBox spacing="8" prefHeight="115" minHeight="80" maxHeight="115">
                                     <VBox styleClass="shiwan-m2-stat-card"
                                           HBox.hgrow="ALWAYS" alignment="CENTER" spacing="6">
                                         <Label text="当前箱数" styleClass="shiwan-m2-stat-label"/>
@@ -177,7 +177,7 @@
                                 </HBox>
 
                                 <!-- 第2行：当前盒数 | 每箱盒数 -->
-                                <HBox spacing="8" prefHeight="115" maxHeight="115">
+                                <HBox spacing="8" prefHeight="115" minHeight="80" maxHeight="115">
                                     <VBox styleClass="shiwan-m2-stat-card"
                                           HBox.hgrow="ALWAYS" alignment="CENTER" spacing="6">
                                         <Label text="当前盒数" styleClass="shiwan-m2-stat-label"/>

@@ -31,6 +31,7 @@ import javafx.scene.control.TextInputDialog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.miduo.cloud.application.shiwan.CaptureHardwareBus;
 import com.miduo.cloud.application.shiwan.UploadLogBus;
 import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.device.IoDeviceDTO;
@@ -336,6 +337,7 @@ public class ShiwanM2MainController implements Initializable {
             initActivationStatus();
             applyPageConfig();
             registerPalletEventListener();
+            registerCaptureHardwareListener();
             registerDeviceDataHandler();
             DeviceConnectionManager.getInstance().setDeviceStatusChangeHandler(this::updateDeviceStatusBar);
             setupTabLazyLoad();
@@ -663,6 +665,27 @@ public class ShiwanM2MainController implements Initializable {
                 log.debug("[扫码枪路由] 取消关联页接收 code={}", code);
             }
         }
+    }
+
+    /**
+     * 注册 CaptureHardwareBus 监听：
+     * 后端在检测到 ASSOC_FAIL / BOX_FAIL 时直接回调，无需等待 1 秒 HTTP 轮询。
+     * 注册后，processCaptureEventsData 中对应 case 不再重复调用硬件指令。
+     */
+    private void registerCaptureHardwareListener() {
+        CaptureHardwareBus.register(action -> {
+            ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
+            switch (action) {
+                case TRIGGER_REJECTION:
+                    hw.triggerRejection();
+                    break;
+                case YELLOW_LIGHT_ON:
+                    hw.yellowLightOn();
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
     /**
@@ -2326,8 +2349,7 @@ public class ShiwanM2MainController implements Initializable {
                 case "BOX_FAIL":
                     addDataLog(time + "  " + msg, LogType.ERROR);
                     addAlarmLog(time + "  " + msg, LogType.WARN);
-                    // 盒码校验失败：黄灯告警（实物待后续在箱级剔除，不立即触发剔除装置）
-                    ShiwanM2HardwareService.getInstance().yellowLightOn();
+                    // 黄灯告警已由 CaptureHardwareBus 在后端直接触发，此处仅更新 UI 日志
                     break;
 
                 case "CASE_PENDING":
@@ -2407,9 +2429,7 @@ public class ShiwanM2MainController implements Initializable {
                         boxRecvCountSet = false;
                         curBoxesLabel.setText("0");
                     }
-                    // 文档：盒箱关联失败 → 触发剔除装置 + 红灯+蜂鸣
-                    ShiwanM2HardwareService hw = ShiwanM2HardwareService.getInstance();
-                    hw.triggerRejection();
+                    // 剔除装置已由 CaptureHardwareBus 在后端直接触发，此处仅更新 UI 计数
                     totalRejectCount++;
                     if (rejectCountLabel != null) rejectCountLabel.setText(String.valueOf(totalRejectCount));
                     break;

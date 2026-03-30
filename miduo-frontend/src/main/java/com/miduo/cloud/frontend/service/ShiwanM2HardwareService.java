@@ -35,6 +35,11 @@ import java.util.concurrent.TimeUnit;
  *   0x00 → 复位收回（若不支持自动复位时使用）
  * </pre>
  *
+ * <p><b>石湾 2 号机继电器 Modbus（4 路，文档 13.1）：</b><br>
+ * 写 8 路线圈：{@code 21 0F 00 00 00 08 01 [DD] CRC_L CRC_H}，数据字节 {@code DD} 低 4 位对应
+ * Y0 剔除、Y1 上传绿灯、Y2 工控机+龙门架、Y3 红灯蜂鸣（bit0~bit3）。收回剔除时仅清 bit0，
+ * Y1~Y3 与上次下发保持一致，并重新计算 Modbus RTU CRC16。
+ *
  * <p><b>继电器板协议（8字节帧）：</b><br>
  * 帧格式：{@code 55 01 01 R1 R2 R3 R4 SUM}，其中 Rx 值含义：
  * <pre>
@@ -143,6 +148,12 @@ public class ShiwanM2HardwareService {
     /** 剔除自动收回计时器 */
     private ScheduledFuture<?> rejectRetractFuture;
 
+    /**
+     * 最近一次成功下发的标准报警 Modbus 写 8 路线圈帧（10 字节，FC=0x0F，单字节线圈值在索引 7）。
+     * 用于收回剔除时在硬件侧保持 Y1~Y3，仅关闭 Y0。
+     */
+    private byte[] lastAlarmModbus10;
+
     // ==================== 单例 ====================
 
     private static volatile ShiwanM2HardwareService INSTANCE;
@@ -222,8 +233,8 @@ public class ShiwanM2HardwareService {
             final int retract = retractMs;
             rejectRetractFuture = scheduler.schedule(() -> {
                 System.out.println("[硬件] 剔除自动收回（" + retract + "ms）");
+                sendRetractClearY0("剔除自动收回(Y0关)");
                 rejectActive = false;
-                sendCurrentState("剔除自动收回");
             }, retract, TimeUnit.MILLISECONDS);
         };
 
@@ -239,8 +250,8 @@ public class ShiwanM2HardwareService {
      */
     public void retractRejection() {
         cancelRejectRetractTimer();
+        sendRetractClearY0("手动收回剔除(Y0关,Y1~Y3保持)");
         rejectActive = false;
-        sendCurrentState("手动收回剔除");
     }
 
     /**
@@ -258,27 +269,100 @@ public class ShiwanM2HardwareService {
     }
 
     /**
+     * 当前业务状态下应下发的报警器 hex（与 {@link #sendCurrentState} 一致）。
+     */
+    private String hexForCurrentAlarmState() {
+        ShiwanM2Settings.DeviceSignalConfig sig = getSignalConfig();
+        switch (currentBaseState) {
+            case UPLOAD_SUCCESS:
+                return rejectActive ? sig.getCmdUploadSuccessWithReject() : sig.getCmdUploadSuccess();
+            case UPLOAD_FAIL:
+                return rejectActive ? sig.getCmdUploadFailWithReject() : sig.getCmdUploadFail();
+            default:
+                return rejectActive ? sig.getCmdNormalWithReject() : sig.getCmdNormalOn();
+        }
+    }
+
+    /**
      * 根据当前基础状态和剔除激活状态，选择并发送对应命令。
      */
     private void sendCurrentState(String desc) {
-        ShiwanM2Settings.DeviceSignalConfig sig = getSignalConfig();
-        String hex;
-        switch (currentBaseState) {
-            case UPLOAD_SUCCESS:
-                hex = rejectActive ? sig.getCmdUploadSuccessWithReject() : sig.getCmdUploadSuccess();
-                break;
-            case UPLOAD_FAIL:
-                hex = rejectActive ? sig.getCmdUploadFailWithReject() : sig.getCmdUploadFail();
-                break;
-            default: // NORMAL
-                hex = rejectActive ? sig.getCmdNormalWithReject() : sig.getCmdNormalOn();
-        }
-        byte[] bytes = hexStringToBytes(hex);
+        byte[] bytes = hexStringToBytes(hexForCurrentAlarmState());
         if (bytes != null) {
             send(CATEGORY_ALARM, bytes, desc + " [" + currentBaseState + " reject=" + rejectActive + "]");
         } else {
             System.err.printf("[硬件] [%s] 对应hex未配置，跳过发送%n", desc);
         }
+    }
+
+    /**
+     * 收回剔除：Y1~Y3 维持当前（以上次成功下发的线圈字节为准），仅 Y0（bit0）置 0，并重算 Modbus CRC。
+     * 若无可用历史帧则从当前配置对应 hex 解析线圈字节后同样清 bit0。
+     * 解析失败时回退为 {@link #sendCurrentState}（剔除位已关的配置指令）。
+     */
+    private void sendRetractClearY0(String desc) {
+        byte[] frame = buildRetractClearY0Frame();
+        if (frame != null) {
+            send(CATEGORY_ALARM, frame, desc);
+            return;
+        }
+        rejectActive = false;
+        sendCurrentState(desc + "[回退]");
+    }
+
+    private byte[] buildRetractClearY0Frame() {
+        if (lastAlarmModbus10 != null && isWrite8CoilsModbus10(lastAlarmModbus10)) {
+            byte[] c = lastAlarmModbus10.clone();
+            c[7] = (byte) (c[7] & 0xFE);
+            appendModbusRtuCrc(c, 8);
+            return c;
+        }
+        byte[] base = hexStringToBytes(hexForCurrentAlarmState());
+        if (base == null) {
+            return null;
+        }
+        if (base.length >= 10) {
+            byte[] out = base.clone();
+            out[7] = (byte) ((out[7] & 0xFF) & 0xFE);
+            appendModbusRtuCrc(out, 8);
+            return out;
+        }
+        if (base.length >= 8) {
+            byte[] out = new byte[10];
+            System.arraycopy(base, 0, out, 0, 8);
+            out[7] = (byte) ((out[7] & 0xFF) & 0xFE);
+            appendModbusRtuCrc(out, 8);
+            return out;
+        }
+        return null;
+    }
+
+    private static boolean isWrite8CoilsModbus10(byte[] cmd) {
+        return cmd != null && cmd.length == 10
+                && (cmd[1] & 0xFF) == 0x0F
+                && (cmd[6] & 0xFF) == 0x01;
+    }
+
+    private static void appendModbusRtuCrc(byte[] frame, int dataLen) {
+        int crc = modbusRtuCrc16(frame, dataLen);
+        frame[dataLen] = (byte) (crc & 0xFF);
+        frame[dataLen + 1] = (byte) ((crc >> 8) & 0xFF);
+    }
+
+    /** Modbus RTU CRC16（多项式 0xA001，低字节在前）。 */
+    private static int modbusRtuCrc16(byte[] data, int len) {
+        int crc = 0xFFFF;
+        for (int i = 0; i < len; i++) {
+            crc ^= (data[i] & 0xFF);
+            for (int j = 0; j < 8; j++) {
+                if ((crc & 0x0001) != 0) {
+                    crc = (crc >>> 1) ^ 0xA001;
+                } else {
+                    crc >>>= 1;
+                }
+            }
+        }
+        return crc;
     }
 
     // ==================== 旧接口（保持兼容，委托到状态机）====================
@@ -350,9 +434,11 @@ public class ShiwanM2HardwareService {
         sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getRejectTriggerHex(), "手动触发剔除");
     }
 
-    /** 主界面"收回剔除"手动按钮：发送 rejectRetractHex 信号 */
+    /**
+     * 主界面「收回剔除」：按文档 13.1 立即下发 Y0 关、Y1~Y3 与当前一致（与 {@link #retractRejection()} 相同）。
+     */
     public void retractRejectCustom() {
-        sendConfigSignal(CATEGORY_ALARM, getSignalConfig().getRejectRetractHex(), "手动收回剔除");
+        retractRejection();
     }
 
     // ==================== 内部工具 ====================
@@ -422,6 +508,9 @@ public class ShiwanM2HardwareService {
         boolean ok = deviceManager.sendBytesToDeviceByCategory(categoryCode, cmd);
         if (ok) {
             System.out.printf("[硬件] [%s] 指令已发送: %s%n", desc, bytesToHex(cmd));
+            if (categoryCode == CATEGORY_ALARM && isWrite8CoilsModbus10(cmd)) {
+                lastAlarmModbus10 = cmd.clone();
+            }
         } else {
             System.err.printf("[硬件] [%s] 发送失败（设备未连接或串口异常）%n", desc);
         }

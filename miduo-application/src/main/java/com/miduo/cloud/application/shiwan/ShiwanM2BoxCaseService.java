@@ -225,7 +225,7 @@ public class ShiwanM2BoxCaseService {
             }
             Integer total = jdbcTemplate.queryForObject(
                     "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 " +
-                            "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                            "AND BigSerialNumber = ''",
                     Integer.class, boxCode);
             if (total == null || total != requiredRows) {
                 return ApiResult.error(400, "盒码对应条数不符（需" + requiredRows + "条）：" + boxCode + "，当前" + (total != null ? total : 0) + "条");
@@ -331,7 +331,7 @@ public class ShiwanM2BoxCaseService {
             int updated = jdbcTemplate.update(
                     "UPDATE CodeRelationUpload SET BigSerialNumber = ?, OrderNo = ?, ProductNO = ?, TagNo = ? " +
                             "WHERE IsDel = 0 " +
-                            "AND MediumSerialNumber IN (" + placeholders + ") AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                            "AND MediumSerialNumber IN (" + placeholders + ") AND BigSerialNumber = ''",
                     args.toArray());
             if (updated <= 0) {
                 return ApiResult.error(400, "未找到可关联的盒码记录，箱码：" + caseCode);
@@ -371,13 +371,13 @@ public class ShiwanM2BoxCaseService {
             if (productNo != null && !productNo.isEmpty()) {
                 Integer n = jdbcTemplate.queryForObject(
                         "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 AND (ProductNO IS NULL OR ProductNO = '' OR ProductNO = ?) " +
-                                "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                                "AND BigSerialNumber = ''",
                         Integer.class, orderNo.trim(), productNo);
                 return n != null ? n : 0;
             } else {
                 Integer n = jdbcTemplate.queryForObject(
                         "SELECT COUNT(1) FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 " +
-                                "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                                "AND BigSerialNumber = ''",
                         Integer.class, orderNo.trim());
                 return n != null ? n : 0;
             }
@@ -415,8 +415,8 @@ public class ShiwanM2BoxCaseService {
             }
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                     "SELECT ID, MediumSerialNumber FROM CodeRelationUpload WHERE IsDel = 0 " +
-                            "AND (OrderNo IS NULL OR OrderNo = '' OR OrderNo = ?) " +
-                            "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') ORDER BY ID ASC LIMIT " + boxesPerCase,
+                            "AND (OrderNo = '' OR OrderNo = ?) " +
+                            "AND BigSerialNumber = '' ORDER BY ID ASC LIMIT " + boxesPerCase,
                     orderNo.trim());
             if (rows == null || rows.size() < boxesPerCase) {
                 ApiResult<Map<String, Object>> pendingResult = new ApiResult<>();
@@ -797,16 +797,19 @@ public class ShiwanM2BoxCaseService {
      * 写入失败仅记录日志，返回 null，不影响主流程。
      */
     public Long insertRejectEvent(String orderNo, String caseCode, String rejectReason) {
+        // 预查产品编号，冗余存入 RejectRecord.ProductNO，消除 getRejectRecords 中的关联子查询
+        final String productNo = resolveProductNoForReject(orderNo);
         try {
             String dbReason = rejectReason;
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(conn -> {
                 PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO RejectRecord (OrderNo, CaseCode, RejectReason, RejectTime) VALUES (?, ?, ?, NOW())",
+                        "INSERT INTO RejectRecord (OrderNo, CaseCode, RejectReason, RejectTime, ProductNO) VALUES (?, ?, ?, NOW(), ?)",
                         Statement.RETURN_GENERATED_KEYS);
                 ps.setString(1, orderNo);
                 ps.setString(2, caseCode);
                 ps.setString(3, dbReason);
+                ps.setString(4, productNo);
                 return ps;
             }, keyHolder);
             Number key = keyHolder.getKey();
@@ -822,11 +825,12 @@ public class ShiwanM2BoxCaseService {
                         KeyHolder keyHolder = new GeneratedKeyHolder();
                         jdbcTemplate.update(conn -> {
                             PreparedStatement ps = conn.prepareStatement(
-                                    "INSERT INTO RejectRecord (OrderNo, CaseCode, RejectReason, RejectTime) VALUES (?, ?, ?, NOW())",
+                                    "INSERT INTO RejectRecord (OrderNo, CaseCode, RejectReason, RejectTime, ProductNO) VALUES (?, ?, ?, NOW(), ?)",
                                     Statement.RETURN_GENERATED_KEYS);
                             ps.setString(1, orderNo);
                             ps.setString(2, caseCode);
                             ps.setString(3, fallbackReason);
+                            ps.setString(4, productNo);
                             return ps;
                         }, keyHolder);
                         Number key = keyHolder.getKey();
@@ -843,6 +847,22 @@ public class ShiwanM2BoxCaseService {
             log.error("[剔除事件] 写入失败 orderNo={} caseCode={} reason={}: {}",
                     orderNo, caseCode, rejectReason, e.getMessage(), e);
             return null;
+        }
+    }
+
+    /**
+     * 根据订单号从 CodeRelationUpload 查找产品编号（用于剔除记录冗余字段）。
+     * 走 idx_order_del_virtual_big 前缀（OrderNo, IsDel），千万级仍为单行命中。
+     */
+    private String resolveProductNoForReject(String orderNo) {
+        if (orderNo == null || orderNo.trim().isEmpty()) return "";
+        try {
+            List<String> list = jdbcTemplate.queryForList(
+                    "SELECT ProductNO FROM CodeRelationUpload WHERE OrderNo = ? AND IsDel = 0 AND ProductNO != '' LIMIT 1",
+                    String.class, orderNo.trim());
+            return (!list.isEmpty() && list.get(0) != null) ? list.get(0) : "";
+        } catch (Exception e) {
+            return "";
         }
     }
 
@@ -957,12 +977,16 @@ public class ShiwanM2BoxCaseService {
         }
         String inputCode = code.trim();
 
-        // Step1: 找到任意匹配记录，不要求已成垛
+        // Step1: 找到任意匹配记录，各列各走自身索引，避免 OR 跨列导致全表扫描
         List<Map<String, Object>> matchRows = jdbcTemplate.queryForList(
-                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber " +
-                "FROM CodeRelationUpload " +
-                "WHERE (SmallSerialNumber = ? OR MediumSerialNumber = ? OR BigSerialNumber = ? OR VirtualSerialNumber = ?) " +
-                "AND IsDel = 0 LIMIT 1",
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE SmallSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
+                "UNION ALL " +
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
+                "UNION ALL " +
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE BigSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
+                "UNION ALL " +
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE VirtualSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
+                "LIMIT 1",
                 inputCode, inputCode, inputCode, inputCode);
         if (matchRows == null || matchRows.isEmpty()) {
             return Collections.emptyMap();
@@ -1736,9 +1760,17 @@ public class ShiwanM2BoxCaseService {
             commonArgs.add("%" + orderNo.trim() + "%");
         }
 
-        long palletCount = queryLong("SELECT COUNT(DISTINCT VirtualSerialNumber) " + commonWhere + " AND VirtualSerialNumber != ''", commonArgs);
-        long caseCount = queryLong("SELECT COUNT(DISTINCT BigSerialNumber) " + commonWhere + " AND BigSerialNumber != ''", commonArgs);
-        long boxCount = queryLong("SELECT COUNT(DISTINCT MediumSerialNumber) " + commonWhere + " AND MediumSerialNumber != ''", commonArgs);
+        // 三个 COUNT DISTINCT 合并为一次扫描，减少 PalletTime 范围扫描次数
+        // NULLIF(col,'') 将空串转为 NULL，COUNT(DISTINCT) 自动跳过 NULL，等价于原来的 != '' 过滤
+        List<Map<String, Object>> countRows = jdbcTemplate.queryForList(
+                "SELECT COUNT(DISTINCT NULLIF(VirtualSerialNumber,'')) AS palletCount," +
+                " COUNT(DISTINCT NULLIF(BigSerialNumber,'')) AS caseCount," +
+                " COUNT(DISTINCT NULLIF(MediumSerialNumber,'')) AS boxCount" +
+                commonWhere, commonArgs.toArray());
+        Map<String, Object> countRow = (countRows != null && !countRows.isEmpty()) ? countRows.get(0) : Collections.emptyMap();
+        long palletCount = countRow.get("palletCount") instanceof Number ? ((Number) countRow.get("palletCount")).longValue() : 0L;
+        long caseCount   = countRow.get("caseCount")   instanceof Number ? ((Number) countRow.get("caseCount")).longValue()   : 0L;
+        long boxCount    = countRow.get("boxCount")    instanceof Number ? ((Number) countRow.get("boxCount")).longValue()     : 0L;
 
         StringBuilder rejectWhere = new StringBuilder(" FROM RejectRecord WHERE RejectTime BETWEEN ? AND ? ");
         List<Object> rejectArgs = new ArrayList<>();
@@ -1822,9 +1854,7 @@ public class ShiwanM2BoxCaseService {
                         "p.ProductNo, p.ProductName, " +
                         "(SELECT COUNT(*) FROM RejectRecordDetail d WHERE d.EventId = r.Id) AS detailCount " +
                         "FROM RejectRecord r " +
-                        "LEFT JOIN ProductInfo p ON p.ProductNo = (" +
-                        "  SELECT c.ProductNO FROM CodeRelationUpload c WHERE c.OrderNo = r.OrderNo LIMIT 1" +
-                        ") " +
+                        "LEFT JOIN ProductInfo p ON p.ProductNo = r.ProductNO " +
                         where + " ORDER BY r.RejectTime DESC LIMIT ? OFFSET ?",
                 listArgs.toArray());
         return buildPageResult(records, total, current, size);
@@ -1868,25 +1898,24 @@ public class ShiwanM2BoxCaseService {
         if ("成功".equals(status)) statusValue = 1;
         if ("异常".equals(status)) statusValue = 2;
 
-        String having = " HAVING MAX(IsUpload) IN (1, 2) ";
+        // 每垛所有行的 IsUpload 值由系统统一更新（SET IsUpload=? WHERE VirtualSerialNumber=?），
+        // 因此 HAVING MAX(IsUpload) IN (1,2) 等价于 WHERE IsUpload IN (1,2)，
+        // 改写后可消除派生表子查询并命中 idx_isupload_virtual_del 索引。
+        final String uploadFilter = statusValue != null ? " AND IsUpload = ? " : " AND IsUpload IN (1, 2) ";
         List<Object> listArgsBase = new ArrayList<>(args);
         if (statusValue != null) {
-            having += " AND MAX(IsUpload) = ? ";
             listArgsBase.add(statusValue);
         }
 
-        long total = queryLong(
-                "SELECT COUNT(*) FROM (" +
-                        "SELECT VirtualSerialNumber " + where + " GROUP BY VirtualSerialNumber " + having +
-                        ") t", listArgsBase);
+        long total = queryLong("SELECT COUNT(DISTINCT VirtualSerialNumber) " + where + uploadFilter, listArgsBase);
         List<Object> listArgs = new ArrayList<>(listArgsBase);
         listArgs.add(size);
         listArgs.add(offset);
         List<Map<String, Object>> records = jdbcTemplate.queryForList(
                 "SELECT VirtualSerialNumber AS palletCode, COUNT(DISTINCT BigSerialNumber) AS caseCount, " +
                         "MAX(OrderNo) AS orderNo, MAX(UploadTime) AS uploadTime, MAX(IsUpload) AS isUpload, MAX(Msg) AS errorMsg " +
-                        where + " GROUP BY VirtualSerialNumber " + having +
-                        " ORDER BY MAX(UploadTime) DESC LIMIT ? OFFSET ?",
+                        where + uploadFilter +
+                        " GROUP BY VirtualSerialNumber ORDER BY MAX(UploadTime) DESC LIMIT ? OFFSET ?",
                 listArgs.toArray());
         return buildPageResult(records, total, current, size);
     }
@@ -2188,7 +2217,7 @@ public class ShiwanM2BoxCaseService {
             String placeholders = String.join(",", Collections.nCopies(boxCodes.size(), "?"));
             int updated = jdbcTemplate.update(
                     "UPDATE CodeRelationUpload SET Status = 0 WHERE MediumSerialNumber IN (" + placeholders + ") " +
-                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '') AND IsDel = 0",
+                    "AND BigSerialNumber = '' AND IsDel = 0",
                     boxCodes.toArray());
             if (updated > 0) {
                 log.info("[批次超时] CodeRelationUpload 未关联记录置为未完成 {} 条，盒码：{}", updated, boxCodes);

@@ -200,8 +200,20 @@ public class ShiwanM2FrontendApplication extends Application {
             ShiwanM2MainController mainController = loader.getController();
 
             Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
-            double windowHeight = screenBounds.getHeight() * 0.80;
-            double windowWidth = Math.min(1400, screenBounds.getWidth() - 20);
+            double screenW = screenBounds.getWidth();
+            double screenH = screenBounds.getHeight();
+
+            // 最小窗口高度：右侧面板（统计卡+任务控制）最小可用高度约 650px，
+            // 低分辨率（Win7 768p）或 DPI 缩放场景下以此兜底，避免内容被挤压。
+            final double MIN_WIN_H = 650;
+            final double MIN_WIN_W = 1100;
+
+            // 目标高度：屏幕可用区域的 90%，下限 MIN_WIN_H，上限屏幕高度-8px 边距
+            double windowHeight = Math.max(MIN_WIN_H, screenH * 0.90);
+            windowHeight = Math.min(windowHeight, screenH - 8);
+
+            // 目标宽度：[MIN_WIN_W, 1400]，左右各留 10px 边距
+            double windowWidth = Math.max(MIN_WIN_W, Math.min(1400, screenW - 20));
 
             Scene scene = new Scene(root, windowWidth, windowHeight);
 
@@ -209,9 +221,13 @@ public class ShiwanM2FrontendApplication extends Application {
             primaryStage.setScene(scene);
             primaryStage.setResizable(true);
             primaryStage.setMaximized(false);
+            // 设置最小尺寸，防止用户手动缩小窗口后布局再次挤压
+            primaryStage.setMinWidth(MIN_WIN_W);
+            primaryStage.setMinHeight(MIN_WIN_H);
 
-            primaryStage.setX(screenBounds.getMinX() + (screenBounds.getWidth() - windowWidth) / 2);
-            primaryStage.setY(screenBounds.getMinY() + 20);
+            // 水平 + 垂直居中（相对屏幕可用区域）
+            primaryStage.setX(screenBounds.getMinX() + (screenW - windowWidth) / 2.0);
+            primaryStage.setY(screenBounds.getMinY() + (screenH - windowHeight) / 2.0);
 
             StageIconUtil.setStageIcon(primaryStage);
 

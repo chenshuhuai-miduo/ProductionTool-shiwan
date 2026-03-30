@@ -165,8 +165,8 @@ public class ShiwanM2CurrentTaskService {
             if (productNo == null) productNo = "";
             Integer currentCaseCountObj = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
-                            "WHERE OrderNo = ? AND IsDel = 0 AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                            "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != ''",
+                            "WHERE OrderNo = ? AND IsDel = 0 AND VirtualSerialNumber = '' " +
+                            "AND BigSerialNumber != ''",
                     Integer.class, orderNo);
             int currentCaseCount = currentCaseCountObj != null ? currentCaseCountObj : 0;
             Map<String, Object> data = new HashMap<>();
@@ -245,16 +245,16 @@ public class ShiwanM2CurrentTaskService {
             List<String> tagNos = jdbcTemplate.queryForList(
                     "SELECT DISTINCT TagNo FROM CodeRelationUpload " +
                     "WHERE OrderNo = ? AND IsDel = 0 " +
-                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                    "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != '' " +
-                    "AND TagNo IS NOT NULL AND TagNo != ''",
+                    "AND VirtualSerialNumber = '' " +
+                    "AND BigSerialNumber != '' " +
+                    "AND TagNo != ''",
                     String.class, orderNo.trim());
 
             // 将未成垛记录标记为 Status=3
             jdbcTemplate.update(
                     "UPDATE CodeRelationUpload SET Status = 3 WHERE OrderNo = ? AND IsDel = 0 " +
-                            "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                            "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != ''",
+                            "AND VirtualSerialNumber = '' " +
+                            "AND BigSerialNumber != ''",
                     orderNo.trim());
 
             // 更新每个 TagNo 的 Qty = 该 TagNo 下所有未删除记录数
@@ -298,9 +298,9 @@ public class ShiwanM2CurrentTaskService {
                     "FROM CodeRelationUpload cru " +
                     "LEFT JOIN ProductionOrder po ON po.OrderNo = cru.OrderNo " +
                     "WHERE cru.BigSerialNumber = ? " +
-                    "AND (cru.VirtualSerialNumber IS NULL OR cru.VirtualSerialNumber = '') " +
+                    "AND cru.VirtualSerialNumber = '' " +
                     "AND cru.Status = 3 AND cru.IsDel = 0 " +
-                    "AND cru.TagNo IS NOT NULL AND cru.TagNo != '' LIMIT 1",
+                    "AND cru.TagNo != '' LIMIT 1",
                     boxCode.trim());
             if (anchor == null || anchor.isEmpty()) {
                 return ApiResult.error(404, "未找到对应的未成垛记录");
@@ -321,7 +321,7 @@ public class ShiwanM2CurrentTaskService {
             List<Map<String, Object>> palletRecords = jdbcTemplate.queryForList(
                     "SELECT BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload " +
                     "WHERE TagNo = ? AND Status = 3 AND IsDel = 0 " +
-                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '')",
+                    "AND VirtualSerialNumber = ''",
                     tagNo);
 
             // 从内存数据派生已关联箱数
@@ -350,8 +350,8 @@ public class ShiwanM2CurrentTaskService {
             Integer pendingBoxCount = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
                     "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
-                    "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                    "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                    "AND VirtualSerialNumber = '' " +
+                    "AND BigSerialNumber = ''",
                     Integer.class, orderNo);
 
             Map<String, Object> data = new HashMap<>();
@@ -380,7 +380,7 @@ public class ShiwanM2CurrentTaskService {
                     "SELECT OrderNo, MAX(ProductNO) AS productNo, " +
                             "COUNT(DISTINCT BigSerialNumber) AS currentCaseCount " +
                             "FROM CodeRelationUpload WHERE Status = 3 AND IsDel = 0 " +
-                            "AND BigSerialNumber IS NOT NULL AND BigSerialNumber != '' " +
+                            "AND BigSerialNumber != '' " +
                             "GROUP BY OrderNo");
             if (list == null || list.isEmpty()) {
                 return ApiResult.success("无未成垛数据", Collections.emptyList());
@@ -391,8 +391,8 @@ public class ShiwanM2CurrentTaskService {
                 Integer pendingBoxCount = jdbcTemplate.queryForObject(
                         "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
                         "WHERE OrderNo = ? AND IsDel = 0 AND Status = 0 " +
-                        "AND (VirtualSerialNumber IS NULL OR VirtualSerialNumber = '') " +
-                        "AND (BigSerialNumber IS NULL OR BigSerialNumber = '')",
+                        "AND VirtualSerialNumber = '' " +
+                        "AND BigSerialNumber = ''",
                         Integer.class, orderNo);
                 row.put("pendingBoxCount", pendingBoxCount != null ? pendingBoxCount : 0);
                 // 查询产品名称

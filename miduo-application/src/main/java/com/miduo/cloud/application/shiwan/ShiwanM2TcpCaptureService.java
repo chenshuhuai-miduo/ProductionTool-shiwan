@@ -460,19 +460,27 @@ public class ShiwanM2TcpCaptureService {
             // 数据接收区展示
             addEvent("BOX_RECV",
                     "[盒码相机] 批" + batchNo + " 接收到 " + uniqueCodes.size() + " 个盒码：" + uniqueCodes, null);
+            boolean hasBoxCameraFail = false;
             if (!digitFailCodes.isEmpty()) {
+                hasBoxCameraFail = true;
                 addEvent("BOX_FAIL",
                         "[盒码相机] 批" + batchNo + " 位数不符（期望" + mediumDigits + "位），码：" + digitFailCodes, null);
             }
             if (!countOk) {
+                hasBoxCameraFail = true;
                 String countReason = uniqueCodes.size() < boxesPerCase ? "缺码" : "超码";
                 addEvent("BOX_FAIL",
                         "[盒码相机] 批" + batchNo + " " + countReason
                         + "（期望" + boxesPerCase + "个，实际" + uniqueCodes.size() + "个）", null);
             }
             if (!queueDuplicateCodes.isEmpty()) {
+                hasBoxCameraFail = true;
                 addEvent("BOX_FAIL",
                         "[盒码相机] 批" + batchNo + " 检测到采集的码重复：" + queueDuplicateCodes, null);
+            }
+            // 码校验失败：立即触发黄灯告警，无需等待 HTTP 轮询
+            if (hasBoxCameraFail) {
+                CaptureHardwareBus.yellowLightOn();
             }
 
             boxBatchQueue.offer(new BoxBatchEntry(batchNo, items, countOk));
@@ -496,11 +504,18 @@ public class ShiwanM2TcpCaptureService {
 
             // 数据接收区展示
             addEvent("CASE_RECV", "[箱码相机] 批" + batchNo + " 接收数据：" + code, null);
+            boolean hasCaseCameraFail = false;
             if (!digitOk) {
+                hasCaseCameraFail = true;
                 addEvent("BOX_FAIL", "[箱码相机] 批" + batchNo + " " + reason, null);
             }
             if (queueDuplicate) {
+                hasCaseCameraFail = true;
                 addEvent("BOX_FAIL", "[箱码相机] 批" + batchNo + " 检测到采集的码重复：" + code, null);
+            }
+            // 码校验失败：立即触发黄灯告警，无需等待 HTTP 轮询
+            if (hasCaseCameraFail) {
+                CaptureHardwareBus.yellowLightOn();
             }
 
             caseBatchQueue.offer(new CaseBatchEntry(batchNo, code, digitOk, queueDuplicate, reason));
@@ -613,6 +628,9 @@ public class ShiwanM2TcpCaptureService {
                 ? Collections.emptyList()
                 : boxBatch.codes.stream().map(i -> i.code).filter(Objects::nonNull).collect(Collectors.toList());
 
+        // 关联失败：优先触发剔除，写库与状态更新后置，保证剔除动作实时性
+        CaptureHardwareBus.triggerRejection();
+
         // 落库：按超时事件写主表 + 每个盒码一条明细（无箱码时 CaseCode 为空）
         Long eventId = boxCaseService.insertRejectEvent(currentOrderNo, null, reason);
         for (String boxCode : boxCodes) {
@@ -636,6 +654,9 @@ public class ShiwanM2TcpCaptureService {
         alignBatchCountersAfterTimeout(caseBatch.batchNo);
         String reason = "批次匹配超时-未见盒码";
         String caseCode = caseBatch.code != null ? caseBatch.code : "";
+
+        // 关联失败：优先触发剔除，写库后置，保证剔除动作实时性
+        CaptureHardwareBus.triggerRejection();
 
         // 落库：按超时事件写主表 + 兜底一条明细，确保事件在剔除弹窗中可下钻到留痕明细
         Long eventId = boxCaseService.insertRejectEvent(currentOrderNo, caseCode, reason);
@@ -714,6 +735,9 @@ public class ShiwanM2TcpCaptureService {
         boolean hasProblems = caseProblem || anyBoxProblem || !countOk || !problematicCodes.isEmpty();
 
         if (hasProblems) {
+            // 关联失败：优先触发剔除，后续再做摘要、写库和状态更新
+            CaptureHardwareBus.triggerRejection();
+
             // --- 整批剔除 ---
 
             // 构造问题摘要（与产品文档 10.1.x 界面显示格式一致）
@@ -763,6 +787,8 @@ public class ShiwanM2TcpCaptureService {
 
         if (res == null || res.getCode() == null || res.getCode() != 200) {
             String errMsg = res != null ? res.getMessage() : "服务返回null";
+            // 关联失败：优先触发剔除，写库与状态更新后置
+            CaptureHardwareBus.triggerRejection();
             // 关联失败：整箱全量写剔除记录 + 状态更新
             String caseRejectReason = ShiwanM2RejectUserMessages.formatAssociateApiError(errMsg);
             boxCaseService.insertFullCaseRejectRecords(currentOrderNo, caseCode, allBoxCodes, caseRejectReason);
