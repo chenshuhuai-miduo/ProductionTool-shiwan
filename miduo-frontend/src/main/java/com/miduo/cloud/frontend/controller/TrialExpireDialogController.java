@@ -305,18 +305,17 @@ public class TrialExpireDialogController {
             stage.setResizable(false);
             StageIconUtil.setStageIcon(stage);
 
-            // 拦截关闭请求，必须通过按钮操作
+            // 拦截关闭请求：须以当前许可证状态为准（用户可能刚在向导中完成续期/激活）
             stage.setOnCloseRequest(e -> {
                 e.consume();
-                // 检查是否已激活，如果已激活则打开主界面，否则退出
                 try {
-                    if (status != LicenseStatusEnum.UNACTIVATED && 
-                        status != LicenseStatusEnum.TRIAL_EXPIRED && 
-                        status != LicenseStatusEnum.EXPIRED) {
-                        // 已激活，关闭窗口并打开主界面
+                    DeviceInfoService deviceInfoService = new DeviceInfoService();
+                    LicenseService licenseService = new LicenseService(new LicenseValidationService());
+                    licenseService.init();
+                    String deviceId = DeviceUniqueIdGenerator.generateDeviceId(deviceInfoService.getDeviceInfo());
+                    LicenseStatusEnum current = licenseService.getCurrentLicenseStatus(deviceId);
+                    if (current == LicenseStatusEnum.ACTIVATED || current == LicenseStatusEnum.TRIAL_ACTIVE) {
                         stage.close();
-                        
-                       // 通过查找主窗口来显示主界面
                         javafx.stage.Window.getWindows().stream()
                             .filter(window -> window instanceof Stage)
                             .map(window -> (Stage) window)
@@ -331,17 +330,13 @@ public class TrialExpireDialogController {
                                 }
                                 mainStage.toFront();
                             });
-                    } else {
-                        // 未激活或已过期，退出程序
-                        Platform.exit();
-                        System.exit(0);
+                        return;
                     }
                 } catch (Exception ex) {
-                    // 检查失败，默认退出
                     ex.printStackTrace();
-                    Platform.exit();
-                    System.exit(0);
                 }
+                Platform.exit();
+                System.exit(0);
             });
 
             stage.showAndWait();

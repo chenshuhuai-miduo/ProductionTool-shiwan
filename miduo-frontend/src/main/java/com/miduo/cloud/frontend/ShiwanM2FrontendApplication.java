@@ -218,45 +218,49 @@ public class ShiwanM2FrontendApplication extends Application {
         // ② 短延迟后再做读盘与许可证：慢机/Win7 上需留出时间让启动窗真正合成到屏幕
         PauseTransition splashPaintDelay = new PauseTransition(Duration.millis(280));
         splashPaintDelay.setOnFinished(ev -> {
-            try {
-                traceStartup("首帧延迟结束，开始初始化(日志批量器/读配置/许可证)");
-                System.out.println("========================================");
-                System.out.println("石湾2号机（盒箱垛关联软件）正在启动...");
-                System.out.println("========================================");
+            // 注意：setOnFinished 在动画帧处理期间触发，JavaFX 禁止在此直接调用 showAndWait。
+            // 用 Platform.runLater 将许可证校验（含弹窗）推迟到当前动画帧结束后执行。
+            Platform.runLater(() -> {
+                try {
+                    traceStartup("首帧延迟结束，开始初始化(日志批量器/读配置/许可证)");
+                    System.out.println("========================================");
+                    System.out.println("石湾2号机（盒箱垛关联软件）正在启动...");
+                    System.out.println("========================================");
 
-                OperateLogBatchManager.getInstance().start();
+                    OperateLogBatchManager.getInstance().start();
 
-                String backendUrl = ShiwanM2SettingsStore.getBackendBaseUrl();
-                HttpUtil.setBaseUrl(backendUrl);
-                System.out.println("  后端 API 地址: " + backendUrl + "（可在系统设置中修改「后端服务地址」）");
-                traceStartup("后端 API 基址已配置: " + backendUrl);
+                    String backendUrl = ShiwanM2SettingsStore.getBackendBaseUrl();
+                    HttpUtil.setBaseUrl(backendUrl);
+                    System.out.println("  后端 API 地址: " + backendUrl + "（可在系统设置中修改「后端服务地址」）");
+                    traceStartup("后端 API 基址已配置: " + backendUrl);
 
-                long licenseBeginMs = System.currentTimeMillis();
-                boolean licenseOk = performLicenseValidation();
-                long licenseEndMs = System.currentTimeMillis();
-                long licenseCost = licenseEndMs - licenseBeginMs;
-                System.out.println("[启动耗时] 许可证校验耗时 " + licenseCost + " ms");
-                traceStartup("许可证校验结束，耗时 " + licenseCost + "ms，结果=" + (licenseOk ? "通过" : "未通过"));
-                if (!licenseOk) {
-                    System.err.println("✗ 许可证验证失败，应用程序退出");
-                    traceStartup("许可证未通过，退出(启动小窗将关闭)");
+                    long licenseBeginMs = System.currentTimeMillis();
+                    boolean licenseOk = performLicenseValidation();
+                    long licenseEndMs = System.currentTimeMillis();
+                    long licenseCost = licenseEndMs - licenseBeginMs;
+                    System.out.println("[启动耗时] 许可证校验耗时 " + licenseCost + " ms");
+                    traceStartup("许可证校验结束，耗时 " + licenseCost + "ms，结果=" + (licenseOk ? "通过" : "未通过"));
+                    if (!licenseOk) {
+                        System.err.println("✗ 许可证验证失败，应用程序退出");
+                        traceStartup("许可证未通过，退出(启动小窗将关闭)");
+                        closeStartupSplash();
+                        Platform.exit();
+                        return;
+                    }
+
+                    traceStartup("即将进入主界面 FXML 加载前短延迟(200ms)");
+                    // ③ 再留一截时间加载主 FXML（FXML 很重），避免小窗与主窗切换看起来像「没提示」
+                    PauseTransition beforeFxml = new PauseTransition(Duration.millis(200));
+                    beforeFxml.setOnFinished(e2 -> Platform.runLater(() -> loadMainWindowAfterSplash(primaryStage)));
+                    beforeFxml.play();
+                } catch (Exception e) {
                     closeStartupSplash();
+                    traceStartup("启动初始化异常: " + e.getMessage());
+                    System.err.println("✗ 启动失败！" + e.getMessage());
+                    e.printStackTrace();
                     Platform.exit();
-                    return;
                 }
-
-                traceStartup("即将进入主界面 FXML 加载前短延迟(200ms)");
-                // ③ 再留一截时间加载主 FXML（FXML 很重），避免小窗与主窗切换看起来像「没提示」
-                PauseTransition beforeFxml = new PauseTransition(Duration.millis(200));
-                beforeFxml.setOnFinished(e2 -> loadMainWindowAfterSplash(primaryStage));
-                beforeFxml.play();
-            } catch (Exception e) {
-                closeStartupSplash();
-                traceStartup("启动初始化异常: " + e.getMessage());
-                System.err.println("✗ 启动失败！" + e.getMessage());
-                e.printStackTrace();
-                Platform.exit();
-            }
+            });
         });
         splashPaintDelay.play();
     }
@@ -441,58 +445,73 @@ public class ShiwanM2FrontendApplication extends Application {
         System.out.println("✓ 石湾2号机应用已安全退出");
     }
 
+    /**
+     * 与致美斋一致：未激活 / 试用或正式过期时不进入主界面，循环弹出引导弹窗直至用户完成激活（或点退出）。
+     * 弹窗关闭后重新读取许可证，避免「试用过期弹窗内已续期但关窗仍直接退出」的问题。
+     */
     private boolean performLicenseValidation() {
         try {
             LicenseService licenseService = new LicenseService(new LicenseValidationService());
             licenseService.init();
 
-            // 优先读取缓存设备ID，跳过 OSHI 硬件采集（~1.5s）；缓存缺失时惰性采集。
             String currentDeviceId = DeviceUniqueIdGenerator.generateDeviceIdCached(
-                () -> new DeviceInfoService().getDeviceInfo());
+                    () -> new DeviceInfoService().getDeviceInfo());
 
-            if (!licenseService.licenseExists()) {
-                UnactivatedDialogController.showUnactivatedDialog();
-                LicenseStatusEnum statusAfterDialog = licenseService.getCurrentLicenseStatus(currentDeviceId);
-                if (!isLicenseAllowedToEnter(statusAfterDialog)) {
+            while (true) {
+                if (!licenseService.licenseExists()) {
+                    UnactivatedDialogController.showUnactivatedDialog();
+                    licenseService.init();
+                    currentDeviceId = DeviceUniqueIdGenerator.generateDeviceIdCached(
+                            () -> new DeviceInfoService().getDeviceInfo());
+                    if (!licenseService.licenseExists()) {
+                        return false;
+                    }
+                    continue;
+                }
+
+                LicenseValidationService.LicenseValidationResult validationResult =
+                        licenseService.readLicense(currentDeviceId);
+
+                if (validationResult.isDeviceMismatch()) {
+                    DeviceUniqueIdGenerator.clearDeviceIdCache();
+                    DeviceMismatchDialogController.showDeviceMismatchDialog(
+                            validationResult.getMismatchedDeviceId());
                     return false;
                 }
-            }
 
-            LicenseValidationService.LicenseValidationResult validationResult =
-                licenseService.readLicense(currentDeviceId);
+                LicenseStatusEnum status = licenseService.getCurrentLicenseStatus(currentDeviceId);
+                LicenseService.LicenseInfo licenseInfo = licenseService.getLicenseInfo(currentDeviceId);
+                long remainingDays = licenseInfo != null ? licenseInfo.getRemainingDays() : -1;
+                LocalDate expireDate = licenseInfo != null ? licenseInfo.getExpireDate() : null;
 
-            if (validationResult.isDeviceMismatch()) {
-                // 设备不匹配时清除缓存，避免下次启动仍用旧设备ID
-                DeviceUniqueIdGenerator.clearDeviceIdCache();
-                DeviceMismatchDialogController.showDeviceMismatchDialog(
-                    validationResult.getMismatchedDeviceId());
-                return false;
-            }
-
-            LicenseStatusEnum status = licenseService.getCurrentLicenseStatus(currentDeviceId);
-            LicenseService.LicenseInfo licenseInfo = licenseService.getLicenseInfo(currentDeviceId);
-            long remainingDays = licenseInfo != null ? licenseInfo.getRemainingDays() : -1;
-            LocalDate expireDate = licenseInfo != null ? licenseInfo.getExpireDate() : null;
-            startupLicenseStatusSnapshot = new LicenseStatusSnapshot(status, remainingDays, expireDate);
-
-            if (status == LicenseStatusEnum.UNACTIVATED) {
-                UnactivatedDialogController.showUnactivatedDialog();
-                status = licenseService.getCurrentLicenseStatus(currentDeviceId);
-            } else if (status == LicenseStatusEnum.TRIAL_EXPIRED
-                    || status == LicenseStatusEnum.EXPIRED) {
-                TrialExpireDialogController.showTrialExpireDialog(status);
-                status = licenseService.getCurrentLicenseStatus(currentDeviceId);
-            } else if (status == LicenseStatusEnum.TRIAL_ACTIVE) {
-                if (remainingDays >= 0 && remainingDays <= 3) {
-                    TrialExpiringDialogController.showTrialExpiringDialog(remainingDays);
+                if (isLicenseAllowedToEnter(status)) {
+                    if (status == LicenseStatusEnum.TRIAL_ACTIVE
+                            && remainingDays >= 0 && remainingDays <= 3) {
+                        TrialExpiringDialogController.showTrialExpiringDialog(remainingDays);
+                    }
+                    LicenseService.LicenseInfo fresh = licenseService.getLicenseInfo(currentDeviceId);
+                    long rd = fresh != null ? fresh.getRemainingDays() : remainingDays;
+                    LocalDate ed = fresh != null ? fresh.getExpireDate() : expireDate;
+                    startupLicenseStatusSnapshot = new LicenseStatusSnapshot(
+                            licenseService.getCurrentLicenseStatus(currentDeviceId), rd, ed);
+                    return true;
                 }
-            }
 
-            LicenseService.LicenseInfo latestLicenseInfo = licenseService.getLicenseInfo(currentDeviceId);
-            long latestRemainingDays = latestLicenseInfo != null ? latestLicenseInfo.getRemainingDays() : -1;
-            LocalDate latestExpireDate = latestLicenseInfo != null ? latestLicenseInfo.getExpireDate() : null;
-            startupLicenseStatusSnapshot = new LicenseStatusSnapshot(status, latestRemainingDays, latestExpireDate);
-            return isLicenseAllowedToEnter(status);
+                startupLicenseStatusSnapshot = new LicenseStatusSnapshot(status, remainingDays, expireDate);
+
+                if (status == LicenseStatusEnum.UNACTIVATED) {
+                    UnactivatedDialogController.showUnactivatedDialog();
+                } else if (status == LicenseStatusEnum.TRIAL_EXPIRED
+                        || status == LicenseStatusEnum.EXPIRED) {
+                    TrialExpireDialogController.showTrialExpireDialog(status);
+                } else {
+                    UnactivatedDialogController.showUnactivatedDialog();
+                }
+
+                licenseService.init();
+                currentDeviceId = DeviceUniqueIdGenerator.generateDeviceIdCached(
+                        () -> new DeviceInfoService().getDeviceInfo());
+            }
 
         } catch (Exception e) {
             System.err.println("许可证验证异常: " + e.getMessage());
