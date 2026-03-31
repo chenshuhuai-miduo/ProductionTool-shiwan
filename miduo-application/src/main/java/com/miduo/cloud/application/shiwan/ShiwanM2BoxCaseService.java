@@ -979,14 +979,15 @@ public class ShiwanM2BoxCaseService {
 
         // Step1: 找到任意匹配记录，各列各走自身索引，避免 OR 跨列导致全表扫描
         List<Map<String, Object>> matchRows = jdbcTemplate.queryForList(
-                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE SmallSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
-                "UNION ALL " +
-                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
-                "UNION ALL " +
-                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE BigSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
-                "UNION ALL " +
-                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE VirtualSerialNumber = ? AND IsDel = 0 LIMIT 1 " +
-                "LIMIT 1",
+                "SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM (" +
+                "  (SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE SmallSerialNumber = ? AND IsDel = 0 LIMIT 1) " +
+                "  UNION ALL " +
+                "  (SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 LIMIT 1) " +
+                "  UNION ALL " +
+                "  (SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE BigSerialNumber = ? AND IsDel = 0 LIMIT 1) " +
+                "  UNION ALL " +
+                "  (SELECT VirtualSerialNumber, BigSerialNumber, MediumSerialNumber FROM CodeRelationUpload WHERE VirtualSerialNumber = ? AND IsDel = 0 LIMIT 1) " +
+                ") t LIMIT 1",
                 inputCode, inputCode, inputCode, inputCode);
         if (matchRows == null || matchRows.isEmpty()) {
             return Collections.emptyMap();
