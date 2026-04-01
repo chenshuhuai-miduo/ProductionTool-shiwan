@@ -558,6 +558,7 @@ public class ShiwanM2CancelAssociationController {
             }
             FxModalOverlayUtil.applyOverlayScene(stage, (Region) root, cancelOwner, new Insets(20));
             stage.setResizable(false);
+            stage.setOnShown(e -> ctrl.focusPasswordField());
             stage.showAndWait();
 
             return ctrl.isConfirmed();

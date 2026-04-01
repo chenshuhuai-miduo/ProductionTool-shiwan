@@ -1,6 +1,7 @@
 package com.miduo.cloud.frontend.controller;
 
 import com.miduo.cloud.frontend.util.SvgIconLoader;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -42,6 +43,17 @@ public class ShiwanM2CancelConfirmDialogController {
         SvgIconLoader.loadInto(cloudWarnTitleIconPane, SvgIconLoader.ICON_WARN, 18, Color.web("#D97706"));
         SvgIconLoader.loadInto(footerWarnIconPane, SvgIconLoader.ICON_WARN, 16, Color.web("#DC2626"));
         refreshCancelPwdEyeIcon();
+    }
+
+    /** 窗体显示后将焦点放到密码输入框，便于直接键盘输入或扫码枪录入。 */
+    public void focusPasswordField() {
+        Platform.runLater(() -> {
+            if (plainField != null && plainField.isVisible()) {
+                plainField.requestFocus();
+            } else if (passwordField != null) {
+                passwordField.requestFocus();
+            }
+        });
     }
 
     private void refreshCancelPwdEyeIcon() {
