@@ -531,6 +531,7 @@ public class ShiwanM2PackageController implements Initializable {
             stage.setScene(new Scene(root));
             stage.setMinWidth(640);
             stage.setMinHeight(540);
+            stage.setOnHidden(e -> controller.clearActiveScannerRouting());
             stage.showAndWait();
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "打开失败", "无法打开查看窗口：" + e.getMessage());

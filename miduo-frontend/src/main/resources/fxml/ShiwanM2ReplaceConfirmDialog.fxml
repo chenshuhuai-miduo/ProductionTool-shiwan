@@ -67,41 +67,6 @@
                    style="-fx-font-size:16px; -fx-text-fill:#0369A1; -fx-font-family:'Microsoft YaHei';"/>
         </VBox>
 
-        <!-- 密码输入 -->
-        <VBox spacing="6">
-            <HBox spacing="4" alignment="CENTER_LEFT">
-                <Label text="*"
-                       style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#EF4444;"/>
-                <Label text="密码"
-                       style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#1F2937; -fx-font-family:'Microsoft YaHei';"/>
-            </HBox>
-            <!-- 密码框容器（带眼睛切换） -->
-            <HBox alignment="CENTER_LEFT"
-                  style="-fx-background-color:white; -fx-border-color:#D1D5DB; -fx-border-width:1;
-                         -fx-border-radius:8; -fx-background-radius:8;
-                         -fx-min-height:42; -fx-pref-height:42;">
-                <PasswordField fx:id="passwordField"
-                               promptText="请输入密码"
-                               HBox.hgrow="ALWAYS"
-                               style="-fx-font-size:16px; -fx-background-color:transparent;
-                                      -fx-border-width:0; -fx-background-radius:8; -fx-padding: 0 12;"/>
-                <TextField fx:id="plainPasswordField"
-                           promptText="请输入密码"
-                           HBox.hgrow="ALWAYS"
-                           visible="false" managed="false"
-                           style="-fx-font-size:16px; -fx-background-color:transparent;
-                                  -fx-border-width:0; -fx-background-radius:8; -fx-padding: 0 12;"/>
-                <Button fx:id="eyeToggleBtn" onAction="#onTogglePassword"
-                        style="-fx-background-color:transparent; -fx-cursor:hand; -fx-min-width:40; -fx-border-width:0;
-                               -fx-effect:null; -fx-padding: 0 12;">
-                    <graphic>
-                        <StackPane fx:id="replaceEyeIconPane" minWidth="22" minHeight="22" prefWidth="22" prefHeight="22"
-                                   maxWidth="22" maxHeight="22"/>
-                    </graphic>
-                </Button>
-            </HBox>
-        </VBox>
-
         <!-- 底部警告 -->
         <HBox spacing="8" alignment="CENTER_LEFT">
             <StackPane fx:id="footerWarnIconPane" minWidth="18" minHeight="18" prefWidth="18" prefHeight="18"

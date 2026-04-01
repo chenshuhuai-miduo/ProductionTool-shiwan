@@ -5,8 +5,6 @@ import com.miduo.cloud.common.dto.ApiResult;
 import com.miduo.cloud.entity.dto.code.CodeReplaceRequest;
 import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
-import com.miduo.cloud.frontend.config.ShiwanM2Settings;
-import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
 import com.miduo.cloud.frontend.util.HttpUtil;
@@ -183,19 +181,14 @@ public class ShiwanM2DataReplaceController {
         doReplaceAsync(oldCode, newCode, reason);
     }
 
-    /** 与 Replace Tab 相同的 FXML 确认弹窗；密码来自系统设置。 */
+    /** 与 Replace Tab 相同的 FXML 确认弹窗（无需密码）。 */
     private boolean openReplaceConfirmDialog(String orig, String newCode, String reason) {
-        ShiwanM2Settings settings = ShiwanM2SettingsStore.load();
-        String configPassword = settings.getSystemSettingsPassword();
-        if (configPassword == null || configPassword.isEmpty()) {
-            configPassword = "123456";
-        }
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/fxml/ShiwanM2ReplaceConfirmDialog.fxml"));
             Parent root = loader.load();
             ShiwanM2ReplaceConfirmDialogController ctrl = loader.getController();
-            ctrl.setReplaceInfo(orig, newCode, reason, configPassword);
+            ctrl.setReplaceInfo(orig, newCode, reason);
 
             Stage stage = new Stage();
             stage.initStyle(StageStyle.UNDECORATED);

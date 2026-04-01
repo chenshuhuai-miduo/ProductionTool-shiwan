@@ -32,6 +32,13 @@ public class ShiwanM2PackageViewCodesDialogController {
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /** 当前打开的查看码包弹窗实例，供 {@link ShiwanM2MainController} 扫码路由使用（模态关闭时置空）。 */
+    private static volatile ShiwanM2PackageViewCodesDialogController activeInstance;
+
+    public static ShiwanM2PackageViewCodesDialogController getActiveInstance() {
+        return activeInstance;
+    }
+
     @FXML private javafx.scene.layout.HBox titleBar;
     @FXML private Label titleLabel;
     @FXML private Label packageTypeLabel;
@@ -117,11 +124,34 @@ public class ShiwanM2PackageViewCodesDialogController {
 
     public void setContext(Long importId, String packageName,
                            String typeName, Integer codeCount, String statusName, boolean statusNormal) {
+        activeInstance = this;
         this.importId = importId;
         packageTypeLabel.setText(typeName == null ? "—" : typeName);
         packageNameLabel.setText(packageName == null ? "—" : packageName);
         currentPage = 1;
         loadData();
+    }
+
+    /**
+     * 扫码枪：写入搜索关键字并触发查询（与数据查询页行为一致）。
+     */
+    public void onScanCode(String code) {
+        String c = code == null ? "" : code.trim();
+        if (c.isEmpty()) {
+            return;
+        }
+        Platform.runLater(() -> {
+            Stage st = getStage();
+            if (st == null || !st.isShowing()) {
+                return;
+            }
+            if (keywordField == null) {
+                return;
+            }
+            keywordField.setText(c);
+            currentPage = 1;
+            loadData();
+        });
     }
 
     @FXML
@@ -146,8 +176,16 @@ public class ShiwanM2PackageViewCodesDialogController {
         }
     }
 
+    /** 弹窗任意关闭路径下解除扫码路由，避免指向已销毁窗口。 */
+    public void clearActiveScannerRouting() {
+        if (activeInstance == this) {
+            activeInstance = null;
+        }
+    }
+
     @FXML
     private void onClose() {
+        clearActiveScannerRouting();
         getStage().close();
     }
 

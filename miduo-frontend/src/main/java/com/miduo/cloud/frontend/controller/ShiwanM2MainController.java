@@ -608,7 +608,8 @@ public class ShiwanM2MainController implements Initializable {
     /**
      * 扫码枪数据路由：
      * 1) 若“提取工单未成垛”弹窗打开，优先填入该弹窗输入框并触发查询；
-     * 2) 否则按当前活动窗口中的主界面当前页分发到手工采集/数据查询/数据替换/取消关联。
+     * 2) 若「查看码包」弹窗打开，填入搜索框并查询；
+     * 3) 否则在主界面获焦时按当前 Tab 分发到手工采集/数据查询/数据替换/取消关联。
      */
     private void dispatchScannerCode(String raw) {
         final String code = raw == null ? "" : raw.trim();
@@ -619,6 +620,14 @@ public class ShiwanM2MainController implements Initializable {
         if (popupConsumer != null) {
             popupConsumer.accept(code);
             log.debug("[扫码枪路由] 提取未成垛弹窗接收 code={}", code);
+            return;
+        }
+
+        // 码包管理「查看码包」弹窗打开时：扫码填入搜索框并查询（弹窗获焦时主窗路由会忽略，故在此优先处理）
+        ShiwanM2PackageViewCodesDialogController pkgViewCtrl = ShiwanM2PackageViewCodesDialogController.getActiveInstance();
+        if (pkgViewCtrl != null) {
+            pkgViewCtrl.onScanCode(code);
+            log.debug("[扫码枪路由] 查看码包弹窗接收 code={}", code);
             return;
         }
 

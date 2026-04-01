@@ -53,6 +53,7 @@ public class ShiwanM2CancelAssociationController {
         return instance;
     }
 
+    /** 取消关联确认弹窗与降级 Dialog 使用的固定密码（与历史行为一致）。 */
     private static final String FIXED_PASSWORD = "123456";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -405,7 +406,7 @@ public class ShiwanM2CancelAssociationController {
             }
         }
 
-        if (!showPasswordConfirm(modeAll, cancelableItems.size(), totalRelations,
+        if (!showCancelConfirmDialog(modeAll, cancelableItems.size(), totalRelations,
                 skippedItems.size(), uploadedPalletItems)) {
             return;
         }
@@ -532,9 +533,9 @@ public class ShiwanM2CancelAssociationController {
         }
     }
 
-    // ===== 密码确认弹窗 =====
+    // ===== 取消关联确认弹窗 =====
 
-    private boolean showPasswordConfirm(boolean modeAll, int execCount, int totalRelations,
+    private boolean showCancelConfirmDialog(boolean modeAll, int execCount, int totalRelations,
                                         int skipCount, List<IdentifyItem> uploadedPallets) {
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(

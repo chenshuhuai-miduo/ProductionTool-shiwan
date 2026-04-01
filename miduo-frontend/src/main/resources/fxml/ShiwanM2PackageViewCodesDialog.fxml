@@ -50,7 +50,7 @@
 
             <!-- 搜索区 -->
             <HBox spacing="8" alignment="CENTER_LEFT">
-                <TextField fx:id="keywordField" promptText="输入码值搜索..."
+                <TextField fx:id="keywordField" promptText="输入码值或扫码枪搜索..."
                            HBox.hgrow="ALWAYS"
                            style="-fx-font-size:15px; -fx-background-color:white;
                                   -fx-border-color:#D1D5DB; -fx-border-width:1;

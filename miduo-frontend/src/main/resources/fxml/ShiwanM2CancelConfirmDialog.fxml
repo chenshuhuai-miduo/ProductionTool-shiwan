@@ -51,8 +51,7 @@
             <HBox spacing="8" alignment="TOP_LEFT">
                 <StackPane fx:id="cloudWarnTitleIconPane" minWidth="18" minHeight="18" prefWidth="18" prefHeight="18"
                            maxWidth="18" maxHeight="18"/>
-                <Label fx:id="cloudTitleLabel"
-                       text="云端影响：以下垛码已上传云端，执行将先取消整垛云端数据"
+                <Label text="云端影响：以下垛码已上传云端，执行将先取消整垛云端数据"
                        wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"
                        style="-fx-font-size: 16px; -fx-font-weight: bold;
                               -fx-text-fill: #92400E; -fx-font-family: 'Microsoft YaHei';"/>

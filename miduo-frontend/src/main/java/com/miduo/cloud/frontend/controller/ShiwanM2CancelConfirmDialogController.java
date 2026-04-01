@@ -14,7 +14,7 @@ import javafx.stage.Stage;
 import java.util.List;
 
 /**
- * 取消关联确认弹窗控制器
+ * 取消关联确认弹窗控制器（需输入正确密码后方可确认）。
  */
 public class ShiwanM2CancelConfirmDialogController {
 
@@ -33,7 +33,7 @@ public class ShiwanM2CancelConfirmDialogController {
 
     private double  dragOffsetX;
     private double  dragOffsetY;
-    private boolean confirmed   = false;
+    private boolean confirmed = false;
     private String  correctPassword = "123456";
 
     @FXML
@@ -76,7 +76,7 @@ public class ShiwanM2CancelConfirmDialogController {
      */
     public void setInfo(boolean modeAll, int execCount, int totalRelations,
                         int skipCount, List<String> uploadedCodes, String password) {
-        this.correctPassword = password;
+        this.correctPassword = password != null ? password : "";
 
         infoScopeLabel.setText("取消范围：" + (modeAll ? "全部解除" : "只解一层"));
         infoExecLabel.setText("本次将执行 " + execCount + " 个可解除项，共涉及 " + totalRelations + " 条关联");
@@ -105,12 +105,16 @@ public class ShiwanM2CancelConfirmDialogController {
         boolean showing = plainField.isVisible();
         if (showing) {
             passwordField.setText(plainField.getText());
-            passwordField.setVisible(true);  passwordField.setManaged(true);
-            plainField.setVisible(false);    plainField.setManaged(false);
+            passwordField.setVisible(true);
+            passwordField.setManaged(true);
+            plainField.setVisible(false);
+            plainField.setManaged(false);
         } else {
             plainField.setText(passwordField.getText());
-            plainField.setVisible(true);     plainField.setManaged(true);
-            passwordField.setVisible(false); passwordField.setManaged(false);
+            plainField.setVisible(true);
+            plainField.setManaged(true);
+            passwordField.setVisible(false);
+            passwordField.setManaged(false);
         }
         refreshCancelPwdEyeIcon();
     }
