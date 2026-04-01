@@ -554,6 +554,7 @@ public class ShiwanM2CancelAssociationController {
             stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             stage.setScene(new javafx.scene.Scene(root));
             stage.setResizable(false);
+            stage.setOnShown(e -> ctrl.focusPasswordField());
             stage.showAndWait();
 
             return ctrl.isConfirmed();
