@@ -182,7 +182,8 @@ public class M1TCodeSyncService {
         // ---- 插入语句（目标：2号机 MySQL → CodeRelationUpload） ----
         // 字段映射：T_Code.BoxCode → MediumSerialNumber(箱码), T_Code.BagCode → SmallSerialNumber(盒码)
         // BigSerialNumber/OrderNo/ProductNO 留空，待盒箱关联成功后由 ShiwanM2BoxCaseService 回填
-        // 重复判断规则：Medium+Small 均重复 → status=5（重码）；仅一个重复 → status=4（待剔除）；均不重复 → status=0
+        // 重复判断规则：仅判断 Small(瓶码) 与 CodeRelationUpload 是否重复；
+        // 若重复则 status=4（待剔除），否则 status=0。
         String insertSql =
                 "INSERT INTO CodeRelationUpload (" +
                         "BiggerSerialNumber, BigSerialNumber, MediumSerialNumber, SmallSerialNumber, " +
@@ -195,24 +196,13 @@ public class M1TCodeSyncService {
         String tagNo = "";
         int insertedCount = 0;
         int status4Count = 0;
-        int status5Count = 0;
-
-        // 判断每条记录的重复状态，决定插入时的 status
+        // 判断每条记录的重复状态，决定插入时的 status（不再判断 Medium/盒码重复）
         List<TCodeRowWithStatus> rowsToInsert = new ArrayList<>();
         for (TCodeRow row : rows) {
-            boolean mediumExists = mediumCodeExists(row.boxCode);
             boolean smallExists  = smallCodeExists(row.bagCode);
             int status;
             String msg;
-            if (mediumExists && smallExists) {
-                status = 5;
-                msg = "同步重复码(盒码+瓶码均重复)";
-                status5Count++;
-            } else if (mediumExists) {
-                status = 4;
-                msg = "同步重复码(盒码重复)";
-                status4Count++;
-            } else if (smallExists) {
+            if (smallExists) {
                 status = 4;
                 msg = "同步重复码(瓶码重复)";
                 status4Count++;
@@ -223,9 +213,9 @@ public class M1TCodeSyncService {
             rowsToInsert.add(new TCodeRowWithStatus(row, status, msg));
         }
 
-        if (status4Count > 0 || status5Count > 0) {
-            log.info("1号机 T_Code 同步 [重复处理] 本批检测到重复码：status=4({}) status=5({})",
-                    status4Count, status5Count);
+        if (status4Count > 0) {
+            log.info("1号机 T_Code 同步 [重复处理] 本批检测到重复码：status=4({})",
+                    status4Count);
         }
 
         try {
@@ -244,7 +234,7 @@ public class M1TCodeSyncService {
                     ps.setInt(8, 0);
                     ps.setString(9, productNo);      // ProductNO（盒箱关联时回填）
                     ps.setString(10, orderNo);       // OrderNo（盒箱关联时回填）
-                    ps.setInt(11, rws.status);       // status=0/4/5 按重复情况决定
+                    ps.setInt(11, rws.status);       // status=0/4 按重复情况决定
                     ps.setString(12, tagNo);
                     ps.setInt(13, 0);
                     ps.setInt(14, 1);
@@ -286,14 +276,13 @@ public class M1TCodeSyncService {
         }
 
         M1SyncCursorStore.saveLastSyncedSerialNo(maxSerialNo);
-        log.info("1号机 T_Code 同步 [结果] 本批读取 {} 条，写入 {} 条（含 status=4:{} status=5:{}），游标更新至 SerialNo={}",
-                rows.size(), insertedCount, status4Count, status5Count, maxSerialNo);
+        log.info("1号机 T_Code 同步 [结果] 本批读取 {} 条，写入 {} 条（含 status=4:{}），游标更新至 SerialNo={}",
+                rows.size(), insertedCount, status4Count, maxSerialNo);
 
         // 推送同步结果事件供前端轮询
         if (insertedCount > 0) {
             StringBuilder msg = new StringBuilder("本次成功同步了 ").append(insertedCount).append(" 条瓶盒数据");
             if (status4Count > 0) msg.append("，其中 ").append(status4Count).append(" 条标记为待剔除");
-            if (status5Count > 0) msg.append("，其中 ").append(status5Count).append(" 条标记为重码");
             pushSyncEvent("SYNC_RESULT", msg.toString());
         }
 
@@ -304,15 +293,6 @@ public class M1TCodeSyncService {
         }
         List<TCodeRow> hotPassedRows = checkHotTableAndMarkStatus4(normalRows);
         checkColdTableAndMarkStatus4(hotPassedRows);
-    }
-
-    /** 盒码（MediumSerialNumber）是否已存在于 CodeRelationUpload（IsDel=0）。 */
-    private boolean mediumCodeExists(String mediumCode) {
-        if (mediumCode == null || mediumCode.trim().isEmpty()) return false;
-        Long cnt = jdbcTemplate.queryForObject(
-                "SELECT COUNT(1) FROM CodeRelationUpload WHERE IsDel = 0 AND MediumSerialNumber = ?",
-                Long.class, mediumCode);
-        return cnt != null && cnt > 0;
     }
 
     /** 瓶码（SmallSerialNumber）是否已存在于 CodeRelationUpload（IsDel=0）。 */

@@ -221,7 +221,7 @@ public class ShiwanM2BoxCaseService {
             syncUnpalletProductNo(orderNo.trim(), useProductNo);
             // 中标码包热表校验（错误信息含"中标码包"，供 parseBoxRejectReason 识别为"中标不通过"）
             if (!isCodeInPackage(boxCode, 2)) {
-                return ApiResult.error(400, "盒码不在中标码包热表中：" + boxCode);
+                return ApiResult.error(400, "盒码不在中标码包中：" + boxCode);
             }
             Integer total = jdbcTemplate.queryForObject(
                     "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber = ? AND IsDel = 0 " +
