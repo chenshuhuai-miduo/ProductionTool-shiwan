@@ -292,6 +292,7 @@ public class ShiwanM2BoxCaseService {
                     normalizedBoxCodes.toArray());
 
             Map<String, Set<String>> boxBottleSetMap = new HashMap<>();
+            Map<String, Integer> boxBottleNonEmptyCountMap = new HashMap<>();
             Map<String, String> boxLinkedCaseMap = new HashMap<>();
             for (Map<String, Object> row : verifyRows) {
                 String boxCode = toStr(row.get("MediumSerialNumber"));
@@ -299,6 +300,8 @@ public class ShiwanM2BoxCaseService {
                 String bottleCode = toStr(row.get("SmallSerialNumber"));
                 if (!bottleCode.isEmpty()) {
                     boxBottleSetMap.computeIfAbsent(boxCode, k -> new HashSet<>()).add(bottleCode);
+                    boxBottleNonEmptyCountMap.put(boxCode,
+                            boxBottleNonEmptyCountMap.getOrDefault(boxCode, 0) + 1);
                 }
                 String linkedCase = toStr(row.get("BigSerialNumber"));
                 if (!linkedCase.isEmpty()) {
@@ -311,7 +314,9 @@ public class ShiwanM2BoxCaseService {
                 if (bottleCnt < requiredRowsPerBox) {
                     return ApiResult.error(400, "盒码 " + boxCode + " 的关联瓶码不足6条");
                 }
-                if (bottleCnt > requiredRowsPerBox) {
+                // 超码规则：按“非空且不去重”的瓶码条数判定，任意盒 >6 即拦截。
+                int nonEmptyBottleRows = boxBottleNonEmptyCountMap.getOrDefault(boxCode, 0);
+                if (nonEmptyBottleRows > requiredRowsPerBox) {
                     return ApiResult.error(400, "盒码 " + boxCode + " 的关联瓶码超过6条");
                 }
                 String linkedCase = boxLinkedCaseMap.get(boxCode);
@@ -1102,9 +1107,10 @@ public class ShiwanM2BoxCaseService {
 
         // 1. 垛码（VirtualSerialNumber）
         if (countActiveBy("VirtualSerialNumber", c) > 0) {
-            boolean uploaded = isPalletUploaded(c);
+            int uploadStatus = queryCancelUploadStatus("PALLET", c);
+            boolean uploaded = uploadStatus == 1;
             r.put("codeType", "PALLET");
-            r.put("cancelable", true);
+            r.put("cancelable", !(uploadStatus == 1 || uploadStatus == 3));
             r.put("parentCode", null);
             Long caseCnt = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT BigSerialNumber) FROM CodeRelationUpload " +
@@ -1114,19 +1120,20 @@ public class ShiwanM2BoxCaseService {
             r.put("affectedAll", affected);
             r.put("palletCode", c);
             r.put("isUploaded", uploaded);
-            if (uploaded) {
-                r.put("message", "该垛已上传云端，执行时将先取消云端整垛数据");
+            if (uploadStatus == 1 || uploadStatus == 3) {
+                r.put("message", "码关系已上传，请联系客服进行解除");
             }
             return r;
         }
 
         // 2. 箱码（BigSerialNumber）
         if (countActiveBy("BigSerialNumber", c) > 0) {
+            int uploadStatus = queryCancelUploadStatus("CASE", c);
             r.put("codeType", "CASE");
             String parentPallet = queryFirst(
                     "SELECT VirtualSerialNumber FROM CodeRelationUpload " +
                     "WHERE BigSerialNumber=? AND IsDel=0 AND VirtualSerialNumber!='' LIMIT 1", c);
-            r.put("cancelable", parentPallet == null);
+            r.put("cancelable", parentPallet == null && !(uploadStatus == 1 || uploadStatus == 3));
             r.put("parentCode", parentPallet);
             Long boxCnt = jdbcTemplate.queryForObject(
                     "SELECT COUNT(DISTINCT MediumSerialNumber) FROM CodeRelationUpload " +
@@ -1139,16 +1146,20 @@ public class ShiwanM2BoxCaseService {
             r.put("affectedAll", boxes + rows);
             r.put("palletCode", parentPallet);
             r.put("isUploaded", parentPallet != null && isPalletUploaded(parentPallet));
+            if (uploadStatus == 1 || uploadStatus == 3) {
+                r.put("message", "码关系已上传，请联系客服进行解除");
+            }
             return r;
         }
 
         // 3. 盒码（MediumSerialNumber）
         if (countActiveBy("MediumSerialNumber", c) > 0) {
+            int uploadStatus = queryCancelUploadStatus("BOX", c);
             r.put("codeType", "BOX");
             String parentCase = queryFirst(
                     "SELECT BigSerialNumber FROM CodeRelationUpload " +
                     "WHERE MediumSerialNumber=? AND IsDel=0 AND BigSerialNumber!='' LIMIT 1", c);
-            r.put("cancelable", parentCase == null);
+            r.put("cancelable", parentCase == null && !(uploadStatus == 1 || uploadStatus == 3));
             r.put("parentCode", parentCase);
             Long bottleCnt = jdbcTemplate.queryForObject(
                     "SELECT COUNT(1) FROM CodeRelationUpload WHERE MediumSerialNumber=? AND IsDel=0", Long.class, c);
@@ -1160,6 +1171,9 @@ public class ShiwanM2BoxCaseService {
                     "WHERE MediumSerialNumber=? AND IsDel=0 AND VirtualSerialNumber!='' LIMIT 1", c);
             r.put("palletCode", palletForBox);
             r.put("isUploaded", palletForBox != null && isPalletUploaded(palletForBox));
+            if (uploadStatus == 1 || uploadStatus == 3) {
+                r.put("message", "码关系已上传，请联系客服进行解除");
+            }
             return r;
         }
 
@@ -1222,12 +1236,18 @@ public class ShiwanM2BoxCaseService {
             return ApiResult.error(404, "该码未在关联表中，无需取消关联：" + c);
         }
 
-        // ② 验证无上级
+        // ② 上传状态拦截：上传中(3)或上传成功(1)均禁止取消关联
+        int uploadStatus = queryCancelUploadStatus(codeType, c);
+        if (uploadStatus == 1 || uploadStatus == 3) {
+            return ApiResult.error(400, "码关系已上传，请联系客服进行解除");
+        }
+
+        // ③ 验证无上级
         if (parentCode != null) {
             return ApiResult.error(400, "该码已关联至上级码 " + parentCode + "，请先取消上级");
         }
 
-        // ③ 垛码若已上传：先取消云端整垛数据，成功后再执行本地取消
+        // ④ 垛码若已上传：先取消云端整垛数据，成功后再执行本地取消
         if ("PALLET".equals(codeType) && palletCode != null && isPalletUploaded(palletCode)) {
             ApiResult<Boolean> cloudResult = callCloudUnbindForPallet(palletCode);
             if (cloudResult != null && (cloudResult.getCode() == null || cloudResult.getCode() != 200)) {
@@ -1236,7 +1256,7 @@ public class ShiwanM2BoxCaseService {
             }
         }
 
-        // ④ 本地事务执行取消
+        // ⑤ 本地事务执行取消
         final String codeTypeFinal  = codeType;
         final boolean modeAllFinal  = modeAll;
         final Map<String, Object>[] resultHolder = new Map[]{null};
@@ -1412,6 +1432,37 @@ public class ShiwanM2BoxCaseService {
                 "SELECT MAX(IsUpload) FROM CodeRelationUpload WHERE VirtualSerialNumber=? AND IsDel=0",
                 Long.class, palletCode);
         return maxUpload != null && maxUpload.intValue() == 1;
+    }
+
+    /**
+     * 取消关联场景查询码关系上传状态：
+     * IsUpload=1（上传成功）/3（上传中）需要拦截取消。
+     */
+    private int queryCancelUploadStatus(String codeType, String code) {
+        if (code == null || code.trim().isEmpty() || codeType == null) {
+            return 0;
+        }
+        String column;
+        switch (codeType) {
+            case "PALLET":
+                column = "VirtualSerialNumber";
+                break;
+            case "CASE":
+                column = "BigSerialNumber";
+                break;
+            case "BOX":
+                column = "MediumSerialNumber";
+                break;
+            case "BOTTLE":
+                column = "SmallSerialNumber";
+                break;
+            default:
+                return 0;
+        }
+        Long maxUpload = jdbcTemplate.queryForObject(
+                "SELECT MAX(IsUpload) FROM CodeRelationUpload WHERE " + column + "=? AND IsDel=0",
+                Long.class, code.trim());
+        return maxUpload == null ? 0 : maxUpload.intValue();
     }
 
     /** 查询指定列的活跃记录数（IsDel=0）。 */
@@ -2444,9 +2495,9 @@ public class ShiwanM2BoxCaseService {
                     formatUploadLogLine(logTime, palletCode, boxCount, "上传中…"),
                     UploadLogBus.Color.BLUE);
 
-            // ④ 10 秒后开始轮询上传结果（最多 5 次）
+            // ④ 10 秒后开始轮询上传结果（处理中则持续轮询）
             pollScheduler.schedule(
-                    () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, mode, 1),
+                    () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, mode),
                     10, TimeUnit.SECONDS);
 
         } catch (Exception e) {
@@ -2470,11 +2521,10 @@ public class ShiwanM2BoxCaseService {
     /**
      * 轮询 GetSyncCodeAndVirtualRelationResult 接口，根据结果更新 IsUpload 并刷新实时上传区。
      * return_msg=处理成功 → IsUpload=1（已上传）；
-     * return_msg=虚拟垛正...在处理中 → 每 10 秒重试一次，最多 5 次；
-     * 其余结果或重试上限耗尽 → IsUpload=2（上传失败）。
+     * return_msg=虚拟垛正...在处理中 → 每 10 秒持续轮询，直到返回非处理中结果；
+     * 其余结果 → IsUpload=2（上传失败）。
      */
-    private void pollAndUpdatePalletStatus(String palletCode, String orderNo, int boxCount, String uploadMode, int attemptNo) {
-        final int maxAttempts = 5;
+    private void pollAndUpdatePalletStatus(String palletCode, String orderNo, int boxCount, String uploadMode) {
         try {
             ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
             if (cfg == null || cfg.getApi() == null) {
@@ -2525,26 +2575,11 @@ public class ShiwanM2BoxCaseService {
                 saveUploadOperateLog(uploadMode, palletCode, orderNo, boxCount, "成功", "上传成功");
             } else if (isVirtualPalletProcessing(returnMsg)) {
                 // return_code!=0 且 return_msg 为"虚拟垛XXX正在处理中"，云端仍在处理，继续等待重试
-                if (attemptNo < maxAttempts) {
-                    int nextAttempt = attemptNo + 1;
-                    log.info("[垛标结果查询] 垛 {} 第 {}/{} 次查询返回处理中，10 秒后重试。return_code={} msg={}",
-                            palletCode, attemptNo, maxAttempts, returnCode, returnMsg);
-                    pollScheduler.schedule(
-                            () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, uploadMode, nextAttempt),
-                            10, TimeUnit.SECONDS);
-                } else {
-                    // 已达最大重试次数（5次×10秒=50秒），仍为处理中，视作失败
-                    String failMsg = "上传结果查询超时（连续" + maxAttempts + "次返回处理中）：" + returnMsg;
-                    updateUploadFailMsg(palletCode, failMsg);
-                    log.warn("[垛标结果查询] 垛 {} 查询超时失败: {}", palletCode, failMsg);
-                    UploadLogBus.log(
-                            formatUploadLogLine(logTime, palletCode, boxCount,
-                                    "上传失败（" + failMsg + "）"),
-                            UploadLogBus.Color.RED);
-                    UploadLogBus.firePalletEvent(palletCode, boxCount,
-                            UploadLogBus.PalletUploadStatus.FAILED, failMsg);
-                    saveUploadOperateLog(uploadMode, palletCode, orderNo, boxCount, "失败", failMsg);
-                }
+                log.info("[垛标结果查询] 垛 {} 返回处理中，10 秒后继续轮询。return_code={} msg={}",
+                        palletCode, returnCode, returnMsg);
+                pollScheduler.schedule(
+                        () -> pollAndUpdatePalletStatus(palletCode, orderNo, boxCount, uploadMode),
+                        10, TimeUnit.SECONDS);
             } else {
                 // return_code!=0 且 return_msg 不是处理中，直接视为失败
                 updateUploadFailMsg(palletCode, returnMsg);

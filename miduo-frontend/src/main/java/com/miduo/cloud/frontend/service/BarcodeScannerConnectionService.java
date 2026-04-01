@@ -232,8 +232,8 @@ public class BarcodeScannerConnectionService {
 
     /**
      * 扫码枪数据归一化：
-     * 仅保留最后一个斜杠 "/" 后的码值。
-     * 若不存在斜杠或斜杠后为空，则返回 null（不处理该条数据）。
+     * 优先保留最后一个斜杠 "/" 后的码值；
+     * 若不存在斜杠或斜杠后为空，则保留原始码值（trim 后）。
      */
     private String extractCodeAfterLastSlash(String raw) {
         if (raw == null) {
@@ -244,11 +244,11 @@ public class BarcodeScannerConnectionService {
             return null;
         }
         int idx = trimmed.lastIndexOf('/');
-        if (idx < 0 || idx >= trimmed.length() - 1) {
-            return null;
+        if (idx < 0) {
+            return trimmed;
         }
         String code = trimmed.substring(idx + 1).trim();
-        return code.isEmpty() ? null : code;
+        return code.isEmpty() ? trimmed : code;
     }
     
     /**

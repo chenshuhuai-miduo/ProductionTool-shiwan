@@ -302,7 +302,8 @@ public class M1TCodeSyncService {
         for (TCodeRowWithStatus rws : rowsToInsert) {
             if (rws.status == 0) normalRows.add(rws.row);
         }
-        checkHotTableAndMarkStatus4(normalRows);
+        List<TCodeRow> hotPassedRows = checkHotTableAndMarkStatus4(normalRows);
+        checkColdTableAndMarkStatus4(hotPassedRows);
     }
 
     /** 盒码（MediumSerialNumber）是否已存在于 CodeRelationUpload（IsDel=0）。 */
@@ -329,8 +330,8 @@ public class M1TCodeSyncService {
      * 2. 或 BagCode 不在 CodePackageItemHot(PackageType=1) 或 BoxCode 不在 CodePackageItemHot(PackageType=2)，
      * 则将 CodeRelationUpload 对应记录的 Status 更新为 4（待剔除），并在 Msg 字段记录原因。
      */
-    private void checkHotTableAndMarkStatus4(List<TCodeRow> rows) {
-        if (rows == null || rows.isEmpty()) return;
+    private List<TCodeRow> checkHotTableAndMarkStatus4(List<TCodeRow> rows) {
+        if (rows == null || rows.isEmpty()) return Collections.emptyList();
 
         ShiwanM2SettingsDto cfg = ShiwanM2SettingsFileLoader.load();
         int smallCodeDigits  = -1;
@@ -341,6 +342,7 @@ public class M1TCodeSyncService {
         }
 
         int markedCount = 0;
+        List<TCodeRow> passedRows = new ArrayList<>();
         for (TCodeRow row : rows) {
             try {
                 String rejectMsg = null;
@@ -376,6 +378,9 @@ public class M1TCodeSyncService {
                         log.debug("1号机同步校验不通过：bagCode={} boxCode={} 原因：{} → Status=4",
                                 row.bagCode, row.boxCode, msg);
                     }
+                } else {
+                    // 仅热表校验通过的数据继续进入冷表判重
+                    passedRows.add(row);
                 }
             } catch (Exception e) {
                 log.warn("1号机同步校验时发生异常 SerialNo={}: {}", row.serialNo, e.getMessage());
@@ -384,6 +389,94 @@ public class M1TCodeSyncService {
         if (markedCount > 0) {
             log.info("1号机 T_Code 同步 [校验] 本批共将 {} 条记录置为 Status=4（待剔除）", markedCount);
         }
+        return passedRows;
+    }
+
+    /**
+     * 对热表校验通过的数据执行冷表判重：
+     * 1) 先按盒码（PackageType=2）批量查询冷表；
+     * 2) 盒码未命中的记录再按瓶码（PackageType=1）批量查询冷表；
+     * 3) 命中任一冷表则置 Status=4。
+     */
+    private void checkColdTableAndMarkStatus4(List<TCodeRow> rows) {
+        if (rows == null || rows.isEmpty()) return;
+
+        Set<String> boxCodes = new LinkedHashSet<>();
+        for (TCodeRow row : rows) {
+            if (row != null && row.boxCode != null) {
+                String v = row.boxCode.trim();
+                if (!v.isEmpty()) boxCodes.add(v);
+            }
+        }
+        Set<String> coldBoxCodes = batchQueryColdCodeValues(2, boxCodes);
+
+        List<TCodeRow> needCheckBagRows = new ArrayList<>();
+        for (TCodeRow row : rows) {
+            String box = row == null || row.boxCode == null ? "" : row.boxCode.trim();
+            if (!coldBoxCodes.contains(box)) {
+                needCheckBagRows.add(row);
+            }
+        }
+
+        Set<String> bagCodes = new LinkedHashSet<>();
+        for (TCodeRow row : needCheckBagRows) {
+            if (row != null && row.bagCode != null) {
+                String v = row.bagCode.trim();
+                if (!v.isEmpty()) bagCodes.add(v);
+            }
+        }
+        Set<String> coldBagCodes = batchQueryColdCodeValues(1, bagCodes);
+
+        int markedCount = 0;
+        for (TCodeRow row : rows) {
+            String box = row == null || row.boxCode == null ? "" : row.boxCode.trim();
+            String bag = row == null || row.bagCode == null ? "" : row.bagCode.trim();
+            String rejectMsg = null;
+            if (!box.isEmpty() && coldBoxCodes.contains(box)) {
+                rejectMsg = "盒码已在冷表中（中标PackageType=2）";
+            } else if (!bag.isEmpty() && coldBagCodes.contains(bag)) {
+                rejectMsg = "瓶码已在冷表中（小标PackageType=1）";
+            }
+            if (rejectMsg != null) {
+                int affected = jdbcTemplate.update(
+                        "UPDATE CodeRelationUpload SET Status = 4, Msg = ? " +
+                        "WHERE MediumSerialNumber = ? AND SmallSerialNumber = ? AND IsDel = 0 AND Status = 0",
+                        rejectMsg, row.boxCode, row.bagCode);
+                if (affected > 0) {
+                    markedCount++;
+                    log.debug("1号机同步冷表判重命中：bagCode={} boxCode={} 原因：{} → Status=4",
+                            row.bagCode, row.boxCode, rejectMsg);
+                }
+            }
+        }
+        if (markedCount > 0) {
+            log.info("1号机 T_Code 同步 [冷表校验] 本批共将 {} 条记录置为 Status=4", markedCount);
+        }
+    }
+
+    /** 批量查询冷表命中的码值集合（分批 IN，避免 SQL 过长）。 */
+    private Set<String> batchQueryColdCodeValues(int packageType, Set<String> codeValues) {
+        if (codeValues == null || codeValues.isEmpty()) {
+            return Collections.emptySet();
+        }
+        final int batchSize = 200;
+        List<String> all = new ArrayList<>(codeValues);
+        Set<String> found = new HashSet<>();
+        for (int i = 0; i < all.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, all.size());
+            List<String> batch = all.subList(i, end);
+            String placeholders = String.join(",", Collections.nCopies(batch.size(), "?"));
+            List<Object> args = new ArrayList<>();
+            args.add(packageType);
+            args.addAll(batch);
+            List<String> part = jdbcTemplate.queryForList(
+                    "SELECT CodeValue FROM CodePackageItemCold WHERE PackageType = ? AND CodeValue IN (" + placeholders + ")",
+                    String.class, args.toArray());
+            if (part != null && !part.isEmpty()) {
+                found.addAll(part);
+            }
+        }
+        return found;
     }
 
     private boolean isInHot(int packageType, String codeValue) {

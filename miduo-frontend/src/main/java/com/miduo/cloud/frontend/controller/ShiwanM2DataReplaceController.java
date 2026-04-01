@@ -84,12 +84,6 @@ public class ShiwanM2DataReplaceController {
         if (c.isEmpty()) return;
         Platform.runLater(() -> {
             if (origCodeField == null || newCodeField == null) return;
-            TextField target = resolveTargetCodeField();
-            if (target != null) {
-                target.setText(c);
-                return;
-            }
-
             String oldVal = origCodeField.getText() == null ? "" : origCodeField.getText().trim();
             String newVal = newCodeField.getText() == null ? "" : newCodeField.getText().trim();
             if (oldVal.isEmpty()) {
