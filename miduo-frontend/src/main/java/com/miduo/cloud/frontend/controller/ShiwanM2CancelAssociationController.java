@@ -6,6 +6,7 @@ import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
+import com.miduo.cloud.frontend.util.FxModalOverlayUtil;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
@@ -550,9 +551,12 @@ public class ShiwanM2CancelAssociationController {
             ctrl.setInfo(modeAll, execCount, totalRelations, skipCount, uploadedCodes, FIXED_PASSWORD);
 
             javafx.stage.Stage stage = new javafx.stage.Stage();
-            stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
             stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            stage.setScene(new javafx.scene.Scene(root));
+            javafx.stage.Window cancelOwner = cancelAssocDialogOwner();
+            if (cancelOwner != null) {
+                stage.initOwner(cancelOwner);
+            }
+            FxModalOverlayUtil.applyOverlayScene(stage, (Region) root, cancelOwner, new Insets(20));
             stage.setResizable(false);
             stage.showAndWait();
 

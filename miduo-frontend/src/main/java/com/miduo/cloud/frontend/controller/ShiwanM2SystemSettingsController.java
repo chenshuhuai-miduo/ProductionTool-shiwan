@@ -6,6 +6,7 @@ import com.miduo.cloud.frontend.config.ShiwanM2Settings;
 import com.miduo.cloud.frontend.config.ShiwanM2SettingsStore;
 import com.miduo.cloud.frontend.service.DeviceConnectionManager;
 import com.miduo.cloud.frontend.util.FxDialog;
+import com.miduo.cloud.frontend.util.FxModalOverlayUtil;
 import com.miduo.cloud.frontend.util.FxToast;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
@@ -18,9 +19,10 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.layout.Region;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
@@ -33,7 +35,6 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -69,9 +70,6 @@ public class ShiwanM2SystemSettingsController implements Initializable {
     @FXML private Button closeBtn;
 
     /** 标题栏拖拽辅助变量 */
-    private double dragOffsetX;
-    private double dragOffsetY;
-
     // ==================== 主 TabPane ====================
     @FXML private TabPane mainTabPane;
 
@@ -732,8 +730,9 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             Stage dialogStage = new Stage();
             dialogStage.setTitle("添加IO设备");
             dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner(ioDeviceTable.getScene().getWindow());
-            dialogStage.setScene(new Scene(root));
+            javafx.stage.Window ioOwner = ioDeviceTable.getScene().getWindow();
+            dialogStage.initOwner(ioOwner);
+            FxModalOverlayUtil.applyOverlayScene(dialogStage, (Region) root, ioOwner, new Insets(20));
             dialogStage.showAndWait();
 
             if (dialogController.isConfirmed()) {
@@ -946,8 +945,9 @@ public class ShiwanM2SystemSettingsController implements Initializable {
             Stage dialogStage = new Stage();
             dialogStage.setTitle("编辑IO设备");
             dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner(ioDeviceTable.getScene().getWindow());
-            dialogStage.setScene(new Scene(root));
+            javafx.stage.Window ioEditOwner = ioDeviceTable.getScene().getWindow();
+            dialogStage.initOwner(ioEditOwner);
+            FxModalOverlayUtil.applyOverlayScene(dialogStage, (Region) root, ioEditOwner, new Insets(20));
             dialogStage.showAndWait();
 
             if (dialogController.isConfirmed()) {
@@ -1392,21 +1392,7 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         return u.replaceAll("/+$", "");
     }
 
-    // ==================== 自定义标题栏（拖拽 & 关闭） ====================
-
-    @FXML
-    private void onTitleBarPressed(MouseEvent e) {
-        Stage stage = (Stage) mainTabPane.getScene().getWindow();
-        dragOffsetX = e.getScreenX() - stage.getX();
-        dragOffsetY = e.getScreenY() - stage.getY();
-    }
-
-    @FXML
-    private void onTitleBarDragged(MouseEvent e) {
-        Stage stage = (Stage) mainTabPane.getScene().getWindow();
-        stage.setX(e.getScreenX() - dragOffsetX);
-        stage.setY(e.getScreenY() - dragOffsetY);
-    }
+    // ==================== 自定义标题栏（关闭） ====================
 
     @FXML
     private void onClose() {

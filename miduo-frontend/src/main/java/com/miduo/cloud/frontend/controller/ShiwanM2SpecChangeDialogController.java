@@ -18,22 +18,10 @@ public class ShiwanM2SpecChangeDialogController {
     @FXML private Label     savedSpecLabel;
     @FXML private Label     currentSpecLabel;
 
-    private double  dragOffsetX;
-    private double  dragOffsetY;
     private boolean confirmed = false;
 
     @FXML
     private void initialize() {
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
-
         SvgIconLoader.loadInto(specWarnIconPane, SvgIconLoader.ICON_WARN, 18, Color.web("#D97706"));
     }
 

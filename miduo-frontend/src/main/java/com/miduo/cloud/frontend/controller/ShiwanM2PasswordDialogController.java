@@ -25,22 +25,8 @@ public class ShiwanM2PasswordDialogController {
     private boolean showingPlain = false;
     private boolean confirmed    = false;
 
-    /** 拖拽偏移量 */
-    private double dragOffsetX, dragOffsetY;
-
     @FXML
     private void initialize() {
-        // 整卡片可拖拽
-        rootBox.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        rootBox.setOnMouseDragged(e -> {
-            Stage stage = (Stage) rootBox.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
-
         // 输入框聚焦时边框变蓝
         String focusedBorder = "-fx-border-color: #2563EB; -fx-border-width: 2;";
         String normalBorder  = "-fx-border-color: #D1D5DB; -fx-border-width: 1.5;";

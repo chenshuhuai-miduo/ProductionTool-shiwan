@@ -44,8 +44,6 @@ public class ShiwanM2PalletListController implements Initializable {
     @FXML private Button nextBtn;
     @FXML private StackPane loadingOverlay;
 
-    private double dragOffsetX, dragOffsetY;
-
     private final ObservableList<PalletRow> rows = FXCollections.observableArrayList();
     private String startDate = "";
     private String endDate = "";
@@ -56,17 +54,6 @@ public class ShiwanM2PalletListController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // 拖拽支持
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
-
         palletTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         palletCodeCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().palletCode));

@@ -37,20 +37,8 @@ public class ShiwanM2StartCaptureConfirmDialogController {
 
     private boolean confirmed = false;
 
-    /** 拖拽偏移量 */
-    private double dragOffsetX, dragOffsetY;
-
     @FXML
     private void initialize() {
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
         closeBtn_hoverEffect();
     }
 

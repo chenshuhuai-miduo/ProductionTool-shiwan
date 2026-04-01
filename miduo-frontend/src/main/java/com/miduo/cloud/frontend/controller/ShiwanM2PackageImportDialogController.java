@@ -42,9 +42,6 @@ public class ShiwanM2PackageImportDialogController {
     private File selectedFile;
     private Runnable onImportSuccess;
 
-    /** 拖拽偏移量 */
-    private double dragOffsetX, dragOffsetY;
-
     @FXML
     public void initialize() {
         packageTypeCombo.getItems().setAll("盖外码小标", "盒外码中标", "箱外码大标");
@@ -56,17 +53,6 @@ public class ShiwanM2PackageImportDialogController {
             if (newVal != null && newVal.length() > 50) {
                 remarkField.setText(oldVal);
             }
-        });
-
-        // 标题栏拖拽
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
         });
     }
 

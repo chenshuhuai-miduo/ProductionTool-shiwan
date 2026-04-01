@@ -75,20 +75,9 @@ public class ShiwanM2RejectRecordsController implements Initializable {
     private int page = 1;
     private int pageSize = 20;
     private int pages = 1;
-    private double dragOffsetX, dragOffsetY;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
-
         initEventTable();
         initDetailTable();
 

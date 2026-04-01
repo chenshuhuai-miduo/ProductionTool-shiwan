@@ -60,21 +60,9 @@ public class ShiwanM2PackageViewCodesDialogController {
     private int currentPage = 1;
     private int totalPages = 1;
     private int pageSize = 20;
-    private double dragOffsetX, dragOffsetY;
 
     @FXML
     public void initialize() {
-        // 拖拽支持
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = getStage();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
-
         codeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         codeValueColumn.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().codeValue));

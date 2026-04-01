@@ -19,21 +19,10 @@ public class ShiwanM2ReplaceConfirmDialogController {
     @FXML private StackPane headerWarnIconPane;
     @FXML private StackPane footerWarnIconPane;
 
-    private double  dragOffsetX, dragOffsetY;
     private boolean confirmed = false;
 
     @FXML
     private void initialize() {
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
-
         SvgIconLoader.loadInto(headerWarnIconPane, SvgIconLoader.ICON_WARN, 20, Color.web("#DC2626"));
         SvgIconLoader.loadInto(footerWarnIconPane, SvgIconLoader.ICON_WARN, 18, Color.web("#DC2626"));
     }
