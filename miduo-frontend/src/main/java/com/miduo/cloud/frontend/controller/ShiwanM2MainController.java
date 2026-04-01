@@ -44,6 +44,7 @@ import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
+import com.miduo.cloud.frontend.util.FxModalOverlayUtil;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
@@ -63,6 +64,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
@@ -1201,11 +1203,13 @@ public class ShiwanM2MainController implements Initializable {
             ShiwanM2PasswordDialogController pwdCtrl = pwdLoader.getController();
 
             Stage pwdStage = new Stage();
-            pwdStage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
             pwdStage.initModality(Modality.APPLICATION_MODAL);
-            Scene pwdScene = new Scene(pwdRoot);
-            pwdScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
-            pwdStage.setScene(pwdScene);
+            Window pwdOwner = currentTimeLabel != null && currentTimeLabel.getScene() != null
+                    ? currentTimeLabel.getScene().getWindow() : null;
+            if (pwdOwner != null) {
+                pwdStage.initOwner(pwdOwner);
+            }
+            FxModalOverlayUtil.applyOverlayScene(pwdStage, (Region) pwdRoot, pwdOwner, new Insets(20));
             pwdStage.setResizable(false);
             pwdStage.showAndWait();
 
@@ -1221,11 +1225,13 @@ public class ShiwanM2MainController implements Initializable {
                 errCtrl.showError("密码错误，请重新输入");
 
                 Stage errStage = new Stage();
-                errStage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
                 errStage.initModality(Modality.APPLICATION_MODAL);
-                Scene errScene = new Scene(errRoot);
-                errScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
-                errStage.setScene(errScene);
+                Window errOwner = currentTimeLabel != null && currentTimeLabel.getScene() != null
+                        ? currentTimeLabel.getScene().getWindow() : null;
+                if (errOwner != null) {
+                    errStage.initOwner(errOwner);
+                }
+                FxModalOverlayUtil.applyOverlayScene(errStage, (Region) errRoot, errOwner, new Insets(20));
                 errStage.setResizable(false);
                 errStage.showAndWait();
 
@@ -1253,10 +1259,10 @@ public class ShiwanM2MainController implements Initializable {
             Parent root = loader.load();
 
             Stage settingsStage = new Stage();
-            settingsStage.initStyle(StageStyle.UNDECORATED);
             settingsStage.initModality(Modality.WINDOW_MODAL);
-            settingsStage.initOwner(currentTimeLabel.getScene().getWindow());
-            settingsStage.setScene(new Scene(root));
+            Window settingsOwner = currentTimeLabel.getScene().getWindow();
+            settingsStage.initOwner(settingsOwner);
+            FxModalOverlayUtil.applyOverlayScene(settingsStage, (Region) root, settingsOwner, new Insets(20));
             settingsStage.setResizable(false);
             settingsStage.showAndWait();
             // 设置保存后立即刷新 Tab 显示（响应页面配置开关变更）
@@ -1304,13 +1310,10 @@ public class ShiwanM2MainController implements Initializable {
             Parent root = loader.load();
 
             Stage helpStage = new Stage();
-            helpStage.initStyle(StageStyle.TRANSPARENT);
             helpStage.initModality(Modality.WINDOW_MODAL);
-            helpStage.initOwner(currentTimeLabel.getScene().getWindow());
+            Window helpOwner = currentTimeLabel.getScene().getWindow();
+            helpStage.initOwner(helpOwner);
             helpStage.setResizable(false);
-
-            ShiwanM2HelpController ctrl = loader.getController();
-            ctrl.initDrag(helpStage);
 
             DropShadow shadow = new DropShadow();
             shadow.setColor(Color.web("#000000", 0.15));
@@ -1318,19 +1321,7 @@ public class ShiwanM2MainController implements Initializable {
             shadow.setOffsetY(8);
             root.setEffect(shadow);
 
-            StackPane wrapper = new StackPane(root);
-            wrapper.setStyle("-fx-background-color: transparent;");
-            wrapper.setPadding(new Insets(20));
-
-            Scene scene = new Scene(wrapper);
-            scene.setFill(Color.TRANSPARENT);
-            helpStage.setScene(scene);
-
-            helpStage.setOnShown(e -> {
-                javafx.stage.Window owner = currentTimeLabel.getScene().getWindow();
-                helpStage.setX(owner.getX() + (owner.getWidth()  - helpStage.getWidth())  / 2.0);
-                helpStage.setY(owner.getY() + (owner.getHeight() - helpStage.getHeight()) / 2.0);
-            });
+            FxModalOverlayUtil.applyOverlayScene(helpStage, (Region) root, helpOwner, new Insets(20));
             helpStage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -1400,9 +1391,10 @@ public class ShiwanM2MainController implements Initializable {
     private Stage showProductLoadingStage(String message) {
         Stage loadingStage = new Stage();
         loadingStage.initModality(Modality.APPLICATION_MODAL);
-        loadingStage.initStyle(StageStyle.UNDECORATED);
-        if (mainTabPane != null && mainTabPane.getScene() != null) {
-            loadingStage.initOwner(mainTabPane.getScene().getWindow());
+        Window loadOwner = mainTabPane != null && mainTabPane.getScene() != null
+                ? mainTabPane.getScene().getWindow() : null;
+        if (loadOwner != null) {
+            loadingStage.initOwner(loadOwner);
         }
         javafx.scene.control.ProgressIndicator spinner = new javafx.scene.control.ProgressIndicator();
         spinner.setPrefSize(48, 48);
@@ -1412,10 +1404,12 @@ public class ShiwanM2MainController implements Initializable {
         VBox loadingBox = new VBox(12);
         loadingBox.setAlignment(Pos.CENTER);
         loadingBox.setPadding(new Insets(24));
+        loadingBox.setPrefWidth(280);
+        loadingBox.setPrefHeight(120);
         loadingBox.setStyle("-fx-background-color: white; -fx-border-color: #cccccc; -fx-border-width: 1;");
         loadingBox.getChildren().addAll(spinner, loadingLabel);
 
-        loadingStage.setScene(new Scene(loadingBox, 280, 120));
+        FxModalOverlayUtil.applyOverlayScene(loadingStage, loadingBox, loadOwner, new Insets(20));
         loadingStage.show();
         return loadingStage;
     }
@@ -1432,10 +1426,9 @@ public class ShiwanM2MainController implements Initializable {
             ShiwanM2ProductSelectDialogController ctrl = loader.getController();
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
-            Scene scene = new Scene(root);
-            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
-            stage.setScene(scene);
+            Window productOwner = mainTabPane.getScene().getWindow();
+            stage.initOwner(productOwner);
+            FxModalOverlayUtil.applyOverlayScene(stage, (Region) root, productOwner, new Insets(20));
             stage.showAndWait();
             java.util.Map<String, String> selected = ctrl.getSelectedProduct();
             if (selected != null) {
@@ -1665,9 +1658,12 @@ public class ShiwanM2MainController implements Initializable {
                         "1垛 " + m + " 箱，1箱 " + n + " 盒");
 
                 javafx.stage.Stage specStage = new javafx.stage.Stage();
-                specStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
                 specStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-                specStage.setScene(new Scene(specRoot));
+                Window specOwner = mainTabPane.getScene().getWindow();
+                if (specOwner != null) {
+                    specStage.initOwner(specOwner);
+                }
+                FxModalOverlayUtil.applyOverlayScene(specStage, (Region) specRoot, specOwner, new Insets(20));
                 specStage.setResizable(false);
                 specStage.showAndWait();
 
@@ -1871,9 +1867,12 @@ public class ShiwanM2MainController implements Initializable {
             dialogCtrl.setInfo(orderNo, productNo, product, m, n);
 
             javafx.stage.Stage dialogStage = new javafx.stage.Stage();
-            dialogStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
             dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            dialogStage.setScene(new Scene(root));
+            Window startCapOwner = mainTabPane.getScene().getWindow();
+            if (startCapOwner != null) {
+                dialogStage.initOwner(startCapOwner);
+            }
+            FxModalOverlayUtil.applyOverlayScene(dialogStage, (Region) root, startCapOwner, new Insets(20));
             dialogStage.setResizable(false);
             dialogStage.showAndWait();
 
@@ -2961,13 +2960,26 @@ public class ShiwanM2MainController implements Initializable {
         }
     }
 
+    /** 遮罩模态下内容高度变化时刷新根布局（替代 {@link Stage#sizeToScene()}）。 */
+    private static void refreshModalSceneLayout(Stage stage) {
+        Platform.runLater(() -> {
+            Scene sc = stage.getScene();
+            if (sc != null && sc.getRoot() != null) {
+                sc.getRoot().applyCss();
+                sc.getRoot().layout();
+            }
+        });
+    }
+
     @FXML
     private void onExtractUnfinished() {
         addOpLog(LocalDateTime.now().format(TIME_FMT) + "  [操作] 点击提取工单未成垛", LogType.INFO);
+        Window extractOwner = orderNumField.getScene() != null ? orderNumField.getScene().getWindow() : null;
         Stage dialog = new Stage();
-        dialog.initStyle(javafx.stage.StageStyle.UNDECORATED);
         dialog.initModality(Modality.WINDOW_MODAL);
-        dialog.initOwner(orderNumField.getScene().getWindow());
+        if (extractOwner != null) {
+            dialog.initOwner(extractOwner);
+        }
         dialog.setResizable(false);
 
         // ── 说明文字 ─────────────────────────────────────────────
@@ -3118,26 +3130,26 @@ public class ShiwanM2MainController implements Initializable {
                             resultArea.setManaged(true);
                             confirmBtn.setDisable(false);
                             confirmBtn.setStyle("-fx-background-color:#2563EB;-fx-border-width:0;-fx-background-radius:8;-fx-font-size:16px;-fx-font-weight:600;-fx-text-fill:white;-fx-font-family:'Microsoft YaHei';-fx-cursor:hand;-fx-min-height:40;-fx-min-width:90;");
-                            dialog.sizeToScene();
+                            refreshModalSceneLayout(dialog);
                         });
                     } else {
                         Platform.runLater(() -> {
                             errorLbl.setVisible(true);
                             errorLbl.setManaged(true);
-                            dialog.sizeToScene();
+                            refreshModalSceneLayout(dialog);
                         });
                     }
                 } catch (Exception ex) {
                     Platform.runLater(() -> {
                         errorLbl.setVisible(true);
                         errorLbl.setManaged(true);
-                        dialog.sizeToScene();
+                        refreshModalSceneLayout(dialog);
                     });
                 }
             }, ex -> Platform.runLater(() -> {
                 errorLbl.setVisible(true);
                 errorLbl.setManaged(true);
-                dialog.sizeToScene();
+                refreshModalSceneLayout(dialog);
             }));
         };
 
@@ -3228,19 +3240,14 @@ public class ShiwanM2MainController implements Initializable {
         titleBar.setAlignment(Pos.CENTER_LEFT);
         titleBar.setStyle("-fx-background-color:#F5F7FA;-fx-border-color:transparent transparent #E5E7EB transparent;-fx-border-width:0 0 1 0;-fx-padding:0 8 0 24;-fx-min-height:56;-fx-pref-height:56;");
 
-        // 拖拽支持
-        final double[] dragOffset = {0, 0};
-        titleBar.setOnMousePressed(e -> { dragOffset[0] = e.getSceneX(); dragOffset[1] = e.getSceneY(); });
-        titleBar.setOnMouseDragged(e -> { dialog.setX(e.getScreenX() - dragOffset[0]); dialog.setY(e.getScreenY() - dragOffset[1]); });
-
-        // ── 组装场景 ─────────────────────────────────────────────
+        // ── 组装场景（遮罩铺满 owner；全屏透明舞台不再拖拽移动）────────────────
         VBox root = new VBox(titleBar, content, bottomBar);
+        root.setPrefWidth(560);
         root.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EC;-fx-border-width:1;");
-        Scene scene = new Scene(root, 560, -1);
-        scene.getStylesheets().addAll(
+        FxModalOverlayUtil.applyOverlayScene(dialog, root, extractOwner, new Insets(20));
+        dialog.getScene().getStylesheets().addAll(
                 ShiwanM2MainController.class.getResource("/css/base-styles.css").toExternalForm(),
                 ShiwanM2MainController.class.getResource("/css/shiwan-m2-styles.css").toExternalForm());
-        dialog.setScene(scene);
         ShiwanM2ScannerConnectHelper.tryReconnectScannersAsync();
         dialog.show();
         boxCodeInput.requestFocus();

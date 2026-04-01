@@ -7,15 +7,17 @@ import com.miduo.cloud.entity.enums.ModuleNameEnum;
 import com.miduo.cloud.entity.enums.OperateTypeEnum;
 import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
+import com.miduo.cloud.frontend.util.FxModalOverlayUtil;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.OperateLogBuilder;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.layout.Region;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -26,7 +28,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 import java.time.LocalDateTime;
@@ -191,13 +192,12 @@ public class ShiwanM2DataReplaceController {
             ctrl.setReplaceInfo(orig, newCode, reason);
 
             Stage stage = new Stage();
-            stage.initStyle(StageStyle.UNDECORATED);
             stage.initModality(Modality.APPLICATION_MODAL);
             Window owner = replaceDialogOwner();
             if (owner != null) {
                 stage.initOwner(owner);
             }
-            stage.setScene(new Scene(root));
+            FxModalOverlayUtil.applyOverlayScene(stage, (Region) root, owner, new Insets(20));
             stage.setResizable(false);
             stage.showAndWait();
             return ctrl.isConfirmed();

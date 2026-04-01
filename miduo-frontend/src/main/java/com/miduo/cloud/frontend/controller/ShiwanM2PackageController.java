@@ -8,6 +8,7 @@ import com.miduo.cloud.entity.dto.codepackage.CodePackageOnlineImportResultVO;
 import com.miduo.cloud.entity.dto.codepackage.CodePackagePageQueryDTO;
 import com.miduo.cloud.frontend.util.FxDialog;
 import com.miduo.cloud.frontend.util.FxHelpDialog;
+import com.miduo.cloud.frontend.util.FxModalOverlayUtil;
 import com.miduo.cloud.frontend.util.HttpUtil;
 import com.miduo.cloud.frontend.util.ShiwanM2AlertUtil;
 import com.miduo.cloud.frontend.util.SvgIconLoader;
@@ -21,7 +22,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.layout.Region;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -35,7 +36,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 import java.net.URL;
@@ -309,10 +309,10 @@ public class ShiwanM2PackageController implements Initializable {
             controller.setOnImportSuccess(() -> loadPage(1));
 
             Stage stage = new Stage();
-            stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
-            stage.setScene(new Scene(root));
             stage.initModality(Modality.WINDOW_MODAL);
-            stage.initOwner(packageTable.getScene().getWindow());
+            javafx.stage.Window pkgOwner = packageTable.getScene().getWindow();
+            stage.initOwner(pkgOwner);
+            FxModalOverlayUtil.applyOverlayScene(stage, (Region) root, pkgOwner, new Insets(20));
             stage.setResizable(false);
             stage.showAndWait();
         } catch (Exception e) {
@@ -525,12 +525,13 @@ public class ShiwanM2PackageController implements Initializable {
                     row.status != null && row.status == 1);
 
             Stage stage = new Stage();
-            stage.initStyle(StageStyle.UNDECORATED);
             stage.initModality(Modality.WINDOW_MODAL);
-            stage.initOwner(packageTable.getScene().getWindow());
-            stage.setScene(new Scene(root));
-            stage.setMinWidth(640);
-            stage.setMinHeight(540);
+            javafx.stage.Window viewOwner = packageTable.getScene().getWindow();
+            stage.initOwner(viewOwner);
+            Region viewRoot = (Region) root;
+            viewRoot.setMinWidth(640);
+            viewRoot.setMinHeight(540);
+            FxModalOverlayUtil.applyOverlayScene(stage, viewRoot, viewOwner, new Insets(20));
             stage.setOnHidden(e -> controller.clearActiveScannerRouting());
             stage.showAndWait();
         } catch (Exception e) {

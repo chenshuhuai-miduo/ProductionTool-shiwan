@@ -31,22 +31,11 @@ public class ShiwanM2CancelConfirmDialogController {
     @FXML private StackPane     footerWarnIconPane;
     @FXML private Label         pwdErrorLabel;
 
-    private double  dragOffsetX;
-    private double  dragOffsetY;
     private boolean confirmed = false;
     private String  correctPassword = "123456";
 
     @FXML
     private void initialize() {
-        titleBar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            Stage stage = (Stage) titleBar.getScene().getWindow();
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
         passwordField.setOnAction(e -> onConfirm());
         plainField.setOnAction(e -> onConfirm());
 

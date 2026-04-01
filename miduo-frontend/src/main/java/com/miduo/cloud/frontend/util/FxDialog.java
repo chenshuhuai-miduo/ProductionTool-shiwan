@@ -2,7 +2,6 @@ package com.miduo.cloud.frontend.util;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
@@ -318,20 +317,15 @@ public class FxDialog {
     }
 
     private static void showStage(Stage stage, VBox root, Window owner) {
-        StackPane wrapper = new StackPane(root);
-        wrapper.setStyle("-fx-background-color: transparent;");
-        wrapper.setPadding(new Insets(20)); // 为阴影留出空间
-
-        Scene scene = new Scene(wrapper);
-        scene.setFill(Color.TRANSPARENT);
-        stage.setScene(scene);
-
+        stage.setScene(FxModalOverlayUtil.buildModalScene(root, owner, new Insets(20)));
         stage.setOnShown(e -> {
             if (owner != null) {
-                stage.setX(owner.getX() + (owner.getWidth()  - stage.getWidth())  / 2.0);
-                stage.setY(owner.getY() + (owner.getHeight() - stage.getHeight()) / 2.0);
+                FxModalOverlayUtil.sizeStageToOwner(stage, owner);
             }
         });
+        if (owner != null) {
+            FxModalOverlayUtil.sizeStageToOwner(stage, owner);
+        }
 
         stage.showAndWait();
     }

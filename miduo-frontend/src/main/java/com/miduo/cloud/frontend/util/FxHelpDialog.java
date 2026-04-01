@@ -6,14 +6,12 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -66,15 +64,10 @@ public class FxHelpDialog {
         Stage stage = buildStage(owner);
         VBox root = buildRoot(stage, title, items);
 
-        StackPane wrapper = new StackPane(root);
-        wrapper.setStyle("-fx-background-color: transparent;");
-        wrapper.setPadding(new Insets(20));
+        stage.setScene(FxModalOverlayUtil.buildModalScene(root, owner, new Insets(20)));
+        stage.setOnShown(e -> FxModalOverlayUtil.sizeStageToOwner(stage, owner));
+        FxModalOverlayUtil.sizeStageToOwner(stage, owner);
 
-        Scene scene = new Scene(wrapper);
-        scene.setFill(Color.TRANSPARENT);
-        stage.setScene(scene);
-
-        stage.setOnShown(e -> centerOnOwner(stage, owner));
         stage.showAndWait();
     }
 
@@ -139,16 +132,6 @@ public class FxHelpDialog {
                 "-fx-background-color: #2563EB;" +
                 "-fx-background-radius: 12 12 0 0;"
         );
-
-        double[] offset = {0, 0};
-        bar.setOnMousePressed(e -> {
-            offset[0] = e.getScreenX() - stage.getX();
-            offset[1] = e.getScreenY() - stage.getY();
-        });
-        bar.setOnMouseDragged(e -> {
-            stage.setX(e.getScreenX() - offset[0]);
-            stage.setY(e.getScreenY() - offset[1]);
-        });
 
         return bar;
     }
@@ -275,9 +258,4 @@ public class FxHelpDialog {
         return t;
     }
 
-    private static void centerOnOwner(Stage stage, Window owner) {
-        if (owner == null) return;
-        stage.setX(owner.getX() + (owner.getWidth()  - stage.getWidth())  / 2.0);
-        stage.setY(owner.getY() + (owner.getHeight() - stage.getHeight()) / 2.0);
-    }
 }

@@ -733,21 +733,6 @@ public class ShiwanM2HelpController implements Initializable {
         return row;
     }
 
-    // ==================== 拖拽支持 ====================
-
-    /** 由外部调用，绑定标题栏拖拽移动窗口 */
-    public void initDrag(Stage stage) {
-        double[] offset = {0, 0};
-        titleBar.setOnMousePressed(e -> {
-            offset[0] = e.getScreenX() - stage.getX();
-            offset[1] = e.getScreenY() - stage.getY();
-        });
-        titleBar.setOnMouseDragged(e -> {
-            stage.setX(e.getScreenX() - offset[0]);
-            stage.setY(e.getScreenY() - offset[1]);
-        });
-    }
-
     // ==================== 关闭事件 ====================
 
     @FXML
