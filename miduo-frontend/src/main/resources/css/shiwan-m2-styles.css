@@ -171,6 +171,28 @@
     -fx-font-size: 16px;
 }
 
+/* 回显选中项时与生产单号等 TextField 一致（-text-primary 见 theme-colors / input-styles） */
+.combo-box-base.shiwan-m2-product-combo > .list-cell:filled,
+.combo-box-base.shiwan-m2-product-combo > .list-cell:filled:focused {
+    -fx-text-fill: -text-primary;
+}
+
+/*
+ * 开始采集后 productComboBox.setDisable(true)，Modena 对禁用 ComboBox 会整体降透明度，文字会像「占位符」；
+ * 生产单号仅 setEditable(false) 不禁用，仍为深色。此处对齐为「只读展示」观感，控件仍不可点选。
+ */
+.combo-box-base.shiwan-m2-product-combo:disabled {
+    -fx-opacity: 1;
+    -fx-cursor: default;
+}
+.combo-box-base.shiwan-m2-product-combo:disabled > .list-cell:filled {
+    -fx-text-fill: -text-primary;
+}
+.combo-box-base.shiwan-m2-product-combo:disabled > .arrow-button,
+.combo-box-base.shiwan-m2-product-combo:disabled > .arrow-button .arrow {
+    -fx-opacity: 0.45;
+}
+
 .shiwan-m2-product-code-label {
     -fx-font-family: "Microsoft YaHei";
     -fx-font-size: 18px;
@@ -2153,90 +2175,75 @@
     -fx-text-fill: #1F2937;
 }
 
-/* ---- 剔除记录表格（支持自动换行、行高自适应） ---- */
-.sw2-wrap-table {
+/*
+ * 剔除记录弹窗双表：FXML 使用 sw2-table + sw2-reject-*（与码包管理同源，行间底边线稳定）。
+ * 旧 sw2-wrap-table 已不再使用；以下选择器须与 FXML styleClass 一致。
+ */
+.table-view.sw2-table.sw2-reject-master-table,
+.table-view.sw2-table.sw2-reject-detail-table {
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1px;
+    -fx-border-style: solid;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
     -fx-selection-bar: transparent;
     -fx-selection-bar-non-focused: transparent;
-    -fx-background-color: white;
-    -fx-border-color: #E5E7EB;
-    -fx-border-width: 1;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
 }
-.sw2-wrap-table .column-header-background {
-    -fx-background-color: #F3F4F6;
-    -fx-background-radius: 8 8 0 0;
+.table-view.sw2-table.sw2-reject-master-table .column-header-background,
+.table-view.sw2-table.sw2-reject-detail-table .column-header-background {
+    -fx-background-radius: 0;
 }
-.sw2-wrap-table .column-header {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #E5E7EB transparent;
-    -fx-border-width: 0 0 1 0;
-    -fx-size: 44px;
-}
-.sw2-wrap-table .column-header .label {
-    -fx-font-family: "Microsoft YaHei";
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #374151;
-    -fx-alignment: CENTER;
-}
-.sw2-wrap-table .filler {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #E5E7EB transparent;
-    -fx-border-width: 0 0 1 0;
-}
-/* 行：不固定高度，由 Cell.prefHeight() 动态计算 */
-.sw2-wrap-table .table-row-cell {
-    -fx-background-color: white;
-}
-.sw2-wrap-table .table-row-cell:odd {
+.table-view.sw2-table.sw2-reject-master-table .table-row-cell:odd,
+.table-view.sw2-table.sw2-reject-detail-table .table-row-cell:odd {
     -fx-background-color: #F9FAFB;
 }
-/* 单元格：无内边距（交给 Label 控制），只保留下边框 */
-.sw2-wrap-table .table-cell {
+.table-view.sw2-table.sw2-reject-master-table .table-row-cell:even,
+.table-view.sw2-table.sw2-reject-detail-table .table-row-cell:even {
+    -fx-background-color: white;
+}
+.table-view.sw2-table.sw2-reject-master-table .table-cell,
+.table-view.sw2-table.sw2-reject-detail-table .table-cell {
     -fx-border-color: transparent transparent #E5E7EB transparent;
-    -fx-border-width: 0 0 1 0;
-    -fx-background-color: transparent;
-    -fx-font-family: "Microsoft YaHei";
-    -fx-font-size: 16px;
-    -fx-text-fill: #1F2937;
-    -fx-padding: 0;
-    -fx-alignment: CENTER;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-style: solid;
+    -fx-text-overrun: clip;
 }
-.sw2-wrap-table .table-row-cell:selected {
-    -fx-background-color: #EFF6FF;
+.table-view.sw2-table.sw2-reject-master-table .table-cell .label,
+.table-view.sw2-table.sw2-reject-detail-table .table-cell .label {
+    -fx-text-overrun: clip;
 }
-.sw2-wrap-table .table-row-cell:odd:selected {
-    -fx-background-color: #EFF6FF;
+.table-view.sw2-table.sw2-reject-master-table .column-header,
+.table-view.sw2-table.sw2-reject-detail-table .column-header {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-style: solid;
 }
-.sw2-wrap-table .table-row-cell:selected .table-cell {
-    -fx-text-fill: #1F2937;
+.table-view.sw2-table.sw2-reject-master-table .column-header .label,
+.table-view.sw2-table.sw2-reject-detail-table .column-header .label {
+    -fx-text-overrun: clip;
 }
-
-/*
- * 与 .sw2-table 相同：table-styles.css 对任意 .table-view 选中格写了
- * .table-row-cell:selected .table-cell .text { -fx-fill: -text-primary; }
- * 会压过剔除记录表内自定义 Label 的红字，且换行后易残留。
- */
-.table-view.sw2-wrap-table .table-row-cell:selected .table-cell .text {
+.table-view.sw2-table.sw2-reject-master-table .table-row-cell:selected .table-cell,
+.table-view.sw2-table.sw2-reject-detail-table .table-row-cell:selected .table-cell {
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+}
+.table-view.sw2-table.sw2-reject-master-table .table-row-cell:selected .table-cell .text,
+.table-view.sw2-table.sw2-reject-detail-table .table-row-cell:selected .table-cell .text {
     -fx-fill: inherit;
 }
-
-/* 覆盖 table-styles：仅水平分隔线，不要列间竖线；表头文字不因列宽过窄被省略号截断 */
-.table-view.sw2-wrap-table .table-cell {
-    -fx-border-color: transparent transparent #E5E7EB transparent;
-    -fx-border-width: 0 0 1 0;
-    -fx-text-overrun: clip;
-}
-.table-view.sw2-wrap-table .table-cell .label {
-    -fx-text-overrun: clip;
-}
-.table-view.sw2-wrap-table .column-header {
-    -fx-border-color: transparent transparent #E5E7EB transparent;
-    -fx-border-width: 0 0 1 0;
-}
-.table-view.sw2-wrap-table .column-header .label {
-    -fx-text-overrun: clip;
+.table-view.sw2-table.sw2-reject-master-table .scroll-bar:horizontal,
+.table-view.sw2-table.sw2-reject-master-table .scroll-bar:horizontal .track,
+.table-view.sw2-table.sw2-reject-master-table .scroll-bar:horizontal .thumb,
+.table-view.sw2-table.sw2-reject-master-table .scroll-bar:horizontal .increment-button,
+.table-view.sw2-table.sw2-reject-master-table .scroll-bar:horizontal .decrement-button,
+.table-view.sw2-table.sw2-reject-detail-table .scroll-bar:horizontal,
+.table-view.sw2-table.sw2-reject-detail-table .scroll-bar:horizontal .track,
+.table-view.sw2-table.sw2-reject-detail-table .scroll-bar:horizontal .thumb,
+.table-view.sw2-table.sw2-reject-detail-table .scroll-bar:horizontal .increment-button,
+.table-view.sw2-table.sw2-reject-detail-table .scroll-bar:horizontal .decrement-button {
+    -fx-max-height: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    visibility: hidden;
 }
 
 /* ---- 剔除记录弹窗（Pencil 4J8s2 / P02-07） ---- */
@@ -2244,8 +2251,8 @@
     -fx-background-color: #F9FAFB;
     -fx-border-color: #E5E7EB;
     -fx-border-width: 1;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
     -fx-padding: 16;
     -fx-spacing: 10;
 }

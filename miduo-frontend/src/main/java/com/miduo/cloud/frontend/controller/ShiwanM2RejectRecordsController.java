@@ -38,6 +38,18 @@ import java.util.ResourceBundle;
  */
 public class ShiwanM2RejectRecordsController implements Initializable {
 
+    /**
+     * JDK11 + JavaFX17：可变行高且单元格使用自定义 Graphic 时，仅靠 CSS 的 table-cell 底边线常不显示；
+     * 使用内联样式保证行间分隔线，并在 layout/computePrefHeight 中预留 1px 底部，避免 Label 铺满盖住线。
+     */
+    private static final String REJECT_TABLE_CELL_GRID_STYLE =
+            "-fx-border-color: transparent transparent #E5E7EB transparent; -fx-border-width: 0 0 1px 0; -fx-border-style: solid;";
+    private static final int REJECT_CELL_BOTTOM_GRID_GAP = 1;
+
+    private static void applyRejectTableCellGridStyle(TableCell<?, ?> cell) {
+        cell.setStyle(REJECT_TABLE_CELL_GRID_STYLE);
+    }
+
     @FXML private HBox titleBar;
     @FXML private TextField caseCodeField;
     @FXML private TableView<EventRow> eventTable;
@@ -139,14 +151,16 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 setGraphic(label);
                 setText(null);
                 setPadding(Insets.EMPTY);
+                applyRejectTableCellGridStyle(this);
             }
             @Override
             protected double computePrefHeight(double width) {
-                return 44;
+                return 44 + REJECT_CELL_BOTTOM_GRID_GAP;
             }
             @Override
             protected void layoutChildren() {
-                label.resizeRelocate(0, 0, getWidth(), getHeight());
+                double h = Math.max(0, getHeight() - REJECT_CELL_BOTTOM_GRID_GAP);
+                label.resizeRelocate(0, 0, getWidth(), h);
             }
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -166,14 +180,16 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 setGraphic(label);
                 setText(null);
                 setPadding(Insets.EMPTY);
+                applyRejectTableCellGridStyle(this);
             }
             @Override
             protected double computePrefHeight(double width) {
-                return 44;
+                return 44 + REJECT_CELL_BOTTOM_GRID_GAP;
             }
             @Override
             protected void layoutChildren() {
-                label.resizeRelocate(0, 0, getWidth(), getHeight());
+                double h = Math.max(0, getHeight() - REJECT_CELL_BOTTOM_GRID_GAP);
+                label.resizeRelocate(0, 0, getWidth(), h);
             }
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -197,19 +213,22 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 setGraphic(label);
                 setText(null);
                 setPadding(Insets.EMPTY);
+                applyRejectTableCellGridStyle(this);
             }
             @Override
             protected double computePrefHeight(double width) {
                 String text = label.getText();
-                if (text == null || text.isEmpty()) return 44;
+                if (text == null || text.isEmpty()) return 44 + REJECT_CELL_BOTTOM_GRID_GAP;
                 double w = width > 0 ? width : column.getWidth();
                 double lw = Math.max(0, w - 16);
-                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) + REJECT_CELL_BOTTOM_GRID_GAP : 44 + REJECT_CELL_BOTTOM_GRID_GAP;
             }
             @Override
             protected void layoutChildren() {
                 double lw = Math.max(0, getWidth() - 16);
-                label.resize(lw, label.prefHeight(lw));
+                double maxLabelH = Math.max(0, getHeight() - 8 - REJECT_CELL_BOTTOM_GRID_GAP);
+                double lh = Math.min(label.prefHeight(lw), maxLabelH);
+                label.resize(lw, lh);
                 label.relocate(8, 8);
             }
             @Override
@@ -231,19 +250,22 @@ public class ShiwanM2RejectRecordsController implements Initializable {
                 setGraphic(label);
                 setText(null);
                 setPadding(Insets.EMPTY);
+                applyRejectTableCellGridStyle(this);
             }
             @Override
             protected double computePrefHeight(double width) {
                 String text = label.getText();
-                if (text == null || text.isEmpty()) return 44;
+                if (text == null || text.isEmpty()) return 44 + REJECT_CELL_BOTTOM_GRID_GAP;
                 double w = width > 0 ? width : column.getWidth();
                 double lw = Math.max(0, w - 16);
-                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+                return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) + REJECT_CELL_BOTTOM_GRID_GAP : 44 + REJECT_CELL_BOTTOM_GRID_GAP;
             }
             @Override
             protected void layoutChildren() {
                 double lw = Math.max(0, getWidth() - 16);
-                label.resize(lw, label.prefHeight(lw));
+                double maxLabelH = Math.max(0, getHeight() - 8 - REJECT_CELL_BOTTOM_GRID_GAP);
+                double lh = Math.min(label.prefHeight(lw), maxLabelH);
+                label.resize(lw, lh);
                 label.relocate(8, 8);
             }
             @Override
@@ -265,24 +287,27 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             setGraphic(label);
             setText(null);
             setPadding(Insets.EMPTY);
+            applyRejectTableCellGridStyle(this);
         }
 
         @Override
         protected double computePrefHeight(double width) {
             EventRow row = getTableRow() != null ? getTableRow().getItem() : null;
             String t = row == null ? "" : row.displayCaseCode();
-            if (t.isEmpty()) return 44;
+            if (t.isEmpty()) return 44 + REJECT_CELL_BOTTOM_GRID_GAP;
             double w = width > 0 ? width : caseCol.getWidth();
             double lw = Math.max(0, w - 16);
             label.setText(t);
             applyCaseStyle(row);
-            return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) + REJECT_CELL_BOTTOM_GRID_GAP : 44 + REJECT_CELL_BOTTOM_GRID_GAP;
         }
 
         @Override
         protected void layoutChildren() {
             double lw = Math.max(0, getWidth() - 16);
-            label.resize(lw, label.prefHeight(lw));
+            double maxLabelH = Math.max(0, getHeight() - 8 - REJECT_CELL_BOTTOM_GRID_GAP);
+            double lh = Math.min(label.prefHeight(lw), maxLabelH);
+            label.resize(lw, lh);
             label.relocate(8, 8);
         }
 
@@ -316,21 +341,24 @@ public class ShiwanM2RejectRecordsController implements Initializable {
             setGraphic(label);
             setText(null);
             setPadding(Insets.EMPTY);
+            applyRejectTableCellGridStyle(this);
         }
 
         @Override
         protected double computePrefHeight(double width) {
             String text = label.getText();
-            if (text == null || text.isEmpty()) return 44;
+            if (text == null || text.isEmpty()) return 44 + REJECT_CELL_BOTTOM_GRID_GAP;
             double w = width > 0 ? width : column.getWidth();
             double lw = Math.max(0, w - 16);
-            return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) : 44;
+            return lw > 0 ? Math.max(44, label.prefHeight(lw) + 16) + REJECT_CELL_BOTTOM_GRID_GAP : 44 + REJECT_CELL_BOTTOM_GRID_GAP;
         }
 
         @Override
         protected void layoutChildren() {
             double lw = Math.max(0, getWidth() - 16);
-            label.resize(lw, label.prefHeight(lw));
+            double maxLabelH = Math.max(0, getHeight() - 8 - REJECT_CELL_BOTTOM_GRID_GAP);
+            double lh = Math.min(label.prefHeight(lw), maxLabelH);
+            label.resize(lw, lh);
             label.relocate(8, 8);
         }
 

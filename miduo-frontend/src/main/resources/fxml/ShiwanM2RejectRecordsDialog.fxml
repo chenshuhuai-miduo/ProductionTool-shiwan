@@ -9,7 +9,7 @@
       fx:controller="com.miduo.cloud.frontend.controller.ShiwanM2RejectRecordsController"
       prefWidth="1200" prefHeight="700"
       stylesheets="@../css/base-styles.css,@../css/shiwan-m2-styles.css"
-      style="-fx-background-color:white; -fx-border-color:#D9E1EC; -fx-border-width:1; -fx-border-radius:12; -fx-background-radius:12;">
+      style="-fx-background-color:white; -fx-border-color:#D9E1EC; -fx-border-width:1;">
 
     <!-- 标题栏（对齐设计稿 4J8s2） -->
     <HBox fx:id="titleBar" alignment="CENTER_LEFT"
@@ -56,7 +56,7 @@
             <VBox spacing="10" minWidth="280" prefWidth="568" HBox.hgrow="ALWAYS">
 
                 <TableView fx:id="eventTable" VBox.vgrow="ALWAYS"
-                           styleClass="sw2-wrap-table sw2-reject-master-table">
+                           styleClass="sw2-table sw2-reject-master-table">
                     <columns>
                         <TableColumn fx:id="seqCol" text="序号" prefWidth="52" minWidth="52" maxWidth="52"/>
                         <TableColumn fx:id="caseCol" text="箱码" prefWidth="140" minWidth="80"/>
@@ -130,7 +130,7 @@
                     <Label text="留痕明细" styleClass="sw2-reject-detail-section-title"/>
 
                     <TableView fx:id="detailTable" VBox.vgrow="ALWAYS"
-                               styleClass="sw2-wrap-table sw2-reject-detail-table">
+                               styleClass="sw2-table sw2-table-no-select sw2-reject-detail-table">
                         <columns>
                             <TableColumn fx:id="dSeqCol" text="序号" minWidth="55" maxWidth="55"/>
                             <TableColumn fx:id="dLinkCol" text="关联码" prefWidth="220" minWidth="120"/>

@@ -337,13 +337,13 @@ public class ShiwanM2HelpController implements Initializable {
     // ---- 4.4 数据替换 ----
     private void buildSection44Replace() {
         VBox sec = newSection();
-        addH2WithBadge(sec, "4.4 数据替换", "需要密码");
-        addPara(sec, "用途：码损坏或码错误时，将旧码替换为新码（仅操作外码：瓶码/盒码/箱码）。");
+        addH2WithBadge(sec, "4.4 数据替换", "弹窗确认");
+        addPara(sec, "用途：码损坏或码错误时，将旧码替换为新码（仅操作外码：瓶码/盒码/箱码，无需操作内码）。");
         addOrdered(sec, new String[]{
             "输入原码（待替换）",
             "输入新码（替换后）",
             "输入替换原因（可选）",
-            "点击「确认替换」→ 弹窗核对信息 → 输入密码 → 确认执行"
+            "点击「确认替换」→ 弹窗核对信息 → 确认执行（无需输入密码）"
         });
         addPara(sec, "新码要求（需同时满足）：");
         addOkBulletLines(sec, new String[]{
@@ -351,7 +351,7 @@ public class ShiwanM2HelpController implements Initializable {
             "在对应层级码包中，且从未使用过（系统中不存在该码的关联记录）",
             "格式有效，且不能与原码相同"
         });
-        addWarnLine(sec, "替换操作不可恢复，请务必核对无误再执行");
+        addWarnLine(sec, "替换操作不可恢复，请确认码值无误后再执行替换");
         sections.add(sec);
         contentContainer.getChildren().add(sec);
     }
@@ -450,7 +450,7 @@ public class ShiwanM2HelpController implements Initializable {
         addFaq(sec, "Q5：剔除装置剔出去后没有自动收回，怎么办？",
             "点击右侧「收回剔除」按钮，手动触发收回指令。");
         addFaq(sec, "Q6：忘记密码怎么办？",
-            "系统设置、码替换、取消关联均需输入密码，密码请联系管理员获取。");
+            "系统设置、取消关联需输入密码，密码请联系管理员获取。数据替换仅需弹窗核对确认，无需密码。");
         addFaq(sec, "Q7：如何知道码属于哪一层级（瓶/盒/箱/垛）？",
             "在「数据查询」Tab 中输入码值，点击「查询」或回车，左侧表格按层级分列展示，点击某行右侧可查看该行的详细信息。");
         addFaqOrdered(sec, "Q8：识别结果提示「不可取消，有上级关联」，怎么操作？", new String[]{
@@ -468,7 +468,7 @@ public class ShiwanM2HelpController implements Initializable {
         VBox sec = newSection();
         addH1(sec, "六、注意事项");
         addInfoBox(sec,
-            "1. 密码保护：系统设置、码替换、取消关联均需要输入密码确认，密码请联系管理员获取\n"
+            "1. 密码保护：系统设置、取消关联需要输入密码确认，密码请联系管理员获取；数据替换仅需二次确认弹窗、不要求密码\n"
             + "2. 不可恢复操作：码替换、取消关联执行后无法撤销，操作前请仔细核对\n"
             + "3. 包装比例：不可随意修改，如需变更请联系管理员\n"
             + "4. 生产前检查：每次开始生产前，确认码包已导入、设备连接正常\n"
