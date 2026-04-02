@@ -267,6 +267,11 @@ public class ShiwanM2MainController implements Initializable {
         t.setDaemon(true);
         return t;
     });
+    /** 打开产品选择前等待本机数据库连通的最长时间 */
+    private static final long PRODUCT_SELECT_DB_WAIT_MS = 120_000L;
+    private static final long PRODUCT_SELECT_DB_POLL_MS = 400L;
+    /** 数据库就绪后首次查询为空时，短间隔再查一次（应对 Spring 懒加载等瞬态） */
+    private static final long PRODUCT_SELECT_QUERY_RETRY_MS = 500L;
     /** 为 true 时屏蔽编辑框文字变化触发的搜索（程序设值时用） */
     private volatile boolean suppressProductSearch = false;
 
@@ -1354,38 +1359,96 @@ public class ShiwanM2MainController implements Initializable {
         final String originalProductCode = productCodeLabel != null ? productCodeLabel.getText() : "";
         final boolean originalCodeRowVisible = productCodeRow != null && productCodeRow.isVisible();
         final boolean originalCodeRowManaged = productCodeRow != null && productCodeRow.isManaged();
-        productExecutor.submit(() -> {
-            List<ProductItem> localProducts = queryProducts("", 50);
-            if (!localProducts.isEmpty()) {
-                Platform.runLater(() -> {
-                    applyProductItems(localProducts);
-                    doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
-                });
-                return;
-            }
 
-            Platform.runLater(() -> {
-                addOpLog(LocalDateTime.now().format(TIME_FMT) + "  本地暂无产品数据，正在从云端加载产品信息...", LogType.INFO);
-                Stage loadingStage = showProductLoadingStage("正在加载产品信息，请稍候...");
-                productExecutor.submit(() -> {
+        // 先弹出加载（本机库未就绪或正在查本地产品时均保持显示），就绪后再打开产品弹窗
+        Platform.runLater(() -> {
+            Stage loadingStage = showProductLoadingStage("正在连接本机数据库并加载产品信息，请稍候…");
+            productExecutor.submit(() -> {
+                try {
+                    if (!waitUntilLocalDbReady()) {
+                        Platform.runLater(() -> {
+                            closeProductLoadingStage(loadingStage);
+                            showWarn("无法连接本机数据库",
+                                    "在限制时间内未能连上本机数据库，请确认数据库已启动并在系统设置中填写正确的连接信息。");
+                        });
+                        return;
+                    }
+
+                    List<ProductItem> localProducts = queryProducts("", 50);
+                    if (localProducts.isEmpty()) {
+                        Thread.sleep(PRODUCT_SELECT_QUERY_RETRY_MS);
+                        localProducts = queryProducts("", 50);
+                    }
+                    if (!localProducts.isEmpty()) {
+                        final List<ProductItem> toApply = localProducts;
+                        Platform.runLater(() -> {
+                            closeProductLoadingStage(loadingStage);
+                            applyProductItems(toApply);
+                            doOpenProductSelectDialog(originalValue, originalProductCode,
+                                    originalCodeRowVisible, originalCodeRowManaged);
+                        });
+                        return;
+                    }
+
+                    addOpLog(LocalDateTime.now().format(TIME_FMT) + "  本地暂无产品数据，正在从云端加载产品信息...", LogType.INFO);
                     boolean syncOk = syncProducts();
                     List<ProductItem> syncedProducts = queryProducts("", 50);
+                    if (syncedProducts.isEmpty()) {
+                        Thread.sleep(PRODUCT_SELECT_QUERY_RETRY_MS);
+                        syncedProducts = queryProducts("", 50);
+                    }
+                    final List<ProductItem> syncedFinal = syncedProducts;
                     Platform.runLater(() -> {
-                        if (loadingStage != null && loadingStage.isShowing()) {
-                            loadingStage.close();
-                        }
-                        applyProductItems(syncedProducts);
-                        if (syncedProducts.isEmpty()) {
+                        closeProductLoadingStage(loadingStage);
+                        applyProductItems(syncedFinal);
+                        if (syncedFinal.isEmpty()) {
                             String tip = syncOk
                                     ? "产品信息已同步，但本地仍无可用产品，请联系管理员确认产品档案。"
                                     : "从云端加载产品信息失败，请检查网络连接或开放平台配置（baseUrl / appId / appSecret / productsListPath）后重试。";
                             showWarn("产品信息加载提示", tip);
                         }
-                        doOpenProductSelectDialog(originalValue, originalProductCode, originalCodeRowVisible, originalCodeRowManaged);
+                        doOpenProductSelectDialog(originalValue, originalProductCode,
+                                originalCodeRowVisible, originalCodeRowManaged);
                     });
-                });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    Platform.runLater(() -> closeProductLoadingStage(loadingStage));
+                }
             });
         });
+    }
+
+    private void closeProductLoadingStage(Stage loadingStage) {
+        if (loadingStage != null && loadingStage.isShowing()) {
+            loadingStage.close();
+        }
+    }
+
+    /**
+     * 同步检测本机数据库是否可连接（与系统设置中的配置一致）。
+     */
+    private boolean checkLocalDbConnectionSync() {
+        try {
+            String json = HttpUtil.doGet("/api/shiwan-m2/settings/check-db-connection");
+            JsonNode root = JSON.readTree(json);
+            return root != null && root.has("code") && root.get("code").asInt() == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 轮询直至本机数据库检测通过或超时（后台线程调用）。
+     */
+    private boolean waitUntilLocalDbReady() throws InterruptedException {
+        long deadline = System.currentTimeMillis() + PRODUCT_SELECT_DB_WAIT_MS;
+        while (System.currentTimeMillis() < deadline) {
+            if (checkLocalDbConnectionSync()) {
+                return true;
+            }
+            Thread.sleep(PRODUCT_SELECT_DB_POLL_MS);
+        }
+        return false;
     }
 
     private Stage showProductLoadingStage(String message) {

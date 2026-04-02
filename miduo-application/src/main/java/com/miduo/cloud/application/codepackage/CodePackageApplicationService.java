@@ -27,10 +27,21 @@ import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodePackageItemCold
 import com.miduo.cloud.infrastructure.persistence.mybatis.po.CodePackageItemHotPO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -49,8 +60,14 @@ import java.util.stream.Collectors;
 @Service
 public class CodePackageApplicationService {
 
-    private static final int CODE_QUERY_BATCH_SIZE = 2000;
-    private static final int INSERT_BATCH_SIZE = 3000;
+    /** 与库中已存在码比对时的 IN 查询批次（扩大以减少往返） */
+    private static final int CODE_QUERY_BATCH_SIZE = 10000;
+    /** 热表批量插入每批条数 */
+    private static final int INSERT_BATCH_SIZE = 8000;
+    /** 去重后达到该条数时，使用 MySQL 临时表 JOIN 一次查重（需开启 mysqlTempTableDupCheck） */
+    private static final int TEMP_TABLE_DUP_CHECK_THRESHOLD = 5000;
+    /** 本地 TXT 最大 50MB（与需求一致） */
+    private static final long LOCAL_IMPORT_MAX_BYTES = 50L * 1024 * 1024;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
@@ -65,9 +82,19 @@ public class CodePackageApplicationService {
     private CodePackageRelationMapper codePackageRelationMapper;
     @Autowired
     private CodePackageOpenPlatformClient openPlatformClient;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @Value("${code.package.import.password:123456}")
     private String importPassword;
+
+    /**
+     * 石湾 MySQL：大批量导入时用临时表 JOIN 查重；非 MySQL 或关闭时回退为分批 IN 查询
+     */
+    @Value("${code.package.import.mysql-temp-table-dup-check:false}")
+    private boolean mysqlTempTableDupCheck;
 
     @Value("${code.package.import.overlap-threshold:0.8}")
     private double overlapThreshold;
@@ -170,7 +197,6 @@ public class CodePackageApplicationService {
         }
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public ApiResult<CodePackageImportVO> importLocal(CodePackageLocalImportRequest request) {
         try {
             if (request == null) {
@@ -179,12 +205,13 @@ public class CodePackageApplicationService {
             if (!StringUtils.hasText(request.getPassword()) || !importPassword.equals(request.getPassword().trim())) {
                 return ApiResult.error(401, "导入密码错误");
             }
+            List<String> rawCodes = resolveCodesForLocalImport(request);
             PersistResult persistResult = persistCodes(
                     request.getPackageType(),
                     request.getPackageName(),
                     request.getFileName(),
                     CodePackageImportSourceEnum.LOCAL.getCode(),
-                    request.getCodes(),
+                    rawCodes,
                     true
             );
             CodePackageImportPO importPO = codePackageImportMapper.selectById(persistResult.getImportId());
@@ -385,6 +412,44 @@ public class CodePackageApplicationService {
         return latestCreateTime == null ? defaultTime : latestCreateTime;
     }
 
+    /**
+     * 本地导入：优先从 {@link CodePackageLocalImportRequest#getLocalFilePath()} 读文件，否则使用 {@code codes}（兼容旧客户端）。
+     */
+    private List<String> resolveCodesForLocalImport(CodePackageLocalImportRequest request) {
+        if (StringUtils.hasText(request.getLocalFilePath())) {
+            Path p = Paths.get(request.getLocalFilePath().trim()).normalize();
+            if (!Files.isRegularFile(p)) {
+                throw new IllegalArgumentException("码包文件不存在或不是文件");
+            }
+            String name = p.getFileName() != null ? p.getFileName().toString() : "";
+            if (!name.toLowerCase().endsWith(".txt")) {
+                throw new IllegalArgumentException("请选择 TXT 格式文件");
+            }
+            try {
+                long size = Files.size(p);
+                if (size > LOCAL_IMPORT_MAX_BYTES) {
+                    throw new IllegalArgumentException("文件过大，请确认文件不超过 50MB");
+                }
+                if (size == 0) {
+                    throw new IllegalArgumentException("文件内容为空，请确认后重新选择");
+                }
+            } catch (IllegalArgumentException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("无法读取文件大小：" + e.getMessage());
+            }
+            try {
+                return Files.readAllLines(p, StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("读取码包文件失败：" + e.getMessage());
+            }
+        }
+        if (request.getCodes() != null && !request.getCodes().isEmpty()) {
+            return request.getCodes();
+        }
+        throw new IllegalArgumentException("未提供码包文件路径或码列表");
+    }
+
     private PersistResult persistCodes(Integer packageType,
                                        String packageName,
                                        String fileName,
@@ -452,15 +517,19 @@ public class CodePackageApplicationService {
         }
         importPO.setCreateTime(now);
         importPO.setUpdateTime(now);
-        codePackageImportMapper.insert(importPO);
 
-        batchInsertHotCodes(importPO.getId(), packageType, newCodes, now);
-
-        PersistResult result = new PersistResult();
-        result.setImportId(importPO.getId());
-        result.setImportedCount(newCodes.size());
-        result.setDuplicateCount(existsSet.size());
-        return result;
+        final CodePackageImportPO importRecord = importPO;
+        final List<String> codesToInsert = newCodes;
+        final LocalDateTime insertTime = now;
+        return transactionTemplate.execute(status -> {
+            codePackageImportMapper.insert(importRecord);
+            batchInsertHotCodes(importRecord.getId(), packageType, codesToInsert, insertTime);
+            PersistResult result = new PersistResult();
+            result.setImportId(importRecord.getId());
+            result.setImportedCount(codesToInsert.size());
+            result.setDuplicateCount(existsSet.size());
+            return result;
+        });
     }
 
     private void batchInsertHotCodes(Long importId, Integer packageType, List<String> codeValues, LocalDateTime now) {
@@ -488,6 +557,9 @@ public class CodePackageApplicationService {
         if (deduplicatedCodes == null || deduplicatedCodes.isEmpty()) {
             return Collections.emptySet();
         }
+        if (mysqlTempTableDupCheck && deduplicatedCodes.size() >= TEMP_TABLE_DUP_CHECK_THRESHOLD) {
+            return queryExistingCodesViaTempTable(packageType, deduplicatedCodes);
+        }
         Set<String> exists = new LinkedHashSet<>();
         int start = 0;
         while (start < deduplicatedCodes.size()) {
@@ -500,6 +572,46 @@ public class CodePackageApplicationService {
             start = end;
         }
         return exists;
+    }
+
+    /**
+     * 同一 JDBC 连接内建临时表、批量写入待校验码、与全码视图 JOIN 一次得到已存在码（MySQL）。
+     */
+    private Set<String> queryExistingCodesViaTempTable(Integer packageType, List<String> deduplicatedCodes) {
+        return jdbcTemplate.execute((ConnectionCallback<Set<String>>) (Connection conn) -> {
+            try (Statement st = conn.createStatement()) {
+                st.execute("DROP TEMPORARY TABLE IF EXISTS TmpImportCodeCheck");
+                st.execute("CREATE TEMPORARY TABLE TmpImportCodeCheck (CodeValue VARCHAR(64) NOT NULL PRIMARY KEY)");
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT IGNORE INTO TmpImportCodeCheck (CodeValue) VALUES (?)")) {
+                int batchCount = 0;
+                for (String code : deduplicatedCodes) {
+                    ps.setString(1, code);
+                    ps.addBatch();
+                    batchCount++;
+                    if (batchCount % 8000 == 0) {
+                        ps.executeBatch();
+                    }
+                }
+                ps.executeBatch();
+            }
+            String sql = "SELECT t.CodeValue FROM TmpImportCodeCheck t "
+                    + "INNER JOIN AllCodePackageCodes a ON a.CodeValue = t.CodeValue AND a.PackageType = ?";
+            LinkedHashSet<String> exists = new LinkedHashSet<>();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, packageType);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        exists.add(rs.getString(1));
+                    }
+                }
+            }
+            try (Statement st = conn.createStatement()) {
+                st.execute("DROP TEMPORARY TABLE IF EXISTS TmpImportCodeCheck");
+            }
+            return exists;
+        });
     }
 
     private boolean hasAssociatedCodes(Integer packageType, List<String> codeValues) {

@@ -50,10 +50,12 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+import javafx.stage.FileChooser;
 
 /**
  * 系统设置弹窗控制器（2号机）
@@ -668,6 +670,46 @@ public class ShiwanM2SystemSettingsController implements Initializable {
         s.setWarehouseNo(wno);
         saveSettings(s);
         showSuccess("入库仓库设置", "保存成功");
+    }
+
+    @FXML
+    private void onImportColdCodesFromFile() {
+        Window owner = settingsDialogOwner();
+        if (owner == null) {
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("选择冷表码文件");
+        chooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("文本文件", "*.txt"),
+                new FileChooser.ExtensionFilter("CSV文件", "*.csv"),
+                new FileChooser.ExtensionFilter("所有文件", "*.*")
+        );
+        java.io.File file = chooser.showOpenDialog(owner);
+        if (file == null) {
+            return;
+        }
+        showInfo("冷表码导入", "正在导入，请稍候...");
+        new Thread(() -> {
+            try {
+                Map<String, Object> req = new LinkedHashMap<>();
+                req.put("filePath", file.getAbsolutePath());
+                String jsonBody = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(req);
+                String response = HttpUtil.doPost("/api/shiwan-m2/settings/import-cold-codes", jsonBody);
+                com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
+                boolean ok = node.has("code") && node.get("code").asInt(500) == 200;
+                String msg = node.has("message") ? node.get("message").asText() : (ok ? "导入成功" : "导入失败");
+                Platform.runLater(() -> {
+                    if (ok) {
+                        showSuccess("冷表码导入", msg);
+                    } else {
+                        showError("冷表码导入", msg);
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("导入失败", "请求异常：" + e.getMessage()));
+            }
+        }, "sw2-cold-code-import").start();
     }
 
     private void saveSettings(ShiwanM2Settings s) {

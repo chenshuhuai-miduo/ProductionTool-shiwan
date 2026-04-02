@@ -18,9 +18,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.List;
 import java.util.prefs.Preferences;
 
 /**
@@ -109,7 +106,6 @@ public class ShiwanM2PackageImportDialogController {
         tipsLabel.setText("正在导入，请稍候...");
         new Thread(() -> {
             try {
-                List<String> lines = Files.readAllLines(selectedFile.toPath(), StandardCharsets.UTF_8);
                 CodePackageLocalImportRequest request = new CodePackageLocalImportRequest();
                 request.setPackageType(packageType);
                 request.setPackageName(selectedFile.getName());
@@ -117,7 +113,8 @@ public class ShiwanM2PackageImportDialogController {
                 request.setPassword(password);
                 String remark = remarkField.getText() != null ? remarkField.getText().trim() : "";
                 if (!remark.isEmpty()) request.setRemark(remark);
-                request.setCodes(lines);
+                // 传绝对路径由后端读文件，避免十几万行 JSON 序列化/反序列化
+                request.setLocalFilePath(selectedFile.getAbsolutePath());
 
                 String responseJson = HttpUtil.doPostLong("/api/code-package/import/local", HttpUtil.getObjectMapper().writeValueAsString(request));
                 ApiResult<CodePackageImportVO> result = HttpUtil.parseJson(

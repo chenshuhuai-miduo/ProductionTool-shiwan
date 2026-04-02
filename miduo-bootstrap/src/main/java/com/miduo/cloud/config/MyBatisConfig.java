@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
 import java.util.Arrays;
@@ -92,6 +94,14 @@ public class MyBatisConfig {
         sessionFactory.setPlugins(interceptor);
         
         return sessionFactory.getObject();
+    }
+
+    /**
+     * 编程式事务（码包大批量导入：缩短事务边界，仅包住写库部分）
+     */
+    @Bean
+    public TransactionTemplate transactionTemplate(PlatformTransactionManager transactionManager) {
+        return new TransactionTemplate(transactionManager);
     }
 
     /**

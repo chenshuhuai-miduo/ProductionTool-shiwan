@@ -651,6 +651,28 @@
                     </ScrollPane>
                 </Tab>
 
+                <!-- 冷表码导入 -->
+                <Tab text="冷表码导入">
+                    <ScrollPane fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER">
+                        <VBox spacing="16" style="-fx-padding: 20px 24px;">
+                            <Label text="冷表码导入（支持 txt / csv）"
+                                   style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1F2937;
+                                          -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <Label text="导入规则：按行读取，每行一个码；16位=小标、12位=中标、8位=大标；位数不符将自动跳过；冷表中已有 CodeValue 自动跳过。"
+                                   style="-fx-font-size: 12px; -fx-text-fill: #6B7280; -fx-font-family: 'Microsoft YaHei';"
+                                   wrapText="true"/>
+
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button text="选择文件并导入" mnemonicParsing="false"
+                                        styleClass="primary-button, sw2-settings-save-btn"
+                                        onAction="#onImportColdCodesFromFile"/>
+                            </HBox>
+                        </VBox>
+                    </ScrollPane>
+                </Tab>
+
             </TabPane>
         </Tab>
 
