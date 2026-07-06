@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>首页签收数量明细查询优化 - 可点击原型</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #222;
+        background: #edf1f5;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+      }
+
+      .stage {
+        width: 1180px;
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 34px 24px;
+        display: grid;
+        grid-template-columns: 430px 1fr;
+        gap: 46px;
+        align-items: start;
+      }
+
+      .phone {
+        width: 390px;
+        height: 812px;
+        overflow: hidden;
+        border: 10px solid #15171c;
+        border-radius: 38px;
+        background: #f4f5f7;
+        box-shadow: 0 26px 70px rgba(16, 24, 40, 0.22);
+      }
+
+      .status {
+        height: 38px;
+        padding: 10px 20px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .icons {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+
+      .dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .bar {
+        width: 17px;
+        height: 10px;
+        border: 2px solid currentColor;
+        border-radius: 2px;
+      }
+
+      .home {
+        position: relative;
+        height: 100%;
+        background: linear-gradient(#ff7144 0 310px, #f4f5f7 310px);
+      }
+
+      .home-title {
+        height: 54px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 54px;
+      }
+
+      .mini-menu {
+        position: absolute;
+        top: 82px;
+        right: 24px;
+        width: 102px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .shop {
+        display: grid;
+        grid-template-columns: 64px 1fr 64px;
+        gap: 13px;
+        padding: 20px 22px;
+        color: #fff;
+      }
+
+      .avatar {
+        width: 60px;
+        height: 60px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #fff3ef;
+        color: #ff7144;
+        font-size: 30px;
+        font-weight: 800;
+      }
+
+      .shop-name {
+        margin: 1px 0 7px;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .shop-sub,
+      .shop-code {
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: 0.82;
+      }
+
+      .qr {
+        text-align: center;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .qrbox {
+        width: 34px;
+        height: 34px;
+        margin: 4px auto 5px;
+        background:
+          linear-gradient(90deg, #fff 50%, transparent 0) 0 0 / 8px 8px,
+          linear-gradient(#fff 50%, transparent 0) 0 0 / 8px 8px;
+      }
+
+      .brand-row {
+        margin: 4px 22px 18px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.25);
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .card {
+        margin: 0 14px 12px;
+        padding: 18px 16px;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 16px;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .asset-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .asset-item {
+        padding-left: 10px;
+        color: #6b7280;
+        font-size: 15px;
+      }
+
+      .asset-item b {
+        margin-left: 8px;
+        color: #ff7144;
+        font-size: 24px;
+      }
+
+      .seg {
+        margin-left: auto;
+        display: flex;
+        overflow: hidden;
+        border: 1px solid #ff7144;
+        border-radius: 6px;
+        background: #fff;
+      }
+
+      .seg button {
+        min-width: 48px;
+        padding: 6px 10px;
+        color: #333;
+        background: #fff;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .seg button + button {
+        border-left: 1px solid #ff7144;
+      }
+
+      .seg button.active {
+        color: #fff;
+        background: #ff7144;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        text-align: center;
+      }
+
+      .stat-item {
+        min-height: 82px;
+        padding: 13px 5px 8px;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .stat-item.action {
+        display: block;
+        width: 100%;
+      }
+
+      .stat-num {
+        color: #ff7144;
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .stat-name {
+        margin-top: 7px;
+        color: #666;
+        font-size: 16px;
+      }
+
+      .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px 10px;
+        text-align: center;
+      }
+
+      .menu-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 8px;
+        border: 3px solid #111;
+        border-radius: 8px;
+        color: #ff7144;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .menu-text {
+        font-size: 15px;
+      }
+
+      .scan-btn {
+        position: absolute;
+        left: 50%;
+        bottom: 78px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 22px 9px 12px;
+        border-radius: 999px;
+        color: #fff;
+        background: #ff7144;
+        font-size: 21px;
+        font-weight: 700;
+        box-shadow: 0 10px 24px rgba(255, 113, 68, 0.34);
+      }
+
+      .scan-round {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #ff7144;
+        background: #fff;
+      }
+
+      .tabbar {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 0;
+        height: 64px;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: center;
+        border-top: 1px solid #eee;
+        background: #fff;
+        text-align: center;
+        font-size: 13px;
+        color: #9aa1ad;
+      }
+
+      .tabbar .on {
+        color: #ff7144;
+      }
+
+      .page {
+        height: 100%;
+        background: #f4f5f7;
+      }
+
+      .nav {
+        height: 48px;
+        display: grid;
+        grid-template-columns: 46px 1fr 46px;
+        align-items: center;
+        padding: 0 6px;
+        background: #fff;
+        text-align: center;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .back {
+        color: #111;
+        background: transparent;
+        font-size: 28px;
+        font-weight: 500;
+      }
+
+      .readonly {
+        margin: 10px 14px 0;
+        padding: 9px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #8a4b13;
+        border-radius: 8px;
+        background: #fff6e6;
+        font-size: 13px;
+      }
+
+      .readonly b {
+        color: #d06b00;
+      }
+
+      .filter {
+        padding: 10px 14px 12px;
+        background: #f4f5f7;
+      }
+
+      .filter-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .filter-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .pill,
+      .search {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: #fff;
+        color: #667085;
+        font-size: 13px;
+      }
+
+      .pill {
+        flex-shrink: 0;
+      }
+
+      .search {
+        flex: 1;
+      }
+
+      .filter-full {
+        width: 100%;
+        justify-content: center;
+        color: #111;
+        font-weight: 700;
+      }
+
+      .filter-third {
+        width: 32%;
+        justify-content: center;
+        color: #111;
+        font-weight: 700;
+      }
+
+      .search.order-input {
+        justify-content: center;
+        text-align: center;
+      }
+
+      .search-btn {
+        height: 38px;
+        min-width: 68px;
+        border-radius: 999px;
+        color: #fff;
+        background: #ff7144;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .scroll-area {
+        height: 640px;
+        overflow: auto;
+        padding-bottom: 18px;
+      }
+
+      .ticket {
+        position: relative;
+        width: 100%;
+        margin: 0 0 8px;
+        padding: 18px 40px 16px 20px;
+        border-radius: 0;
+        background: #fff;
+        text-align: left;
+      }
+
+      .ticket::after {
+        content: "›";
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #111;
+        font-size: 38px;
+        font-weight: 300;
+      }
+
+      .tag.quick {
+        display: inline-flex;
+        align-items: center;
+        height: 22px;
+        margin-left: 8px;
+        padding: 2px 5px;
+        border: 1px solid #ec8f6d;
+        border-radius: 4px;
+        color: #d8754f;
+        background: #fff;
+        font-size: 12px;
+      }
+
+      .tag {
+        height: 24px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #eaf7ef;
+        color: #18a058;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .tag.pending {
+        background: #fff1e8;
+        color: #f36a21;
+      }
+
+      .ticket-line {
+        display: grid;
+        grid-template-columns: 76px 1fr;
+        gap: 8px;
+        padding: 5px 0;
+        color: #666;
+        font-size: 15px;
+      }
+
+      .ticket-line span:last-child {
+        color: #111;
+      }
+
+      .count-line {
+        display: flex;
+        gap: 22px;
+        padding-top: 8px;
+        color: #111;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .count-line b {
+        color: #111;
+        font-size: 15px;
+      }
+
+      .ticket-bottom {
+        margin-top: 13px;
+        padding-top: 12px;
+        border-top: 1px solid #eef0f3;
+        color: #111;
+        font-size: 16px;
+      }
+
+      .detail-scroll {
+        height: 716px;
+        overflow: auto;
+        padding-bottom: 20px;
+      }
+
+      .detail-header,
+      .detail-card {
+        margin: 10px 14px;
+        padding: 15px;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .detail-header .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .detail-header b {
+        font-size: 15px;
+      }
+
+      .detail-header p {
+        margin: 0;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .detail-title {
+        margin-bottom: 12px;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .info-row {
+        display: grid;
+        grid-template-columns: 86px 1fr;
+        gap: 8px;
+        padding: 5px 0;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .info-row span:last-child {
+        color: #2f3542;
+      }
+
+      .product {
+        padding: 12px 0;
+        border-top: 1px solid #eef0f3;
+      }
+
+      .product:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .product-name {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .product-meta {
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        color: #667085;
+        font-size: 13px;
+      }
+
+      .codes {
+        color: #ff7144;
+        font-weight: 800;
+      }
+
+      .bottom-safe {
+        height: 42px;
+        display: grid;
+        place-items: center;
+        color: transparent;
+        font-size: 12px;
+      }
+
+      .side h1 {
+        margin: 8px 0 10px;
+        font-size: 30px;
+        line-height: 1.2;
+      }
+
+      .side p {
+        margin: 0 0 20px;
+        color: #667085;
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .panel {
+        margin-bottom: 16px;
+        padding: 18px;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 12px 36px rgba(16, 24, 40, 0.08);
+      }
+
+      .panel-title {
+        margin-bottom: 12px;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .steps {
+        display: grid;
+        gap: 10px;
+        color: #475467;
+        font-size: 14px;
+      }
+
+      .step {
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .state-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .state-chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        color: #475467;
+        background: #f8fafc;
+        font-size: 14px;
+      }
+
+      .state-chip b {
+        color: #ff7144;
+      }
+
+      @media (max-width: 980px) {
+        .stage {
+          width: 100%;
+          grid-template-columns: 1fr;
+          justify-items: center;
+        }
+
+        .side {
+          width: min(390px, 100%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <section class="phone" id="app"></section>
+
+      <aside class="side">
+        <h1>首页签收数量明细查询优化</h1>
+        <p>这是可点击原型 demo。你可以在手机界面内切换「今日 / 本月 / 累计」，点击「签收数量」进入对应周期的签收明细，再点击单据查看只读签收详情。</p>
+
+        <div class="panel">
+          <div class="panel-title">当前原型状态</div>
+          <div class="state-bar">
+            <span class="state-chip">页面：<b id="stateView">首页</b></span>
+            <span class="state-chip">周期：<b id="statePeriod">累计</b></span>
+            <span class="state-chip">签收数量：<b id="stateCount">8</b></span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">可操作路径</div>
+          <div class="steps">
+            <div class="step">1. 在首页数据概览切换今日 / 本月 / 累计。</div>
+            <div class="step">2. 点击「签收数量」进入商品签收单据列表。</div>
+            <div class="step">3. 列表页复用商品签收页面样式，仅隐藏签收操作按钮。</div>
+            <div class="step">4. 点击单据进入签收详情，查看对应商品签收信息。</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const periods = {
+        today: { label: '今日', range: '2026-07-01', unpack: 1, write: 2, sign: 2 },
+        month: { label: '本月', range: '2026-07-01 至 2026-07-01', unpack: 3, write: 4, sign: 5 },
+        all: { label: '累计', range: '累计全部记录', unpack: 4, write: 5, sign: 8 }
+      }
+
+      const allRecords = [
+        {
+          id: 'CK202607010001',
+          period: ['today', 'month', 'all'],
+          orderNo: 'DD202607010009',
+          time: '2026-07-01 10:23:18',
+          dealer: '米多客户部',
+          status: '签收中',
+          storageCount: 12,
+          signCount: 2,
+          totalSigned: 8,
+          stayCount: 4,
+          operator: '张三',
+          receiver: '小娅的修改版店',
+          leader: '小小娅　138****0000',
+          address: '广东省广州市番禺区测试门店地址',
+          products: [
+            { name: '米多测试商品A', spec: '500ml*6', signed: 4, total: 6 },
+            { name: '米多测试商品B', spec: '礼盒装', signed: 3, total: 4 },
+            { name: '米多测试商品C', spec: '单瓶装', signed: 1, total: 2 }
+          ]
+        },
+        {
+          id: 'CK202607010002',
+          period: ['today', 'month', 'all'],
+          orderNo: 'DD202607010012',
+          time: '2026-07-01 14:08:26',
+          dealer: '米多客户部',
+          status: '已签收',
+          storageCount: 2,
+          signCount: 0,
+          totalSigned: 2,
+          stayCount: 0,
+          operator: '李四',
+          receiver: '小娅的修改版店',
+          leader: '小小娅　138****0000',
+          address: '广东省广州市番禺区测试门店地址',
+          products: [{ name: '米多测试商品D', spec: '单瓶装', signed: 2, total: 2 }]
+        },
+        {
+          id: 'CK202606300018',
+          period: ['month', 'all'],
+          orderNo: 'DD202606300021',
+          time: '2026-06-30 16:42:11',
+          dealer: '米多客户部',
+          status: '已签收',
+          storageCount: 3,
+          signCount: 3,
+          totalSigned: 3,
+          stayCount: 0,
+          operator: '王五',
+          receiver: '小娅的修改版店',
+          leader: '小小娅　138****0000',
+          address: '广东省广州市番禺区测试门店地址',
+          products: [{ name: '米多测试商品E', spec: '箱装', signed: 3, total: 3 }]
+        },
+        {
+          id: 'CK202606280037',
+          period: ['all'],
+          orderNo: 'DD202606280015',
+          time: '2026-06-28 16:08:42',
+          dealer: '米多客户部',
+          status: '已签收',
+          storageCount: 6,
+          signCount: 3,
+          totalSigned: 6,
+          stayCount: 0,
+          operator: '赵六',
+          receiver: '小娅的修改版店',
+          leader: '小小娅　138****0000',
+          address: '广东省广州市番禺区测试门店地址',
+          products: [
+            { name: '米多测试商品F', spec: '礼盒装', signed: 4, total: 4 },
+            { name: '米多测试商品G', spec: '单瓶装', signed: 2, total: 2 }
+          ]
+        }
+      ]
+
+      const state = {
+        view: 'home',
+        period: 'all',
+        selectedId: allRecords[0].id
+      }
+
+      const app = document.getElementById('app')
+      const stateView = document.getElementById('stateView')
+      const statePeriod = document.getElementById('statePeriod')
+      const stateCount = document.getElementById('stateCount')
+
+      function periodButtons(className = 'seg') {
+        return `<div class="${className}">
+          ${Object.entries(periods)
+            .map(([key, item]) => `<button class="${state.period === key ? 'active' : ''}" data-action="period" data-period="${key}">${item.label}</button>`)
+            .join('')}
+        </div>`
+      }
+
+      function statusMarkup() {
+        return `<div class="status"><span>${state.view === 'home' ? '11:42' : state.view === 'list' ? '11:43' : '11:44'}</span><span class="icons"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="bar"></i></span></div>`
+      }
+
+      function renderHome() {
+        const p = periods[state.period]
+        app.innerHTML = `<div class="home">
+          ${statusMarkup()}
+          <div class="home-title">万能零售助手</div>
+          <div class="mini-menu"><i class="dot"></i><i class="dot"></i><i class="dot"></i><b>◎</b></div>
+          <div class="shop">
+            <div class="avatar">店</div>
+            <div>
+              <div class="shop-name">小娅的修改版店 〉</div>
+              <div class="shop-sub">小小娅的店</div>
+              <div class="shop-code">编号：DZ16949364954743808</div>
+            </div>
+            <div class="qr"><div class="qrbox"></div>店铺码</div>
+          </div>
+          <div class="brand-row">米多客户部 〉</div>
+          <div class="card">
+            <div class="section-title">我的资产 ◎</div>
+            <div class="asset-grid">
+              <div class="asset-item">红包零钱 <b>¥1.00</b></div>
+              <div class="asset-item">积分 <b>33</b></div>
+              <div class="asset-item">云店收入 <b>¥0.00</b></div>
+              <div class="asset-item">返货券 <b>1</b></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">数据概览 ◎ ${periodButtons('seg')}</div>
+            <div class="stat-grid">
+              <div class="stat-item"><div class="stat-num">${p.unpack}</div><div class="stat-name">开箱数量</div></div>
+              <div class="stat-item"><div class="stat-num">${p.write}</div><div class="stat-name">核销数量</div></div>
+              <button class="stat-item action" data-action="open-list"><div class="stat-num">${p.sign}</div><div class="stat-name">签收数量</div></button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">核销管理</div>
+            <div class="menu-grid">
+              <div><div class="menu-icon">券</div><div class="menu-text">核销记录</div></div>
+              <div><div class="menu-icon">¥</div><div class="menu-text">报销管理</div></div>
+              <div><div class="menu-icon">奖</div><div class="menu-text">核销奖励</div></div>
+              <div><div class="menu-icon">卡</div><div class="menu-text">现金卡券</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">货品管理</div>
+            <div class="menu-grid">
+              <div><div class="menu-icon">收</div><div class="menu-text">商品签收</div></div>
+              <div><div class="menu-icon">库</div><div class="menu-text">库存扣减</div></div>
+              <div><div class="menu-icon">记</div><div class="menu-text">扣减记录</div></div>
+              <div><div class="menu-icon">扫</div><div class="menu-text">消费者扫码</div></div>
+            </div>
+          </div>
+          <div class="scan-btn"><span class="scan-round">⌁</span><span>扫一扫</span></div>
+          <div class="tabbar"><div class="on">首页</div><div>云店</div><div>活动</div><div>消息</div><div>我的</div></div>
+        </div>`
+      }
+
+      function recordsForPeriod() {
+        return allRecords.filter(item => item.period.includes(state.period))
+      }
+
+      function renderList() {
+        const p = periods[state.period]
+        const records = recordsForPeriod()
+        app.innerHTML = `<div class="page">
+          ${statusMarkup()}
+          <div class="nav"><button class="back" data-action="home">‹</button><span>商品签收</span><span></span></div>
+          <div class="filter">
+            <div class="filter-row"><div class="pill filter-full">出货时间 ▾</div></div>
+            <div class="filter-row"><div class="search">请输入总部或经销商名称、手机号查询</div></div>
+            <div class="filter-row"><div class="pill filter-third">全部 ▾</div><div class="search order-input">出货单号或订单号</div><button class="search-btn">搜索</button></div>
+          </div>
+          <div class="scroll-area">
+            ${records
+              .map(
+                item => `<button class="ticket" data-action="detail" data-id="${item.id}">
+                  <div class="ticket-line"><span>订单号</span><span>${item.orderNo || '无'}</span></div>
+                  <div class="ticket-line"><span>出货单号</span><span>${item.id}<span class="tag quick">快签</span></span></div>
+                  <div class="ticket-line"><span>出货时间</span><span>${item.time}</span></div>
+                  <div class="ticket-line"><span>经销商</span><span>${item.dealer}</span></div>
+                  <div class="count-line"><span>出货数量 <b>${item.storageCount}</b></span><span>签收数量 <b>${state.period === 'all' ? item.totalSigned : item.signCount || item.totalSigned}</b></span></div>
+                  <div class="ticket-bottom">状态：${item.status}</div>
+                </button>`
+              )
+              .join('')}
+          </div>
+        </div>`
+      }
+
+      function selectedRecord() {
+        return allRecords.find(item => item.id === state.selectedId) || allRecords[0]
+      }
+
+      function renderDetail() {
+        const item = selectedRecord()
+        app.innerHTML = `<div class="page">
+          ${statusMarkup()}
+          <div class="nav"><button class="back" data-action="list">‹</button><span>签收详情</span><span></span></div>
+          <div class="detail-scroll">
+            <div class="detail-header">
+              <div class="top"><b>出货单号：${item.id}</b><span class="tag ${item.status === '签收中' ? 'pending' : ''}">${item.status}</span></div>
+              <p>订单号：${item.orderNo}</p>
+              <p>经销商：${item.dealer}</p>
+            </div>
+            <div class="detail-card">
+              <div class="detail-title">出货明细</div>
+              <div class="info-row"><span>操作人：</span><span>${item.operator}</span></div>
+              <div class="info-row"><span>出货时间：</span><span>${item.time}</span></div>
+              <div class="info-row"><span>合计种类：</span><span>${item.products.length}种</span></div>
+              <div class="info-row"><span>合计数量：</span><span>出货${item.storageCount}件，已签收${item.totalSigned}件，待签收${item.stayCount}件</span></div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-title">收货信息</div>
+              <div class="info-row"><span>收货人：</span><span>${item.receiver}</span></div>
+              <div class="info-row"><span>负责人：</span><span>${item.leader}</span></div>
+              <div class="info-row"><span>收货地址：</span><span>${item.address}</span></div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-title">商品签收信息</div>
+              ${item.products
+                .map(
+                  product => `<div class="product">
+                    <div class="product-name"><span>${product.name}</span><span>已签${product.signed}/${product.total}</span></div>
+                    <div class="product-meta"><span>规格：${product.spec}</span><span class="codes">物流码明细 〉</span></div>
+                  </div>`
+                )
+                .join('')}
+            </div>
+            <div class="bottom-safe"></div>
+          </div>
+        </div>`
+      }
+
+      function updateSideState() {
+        const viewMap = { home: '首页', list: '签收明细', detail: '签收详情' }
+        stateView.textContent = viewMap[state.view]
+        statePeriod.textContent = periods[state.period].label
+        stateCount.textContent = periods[state.period].sign
+      }
+
+      function render() {
+        if (state.view === 'home') renderHome()
+        if (state.view === 'list') renderList()
+        if (state.view === 'detail') renderDetail()
+        updateSideState()
+      }
+
+      document.addEventListener('click', event => {
+        const target = event.target.closest('[data-action]')
+        if (!target) return
+
+        const action = target.dataset.action
+        if (action === 'period') {
+          state.period = target.dataset.period
+          if (state.view === 'detail') state.view = 'list'
+        }
+        if (action === 'open-list') state.view = 'list'
+        if (action === 'home') state.view = 'home'
+        if (action === 'list') state.view = 'list'
+        if (action === 'detail') {
+          state.selectedId = target.dataset.id
+          state.view = 'detail'
+        }
+        render()
+      })
+
+      render()
+    </script>
+  </body>
+</html>
