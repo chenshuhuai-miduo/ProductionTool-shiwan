@@ -368,7 +368,7 @@
       }
 
       .filter {
-        padding: 10px 14px 12px;
+        padding: 12px 14px 10px;
         background: #f4f5f7;
       }
 
@@ -403,10 +403,40 @@
       }
 
       .filter-full {
-        width: 100%;
+        width: 50%;
         justify-content: center;
         color: #111;
         font-weight: 700;
+      }
+
+      .record-search {
+        height: 44px;
+        justify-content: flex-start;
+        color: #b9bec7;
+        font-size: 15px;
+      }
+
+      .search-btn {
+        height: 44px;
+        min-width: 68px;
+        border-radius: 999px;
+        color: #111;
+        background: #fff;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .record-count {
+        padding: 0 18px 12px;
+        color: #111;
+        background: #f4f5f7;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .record-count b {
+        margin-left: 4px;
+        color: #ff7144;
       }
 
       .filter-third {
@@ -421,18 +451,8 @@
         text-align: center;
       }
 
-      .search-btn {
-        height: 38px;
-        min-width: 68px;
-        border-radius: 999px;
-        color: #fff;
-        background: #ff7144;
-        font-size: 14px;
-        font-weight: 800;
-      }
-
       .scroll-area {
-        height: 640px;
+        height: 594px;
         overflow: auto;
         padding-bottom: 18px;
       }
@@ -511,14 +531,6 @@
       .count-line b {
         color: #111;
         font-size: 15px;
-      }
-
-      .ticket-bottom {
-        margin-top: 13px;
-        padding-top: 12px;
-        border-top: 1px solid #eef0f3;
-        color: #111;
-        font-size: 16px;
       }
 
       .detail-scroll {
@@ -688,7 +700,7 @@
 
       <aside class="side">
         <h1>首页签收数量明细查询优化</h1>
-        <p>这是可点击原型 demo。你可以在手机界面内切换「今日 / 本月 / 累计」，点击「签收数量」进入对应周期的签收明细，再点击单据查看只读签收详情。</p>
+        <p>这是可点击原型 demo。你可以在手机界面内切换「今日 / 本月 / 累计」，点击「签收数量」进入对应周期的签收记录，再点击记录查看签收详情。</p>
 
         <div class="panel">
           <div class="panel-title">当前原型状态</div>
@@ -703,9 +715,9 @@
           <div class="panel-title">可操作路径</div>
           <div class="steps">
             <div class="step">1. 在首页数据概览切换今日 / 本月 / 累计。</div>
-            <div class="step">2. 点击「签收数量」进入商品签收单据列表。</div>
-            <div class="step">3. 列表页复用商品签收页面样式，仅隐藏签收操作按钮。</div>
-            <div class="step">4. 点击单据进入签收详情，查看对应商品签收信息。</div>
+            <div class="step">2. 点击「签收数量」进入签收记录页面。</div>
+            <div class="step">3. 签收记录页参考开箱记录筛选与数量展示。</div>
+            <div class="step">4. 点击记录进入签收详情，查看对应商品签收信息。</div>
           </div>
         </div>
       </aside>
@@ -884,12 +896,12 @@
         const records = recordsForPeriod()
         app.innerHTML = `<div class="page">
           ${statusMarkup()}
-          <div class="nav"><button class="back" data-action="home">‹</button><span>商品签收</span><span></span></div>
+          <div class="nav"><button class="back" data-action="home">‹</button><span>签收记录</span><span></span></div>
           <div class="filter">
-            <div class="filter-row"><div class="pill filter-full">出货时间 ▾</div></div>
-            <div class="filter-row"><div class="search">请输入总部或经销商名称、手机号查询</div></div>
-            <div class="filter-row"><div class="pill filter-third">全部 ▾</div><div class="search order-input">出货单号或订单号</div><button class="search-btn">搜索</button></div>
+            <div class="filter-row"><div class="pill filter-full">全部 ▾</div><div class="pill filter-full">请选择时间 ▾</div></div>
+            <div class="filter-row"><div class="search record-search">请输入出货单号或订单号</div><button class="search-btn">搜索</button></div>
           </div>
+          <div class="record-count">签收数量：<b>${p.sign}</b></div>
           <div class="scroll-area">
             ${records
               .map(
@@ -899,7 +911,6 @@
                   <div class="ticket-line"><span>出货时间</span><span>${item.time}</span></div>
                   <div class="ticket-line"><span>经销商</span><span>${item.dealer}</span></div>
                   <div class="count-line"><span>出货数量 <b>${item.storageCount}</b></span><span>签收数量 <b>${state.period === 'all' ? item.totalSigned : item.signCount || item.totalSigned}</b></span></div>
-                  <div class="ticket-bottom">状态：${item.status}</div>
                 </button>`
               )
               .join('')}
@@ -952,7 +963,7 @@
       }
 
       function updateSideState() {
-        const viewMap = { home: '首页', list: '签收明细', detail: '签收详情' }
+        const viewMap = { home: '首页', list: '签收记录', detail: '签收详情' }
         stateView.textContent = viewMap[state.view]
         statePeriod.textContent = periods[state.period].label
         stateCount.textContent = periods[state.period].sign
